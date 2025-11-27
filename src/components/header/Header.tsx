@@ -1,0 +1,184 @@
+import React, { useState, useEffect } from 'react';
+import { View, TouchableOpacity, Image, ActivityIndicator, Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Svg, { Path } from 'react-native-svg';
+import { styles } from './Styles';
+import Drawer from '../Drawer';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { colors } from '../../constants/colors';
+import { useSiteSettings } from '../../hooks/useSiteSettings';
+import { getImageUrl } from '../../services/api';
+import { API_URL } from '../../config/api.config';
+
+interface HeaderProps {
+    onNavigate?: (route: string) => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
+    const [isDrawerVisible, setIsDrawerVisible] = useState(false);
+    const [currentProfilePicture, setCurrentProfilePicture] = useState<string | null>(null);
+    const { isRTL } = useLanguage();
+    const { user, isLoggedIn } = useAuth();
+    const { data: siteSettings, isLoading, error } = useSiteSettings();
+
+    // Fetch fresh user data from server
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                const token = await AsyncStorage.getItem('userToken');
+                if (!token) return;
+
+                console.log('🔄 Header: Fetching fresh user data from:', `${API_URL}/auth/me`);
+                
+                const response = await fetch(`${API_URL}/auth/me`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const userData = await response.json();
+                    console.log('✅ Header: Fresh user data received:', {
+                        name: userData.name,
+                        profilePicture: userData.profilePicture
+                    });
+
+                    if (userData.profilePicture) {
+                        console.log('📸 Header: Setting profilePicture:', userData.profilePicture);
+                        setCurrentProfilePicture(userData.profilePicture);
+                    }
+                } else {
+                    console.error('❌ Header: Failed to fetch user data:', response.status);
+                }
+            } catch (error) {
+                console.error('❌ Header: Error fetching user data:', error);
+            }
+        };
+
+        if (isLoggedIn) {
+            fetchUserData();
+        }
+    }, [isLoggedIn]);
+
+    const handleOpenDrawer = () => {
+        console.log('🎯 Opening drawer...');
+        setIsDrawerVisible(true);
+    };
+
+    const handleCloseDrawer = () => {
+        console.log('🎯 Closing drawer...');
+        setIsDrawerVisible(false);
+    };
+
+    const handleNavigation = (route: string, title: string) => {
+        console.log('🧭 Navigation:', title, '→', route);
+        if (onNavigate) {
+            onNavigate(route.toLowerCase());
+        }
+        handleCloseDrawer();
+    };
+
+    const handleUserIconPress = () => {
+        if (isLoggedIn) {
+            console.log('👤 User logged in - Opening user profile page...');
+            if (onNavigate) {
+                onNavigate('profile');
+            }
+        } else {
+            console.log('🔐 User not logged in - Opening sign in page...');
+            if (onNavigate) {
+                onNavigate('auth');
+            }
+        }
+    };
+
+    return (
+        <>
+            <View style={[styles.headerContainer, isRTL && styles.headerContainerRTL]}>
+                {/* Menu Button - Left in LTR, Right in RTL */}
+                <TouchableOpacity 
+                    style={[styles.menuButton, isRTL && styles.menuButtonRTL]}
+                    onPress={handleOpenDrawer}
+                    activeOpacity={0.6}
+                    hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}>
+                <Svg
+                    width={38}
+                    height={38}
+                    viewBox="0 0 24 24"
+                    fill="none">
+                    <Path
+                        d="M4 6H20M4 12H14M4 18H9"
+                        stroke={colors.primary}
+                        strokeWidth={2.5}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                    />
+                </Svg>
+            </TouchableOpacity>
+
+            {/* Center - Masarra Logo */}
+            <View style={styles.logoContainer}>
+                {isLoading ? (
+                    <ActivityIndicator size="small" color={colors.primary} />
+                ) : error ? (
+                    <Image 
+                        source={require('../../imgs/MasarraLogo.png')} 
+                        style={styles.logoImage}
+                        resizeMode="contain"
+                    />
+                ) : siteSettings?.headerLogo ? (
+                    <Image 
+                        key={siteSettings.headerLogo}
+                        source={{ uri: getImageUrl(siteSettings.headerLogo) }} 
+                        style={styles.logoImage}
+                        resizeMode="contain"
+                    />
+                ) : (
+                    <Image 
+                        source={require('../../imgs/MasarraLogo.png')} 
+                        style={styles.logoImage}
+                        resizeMode="contain"
+                    />
+                )}
+            </View>
+
+            {/* Right - User Profile Icon */}
+            <TouchableOpacity 
+                style={styles.profileButton}
+                onPress={handleUserIconPress}
+                activeOpacity={0.6}
+                hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}>
+                {isLoggedIn && (currentProfilePicture || user?.profilePicture) ? (
+                    <Image 
+                        source={{ uri: getImageUrl(currentProfilePicture || user?.profilePicture || '') }} 
+                        style={styles.profileIcon}
+                        resizeMode="cover"
+                        onLoad={() => console.log('✅ Header profile image loaded')}
+                        onError={(e) => {
+                            console.error('❌ Header profile image failed:', e.nativeEvent.error);
+                            console.log('   Original URI:', currentProfilePicture || user?.profilePicture);
+                            console.log('   Full URL:', getImageUrl(currentProfilePicture || user?.profilePicture || ''));
+                        }}
+                    />
+                ) : (
+                    <Image 
+                        source={require('../../imgs/user.png')} 
+                        style={styles.profileIcon}
+                        resizeMode="contain"
+                    />
+                )}
+            </TouchableOpacity>
+        </View>
+
+        {/* Drawer Component */}
+        <Drawer 
+            isVisible={isDrawerVisible}
+            onClose={handleCloseDrawer}
+            onNavigate={handleNavigation}
+        />
+    </>
+    );
+};
+
+export default Header;
