@@ -31,7 +31,6 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
     
     // Subscribe to cart changes - update only when cart actually changes
     const unsubscribe = subscribeToCartChanges(() => {
-      console.log('🔔 Cart changed - updating count in BottomNavigation');
       loadCartCount();
     });
     
@@ -40,7 +39,6 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
   }, []);
   
   const handlePress = (route: string) => {
-    console.log('🧭 Bottom Nav:', route);
     if (onNavigate) {
       onNavigate(route);
     }

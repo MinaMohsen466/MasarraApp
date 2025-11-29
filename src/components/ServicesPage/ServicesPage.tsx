@@ -58,19 +58,11 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
             totalReviewsCount += reviewsData.stats.totalRatings;
           }
         } catch (error) {
-          console.log(`Error fetching reviews for ${service.name}:`, error);
+          // Silently handle error
         }
       }
 
       const averageRating = totalReviewsCount > 0 ? Math.round((totalRating / totalReviewsCount) * 10) / 10 : 0;
-      
-      console.log('📊 Vendor Rating from API:', {
-        vendorId,
-        totalServices: vendorServices.length,
-        totalReviewsCount,
-        averageRating
-      });
-
       setVendorRating({ rating: averageRating, totalReviews: totalReviewsCount });
     };
 
@@ -79,23 +71,17 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
 
   // Fetch vendor details when vendorId is provided
   useEffect(() => {
-    if (vendorId && !vendor) {
-      setLoadingVendor(true);
-      fetchVendors()
-        .then((vendors) => {
-          const found = vendors.find(v => v._id === vendorId);
-          if (found) {
-            setVendor(found);
-          }
-        })
-        .catch((err) => {
-          console.error('Error fetching vendor:', err);
-        })
-        .finally(() => {
-          setLoadingVendor(false);
-        });
-    }
-  }, [vendorId]);
+    if (!vendorId || vendor) return;
+    
+    setLoadingVendor(true);
+    fetchVendors()
+      .then((vendors) => {
+        const found = vendors.find(v => v._id === vendorId);
+        if (found) setVendor(found);
+      })
+      .catch(() => {})
+      .finally(() => setLoadingVendor(false));
+  }, [vendorId, vendor]);
 
   // Filter services by vendor or occasion
   const filteredServices = useMemo(() => {

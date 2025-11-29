@@ -52,21 +52,32 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
     const month = currentMonth.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-    // Check availability for each day in the month
-    for (let day = 1; day <= daysInMonth; day++) {
+    // Create array of all date checks to run in parallel
+    const dateChecks = Array.from({ length: daysInMonth }, (_, i) => {
+      const day = i + 1;
       const date = new Date(year, month, day);
       const dateKey = date.toISOString().split('T')[0];
       
-      try {
-        const result = await checkDateAvailability(serviceId, vendorId, date, token);
-        availabilityMap.set(dateKey, {
+      return checkDateAvailability(serviceId, vendorId, date, token)
+        .then(result => ({
+          dateKey,
           available: result.available,
           slots: result.slots,
-        });
-      } catch (error) {
-        console.error(`Error checking availability for ${dateKey}:`, error);
-      }
-    }
+        }))
+        .catch(() => ({
+          dateKey,
+          available: false,
+          slots: 0,
+        }));
+    });
+    
+    // Execute all checks in parallel for much faster loading
+    const results = await Promise.all(dateChecks);
+    
+    // Populate availability map
+    results.forEach(({ dateKey, available, slots }) => {
+      availabilityMap.set(dateKey, { available, slots });
+    });
 
     setAvailability(availabilityMap);
     setLoading(false);

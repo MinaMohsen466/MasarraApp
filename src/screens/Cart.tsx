@@ -159,16 +159,8 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onEdit, onNavigate }
   };
 
   const handleUserIconPress = () => {
-    if (isLoggedIn) {
-      console.log('👤 User logged in - Opening user profile page...');
-      if (onNavigate) {
-        onNavigate('profile');
-      }
-    } else {
-      console.log('🔐 User not logged in - Opening sign in page...');
-      if (onNavigate) {
-        onNavigate('auth');
-      }
+    if (onNavigate) {
+      onNavigate(isLoggedIn ? 'profile' : 'auth');
     }
   };
 
@@ -180,8 +172,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onEdit, onNavigate }
     setIsDrawerVisible(false);
   };
 
-  const handleNavigation = (route: string, title: string) => {
-    console.log('🧭 Navigation:', title, '→', route);
+  const handleNavigation = (route: string) => {
     if (onNavigate) {
       onNavigate(route.toLowerCase());
     }
