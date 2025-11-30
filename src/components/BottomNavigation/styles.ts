@@ -1,5 +1,8 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Dimensions } from 'react-native';
 import { colors } from '../../constants/colors';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const isTablet = SCREEN_WIDTH >= 600;
 
 export const styles = StyleSheet.create({
   container: {
@@ -12,9 +15,9 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-around',
     alignItems: 'center',
     backgroundColor: '#E8F0F0',
-    paddingVertical: 12,
+    paddingVertical: isTablet ? 16 : 12,
     paddingHorizontal: 16,
-    paddingBottom: 18,
+    paddingBottom: isTablet ? 24 : 18,
     borderTopWidth: 0,
     shadowColor: colors.shadow,
     shadowOffset: {
@@ -31,9 +34,9 @@ export const styles = StyleSheet.create({
   navItem: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    minWidth: 50,
+    paddingVertical: isTablet ? 12 : 8,
+    paddingHorizontal: isTablet ? 16 : 12,
+    minWidth: isTablet ? 70 : 50,
   },
   cartBadge: {
     position: 'absolute',

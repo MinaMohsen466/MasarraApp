@@ -325,10 +325,10 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
         translucent={false}
       />
   {/* Header background to extend into notch */}
-  <View style={[styles.headerBackground, { height: insets.top + 72 }]} />
+  <View style={[styles.headerBackground, { height: insets.top + 82 }]} />
 
   {/* Header */}
-  <View style={[styles.header, { height: insets.top + 72 }]}>
+  <View style={[styles.header, { height: insets.top + 82 }]}>
         {onBack && (
           <TouchableOpacity
             style={styles.backButton}

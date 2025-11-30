@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity, Alert, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Image, TouchableOpacity, Alert, Platform, ActivityIndicator, Dimensions } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -742,7 +742,10 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onEdit, onNavigate }
             onLayout={(e) => setSummaryHeight(e.nativeEvent.layout.height)}
             style={[
               styles.bottomSummary,
-              { bottom: (insets.bottom ?? 0) + 24, paddingBottom: (insets.bottom ?? 0) + 24 },
+              { 
+                bottom: (insets.bottom ?? 0) + 24, 
+                paddingBottom: Dimensions.get('window').width >= 600 ? (insets.bottom ?? 0) + 140 : (insets.bottom ?? 0) + 24,
+              },
             ]}>
             {/* Totals */}
             <View style={styles.summaryRow}>
@@ -899,6 +902,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingTop: 16,
+    paddingBottom: Dimensions.get('window').width >= 600 ? 120 : 80,
   },
   cartCard: {
     backgroundColor: colors.background,
@@ -1104,7 +1108,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    paddingBottom: 14,
+    paddingBottom: Dimensions.get('window').width >= 600 ? 140 : 14,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     /* remove shadow so bottom nav appears flush */

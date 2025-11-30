@@ -18,7 +18,7 @@ export const styles = StyleSheet.create({
   header: {
     backgroundColor: 'transparent',
     paddingHorizontal: 16,
-    paddingTop: 56,
+    paddingTop: 40,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

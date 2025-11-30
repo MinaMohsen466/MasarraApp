@@ -9,20 +9,13 @@ import { Platform } from 'react-native';
  */
 
 // 🔧 CHANGE THIS TO YOUR COMPUTER'S IP ADDRESS
-export const LOCAL_IP = 'localhost'; // or '192.168.1.127' for real devices
+export const LOCAL_IP = '192.168.1.127'; // Real device IP
 
 /**
  * Get the appropriate base URL based on platform
  */
 export const getBaseUrl = (): string => {
-  // Android emulator needs special IP to reach host machine
-  if (Platform.OS === 'android') {
-    // Use 10.0.2.2 for Android emulator, or LOCAL_IP for real device
-    // If you're testing on a real Android device, change this to LOCAL_IP
-    return `http://10.0.2.2:3000`;
-  }
-  
-  // iOS simulator can use localhost directly
+  // For real devices on the same network, use LOCAL_IP
   return `http://${LOCAL_IP}:3000`;
 };
 
@@ -57,12 +50,3 @@ export const getImageUrl = (imagePath: string): string => {
   // Otherwise, assume it's just a filename and add /public/ prefix
   return `${API_BASE_URL}/public/${imagePath}`;
 };
-
-// Log the configuration on load
-console.log('📡 API Configuration:', {
-  platform: Platform.OS,
-  LOCAL_IP,
-  API_BASE_URL,
-  API_URL,
-  ADMIN_URL
-});

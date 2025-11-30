@@ -50,26 +50,29 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
         return;
       }
 
-      const data = await getUserBookings(token);
+      const [data, settings] = await Promise.all([
+        getUserBookings(token),
+        getQRCodeSettings(token)
+      ]);
+
       // Sort by creation date, newest first
       const sortedBookings = data.sort((a, b) => 
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
       setBookings(sortedBookings);
       
-      // Check which bookings are allowed for QR code
-      const settings = await getQRCodeSettings(token);
-      const allowed = new Set<string>();
-      
+      // Check which bookings are allowed for QR code (in parallel)
       if (settings) {
-        for (const booking of sortedBookings) {
-          const canCreate = await canCreateQRCode(booking, settings, token);
-          if (canCreate) {
-            allowed.add(booking._id);
-          }
-        }
+        const promises = sortedBookings.map(booking =>
+          canCreateQRCode(booking, settings, token)
+            .then(canCreate => canCreate ? booking._id : null)
+            .catch(() => null)
+        );
+        
+        const results = await Promise.all(promises);
+        const allowed = new Set(results.filter(Boolean) as string[]);
+        setQrAllowedBookings(allowed);
       }
-      setQrAllowedBookings(allowed);
     } catch (error) {
       console.error('Error loading bookings:', error);
       Alert.alert(
@@ -79,6 +82,49 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
     } finally {
       setLoading(false);
     }
+  };
+
+  const getServiceName = (booking: Booking) => {
+    const service = booking.services[0]?.service;
+    if (!service) return isRTL ? 'خدمة' : 'Service';
+    
+    if (typeof service === 'string') return isRTL ? 'خدمة' : 'Service';
+    
+    return isRTL 
+      ? (service as any)?.nameAr || (service as any)?.name || 'خدمة'
+      : (service as any)?.name || (service as any)?.nameAr || 'Service';
+  };
+
+  const getServiceId = (booking: Booking) => {
+    const service = booking.services[0]?.service;
+    return typeof service === 'string' ? service : (service as any)?._id;
+  };
+
+  const getVendorName = (booking: Booking) => {
+    const vendor = booking.services[0]?.vendor;
+    if (!vendor) return isRTL ? 'مقدم الخدمة' : 'Vendor';
+    
+    if (typeof vendor !== 'object') return isRTL ? 'مقدم الخدمة' : 'Vendor';
+    
+    return isRTL 
+      ? (vendor as any)?.nameAr 
+        || (vendor as any)?.vendorProfile?.businessName_ar 
+        || (vendor as any)?.vendorProfile?.businessName
+        || (vendor as any)?.name 
+        || 'مقدم الخدمة'
+      : (vendor as any)?.name 
+        || (vendor as any)?.vendorProfile?.businessName
+        || (vendor as any)?.vendorProfile?.businessName_ar
+        || 'Vendor';
+  };
+
+  const getDescription = (booking: Booking) => {
+    const service = booking.services[0]?.service;
+    if (!service || typeof service === 'string') return isRTL ? 'لا يوجد وصف' : 'No description';
+    
+    return isRTL 
+      ? (service as any)?.descriptionAr || (service as any)?.description || 'لا يوجد وصف' 
+      : (service as any)?.description || (service as any)?.descriptionAr || 'No description';
   };
 
   const formatDate = (dateString: string) => {
@@ -131,14 +177,6 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
-  const handleViewDetails = (bookingId: string) => {
-    console.log('View details for booking:', bookingId);
-    if (onViewDetails) {
-      onViewDetails(bookingId);
-    }
-    // TODO: Navigate to booking details screen
-  };
-
   const handleQRCode = async (booking: Booking) => {
     try {
       const token = await AsyncStorage.getItem('userToken');
@@ -147,22 +185,13 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
         return;
       }
 
-      console.log('=== QR Code Check Started ===');
-      console.log('Booking:', booking);
-      
       const settings = await getQRCodeSettings(token);
-      console.log('🔧 Settings received:', settings);
-      console.log('🔧 Settings.allowedOccasions:', settings?.allowedOccasions);
-      console.log('🔧 Settings.allowedOccasions length:', settings?.allowedOccasions?.length);
-      
       if (!settings) {
         Alert.alert(isRTL ? 'خطأ' : 'Error', isRTL ? 'فشل تحميل الإعدادات' : 'Failed to load settings');
         return;
       }
 
       const canCreate = await canCreateQRCode(booking, settings, token);
-      console.log('Can create QR Code:', canCreate);
-      
       if (!canCreate) {
         Alert.alert(
           isRTL ? 'غير مسموح' : 'Not Allowed',
@@ -215,9 +244,9 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
   return (
     <View style={[styles.container, { position: 'relative' }]}>
       {/* header background to fill notch */}
-      <View style={[styles.headerBackground, { height: insets.top + 68 }]} />
+      <View style={[styles.headerBackground, { height: insets.top + 82 }]} />
 
-      <View style={[styles.header, { height: insets.top + 66 }]}>
+      <View style={[styles.header, { height: insets.top + 82 }]}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Text style={styles.backButtonText}>
             {isRTL ? '›' : '‹'}
@@ -246,15 +275,9 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
               {/* Service Name with Status Badge */}
               <View style={styles.cardHeader}>
                 <View style={styles.serviceNameContainer}>
-                  {booking.services.length > 0 && booking.services[0].service && (
-                    <Text style={styles.serviceName} numberOfLines={2}>
-                      {typeof booking.services[0].service === 'string' 
-                        ? (isRTL ? 'خدمة' : 'Service')
-                        : (isRTL 
-                          ? (booking.services[0].service as any)?.nameAr || (booking.services[0].service as any)?.name || 'خدمة'
-                          : (booking.services[0].service as any)?.name || (booking.services[0].service as any)?.nameAr || 'Service')}
-                    </Text>
-                  )}
+                  <Text style={styles.serviceName} numberOfLines={2}>
+                    {getServiceName(booking)}
+                  </Text>
                 </View>
                 <View style={[styles.statusBadge, { backgroundColor: getStatusColor(booking.status) }]}>
                   <Text style={styles.statusText}>{getStatusText(booking.status)}</Text>
@@ -262,17 +285,9 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
               </View>
 
               {/* Description */}
-              {booking.services.length > 0 && booking.services[0].service && typeof booking.services[0].service === 'object' ? (
-                <Text style={styles.description} numberOfLines={2}>
-                  {isRTL 
-                    ? (booking.services[0].service as any)?.descriptionAr || (booking.services[0].service as any)?.description || 'لا يوجد وصف' 
-                    : (booking.services[0].service as any)?.description || (booking.services[0].service as any)?.descriptionAr || 'No description available'}
-                </Text>
-              ) : (
-                <Text style={styles.description}>
-                  {isRTL ? 'لا يوجد وصف' : 'No description available'}
-                </Text>
-              )}
+              <Text style={styles.description} numberOfLines={2}>
+                {getDescription(booking)}
+              </Text>
 
               {/* Booking Info */}
               <View style={styles.infoRow}>
@@ -299,21 +314,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
               <View style={styles.infoRow}>
                 <Text style={styles.infoIcon}>👤</Text>
                 <Text style={styles.infoText}>
-                  {booking.services.length > 0 && booking.services[0].vendor && typeof booking.services[0].vendor === 'object'
-                    ? (isRTL 
-                        ? (booking.services[0].vendor as any)?.nameAr 
-                          || (booking.services[0].vendor as any)?.vendorProfile?.businessName_ar 
-                          || (booking.services[0].vendor as any)?.vendorProfile?.businessName
-                          || (booking.services[0].vendor as any)?.businessName
-                          || (booking.services[0].vendor as any)?.name 
-                          || 'مقدم الخدمة'
-                        : (booking.services[0].vendor as any)?.name 
-                          || (booking.services[0].vendor as any)?.vendorProfile?.businessName
-                          || (booking.services[0].vendor as any)?.businessName
-                          || (booking.services[0].vendor as any)?.vendorProfile?.businessName_ar
-                          || (booking.services[0].vendor as any)?.nameAr 
-                          || 'Vendor')
-                    : (isRTL ? 'مقدم الخدمة' : 'Vendor')}
+                  {getVendorName(booking)}
                 </Text>
               </View>
 
@@ -356,15 +357,9 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
                 <TouchableOpacity 
                   style={styles.actionButton}
                   onPress={() => {
-                    const service = booking.services[0]?.service;
-                    const serviceId = typeof service === 'string' ? service : service?._id;
-                    const serviceName = typeof service === 'string' 
-                      ? (isRTL ? 'خدمة' : 'Service')
-                      : (isRTL 
-                        ? service?.nameAr || service?.name || 'خدمة'
-                        : service?.name || service?.nameAr || 'Service');
+                    const serviceId = getServiceId(booking);
                     if (serviceId) {
-                      handleReview(booking._id, serviceId, serviceName);
+                      handleReview(booking._id, serviceId, getServiceName(booking));
                     }
                   }}
                 >

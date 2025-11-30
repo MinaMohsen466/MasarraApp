@@ -11,6 +11,7 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Alert,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -516,6 +517,7 @@ const styles = StyleSheet.create({
   messagesContent: {
     paddingVertical: 16,
     paddingHorizontal: 16,
+    paddingBottom: Dimensions.get('window').width >= 600 ? 80 : 16,
   },
   messageRow: {
     flexDirection: 'row',

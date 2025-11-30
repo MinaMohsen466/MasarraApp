@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image, ActivityIndicator, FlatList, StatusBar, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, Image, ActivityIndicator, FlatList, StatusBar, Platform, Dimensions } from 'react-native';
 import { styles } from './styles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -14,6 +14,8 @@ interface VendorsProps {
 
 const Vendors: React.FC<VendorsProps> = ({ onSelectVendor, onBack }) => {
   const { isRTL } = useLanguage();
+  const screenWidth = Dimensions.get('window').width;
+  const numColumns = screenWidth >= 600 ? 4 : 3;
   // removed useSafeAreaInsets to reduce extra top spacing on some devices
   const { data: vendors, isLoading, error } = useVendors();
 
@@ -78,10 +80,11 @@ const Vendors: React.FC<VendorsProps> = ({ onSelectVendor, onBack }) => {
         </View>
       ) : (
         <FlatList
+          key={numColumns}
           data={vendors}
           renderItem={renderVendorCard}
           keyExtractor={(item) => item._id}
-          numColumns={3}
+          numColumns={numColumns}
           contentContainerStyle={styles.gridContainer}
           columnWrapperStyle={[styles.row, isRTL && styles.rowRTL]}
           showsVerticalScrollIndicator={false}

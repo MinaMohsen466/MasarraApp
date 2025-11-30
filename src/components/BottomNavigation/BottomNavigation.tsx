@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity, Text } from 'react-native';
+import { View, TouchableOpacity, Text, Dimensions } from 'react-native';
 import Svg, { Path, Circle, G } from 'react-native-svg';
 import { styles } from './styles';
 import { colors } from '../../constants/colors';
@@ -17,6 +17,9 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
 }) => {
   const { language } = useLanguage();
   const isRTL = language === 'ar';
+  const screenWidth = Dimensions.get('window').width;
+  const isTablet = screenWidth >= 600;
+  const iconSize = isTablet ? 36 : 28;
   const [cartCount, setCartCount] = React.useState(0);
   
   // Load cart count and subscribe to changes
@@ -54,7 +57,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
         style={styles.navItem}
         onPress={() => handlePress('home')}
         activeOpacity={0.7}>
-        <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
+        <Svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none">
           <Path
             d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z"
             stroke={colors.primary}
@@ -78,7 +81,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
         style={styles.navItem}
         onPress={() => handlePress('search')}
         activeOpacity={0.7}>
-        <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
+        <Svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none">
           <Circle
             cx="11"
             cy="11"
@@ -103,7 +106,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
         style={styles.navItem}
         onPress={() => handlePress('categories')}
         activeOpacity={0.7}>
-        <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
+        <Svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none">
           <G>
             <Path
               d="M3 3H10V10H3V3Z"
@@ -146,7 +149,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
         style={styles.navItem}
         onPress={() => handlePress('vendors')}
         activeOpacity={0.7}>
-        <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
+        <Svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none">
           <Path
             d="M3 9L4 4H20L21 9"
             stroke={colors.primary}
@@ -206,7 +209,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
         onPress={() => handlePress('cart')}
         activeOpacity={0.7}>
         <View>
-          <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
+          <Svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none">
             <Path
               d="M9 2L7 6"
               stroke={colors.primary}

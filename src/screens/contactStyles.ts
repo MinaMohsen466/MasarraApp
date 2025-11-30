@@ -1,5 +1,8 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Dimensions } from 'react-native';
 import { colors } from '../constants/colors';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const isTablet = SCREEN_WIDTH >= 600;
 
 export const styles = StyleSheet.create({
   fullPageContainer: {
@@ -63,7 +66,7 @@ export const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 16,
-    paddingBottom: 24,
+    paddingBottom: isTablet ? 120 : 24,
   },
 
   // Intro Section

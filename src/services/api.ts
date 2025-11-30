@@ -550,12 +550,43 @@ export const checkDateAvailability = async (
   token?: string
 ): Promise<{ available: boolean; bookingsCount: number; slots: number }> => {
   try {
-    // Fetch service details to get working hours and calculate total slots
-    const serviceResponse = await fetch(`${BASE_URL}/api/services/${serviceId}`);
-    if (!serviceResponse.ok) {
-      throw new Error('Failed to fetch service details');
+    // Cache service details لتجنب طلبات متكررة
+    const cacheKey = `service-${serviceId}`;
+    let service: any;
+    
+    // تحقق من الـ cache أولاً
+    const cachedService = (global as any).__serviceCache?.[cacheKey];
+    if (cachedService && Date.now() - cachedService.timestamp < 5 * 60 * 1000) { // 5 minutes cache
+      service = cachedService.data;
+    } else {
+      // Fetch service details مع timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      
+      try {
+        const serviceResponse = await fetch(`${BASE_URL}/api/services/${serviceId}`, {
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        
+        if (!serviceResponse.ok) {
+          throw new Error('Failed to fetch service details');
+        }
+        service = await serviceResponse.json();
+        
+        // حفظ في الـ cache
+        if (!((global as any).__serviceCache)) {
+          (global as any).__serviceCache = {};
+        }
+        (global as any).__serviceCache[cacheKey] = {
+          data: service,
+          timestamp: Date.now()
+        };
+      } catch (error) {
+        clearTimeout(timeoutId);
+        throw error;
+      }
     }
-    const service = await serviceResponse.json();
     
     // Extract configuration from service
     const workingHours = service.workingHours || { start: '09:00', end: '17:00' };
@@ -577,55 +608,61 @@ export const checkDateAvailability = async (
     const totalMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
     const totalSlotsPerDay = Math.floor(totalMinutes / timeSlotDuration);
     
-    console.log('📊 Date availability check:', {
-      date: date.toISOString().split('T')[0],
-      workingHours,
-      timeSlotDuration,
-      totalMinutes,
-      totalSlotsPerDay
-    });
-    
     // Fetch bookings from backend API for this specific date and service
     const dateStr = date.toISOString().split('T')[0];
-    console.log('📅 Fetching availability for service:', serviceId, 'on date:', dateStr);
     
-    const response = await fetch(
-      `${BASE_URL}/api/bookings/available-timeslots?serviceId=${serviceId}&date=${dateStr}`,
-      {
-        headers: token ? {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        } : {
-          'Content-Type': 'application/json'
+    // مع timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+    
+    try {
+      const response = await fetch(
+        `${BASE_URL}/api/bookings/available-timeslots?serviceId=${serviceId}&date=${dateStr}`,
+        {
+          signal: controller.signal,
+          headers: token ? {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          } : {
+            'Content-Type': 'application/json'
+          }
         }
+      );
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        console.error('❌ Failed to fetch availability:', response.status);
+        // Fallback: assume all slots available
+        return {
+          available: true,
+          bookingsCount: 0,
+          slots: totalSlotsPerDay
+        };
       }
-    );
 
-    if (!response.ok) {
-      console.error('❌ Failed to fetch availability:', response.status);
-      // Fallback: assume all slots available
+      const availabilityData = await response.json();
+
+      // Use allSlots array from the API response
+      const allSlots = availabilityData.allSlots || availabilityData.availableSlots || [];
+      
+      // Count available slots
+      const availableSlots = allSlots.filter((slot: any) => slot.isAvailable !== false).length;
+      const bookedSlots = allSlots.length - availableSlots;
+
       return {
-        available: true,
-        bookingsCount: 0,
-        slots: totalSlotsPerDay
+        available: availableSlots > 0,
+        bookingsCount: bookedSlots,
+        slots: availableSlots,
       };
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.warn('⏱️ Date availability request timeout');
+        return { available: true, bookingsCount: 0, slots: totalSlotsPerDay };
+      }
+      clearTimeout(timeoutId);
+      throw error;
     }
-
-    const availabilityData = await response.json();
-    console.log('📊 Availability data:', availabilityData);
-
-    // Use allSlots array from the API response
-    const allSlots = availabilityData.allSlots || availabilityData.availableSlots || [];
-    
-    // Count available slots
-    const availableSlots = allSlots.filter((slot: any) => slot.isAvailable !== false).length;
-    const bookedSlots = allSlots.length - availableSlots;
-
-    return {
-      available: availableSlots > 0,
-      bookingsCount: bookedSlots,
-      slots: availableSlots,
-    };
   } catch (error) {
     console.error('Error checking date availability:', error);
     return { available: true, bookingsCount: 0, slots: 10 }; // Default to available on error

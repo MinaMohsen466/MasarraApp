@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   StyleSheet,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -252,6 +253,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 20,
+    paddingBottom: Dimensions.get('window').width >= 600 ? 120 : 20,
   },
   serviceNameContainer: {
     backgroundColor: '#F5F5F5',

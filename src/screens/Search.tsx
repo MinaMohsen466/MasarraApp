@@ -8,6 +8,7 @@ import {
   Image,
   ActivityIndicator,
   StyleSheet,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -374,6 +375,7 @@ const styles = StyleSheet.create({
   },
   resultsList: {
     paddingVertical: 8,
+    paddingBottom: Dimensions.get('window').width >= 600 ? 120 : 80,
   },
   resultItem: {
     flexDirection: 'row',

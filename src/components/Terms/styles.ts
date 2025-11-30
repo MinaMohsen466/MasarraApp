@@ -75,15 +75,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 32,
     paddingBottom: 100,
-    minHeight: 400,
-    shadowColor: colors.shadow,
-    shadowOffset: {
-      width: 0,
-      height: -4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 8,
+    minHeight: '100%',
   },
   contentText: {
     fontSize: 16,

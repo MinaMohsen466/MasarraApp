@@ -13,7 +13,6 @@ import { toggleWishlist, isWishlisted, WishlistItem } from '../../services/wishl
 import { addToCart, CartItem } from '../../services/cart';
 import DatePickerModal from '../DatePickerModal/DatePickerModal';
 import TimePickerModal from '../TimePickerModal/TimePickerModal';
-import ChatConversation from '../../screens/ChatConversation';
 import AllReviews from '../../screens/AllReviews';
 import { getServiceReviews, Review, ReviewStats } from '../../services/reviewsApi';
 
@@ -52,8 +51,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
   // State to control custom inputs expansion
   const [showCustomInputs, setShowCustomInputs] = useState(false);
   
-  // Chat state
-  const [showChat, setShowChat] = useState(false);
+
   // State for decoration option and more info
   const [showDecorationOption, setShowDecorationOption] = useState(false);
   const [moreInfoText, setMoreInfoText] = useState('');
@@ -373,11 +371,6 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
               <Path d="M15 18l-6-6 6-6" stroke={colors.primary} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
             </Svg>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => setShowChat(true)} activeOpacity={0.7} style={[styles.actionButton, styles.actionButtonLarge]} accessibilityLabel="Chat">
-            <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-              <Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke={colors.primary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
-            </Svg>
-          </TouchableOpacity>
         </View>
 
         <View style={styles.actionsRight}>
@@ -440,7 +433,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
 
   <ScrollView
     showsVerticalScrollIndicator={false}
-    contentContainerStyle={{ paddingTop: fixedHeight, paddingBottom: insets.bottom + 180 }}>
+    contentContainerStyle={{ paddingTop: fixedHeight, paddingBottom: SCREEN_WIDTH >= 600 ? insets.bottom + 280 : insets.bottom + 180 }}>
 
         {/* Image Carousel */}
         {service.images && service.images.length > 0 && (
@@ -926,7 +919,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
       </ScrollView>
 
       {/* Bottom Action Buttons */}
-      <View style={[styles.bottomActions, { paddingBottom: insets.bottom + 60 }]}>
+      <View style={[styles.bottomActions, { paddingBottom: SCREEN_WIDTH >= 600 ? insets.bottom + 120 : insets.bottom + 60 }]}>
         <TouchableOpacity
           ref={addToCartButtonRef}
           style={[
@@ -1178,19 +1171,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
         />
       )}
 
-      {/* Chat Modal */}
-      <Modal
-        visible={showChat}
-        animationType="slide"
-        presentationStyle="fullScreen"
-        onRequestClose={() => setShowChat(false)}>
-        <ChatConversation 
-          onBack={() => setShowChat(false)} 
-          vendorId={service?.vendor?._id || ''} 
-          vendorName={service?.vendor?.name}
-          vendorImage={(service?.vendor as any)?.profilePicture}
-        />
-      </Modal>
+
 
       {/* All Reviews Modal */}
       {reviewStats && (

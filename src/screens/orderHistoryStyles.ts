@@ -1,5 +1,8 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Dimensions } from 'react-native';
 import { colors } from '../constants/colors';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const isTablet = SCREEN_WIDTH >= 600;
 
 export const orderHistoryStyles = StyleSheet.create({
   container: {
@@ -22,7 +25,7 @@ export const orderHistoryStyles = StyleSheet.create({
     // vertical padding removed; header height is controlled by JS (insets.top + 56)
     backgroundColor: 'transparent',
     zIndex: 1,
-    marginTop: 24,
+    marginTop: 16,
   },
   backButton: {
     width: 40,
@@ -58,7 +61,7 @@ export const orderHistoryStyles = StyleSheet.create({
     backgroundColor: colors.backgroundLight,
   },
   scrollContent: {
-    paddingBottom: 50,
+    paddingBottom: isTablet ? 120 : 50,
   },
   emptyContainer: {
     flex: 1,

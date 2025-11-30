@@ -40,9 +40,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
             {siteSettings?.siteTitle || 'MASARRA'}
           </Text>
         )}
-        
-        <Text style={styles.title}>MASARRA</Text>
-        <Text style={styles.subtitle}>YOUR OCCASION ON US</Text>
       </View>
     </View>
   );

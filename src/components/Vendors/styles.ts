@@ -2,7 +2,8 @@ import { StyleSheet, Dimensions } from 'react-native';
 import { colors } from '../../constants/colors';
 
 const { width } = Dimensions.get('window');
-const cardWidth = (width - 64) / 3; // 3 columns with proper margins
+const isTablet = width >= 600;
+const cardWidth = isTablet ? (width - 120) / 4 : (width - 64) / 3; // 4 columns on tablet, 3 on mobile
 
 export const styles = StyleSheet.create({
   container: {
@@ -36,7 +37,7 @@ export const styles = StyleSheet.create({
     fontWeight: '300',
   },
   title: {
-    fontSize: 20,
+    fontSize: isTablet ? 20 : 18,
     fontWeight: '700',
     color: colors.primary,
     letterSpacing: 1,
@@ -48,8 +49,8 @@ export const styles = StyleSheet.create({
     width: 40,
   },
   gridContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: isTablet ? 40 : 16,
+    paddingVertical: isTablet ? 28 : 16,
   },
   row: {
     justifyContent: 'center',
@@ -70,9 +71,9 @@ export const styles = StyleSheet.create({
     width: cardWidth - 16,
     height: cardWidth - 16,
     backgroundColor: colors.primary,
-    borderRadius: 16,
+    borderRadius: isTablet ? 20 : 16,
     overflow: 'hidden',
-    marginBottom: 8,
+    marginBottom: isTablet ? 12 : 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -86,11 +87,11 @@ export const styles = StyleSheet.create({
     color: colors.textWhite,
   },
   vendorName: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: isTablet ? 14 : 12,
+    fontWeight: isTablet ? '700' : '600',
     color: colors.textDark,
     textAlign: 'center',
-    marginTop: 2,
+    marginTop: isTablet ? 4 : 2,
   },
   vendorNameRTL: {
     writingDirection: 'rtl',

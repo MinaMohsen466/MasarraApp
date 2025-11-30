@@ -7,6 +7,7 @@ import {
   Image,
   StyleSheet,
   Platform,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -51,7 +52,11 @@ const AllReviews: React.FC<AllReviewsProps> = ({
         <View style={styles.placeholder} />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingBottom: Dimensions.get('window').width >= 600 ? 120 : 20,
+        }}>
         {/* Service Name */}
         <View style={styles.serviceNameContainer}>
           <Text style={[styles.serviceName, isRTL && styles.serviceNameRTL]}>
@@ -259,7 +264,7 @@ const styles = StyleSheet.create({
   },
   starsText: {
     fontSize: 18,
-    color: '#FDB022',
+    color: colors.primary,
     marginTop: 4,
   },
   totalReviews: {
@@ -292,7 +297,7 @@ const styles = StyleSheet.create({
   },
   distributionFill: {
     height: '100%',
-    backgroundColor: '#FDB022',
+    backgroundColor: colors.primary,
     borderRadius: 4,
   },
   distributionCount: {
@@ -387,7 +392,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   ratingBadge: {
-    backgroundColor: '#FDB022',
+    backgroundColor: colors.primary,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,

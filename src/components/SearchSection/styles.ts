@@ -1,11 +1,15 @@
 import { StyleSheet } from 'react-native';
 import { colors } from '../../constants/colors';
+import { Dimensions } from 'react-native';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const isTablet = SCREEN_WIDTH >= 600;
 
 export const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 24,
-    paddingVertical: 20,
-    borderRadius: 20,
+    paddingHorizontal: isTablet ? 40 : 24,
+    paddingVertical: isTablet ? 28 : 20,
+    borderRadius: isTablet ? 24 : 20,
     marginHorizontal: 2,
     marginTop: 8,
     marginBottom: 8,
@@ -14,10 +18,10 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.background,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    marginBottom: 12,
+    borderRadius: isTablet ? 14 : 12,
+    paddingHorizontal: isTablet ? 20 : 16,
+    paddingVertical: isTablet ? 18 : 14,
+    marginBottom: isTablet ? 16 : 12,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -26,12 +30,18 @@ export const styles = StyleSheet.create({
   },
   iconWrapper: {
     marginRight: 12,
+    width: isTablet ? 32 : 28,
+    height: isTablet ? 32 : 28,
+    backgroundColor: colors.primary,
+    borderRadius: isTablet ? 7 : 6,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   calendarIcon: {
-    width: 28,
-    height: 28,
+    width: isTablet ? 32 : 28,
+    height: isTablet ? 32 : 28,
     backgroundColor: colors.primary,
-    borderRadius: 6,
+    borderRadius: isTablet ? 7 : 6,
     overflow: 'hidden',
   },
   calendarTop: {
@@ -49,11 +59,11 @@ export const styles = StyleSheet.create({
     fontWeight: '700',
   },
   gridIcon: {
-    width: 28,
-    height: 28,
+    width: isTablet ? 32 : 28,
+    height: isTablet ? 32 : 28,
     backgroundColor: colors.primary,
-    borderRadius: 6,
-    padding: 4,
+    borderRadius: isTablet ? 7 : 6,
+    padding: isTablet ? 5 : 4,
     justifyContent: 'space-between',
   },
   gridRow: {
@@ -69,7 +79,7 @@ export const styles = StyleSheet.create({
   },
   inputText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: isTablet ? 16 : 15,
     color: colors.textDark,
     fontWeight: '500',
   },
@@ -92,8 +102,8 @@ export const styles = StyleSheet.create({
   },
   searchButton: {
     backgroundColor: colors.primaryDark,
-    borderRadius: 12,
-    paddingVertical: 16,
+    borderRadius: isTablet ? 14 : 12,
+    paddingVertical: isTablet ? 20 : 16,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 4,
@@ -102,13 +112,13 @@ export const styles = StyleSheet.create({
       width: 0,
       height: 4,
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOpacity: isTablet ? 0.35 : 0.3,
+    shadowRadius: isTablet ? 10 : 8,
+    elevation: isTablet ? 6 : 5,
   },
   searchButtonText: {
     color: colors.textWhite,
-    fontSize: 16,
+    fontSize: isTablet ? 17 : 16,
     fontWeight: '700',
     letterSpacing: 1.2,
   },

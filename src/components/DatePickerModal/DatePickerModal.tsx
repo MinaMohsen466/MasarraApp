@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, TouchableOpacity, Modal, ScrollView, ActivityIndicator } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { styles } from './styles';
@@ -16,6 +16,9 @@ interface DatePickerModalProps {
   token?: string;
 }
 
+// Cache للبيانات المحملة بالفعل
+const availabilityCache = new Map<string, Map<string, { available: boolean; slots: number }>>();
+
 const DatePickerModal: React.FC<DatePickerModalProps> = ({
   visible,
   onClose,
@@ -29,6 +32,7 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [availability, setAvailability] = useState<Map<string, { available: boolean; slots: number }>>(new Map());
   const [loading, setLoading] = useState(false);
+  const loadingRef = useRef(false);
 
   const monthNames = isRTL
     ? ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر']
@@ -38,49 +42,85 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
     ? ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت']
     : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+  // Memoize cache key لتجنب re-renders غير ضرورية
+  const cacheKey = useMemo(() => {
+    return `${serviceId}-${vendorId}-${currentMonth.getFullYear()}-${currentMonth.getMonth()}`;
+  }, [serviceId, vendorId, currentMonth]);
+
   useEffect(() => {
     if (visible) {
-      loadAvailability();
+      // تحقق من الـ cache أولاً
+      if (availabilityCache.has(cacheKey)) {
+        setAvailability(availabilityCache.get(cacheKey)!);
+        setLoading(false);
+      } else {
+        loadAvailability();
+      }
     }
-  }, [visible, currentMonth, serviceId, vendorId]);
+  }, [visible, cacheKey]);
 
   const loadAvailability = async () => {
+    // تجنب multiple simultaneous requests
+    if (loadingRef.current) return;
+    
+    loadingRef.current = true;
     setLoading(true);
-    const availabilityMap = new Map();
     
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-    // Create array of all date checks to run in parallel
-    const dateChecks = Array.from({ length: daysInMonth }, (_, i) => {
-      const day = i + 1;
-      const date = new Date(year, month, day);
-      const dateKey = date.toISOString().split('T')[0];
+    try {
+      const availabilityMap = new Map();
       
-      return checkDateAvailability(serviceId, vendorId, date, token)
-        .then(result => ({
-          dateKey,
-          available: result.available,
-          slots: result.slots,
-        }))
-        .catch(() => ({
-          dateKey,
-          available: false,
-          slots: 0,
-        }));
-    });
-    
-    // Execute all checks in parallel for much faster loading
-    const results = await Promise.all(dateChecks);
-    
-    // Populate availability map
-    results.forEach(({ dateKey, available, slots }) => {
-      availabilityMap.set(dateKey, { available, slots });
-    });
+      const year = currentMonth.getFullYear();
+      const month = currentMonth.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-    setAvailability(availabilityMap);
-    setLoading(false);
+      // تحميل الأيام بشكل تدريجي في مجموعات (5 أيام في كل مجموعة)
+      const batchSize = 5;
+      const batches = [];
+      
+      for (let i = 0; i < daysInMonth; i += batchSize) {
+        const batchEnd = Math.min(i + batchSize, daysInMonth);
+        const batch = Array.from({ length: batchEnd - i }, (_, idx) => {
+          const day = i + idx + 1;
+          const date = new Date(year, month, day);
+          
+          // تخطي الأيام الماضية
+          if (date < today) {
+            const dateKey = date.toISOString().split('T')[0];
+            return Promise.resolve({ dateKey, available: false, slots: 0 });
+          }
+          
+          return checkDateAvailability(serviceId, vendorId, date, token)
+            .then(result => {
+              const dateKey = date.toISOString().split('T')[0];
+              return { dateKey, available: result.available, slots: result.slots };
+            })
+            .catch(() => {
+              const dateKey = date.toISOString().split('T')[0];
+              return { dateKey, available: false, slots: 0 };
+            });
+        });
+        
+        batches.push(batch);
+      }
+
+      // معالجة المجموعات بالتتابع مع تحديث الحالة تدريجياً
+      for (const batch of batches) {
+        const results = await Promise.all(batch);
+        results.forEach(({ dateKey, available, slots }) => {
+          availabilityMap.set(dateKey, { available, slots });
+        });
+        // تحديث الحالة بعد كل مجموعة للعرض التدريجي
+        setAvailability(new Map(availabilityMap));
+      }
+
+      // حفظ في الـ cache
+      availabilityCache.set(cacheKey, availabilityMap);
+      setLoading(false);
+    } finally {
+      loadingRef.current = false;
+    }
   };
 
   const getDaysInMonth = () => {
@@ -105,6 +145,9 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
 
     return days;
   };
+
+  // Memoize أيام الشهر لتجنب إعادة الحساب
+  const memoizedDays = useMemo(() => getDaysInMonth(), [currentMonth]);
 
   const handlePrevMonth = () => {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
@@ -134,7 +177,7 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
     return date < today;
   };
 
-  const days = getDaysInMonth();
+  const days = memoizedDays;
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>

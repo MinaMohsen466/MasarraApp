@@ -234,10 +234,6 @@ const Drawer: React.FC<DrawerProps> = ({
                   />
                 )}
               </View>
-              <Text style={styles.logoText}>
-                {siteSettings?.siteTitle?.toUpperCase() || t('appName').toUpperCase()}
-              </Text>
-              <Text style={styles.taglineText}>{t('tagline').toUpperCase()}</Text>
             </View>
             
           </View>

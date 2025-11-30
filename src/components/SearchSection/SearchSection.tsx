@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
+import Svg, { Path, Circle } from 'react-native-svg';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { styles } from './styles';
+import { colors } from '../../constants/colors';
 import { Occasion } from '../../services/api';
 import OccasionSelector from './OccasionSelector';
 import DateSelector from './DateSelector';
@@ -61,16 +63,10 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearch, onSelectOccasio
         activeOpacity={0.7}
         onPress={() => setShowOccasionModal(true)}>
         <View style={styles.iconWrapper}>
-          <View style={styles.gridIcon}>
-            <View style={styles.gridRow}>
-              <View style={styles.gridSquare} />
-              <View style={styles.gridSquare} />
-            </View>
-            <View style={styles.gridRow}>
-              <View style={styles.gridSquare} />
-              <View style={styles.gridSquare} />
-            </View>
-          </View>
+          <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
+            {/* Clean Grid Icon - 2x2 squares with proper spacing */}
+            <Path d="M4 4h6v6H4V4zM14 4h6v6h-6V4zM4 14h6v6H4v-6zM14 14h6v6h-6v-6z" fill={colors.textWhite} />
+          </Svg>
         </View>
         <Text style={[styles.inputText, isRTL && styles.inputTextRTL]}>
           {selectedOccasion 

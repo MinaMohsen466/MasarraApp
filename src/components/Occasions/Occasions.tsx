@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, TouchableOpacity, FlatList, Image, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, Image, ActivityIndicator, Dimensions } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { styles } from './styles';
 import { colors } from '../../constants/colors';
@@ -19,6 +19,8 @@ const Occasions: React.FC<OccasionsProps> = ({
 }) => {
   const { isRTL, t } = useLanguage();
   const { data: occasions, isLoading, error } = useOccasions();
+  const screenWidth = Dimensions.get('window').width;
+  const numColumns = screenWidth >= 600 ? 4 : 3;
 
   useEffect(() => {
     console.log('📋 Occasions data:', occasions);
@@ -126,10 +128,11 @@ const Occasions: React.FC<OccasionsProps> = ({
 
       {/* Occasions List */}
       <FlatList
+        key={numColumns}
         data={occasions}
         renderItem={renderOccasionCard}
         keyExtractor={(item) => item._id}
-        numColumns={3}
+        numColumns={numColumns}
         columnWrapperStyle={[styles.row, isRTL && styles.rowRTL]}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
