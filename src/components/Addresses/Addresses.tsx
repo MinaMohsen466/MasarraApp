@@ -18,7 +18,6 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({ o
         const data = await fetchAddresses(token);
         setAddresses(data);
       } catch (err) {
-        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -43,7 +42,6 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({ o
       setForm({ name: '', street: '', houseNumber: '', floorNumber: '', city: '' });
       setEditingId(null);
     } catch (err) {
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -69,7 +67,6 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({ o
       await deleteAddress(token, id);
       setAddresses(prev => prev.filter(a => a._id !== id));
     } catch (err) {
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -85,7 +82,6 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({ o
       const data = await fetchAddresses(token);
       setAddresses(data);
     } catch (err) {
-      console.error(err);
     } finally {
       setLoading(false);
     }

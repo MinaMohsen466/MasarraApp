@@ -43,7 +43,7 @@ function notifyCartChange(): void {
     try {
       listener();
     } catch (error) {
-      console.error('Error in cart change listener:', error);
+      // Error handling for cart change listener
     }
   });
 }
@@ -53,7 +53,6 @@ async function getAuthToken(): Promise<string | null> {
   try {
     return await AsyncStorage.getItem('userToken');
   } catch (e) {
-    console.warn('getAuthToken error', e);
     return null;
   }
 }
@@ -78,7 +77,7 @@ async function getUserId(): Promise<string> {
           return id;
         }
       } catch (parseError) {
-        console.warn('Failed to parse userData:', parseError);
+        // Failed to parse userData
       }
     }
     
@@ -90,10 +89,8 @@ async function getUserId(): Promise<string> {
     }
     
     // User appears to be logged in but no userId found - this is unexpected
-    console.warn('⚠️ UserId not found for logged-in user, using guest cart');
     return 'guest';
   } catch (e) {
-    console.error('getUserId error', e);
     return 'guest';
   }
 }
@@ -110,7 +107,6 @@ export async function getCart(): Promise<CartItem[]> {
     // Check if user is logged in
     const token = await getAuthToken();
     if (!token) {
-      console.log('📦 No auth token - returning empty cart');
       return [];
     }
     
@@ -136,10 +132,8 @@ export async function getCart(): Promise<CartItem[]> {
     cartCache = items;
     cacheUserId = userId;
     
-    console.log('📦 Loaded cart from storage:', items.length, 'items for user', userId);
     return items;
   } catch (e) {
-    console.error('getCart error', e);
     return [];
   }
 }
@@ -155,12 +149,9 @@ async function saveCart(items: CartItem[]): Promise<void> {
     cartCache = items;
     cacheUserId = userId;
     
-    console.log('💾 Saved cart to storage:', items.length, 'items for user', userId);
-    
     // Notify all listeners that cart has changed
     notifyCartChange();
   } catch (e) {
-    console.error('saveCart error', e);
     throw new Error('Failed to save cart');
   }
 }
@@ -212,10 +203,8 @@ export async function addToCart(item: CartItem): Promise<CartItem[]> {
     }
 
     await saveCart(currentCart);
-    console.log('✅ Added to cart:', cartItem.name);
     return currentCart;
   } catch (e) {
-    console.error('addToCart error', e);
     throw e;
   }
 }
@@ -226,10 +215,8 @@ export async function removeFromCart(cartItemId: string): Promise<CartItem[]> {
     const currentCart = await getCart();
     const updatedCart = currentCart.filter(item => item._id !== cartItemId);
     await saveCart(updatedCart);
-    console.log('🗑️ Removed from cart:', cartItemId);
     return updatedCart;
   } catch (e) {
-    console.error('removeFromCart error', e);
     throw e;
   }
 }
@@ -247,12 +234,10 @@ export async function updateCartItemQuantity(cartItemId: string, quantity: numbe
     if (itemIndex !== -1) {
       currentCart[itemIndex].quantity = quantity;
       await saveCart(currentCart);
-      console.log('📝 Updated quantity:', cartItemId, '→', quantity);
     }
     
     return currentCart;
   } catch (e) {
-    console.error('updateCartItemQuantity error', e);
     throw e;
   }
 }
@@ -266,14 +251,11 @@ export async function clearCart(): Promise<CartItem[]> {
     // Clear cache
     cartCache = [];
     
-    console.log('🧹 Cleared cart for current user');
-    
     // Notify listeners
     notifyCartChange();
     
     return [];
   } catch (e) {
-    console.error('clearCart error', e);
     throw e;
   }
 }
@@ -282,7 +264,6 @@ export async function clearCart(): Promise<CartItem[]> {
 export function clearCartCache(): void {
   cartCache = null;
   cacheUserId = null;
-  console.log('🗑️ Cart cache cleared');
 }
 
 // Clear all cart data for current user (storage + cache)
@@ -292,10 +273,9 @@ export async function clearUserCart(): Promise<void> {
     await AsyncStorage.removeItem(storageKey);
     cartCache = null;
     cacheUserId = null;
-    console.log('🗑️ User cart cleared from storage');
     notifyCartChange();
   } catch (e) {
-    console.error('clearUserCart error', e);
+    // Error clearing user cart
   }
 }
 
@@ -321,8 +301,6 @@ export async function checkCartAvailability(): Promise<{
 
     const cartItems = await getCart();
     const unavailableItems: Array<{ item: CartItem; reason: string }> = [];
-
-    console.log('🔍 Checking availability for', cartItems.length, 'cart items...');
 
     for (const item of cartItems) {
       try {
@@ -355,7 +333,6 @@ export async function checkCartAvailability(): Promise<{
             item,
             reason: 'Time slot no longer available'
           });
-          console.log('❌', item.name, '-', item.selectedTime, '- Slot not found');
           continue;
         }
 
@@ -364,13 +341,10 @@ export async function checkCartAvailability(): Promise<{
             item,
             reason: `Time slot fully booked (${matchingSlot.bookingsCount} bookings)`
           });
-          console.log('❌', item.name, '-', item.selectedTime, '- Fully booked');
           continue;
         }
 
-        console.log('✅', item.name, '-', item.selectedTime, '- Available');
       } catch (error) {
-        console.error('Error checking item availability:', error);
         unavailableItems.push({
           item,
           reason: 'Error checking availability'
@@ -379,14 +353,12 @@ export async function checkCartAvailability(): Promise<{
     }
 
     const allAvailable = unavailableItems.length === 0;
-    console.log(allAvailable ? '✅ All items available' : `⚠️ ${unavailableItems.length} items unavailable`);
 
     return {
       available: allAvailable,
       unavailableItems
     };
   } catch (e) {
-    console.error('checkCartAvailability error', e);
     throw e;
   }
 }
@@ -406,8 +378,6 @@ export async function createBookingsFromCart(address?: string): Promise<{
     const cartItems = await getCart();
     const bookings: any[] = [];
     const errors: any[] = [];
-
-    console.log('📝 Creating', cartItems.length, 'bookings in backend...');
 
     for (const item of cartItems) {
       try {
@@ -433,10 +403,6 @@ export async function createBookingsFromCart(address?: string): Promise<{
           specialRequests: item.moreInfo || ''
         };
         
-        console.log('📤 Sending booking request for:', item.name);
-        console.log('   Address received:', address);
-        console.log('   Data:', JSON.stringify(bookingData, null, 2));
-        
         const response = await fetch(`${API_BASE_URL}/bookings`, {
           method: 'POST',
           headers: {
@@ -454,7 +420,6 @@ export async function createBookingsFromCart(address?: string): Promise<{
             error = await response.json();
           } else {
             const text = await response.text();
-            console.error('❌ Non-JSON response:', text.substring(0, 200));
             error = { message: 'Server error - received HTML instead of JSON' };
           }
           
@@ -462,22 +427,17 @@ export async function createBookingsFromCart(address?: string): Promise<{
             item,
             error: error.message || 'Failed to create booking'
           });
-          console.error('❌ Failed to create booking for:', item.name, error.message);
         } else {
           const booking = await response.json();
           bookings.push(booking);
-          console.log('✅ Created booking for:', item.name);
         }
       } catch (error: any) {
         errors.push({
           item,
           error: error.message || 'Network error'
         });
-        console.error('❌ Error creating booking for:', item.name, error);
       }
     }
-
-    console.log(`📊 Results: ${bookings.length} successful, ${errors.length} failed`);
 
     return {
       success: errors.length === 0,
@@ -485,7 +445,6 @@ export async function createBookingsFromCart(address?: string): Promise<{
       errors
     };
   } catch (e) {
-    console.error('createBookingsFromCart error', e);
     throw e;
   }
 }

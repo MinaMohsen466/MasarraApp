@@ -14,8 +14,6 @@ import UserProfile from '../components/UserProfile';
 import { useAuth } from '../contexts/AuthContext';
 import { styles } from './styles';
 
-// const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
 interface HomeProps {
   onNavigate?: (route: string) => void;
   currentRoute?: string;
@@ -31,23 +29,16 @@ const Home: React.FC<HomeProps> = ({ onNavigate, currentRoute, onSelectService, 
   const [showAuth, setShowAuth] = useState(false);
   const [showUserProfile, setShowUserProfile] = useState(false);
 
-  // Check if there are any featured services
   const hasFeaturedServices = services?.some(service => service.isFeatured) || false;
 
-  // Listen for 'auth' or 'profile' route from external navigation (like header)
   useEffect(() => {
-    console.log('📍 Home.tsx - currentRoute changed to:', currentRoute);
     if (currentRoute === 'auth') {
-      console.log('✅ Showing Auth screen');
       setShowAuth(true);
       setShowUserProfile(false);
     } else if (currentRoute === 'profile') {
-      console.log('✅ Showing Profile screen');
-      // Always show profile page (it will handle logged-in vs logged-out state)
       setShowUserProfile(true);
       setShowAuth(false);
     } else {
-      console.log('❌ Route not auth or profile, hiding both screens');
       setShowAuth(false);
       setShowUserProfile(false);
     }
@@ -104,7 +95,6 @@ const Home: React.FC<HomeProps> = ({ onNavigate, currentRoute, onSelectService, 
         style={styles.occasionCard}
         activeOpacity={0.8}
         onPress={() => {
-          console.log('Occasion pressed:', item);
           if (onSelectOccasion) onSelectOccasion(item);
         }}>
         <View style={styles.iconContainer}>
@@ -131,20 +121,13 @@ const Home: React.FC<HomeProps> = ({ onNavigate, currentRoute, onSelectService, 
         <>
           <FeaturedServicesCarousel
             onSelectService={(service) => {
-              console.log('Selected featured service:', service);
               if (onSelectService) {
-                onSelectService(service._id); // App treats Home-origin separately
+                onSelectService(service._id);
               }
             }}
           />
-          {/* Search Section - Only shown when featured services exist */}
           <SearchSection
-            onSearch={() => {
-              console.log('Search clicked from home');
-              // Search will handle occasion selection
-            }}
             onSelectOccasion={(occasion) => {
-              console.log('🎉 Occasion selected from search section:', occasion._id, occasion.name);
               if (onSelectOccasion) onSelectOccasion(occasion);
             }}
           />
@@ -161,17 +144,13 @@ const Home: React.FC<HomeProps> = ({ onNavigate, currentRoute, onSelectService, 
         />
       )}
 
-      {/* Services Section */}
       <Services 
         onSelectService={(service) => {
-          console.log('Selected service:', service);
           if (onSelectService) {
-            onSelectService(service._id); // App will receive this as Home-origin
+            onSelectService(service._id);
           }
         }}
         onViewAll={() => {
-          console.log('View All Services clicked');
-          // TODO: Navigate to services page
           if (onNavigate) {
             onNavigate('services');
           }

@@ -3,6 +3,9 @@ import { API_BASE_URL as BASE_URL, API_URL, getImageUrl as getImageUrlFromConfig
 
 export const API_BASE_URL = API_URL;
 
+// Service cache for avoiding repeated requests
+const serviceCache = new Map<string, { data: any; timestamp: number }>();
+
 export interface SiteSettings {
   _id: string;
   siteTitle: string;
@@ -89,7 +92,6 @@ export const fetchSiteSettings = async (): Promise<SiteSettings> => {
     const data: SiteSettings = await response.json();
     return data;
   } catch (error) {
-    console.error('Error fetching site settings:', error);
     throw error;
   }
 };
@@ -108,7 +110,6 @@ export const fetchOccasions = async (): Promise<Occasion[]> => {
     const data: Occasion[] = await response.json();
     return data.filter(occasion => occasion.isActive); // Only return active occasions
   } catch (error) {
-    console.error('Error fetching occasions:', error);
     throw error;
   }
 };
@@ -150,7 +151,6 @@ export const login = async (data: LoginData): Promise<LoginResponse> => {
     if ((error as any)?.requiresVerification) {
       throw error;
     }
-    console.error('Error during login:', error);
     throw error;
   }
 };
@@ -176,7 +176,6 @@ export const signup = async (data: SignupData): Promise<SignupResponse> => {
     const responseData: SignupResponse = await response.json();
     return responseData;
   } catch (error) {
-    console.error('Error during signup:', error);
     throw error;
   }
 };
@@ -203,7 +202,6 @@ export const updateUserProfile = async (token: string, updates: Partial<User>): 
     const responseData = await response.json();
     return responseData;
   } catch (error) {
-    console.error('Error updating profile:', error);
     throw error;
   }
 };
@@ -251,7 +249,6 @@ export const updateUserProfileWithImage = async (
     const responseData = await response.json();
     return responseData;
   } catch (error) {
-    console.error('Error updating profile with image:', error);
     throw error;
   }
 };
@@ -282,7 +279,6 @@ export const changePassword = async (
     const responseData = await response.json();
     return responseData;
   } catch (error) {
-    console.error('Error changing password:', error);
     throw error;
   }
 };
@@ -309,7 +305,6 @@ export const fetchAddresses = async (token: string): Promise<any[]> => {
     // server returns { success: true, data: [...] }
     return responseData.data || [];
   } catch (error) {
-    console.error('Error fetching addresses:', error);
     throw error;
   }
 };
@@ -336,7 +331,6 @@ export const createAddress = async (token: string, address: { name: string; stre
     const responseData = await response.json();
     return responseData.data;
   } catch (error) {
-    console.error('Error creating address:', error);
     throw error;
   }
 };
@@ -367,7 +361,6 @@ export const updateAddress = async (
     const responseData = await response.json();
     return responseData.data;
   } catch (error) {
-    console.error('Error updating address:', error);
     throw error;
   }
 };
@@ -393,7 +386,6 @@ export const deleteAddress = async (token: string, addressId: string) => {
     const responseData = await response.json();
     return responseData;
   } catch (error) {
-    console.error('Error deleting address:', error);
     throw error;
   }
 };
@@ -419,7 +411,6 @@ export const setDefaultAddress = async (token: string, addressId: string) => {
     const responseData = await response.json();
     return responseData.data;
   } catch (error) {
-    console.error('Error setting default address:', error);
     throw error;
   }
 };
@@ -510,7 +501,6 @@ export const fetchBookings = async (token?: string): Promise<Booking[]> => {
     const data: Booking[] = await response.json();
     return data;
   } catch (error) {
-    console.error('Error fetching bookings:', error);
     throw error;
   }
 };
@@ -535,7 +525,6 @@ export const getUserBookings = async (token: string): Promise<Booking[]> => {
     const data: Booking[] = await response.json();
     return data;
   } catch (error) {
-    console.error('Error fetching user bookings:', error);
     throw error;
   }
 };
@@ -555,7 +544,7 @@ export const checkDateAvailability = async (
     let service: any;
     
     // تحقق من الـ cache أولاً
-    const cachedService = (global as any).__serviceCache?.[cacheKey];
+    const cachedService = serviceCache.get(cacheKey);
     if (cachedService && Date.now() - cachedService.timestamp < 5 * 60 * 1000) { // 5 minutes cache
       service = cachedService.data;
     } else {
@@ -575,13 +564,10 @@ export const checkDateAvailability = async (
         service = await serviceResponse.json();
         
         // حفظ في الـ cache
-        if (!((global as any).__serviceCache)) {
-          (global as any).__serviceCache = {};
-        }
-        (global as any).__serviceCache[cacheKey] = {
+        serviceCache.set(cacheKey, {
           data: service,
           timestamp: Date.now()
-        };
+        });
       } catch (error) {
         clearTimeout(timeoutId);
         throw error;
@@ -595,7 +581,7 @@ export const checkDateAvailability = async (
     const workingDays = service.workingDays || [1, 2, 3, 4, 5]; // Mon-Fri by default
     
     // Check if the selected date is a working day
-    const dayOfWeek = date.getDay();
+    const dayOfWeek = date.getUTCDay();
     if (!workingDays.includes(dayOfWeek)) {
       // Not a working day
       return { available: false, bookingsCount: 0, slots: 0 };
@@ -607,9 +593,12 @@ export const checkDateAvailability = async (
     
     const totalMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
     const totalSlotsPerDay = Math.floor(totalMinutes / timeSlotDuration);
-    
     // Fetch bookings from backend API for this specific date and service
-    const dateStr = date.toISOString().split('T')[0];
+    // Format date as YYYY-MM-DD using UTC to ensure consistency
+    const year = date.getUTCFullYear();
+    const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+    const day = date.getUTCDate().toString().padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
     
     // مع timeout
     const controller = new AbortController();
@@ -632,7 +621,6 @@ export const checkDateAvailability = async (
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        console.error('❌ Failed to fetch availability:', response.status);
         // Fallback: assume all slots available
         return {
           available: true,
@@ -657,14 +645,12 @@ export const checkDateAvailability = async (
       };
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
-        console.warn('⏱️ Date availability request timeout');
         return { available: true, bookingsCount: 0, slots: totalSlotsPerDay };
       }
       clearTimeout(timeoutId);
       throw error;
     }
   } catch (error) {
-    console.error('Error checking date availability:', error);
     return { available: true, bookingsCount: 0, slots: 10 }; // Default to available on error
   }
 };
@@ -687,12 +673,11 @@ export const checkTimeSlotAvailability = async (
 }[]> => {
   try {
     // Use the backend API to get available time slots
-    // Format date as YYYY-MM-DD using local date values to avoid timezone issues
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
+    // Format date as YYYY-MM-DD using UTC date values to ensure consistency
+    const year = date.getUTCFullYear();
+    const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+    const day = date.getUTCDate().toString().padStart(2, '0');
     const dateStr = `${year}-${month}-${day}`;
-    console.log('🕒 Fetching time slots for service:', serviceId, 'on date:', dateStr);
     
     const response = await fetch(
       `${BASE_URL}/api/bookings/available-timeslots?serviceId=${serviceId}&date=${dateStr}`,
@@ -708,13 +693,10 @@ export const checkTimeSlotAvailability = async (
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Failed to fetch time slots:', response.status, errorText);
       throw new Error('Failed to fetch available time slots');
     }
 
     const data = await response.json();
-    console.log('✅ Received time slots data:', data);
-    console.log('📊 Number of slots:', data.allSlots?.length || data.availableSlots?.length || 0);
     
     // Transform the backend response to match the expected format
     // Use allSlots to get both available and unavailable slots
@@ -744,16 +726,11 @@ export const checkTimeSlotAvailability = async (
         totalSpots: slot.totalSpots
       };
       
-      // Log each slot's status
-      console.log(`  📍 ${timeSlotStr}: ${slotData.available ? '✅ Available' : '❌ Booked'} (${slot.availableSpots}/${slot.totalSpots} spots)`);
-      
       return slotData;
     });
 
-    console.log('🎯 Total transformed slots:', slots.length);
     return slots;
   } catch (error) {
-    console.error('❌ Error checking time slot availability:', error);
     return [];
   }
 };

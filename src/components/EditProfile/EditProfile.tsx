@@ -31,18 +31,12 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
 
   // Log user data on mount
   useEffect(() => {
-    console.log('👤 EditProfile - User data:', {
-      name: user?.name,
-      email: user?.email,
-      profilePicture: user?.profilePicture,
-      profileImageState: profileImage
-    });
+    // User data logged
   }, []);
 
   // Sync profileImage when user.profilePicture changes
   useEffect(() => {
     if (user?.profilePicture && user.profilePicture !== profileImage) {
-      console.log('🔄 Syncing profileImage from user context:', user.profilePicture);
       setProfileImage(user.profilePicture);
     }
   }, [user?.profilePicture]);
@@ -54,8 +48,6 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
         const token = await AsyncStorage.getItem('userToken');
         if (!token) return;
 
-        console.log('🔄 Fetching latest user data from:', `${API_URL}/auth/me`);
-        
         const response = await fetch(`${API_URL}/auth/me`, {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -64,24 +56,16 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
 
         if (response.ok) {
           const userData = await response.json();
-          console.log('✅ Fresh user data from server:', {
-            name: userData.name,
-            email: userData.email,
-            profilePicture: userData.profilePicture
-          });
 
           // Update state with fresh data
           if (userData.name) setName(userData.name);
           if (userData.phone && userData.phone.trim() !== '') setPhone(userData.phone);
           if (userData.profilePicture) {
-            console.log('📸 Setting profileImage from server:', userData.profilePicture);
             setProfileImage(userData.profilePicture);
           }
-        } else {
-          console.error('❌ Failed to fetch user data:', response.status);
         }
       } catch (error) {
-        console.error('❌ Error fetching user data:', error);
+        // Error fetching user data
       }
     };
 
@@ -90,7 +74,6 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
 
   const handleChoosePhoto = async () => {
     try {
-      console.log('📸 Opening image picker...');
       
       // Request permissions for Android (handle Android 13+ separately)
       if (Platform.OS === 'android') {
@@ -107,8 +90,6 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
             buttonNegative: 'Cancel',
             buttonPositive: 'OK',
           });
-
-          console.log('📱 Android permission result:', granted);
 
           if (granted === PermissionsAndroid.RESULTS.GRANTED) {
             // ok
@@ -141,15 +122,11 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
         includeBase64: false,
       });
 
-      console.log('📷 Image picker result:', JSON.stringify(result, null, 2));
-
       if (result.didCancel) {
-        console.log('❌ User cancelled image picker');
         return;
       }
 
       if (result.errorCode) {
-        console.error('❌ ImagePicker Error:', result.errorCode, result.errorMessage);
         Alert.alert(
           isRTL ? 'خطأ' : 'Error',
           result.errorMessage || (isRTL ? 'فشل اختيار الصورة' : 'Failed to pick image')
@@ -158,13 +135,9 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
       }
 
       if (result.assets && result.assets[0] && result.assets[0].uri) {
-        console.log('✅ Selected image URI:', result.assets[0].uri);
         setProfileImage(result.assets[0].uri);
-      } else {
-        console.log('⚠️ No image selected or invalid result');
       }
     } catch (error: any) {
-      console.error('❌ Error picking image:', error);
       Alert.alert(
         isRTL ? 'خطأ' : 'Error',
         error.message || (isRTL ? 'فشل اختيار الصورة' : 'Failed to pick image')
@@ -193,9 +166,6 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
         
         if (isLocalFile) {
           imageToSend = profileImage;
-          console.log('📸 Sending new profile image:', profileImage);
-        } else {
-          console.log('ℹ️ Keeping existing server image, not re-uploading:', profileImage);
         }
       }
 
@@ -207,7 +177,6 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
       );
       setIsEditing(false);
     } catch (error) {
-      console.error('Error updating profile:', error);
       Alert.alert(
         isRTL ? 'خطأ' : 'Error',
         isRTL ? 'فشل تحديث الملف الشخصي' : 'Failed to update profile'
@@ -275,7 +244,6 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
         ]
       );
     } catch (error) {
-      console.error('Error deleting account:', error);
       Alert.alert(
         isRTL ? 'خطأ' : 'Error',
         error instanceof Error ? error.message : isRTL ? 'فشل حذف الحساب' : 'Failed to delete account'
@@ -290,30 +258,20 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
 
   const getImageUri = (uri: string | null | undefined) => {
     if (!uri) {
-      console.log('⚠️ getImageUri: No URI provided');
       return null;
     }
     
-    console.log('🔍 getImageUri input:', uri);
-    
     // If it's already a full URI (starts with http, file, or content), return as is
     if (uri.startsWith('http') || uri.startsWith('file://') || uri.startsWith('content://')) {
-      console.log('✅ Full URI, returning as-is');
       return uri;
     }
     
     // If it's a server path (starts with /public), prepend the base URL
     if (uri.startsWith('/public')) {
       const fullUrl = `${API_URL.replace('/api', '')}${uri}`;
-      console.log('🔗 Backend path converted:', {
-        original: uri,
-        platform: Platform.OS,
-        fullUrl: fullUrl
-      });
       return fullUrl;
     }
     
-    console.log('⚠️ Unknown URI format, returning as-is:', uri);
     return uri;
   };
 
@@ -325,10 +283,10 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
         translucent={false}
       />
   {/* Header background to extend into notch */}
-  <View style={[styles.headerBackground, { height: insets.top + 82 }]} />
+  <View style={[styles.headerBackground, { height: insets.top + 78 }]} />
 
   {/* Header */}
-  <View style={[styles.header, { height: insets.top + 82 }]}>
+  <View style={[styles.header, { height: insets.top + 78 }]}>
         {onBack && (
           <TouchableOpacity
             style={styles.backButton}

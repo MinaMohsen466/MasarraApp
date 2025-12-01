@@ -70,7 +70,6 @@ export const fetchServices = async (): Promise<Service[]> => {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error fetching services:', error);
     throw error;
   }
 };

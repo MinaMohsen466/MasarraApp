@@ -211,7 +211,6 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
   };
 
   const handleReview = (bookingId: string, serviceId: string, serviceName: string) => {
-    console.log('Write review for booking:', bookingId, 'service:', serviceId);
     if (onWriteReview) {
       onWriteReview(bookingId, serviceId, serviceName);
     }
@@ -221,9 +220,9 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
     return (
       <View style={[styles.container, { position: 'relative' }]}>
         {/* header background to fill notch */}
-        <View style={[styles.headerBackground, { height: insets.top + 66 }]} />
+        <View style={[styles.headerBackground, { height: insets.top + 78 }]} />
 
-        <View style={[styles.header, { height: insets.top + 76 }]}>
+        <View style={[styles.header, { height: insets.top + 78 }]}>
           <TouchableOpacity onPress={onBack} style={styles.backButton}>
             <Text style={styles.backButtonText}>
               {isRTL ? '›' : '‹'}
@@ -244,9 +243,9 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
   return (
     <View style={[styles.container, { position: 'relative' }]}>
       {/* header background to fill notch */}
-      <View style={[styles.headerBackground, { height: insets.top + 82 }]} />
+      <View style={[styles.headerBackground, { height: insets.top + 78 }]} />
 
-      <View style={[styles.header, { height: insets.top + 82 }]}>
+      <View style={[styles.header, { height: insets.top + 78 }]}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Text style={styles.backButtonText}>
             {isRTL ? '›' : '‹'}

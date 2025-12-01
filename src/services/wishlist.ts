@@ -19,7 +19,6 @@ async function getCurrentUserId(): Promise<string | null> {
     }
     return null;
   } catch (e) {
-    console.warn('getCurrentUserId error', e);
     return null;
   }
 }
@@ -41,7 +40,6 @@ export async function getWishlist(): Promise<WishlistItem[]> {
     if (!raw) return [];
     return JSON.parse(raw) as WishlistItem[];
   } catch (e) {
-    console.warn('getWishlist error', e);
     return [];
   }
 }
@@ -51,7 +49,7 @@ async function saveWishlist(items: WishlistItem[]) {
     const key = await getWishlistKey();
     await AsyncStorage.setItem(key, JSON.stringify(items));
   } catch (e) {
-    console.warn('saveWishlist error', e);
+    // Error saving wishlist
   }
 }
 
@@ -91,6 +89,6 @@ export async function clearWishlist() {
     const key = await getWishlistKey();
     await AsyncStorage.removeItem(key);
   } catch (e) {
-    console.warn('clearWishlist error', e);
+    // Error clearing wishlist
   }
 }

@@ -36,11 +36,8 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
     if (role === 'admin') {
       const adminUrl = 'http://localhost:5173/admin';
       try {
-        console.log('🌐 Opening admin panel:', adminUrl);
         await Linking.openURL(adminUrl);
-        console.log('✅ Successfully opened admin panel');
       } catch (error) {
-        console.error('❌ Error opening admin panel:', error);
         Alert.alert(
           isRTL ? 'خطأ' : 'Error',
           isRTL ? 'فشل فتح لوحة الإدارة. تأكد من تشغيل لوحة الإدارة على المنفذ 5173' : 'Failed to open admin panel. Make sure admin panel is running on port 5173'
@@ -48,11 +45,9 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
       }
     } else if (role === 'vendor') {
       // TODO: Navigate to vendor dashboard (could be browser or in-app)
-      console.log('📊 Navigate to vendor dashboard');
       // For now, staying in app - you can implement vendor dashboard navigation here
     } else if (role === 'customer') {
       // Customer stays in the app - return to home
-      console.log('🏠 Customer logged in - returning to home');
       // Close auth screen and return to home
       if (onBack) {
         onBack();
@@ -85,8 +80,6 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
         // Login
         try {
           const response = await login({ email, password });
-          console.log('Logged in user:', response.user);
-          console.log('Token:', response.token);
           // Store user data in AuthContext
           await saveLogin(response.user, response.token);
           // Navigate based on user role
@@ -110,8 +103,6 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
           phone: phone || undefined,
           role: 'customer' // Default role for signup
         });
-        
-        console.log('Signup response:', response);
         
         // Show OTP verification screen
         if (response.userId && response.requiresVerification) {

@@ -32,13 +32,11 @@ const Chat: React.FC<ChatProps> = ({ onBack }) => {
       const token = await AsyncStorage.getItem('userToken');
       
       if (!token) {
-        console.log('❌ No token found');
         setError('No token');
         setLoading(false);
         return;
       }
 
-      // Fetch admin user
       const response = await fetch(`${API_BASE_URL}/api/auth/users?role=admin`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -51,18 +49,14 @@ const Chat: React.FC<ChatProps> = ({ onBack }) => {
         
         if (admins && admins.length > 0) {
           const admin = admins[0];
-          console.log('✅ Admin found:', admin.name);
           setAdminId(admin._id);
         } else {
-          console.error('❌ No admin found');
           setError('No admin found');
         }
       } else {
-        console.error('❌ Failed to load admin:', response.status);
         setError('Failed to load admin');
       }
     } catch (error) {
-      console.error('❌ Error loading admin:', error);
       setError('Error loading admin');
     } finally {
       setLoading(false);

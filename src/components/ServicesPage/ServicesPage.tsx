@@ -32,7 +32,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
   const { isRTL } = useLanguage();
   const { data: services, isLoading, error } = useServices();
   const [vendor, setVendor] = useState<Vendor | null>(null);
-  const [loadingVendor, setLoadingVendor] = useState(false);
+  const [loadingVendor, setLoadingVendor] = useState(!!vendorId);
   const [showFilter, setShowFilter] = useState(false);
   const [showSort, setShowSort] = useState(false);
   const [sortBy, setSortBy] = useState<string>('newest');
@@ -71,17 +71,22 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
 
   // Fetch vendor details when vendorId is provided
   useEffect(() => {
-    if (!vendorId || vendor) return;
+    if (!vendorId) return;
     
-    setLoadingVendor(true);
-    fetchVendors()
-      .then((vendors) => {
+    const fetchVendor = async () => {
+      try {
+        const vendors = await fetchVendors();
         const found = vendors.find(v => v._id === vendorId);
         if (found) setVendor(found);
-      })
-      .catch(() => {})
-      .finally(() => setLoadingVendor(false));
-  }, [vendorId, vendor]);
+      } catch (error) {
+        // Silently handle error
+      } finally {
+        setLoadingVendor(false);
+      }
+    };
+
+    fetchVendor();
+  }, [vendorId]);
 
   // Filter services by vendor or occasion
   const filteredServices = useMemo(() => {
@@ -111,7 +116,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
             occasions.set(occ.occasion._id, {
               _id: occ.occasion._id,
               name: occ.occasion.name,
-              nameAr: occ.occasion.nameAr || occ.occasion.name
+              nameAr: occ.occasion.name
             });
           }
         });
@@ -230,6 +235,60 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
   };
 
   // Show loading state
+  if ((isLoading || loadingVendor) && vendorId) {
+    return (
+      <View style={styles.pageContainer}>
+        {/* Custom Header with Back Button */}
+        <View style={[styles.header, isRTL && styles.headerRTL]}>
+          <TouchableOpacity 
+            style={[styles.backButton, isRTL && styles.backButtonRTL]}
+            onPress={onBack}
+            activeOpacity={0.7}>
+            <Svg
+              width={24}
+              height={24}
+              viewBox="0 0 24 24"
+              fill="none">
+              <Path
+                d="M15 18L9 12L15 6"
+                stroke={colors.primary}
+                strokeWidth={2.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
+          </TouchableOpacity>
+          
+          <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
+            {occasionName || vendorName || (isRTL ? 'الخدمات' : 'SERVICES')}
+          </Text>
+          
+          <View style={styles.headerSpacer} />
+        </View>
+
+        {/* Show vendor header while services are loading */}
+        {vendor && (
+          <VendorHeader 
+            vendor={vendor} 
+            occasions={vendorOccasions}
+            onFilterPress={() => {}}
+            onSortPress={() => {}}
+            overrideRating={vendorRating.rating}
+            overrideTotalReviews={vendorRating.totalReviews}
+          />
+        )}
+
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, isRTL && styles.textRTL]}>
+            {isRTL ? 'جاري تحميل الخدمات...' : 'Loading services...'}
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  // Show loading state for general services (without vendor filter)
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>

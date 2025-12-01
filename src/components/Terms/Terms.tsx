@@ -43,7 +43,6 @@ const Terms: React.FC<TermsProps> = ({ onBack }) => {
       setTermsData(data);
       setError(null);
     } catch (err) {
-      console.error('Error fetching terms data:', err);
       setError(err instanceof Error ? err.message : 'Failed to load data');
     } finally {
       setIsLoading(false);

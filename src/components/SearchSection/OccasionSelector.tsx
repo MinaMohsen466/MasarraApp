@@ -34,7 +34,6 @@ const OccasionSelector: React.FC<OccasionSelectorProps> = ({
           isSelected && styles.occasionItemSelected,
         ]}
         onPress={() => {
-          console.log('🎉 Occasion selected from modal:', item._id, item.name);
           onSelect(item);
           onClose();
         }}

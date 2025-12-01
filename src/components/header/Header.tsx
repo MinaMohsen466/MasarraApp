@@ -29,8 +29,6 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
                 const token = await AsyncStorage.getItem('userToken');
                 if (!token) return;
 
-                console.log('🔄 Header: Fetching fresh user data from:', `${API_URL}/auth/me`);
-                
                 const response = await fetch(`${API_URL}/auth/me`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -39,20 +37,13 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
 
                 if (response.ok) {
                     const userData = await response.json();
-                    console.log('✅ Header: Fresh user data received:', {
-                        name: userData.name,
-                        profilePicture: userData.profilePicture
-                    });
 
                     if (userData.profilePicture) {
-                        console.log('📸 Header: Setting profilePicture:', userData.profilePicture);
                         setCurrentProfilePicture(userData.profilePicture);
                     }
-                } else {
-                    console.error('❌ Header: Failed to fetch user data:', response.status);
                 }
             } catch (error) {
-                console.error('❌ Header: Error fetching user data:', error);
+                // Handle error silently
             }
         };
 
@@ -62,17 +53,14 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
     }, [isLoggedIn]);
 
     const handleOpenDrawer = () => {
-        console.log('🎯 Opening drawer...');
         setIsDrawerVisible(true);
     };
 
     const handleCloseDrawer = () => {
-        console.log('🎯 Closing drawer...');
         setIsDrawerVisible(false);
     };
 
     const handleNavigation = (route: string, title: string) => {
-        console.log('🧭 Navigation:', title, '→', route);
         if (onNavigate) {
             onNavigate(route.toLowerCase());
         }
@@ -81,12 +69,10 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
 
     const handleUserIconPress = () => {
         if (isLoggedIn) {
-            console.log('👤 User logged in - Opening user profile page...');
             if (onNavigate) {
                 onNavigate('profile');
             }
         } else {
-            console.log('🔐 User not logged in - Opening sign in page...');
             if (onNavigate) {
                 onNavigate('auth');
             }
@@ -154,12 +140,8 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
                         source={{ uri: getImageUrl(currentProfilePicture || user?.profilePicture || '') }} 
                         style={styles.profileIcon}
                         resizeMode="cover"
-                        onLoad={() => console.log('✅ Header profile image loaded')}
-                        onError={(e) => {
-                            console.error('❌ Header profile image failed:', e.nativeEvent.error);
-                            console.log('   Original URI:', currentProfilePicture || user?.profilePicture);
-                            console.log('   Full URL:', getImageUrl(currentProfilePicture || user?.profilePicture || ''));
-                        }}
+                        onLoad={() => {}}
+                        onError={(e) => {}}
                     />
                 ) : (
                     <Image 

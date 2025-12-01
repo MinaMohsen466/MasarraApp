@@ -81,12 +81,10 @@ const Drawer: React.FC<DrawerProps> = ({
 
   // Handle menu item press
   const handleMenuItemPress = (route: string, titleKey: string, id: string) => {
-    console.log('🧭 Drawer item clicked:', t(titleKey), '→', route);
     
     // Handle language switching
     if (id === 'language') {
       const newLang = language === 'en' ? 'ar' : 'en';
-      console.log('🌐 Switching language to:', newLang);
       setLanguage(newLang);
       
       // Close drawer after language change with a small delay for smooth transition
@@ -98,7 +96,6 @@ const Drawer: React.FC<DrawerProps> = ({
     
     // Handle login navigation - navigate to auth page
     if (id === 'login') {
-      console.log('🔐 Opening sign in page...');
       if (onNavigate) {
         onNavigate('auth', t(titleKey));
       }
@@ -108,7 +105,6 @@ const Drawer: React.FC<DrawerProps> = ({
     
     // Handle logout
     if (id === 'logout') {
-      console.log('🚪 Logging out...');
       logout();
       onClose();
       return;
@@ -116,12 +112,10 @@ const Drawer: React.FC<DrawerProps> = ({
     
     // Handle My Account - navigate to Edit Profile
     if (id === 'account') {
-      console.log('👤 Opening Profile page (request Edit)...');
       // Set a short-lived flag so the Profile screen opens EditProfile automatically
       try {
         AsyncStorage.setItem('openEditProfile', '1');
       } catch (e) {
-        console.warn('Could not set openEditProfile flag', e);
       }
       if (onNavigate) {
         onNavigate('profile', t(titleKey));
@@ -132,7 +126,6 @@ const Drawer: React.FC<DrawerProps> = ({
     
     // Handle Settings - navigate to Profile
     if (id === 'settings') {
-      console.log('⚙️ Opening Profile page...');
       if (onNavigate) {
         onNavigate('profile', t(titleKey));
       }

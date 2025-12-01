@@ -38,9 +38,13 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
     ? ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر']
     : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
+  const dayNamesBase = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const dayNamesBaseAr = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+  
+  // في RTL، نعكس ترتيب الأيام لأن اتجاه الـ layout معكوس
   const dayNames = isRTL
-    ? ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت']
-    : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    ? dayNamesBaseAr.reverse()
+    : dayNamesBase;
 
   // Memoize cache key لتجنب re-renders غير ضرورية
   const cacheKey = useMemo(() => {
@@ -60,7 +64,6 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
   }, [visible, cacheKey]);
 
   const loadAvailability = async () => {
-    // تجنب multiple simultaneous requests
     if (loadingRef.current) return;
     
     loadingRef.current = true;
@@ -71,33 +74,41 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
       
       const year = currentMonth.getFullYear();
       const month = currentMonth.getMonth();
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
       const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const todayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
 
-      // تحميل الأيام بشكل تدريجي في مجموعات (5 أيام في كل مجموعة)
-      const batchSize = 5;
+      const batchSize = 10;
       const batches = [];
       
       for (let i = 0; i < daysInMonth; i += batchSize) {
         const batchEnd = Math.min(i + batchSize, daysInMonth);
         const batch = Array.from({ length: batchEnd - i }, (_, idx) => {
           const day = i + idx + 1;
-          const date = new Date(year, month, day);
+          const date = new Date(Date.UTC(year, month, day));
           
-          // تخطي الأيام الماضية
-          if (date < today) {
-            const dateKey = date.toISOString().split('T')[0];
+          if (date < todayUTC) {
+            const dateYear = date.getUTCFullYear();
+            const dateMonth = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+            const dateDay = date.getUTCDate().toString().padStart(2, '0');
+            const dateKey = `${dateYear}-${dateMonth}-${dateDay}`;
             return Promise.resolve({ dateKey, available: false, slots: 0 });
           }
           
           return checkDateAvailability(serviceId, vendorId, date, token)
             .then(result => {
-              const dateKey = date.toISOString().split('T')[0];
-              return { dateKey, available: result.available, slots: result.slots };
+              const dateYear = date.getUTCFullYear();
+              const dateMonth = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+              const dateDay = date.getUTCDate().toString().padStart(2, '0');
+              const dateKey = `${dateYear}-${dateMonth}-${dateDay}`;
+              const dayOfWeek = date.getUTCDay();
+              return { dateKey, available: result.available, slots: result.slots, dayOfWeek };
             })
             .catch(() => {
-              const dateKey = date.toISOString().split('T')[0];
+              const dateYear = date.getUTCFullYear();
+              const dateMonth = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+              const dateDay = date.getUTCDate().toString().padStart(2, '0');
+              const dateKey = `${dateYear}-${dateMonth}-${dateDay}`;
               return { dateKey, available: false, slots: 0 };
             });
         });
@@ -105,17 +116,14 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
         batches.push(batch);
       }
 
-      // معالجة المجموعات بالتتابع مع تحديث الحالة تدريجياً
       for (const batch of batches) {
         const results = await Promise.all(batch);
-        results.forEach(({ dateKey, available, slots }) => {
+        results.forEach(({ dateKey, available, slots, dayOfWeek }) => {
           availabilityMap.set(dateKey, { available, slots });
         });
-        // تحديث الحالة بعد كل مجموعة للعرض التدريجي
         setAvailability(new Map(availabilityMap));
       }
 
-      // حفظ في الـ cache
       availabilityCache.set(cacheKey, availabilityMap);
       setLoading(false);
     } finally {
@@ -126,21 +134,20 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
   const getDaysInMonth = () => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startDayOfWeek = firstDay.getDay();
+    // استخدم UTC dates لتجنب مشاكل timezone
+    const firstDay = new Date(Date.UTC(year, month, 1));
+    const lastDay = new Date(Date.UTC(year, month + 1, 0));
+    const daysInMonth = lastDay.getUTCDate();
+    let startDayOfWeek = firstDay.getUTCDay();
+    
+    const days: (Date | null)[] = [];
 
-    const days = [];
-
-    // Add empty cells for days before the first day of the month
     for (let i = 0; i < startDayOfWeek; i++) {
       days.push(null);
     }
 
-    // Add all days of the month
     for (let day = 1; day <= daysInMonth; day++) {
-      days.push(new Date(year, month, day));
+      days.push(new Date(Date.UTC(year, month, day)));
     }
 
     return days;
@@ -166,15 +173,18 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
     if (!selectedDate) return false;
     return date.toDateString() === selectedDate.toDateString();
   };
-
   const getDateKey = (date: Date) => {
-    return date.toISOString().split('T')[0];
+    const year = date.getUTCFullYear();
+    const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+    const day = date.getUTCDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   const isPastDate = (date: Date) => {
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return date < today;
+    // مقارنة بـ UTC
+    const todayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+    return date < todayUTC;
   };
 
   const days = memoizedDays;

@@ -79,15 +79,17 @@ export const styles = StyleSheet.create({
   calendarGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    justifyContent: 'flex-start',
   },
   dayCell: {
     width: `${100 / 7}%`,
     aspectRatio: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
     borderRadius: 12,
-    marginVertical: 4,
+    marginVertical: 2,
   },
   dayCellSelected: {
     backgroundColor: colors.primary,

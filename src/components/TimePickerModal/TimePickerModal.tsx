@@ -66,7 +66,6 @@ const TimePickerModal: React.FC<TimePickerModalProps> = ({
       
       setTimeSlots(filteredSlots);
     } catch (error) {
-      console.error('Error loading time slots:', error);
     } finally {
       setLoading(false);
     }
@@ -83,9 +82,6 @@ const TimePickerModal: React.FC<TimePickerModalProps> = ({
   };
 
   const handleSelectTime = (timeSlot: string) => {
-    console.log('⏰ User selected time slot:', `"${timeSlot}"`);
-    console.log('  📏 String length:', timeSlot.length);
-    console.log('  🔤 Character codes:', timeSlot.split('').map(c => c.charCodeAt(0)).join(', '));
     onSelectTime(timeSlot);
     onClose();
   };

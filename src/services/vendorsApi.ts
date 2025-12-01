@@ -40,7 +40,6 @@ export const fetchVendors = async (): Promise<Vendor[]> => {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error fetching vendors:', error);
     throw error;
   }
 };

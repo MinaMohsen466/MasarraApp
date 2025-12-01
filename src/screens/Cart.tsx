@@ -18,11 +18,10 @@ import { API_BASE_URL } from '../config/api.config';
 interface CartProps {
   onBack?: () => void;
   onViewDetails?: (serviceId: string) => void;
-  onEdit?: (cartItemId: string) => void;
   onNavigate?: (route: string) => void;
 }
 
-const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onEdit, onNavigate }) => {
+const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
   const { isRTL } = useLanguage();
   const { user, isLoggedIn } = useAuth();
   const insets = useSafeAreaInsets();
@@ -183,13 +182,10 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onEdit, onNavigate }
     try {
       setIsProcessingCheckout(true);
 
-      // Step 1: Check availability of all cart items
-      console.log('🔍 Checking cart availability before checkout...');
       const { available, unavailableItems } = await checkCartAvailability();
 
       if (!available) {
         setIsProcessingCheckout(false);
-        // Show error with details of unavailable items
         const errorMessage = unavailableItems
           .map(({ item, reason }) => {
             const itemName = isRTL ? (item.nameAr || item.name) : item.name;
@@ -207,8 +203,6 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onEdit, onNavigate }
         return;
       }
 
-      // Step 2: All items are available, show address selection
-      console.log('✅ All items available, showing address selection...');
       setIsProcessingCheckout(false);
       setShowAddressSelection(true);
 
@@ -229,13 +223,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onEdit, onNavigate }
       setShowAddressSelection(false);
       setIsProcessingCheckout(true);
 
-      // Step 3: Create bookings with selected address
-      console.log('✅ Creating bookings with address:', address.name);
-      console.log('📍 Full address object:', address);
-      
-      // Format address for backend
       const fullAddress = `${address.street}${address.houseNumber ? ', منزل ' + address.houseNumber : ''}${address.floorNumber ? ', طابق ' + address.floorNumber : ''}, ${address.city}`;
-      console.log('📍 Formatted address:', fullAddress);
       
       const { success, bookings, errors } = await createBookingsFromCart(fullAddress);
 
@@ -260,10 +248,6 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onEdit, onNavigate }
         return;
       }
 
-      // Step 4: All bookings created successfully
-      console.log('🎉 All bookings created successfully!');
-      
-      // Clear the cart
       await clearCart();
       setCartItems([]);
 
@@ -722,13 +706,6 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onEdit, onNavigate }
                       {isRTL ? 'عرض التفاصيل' : 'View Details'}
                     </Text>
                   </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={styles.editButton}
-                    onPress={() => onEdit && onEdit(item._id)}>
-                    <Text style={styles.editText}>
-                      {isRTL ? 'تعديل' : 'Edit'}
-                    </Text>
-                  </TouchableOpacity>
                 </View>
               </View>
             ))}
@@ -1046,11 +1023,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  editText: {
-    color: colors.textDark,
-    fontSize: 13,
-    fontWeight: '600',
   },
   totalsCard: {
     backgroundColor: colors.background,

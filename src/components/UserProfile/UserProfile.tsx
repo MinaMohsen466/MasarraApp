@@ -51,8 +51,6 @@ const UserProfile: React.FC<UserProfileProps> = ({
         const token = await AsyncStorage.getItem('userToken');
         if (!token) return;
 
-        console.log('🔄 UserProfile: Fetching fresh user data from:', `${API_URL}/auth/me`);
-        
         const response = await fetch(`${API_URL}/auth/me`, {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -61,20 +59,13 @@ const UserProfile: React.FC<UserProfileProps> = ({
 
         if (response.ok) {
           const userData = await response.json();
-          console.log('✅ UserProfile: Fresh user data received:', {
-            name: userData.name,
-            profilePicture: userData.profilePicture
-          });
 
           if (userData.profilePicture) {
-            console.log('📸 UserProfile: Setting profilePicture:', userData.profilePicture);
             setCurrentProfilePicture(userData.profilePicture);
           }
-        } else {
-          console.error('❌ UserProfile: Failed to fetch user data:', response.status);
         }
       } catch (error) {
-        console.error('❌ UserProfile: Error fetching user data:', error);
+        // Error fetching user data
       }
     };
 
@@ -89,11 +80,10 @@ const UserProfile: React.FC<UserProfileProps> = ({
         if (flag === '1') {
           // remove flag and open edit
           await AsyncStorage.removeItem('openEditProfile');
-          console.log('Opening EditProfile because drawer requested it');
           setShowEditProfile(true);
         }
       } catch (e) {
-        console.warn('Error checking openEditProfile flag', e);
+        // Error checking flag
       }
     };
 
@@ -101,45 +91,37 @@ const UserProfile: React.FC<UserProfileProps> = ({
   }, [user]);
 
   const handleEditProfile = () => {
-    console.log('Edit Profile clicked');
     setShowEditProfile(true);
   };
 
   const handleAddress = () => {
-    console.log('Address clicked');
     if (onNavigate) onNavigate('addresses');
   };
 
   const handleOrderHistory = () => {
-    console.log('Order History clicked');
     setShowOrderHistory(true);
   };
 
   const handleChat = () => {
-    console.log('Chat clicked');
     setShowChat(true);
   };
 
   const handleWishlist = () => {
-    console.log('Wishlist clicked');
     setShowWishlist(true);
   };
 
   const handleLogout = async () => {
-    console.log('Logout clicked');
     try {
       await logout();
-      console.log('✅ Logged out successfully');
       if (onBack) {
         onBack();
       }
     } catch (error) {
-      console.error('Error logging out:', error);
+      // Error logging out
     }
   };
 
   const handleLogin = () => {
-    console.log('Login clicked');
     if (onShowAuth) {
       onShowAuth();
     }
@@ -262,7 +244,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
   return (
     <View style={styles.fullPageContainer}>
       {/* Header background that extends into the notch/status bar */}
-      <View style={[styles.headerBackground, { height: insets.top + 77 }]} />
+      <View style={[styles.headerBackground, { height: insets.top + 78 }]} />
 
       {/* Header with Back Button */}
       <View style={[styles.headerBar, { paddingTop: insets.top + 22, paddingBottom: 22 }]}>
@@ -293,10 +275,9 @@ const UserProfile: React.FC<UserProfileProps> = ({
               <Image 
                 source={{ uri: getImageUri(currentProfilePicture || user.profilePicture || profilePicture) || undefined }} 
                 style={styles.profileImage}
-                onLoad={() => console.log('✅ Profile image loaded in UserProfile')}
+                onLoad={() => {}}
                 onError={(e) => {
-                  console.error('❌ Profile image failed in UserProfile:', e.nativeEvent.error);
-                  console.log('   URI used:', currentProfilePicture || user.profilePicture || profilePicture);
+                  // Error loading image
                 }}
               />
             ) : (

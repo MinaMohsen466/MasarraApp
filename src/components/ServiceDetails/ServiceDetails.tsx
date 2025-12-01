@@ -105,21 +105,32 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
     // Get button position
     if (addToCartButtonRef.current) {
       addToCartButtonRef.current.measure((x, y, width, height, pageX, pageY) => {
-        // Calculate start position
-        const startX = pageX + width / 2 - 30;
-        const startY = pageY + height / 2 - 30;
+        // Calculate start position (center of button)
+        const startX = pageX + width / 2;
+        const startY = pageY + height / 2;
         
-        // Calculate target position (bottom navigation cart icon)
+        // Calculate target position (bottom navigation cart icon - more accurate)
         const screenHeight = Dimensions.get('window').height;
-        const targetX = SCREEN_WIDTH - 55;
-        const targetY = screenHeight - 45;
+        const screenWidth = Dimensions.get('window').width;
         
-        // Calculate translation needed
-        const translateX = targetX - startX;
-        const translateY = targetY - startY;
+        // Cart icon is typically at the right side of bottom tab bar
+        // Adjust these values based on your actual tab bar design
+        const targetX = screenWidth - 50;  // Right side of screen minus padding
+        const targetY = screenHeight - 65;  // Bottom tab bar height ~65px
         
-        // Set start position and show icon
-        setIconStartPosition({ x: startX, y: startY });
+        // Calculate icon size (60x60)
+        const iconSize = 60;
+        
+        // Adjust target to be center of cart icon (not corner)
+        const targetCenterX = targetX - iconSize / 2;
+        const targetCenterY = targetY - iconSize / 2;
+        
+        // Calculate translation needed from start position
+        const translateX = targetCenterX - (startX - iconSize / 2);
+        const translateY = targetCenterY - (startY - iconSize / 2);
+        
+        // Set start position (center-based)
+        setIconStartPosition({ x: startX - iconSize / 2, y: startY - iconSize / 2 });
         setShowFlyingIcon(true);
         
         // Reset animations
@@ -130,18 +141,18 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
         Animated.parallel([
           Animated.timing(flyingIconTranslate, {
             toValue: { x: translateX, y: translateY },
-            duration: 700,
+            duration: 600,
             useNativeDriver: true,
           }),
           Animated.sequence([
             Animated.timing(flyingIconScale, {
-              toValue: 1.3,
-              duration: 150,
+              toValue: 1.2,
+              duration: 100,
               useNativeDriver: true,
             }),
             Animated.timing(flyingIconScale, {
-              toValue: 0.2,
-              duration: 550,
+              toValue: 0.3,
+              duration: 500,
               useNativeDriver: true,
             }),
           ]),
@@ -172,9 +183,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
         const reviewsData = await getServiceReviews(serviceId, 1, 10);
         setReviews(reviewsData.reviews);
         setReviewStats(reviewsData.stats);
-        console.log('✅ Loaded reviews:', reviewsData.stats);
       } catch (error) {
-        console.error('Error loading reviews:', error);
       } finally {
         setLoadingReviews(false);
       }
@@ -207,10 +216,6 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
 
       try {
         setCheckingAvailability(true);
-        console.log('🔍 Checking availability for:', {
-          date: selectedDate.toISOString(),
-          time: selectedTime
-        });
         
         // Get slots from backend
         const slots = await checkTimeSlotAvailability(
@@ -219,14 +224,12 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
           selectedDate,
           userToken || undefined
         );
-
-        console.log('📊 Received slots:', slots.length);
         
         // Check local cart for this service and date
         const { getCart } = require('../../services/cart');
         const localCart = await getCart();
         
-        // Compare dates properly (cart stores Date as ISO string after serialization)
+        // Compare dates properly
         const selectedDateStr = selectedDate.toDateString();
         const cartItemsForThisSlot = localCart.filter((cartItem: any) => {
           const cartDate = typeof cartItem.selectedDate === 'string' 
@@ -234,65 +237,24 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
             : cartItem.selectedDate;
           const cartDateStr = cartDate.toDateString();
           
-          const match = cartItem.serviceId === service._id &&
-                       cartDateStr === selectedDateStr &&
-                       cartItem.selectedTime === selectedTime;
-          
-          if (match) {
-            console.log('🛒 Found matching cart item:', {
-              serviceId: cartItem.serviceId,
-              date: cartDateStr,
-              time: cartItem.selectedTime
-            });
-          }
-          
-          return match;
-        });
-        
-        console.log('🛒 Items in local cart for this slot:', cartItemsForThisSlot.length);
-        
-        // Log all slots for comparison
-        console.log('🗂️ All slots received:');
-        slots.forEach((s: any, i: number) => {
-          console.log(`  [${i}] "${s.timeSlot}" - Available: ${s.available}, isAvailable: ${s.isAvailable}`);
+          return cartItem.serviceId === service._id &&
+                 cartDateStr === selectedDateStr &&
+                 cartItem.selectedTime === selectedTime;
         });
         
         // Normalize function to remove extra whitespace
         const normalizeTimeSlot = (time: string) => time.replace(/\s+/g, ' ').trim();
         
         // Find the selected time slot in the response
-        console.log('🎯 Looking for time slot:', `"${selectedTime}"`);
-        console.log('🎯 Normalized:', `"${normalizeTimeSlot(selectedTime)}"`);
-        
         const selectedSlot = slots.find((slot: any) => {
           const normalizedSlot = normalizeTimeSlot(slot.timeSlot);
           const normalizedSelected = normalizeTimeSlot(selectedTime);
-          const match = normalizedSlot === normalizedSelected;
-          
-          if (slot.timeSlot.includes('16:00')) {
-            console.log(`  🔍 Slot: "${slot.timeSlot}" (normalized: "${normalizedSlot}")`);
-            console.log(`  🔍 Selected: "${selectedTime}" (normalized: "${normalizedSelected}")`);
-            console.log(`  🔍 Match: ${match}`);
-            console.log(`  🔍 Available: ${slot.available}, isAvailable: ${slot.isAvailable}`);
-          }
-          return match;
+          return normalizedSlot === normalizedSelected;
         });
         
-        console.log('🔎 Found slot:', selectedSlot);
-        
         if (selectedSlot) {
-          console.log('✅ Backend says availability:', selectedSlot.available);
-          console.log('📝 Slot details:', {
-            timeSlot: selectedSlot.timeSlot,
-            available: selectedSlot.available,
-            isAvailable: selectedSlot.isAvailable,
-            availableSpots: selectedSlot.availableSpots,
-            totalSpots: selectedSlot.totalSpots
-          });
-          
           // If already in local cart, mark as unavailable
           if (cartItemsForThisSlot.length > 0) {
-            console.log('🛒 Slot already in cart - marking as unavailable');
             setIsTimeSlotAvailable(false);
           } else {
             // Use backend availability
@@ -300,11 +262,9 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
           }
         } else {
           // If slot not found, consider it unavailable
-          console.log('⚠️ Slot not found - marking as unavailable');
           setIsTimeSlotAvailable(false);
         }
       } catch (error) {
-        console.error('Error checking availability:', error);
         // On error, default to available to not block user
         setIsTimeSlotAvailable(true);
       } finally {
@@ -407,13 +367,9 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
                 });
 
                 if (result.action === Share.sharedAction) {
-                  if (result.activityType) {
-                    console.log('Shared with activity type:', result.activityType);
-                  } else {
-                    console.log('Shared successfully');
-                  }
+                  // Share was successful
                 } else if (result.action === Share.dismissedAction) {
-                  console.log('Share dismissed');
+                  // Share was dismissed
                 }
               } catch (error: any) {
                 Alert.alert(
@@ -978,10 +934,8 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
 
               // Parse the selected time - format is "HH:MM - HH:MM" (24-hour format)
               // Example: "09:00 - 09:30" or "14:30 - 15:00"
-              console.log('🕒 Parsing selected time:', selectedTime);
               const timeMatch = selectedTime.match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
               if (!timeMatch) {
-                console.error('❌ Time format not matched:', selectedTime);
                 Alert.alert(
                   isRTL ? 'خطأ' : 'Error',
                   isRTL ? 'تنسيق الوقت غير صحيح' : 'Invalid time format',
@@ -996,8 +950,6 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
               const startMinutes = parseInt(timeMatch[2]);
               const endHours = parseInt(timeMatch[3]);
               const endMinutes = parseInt(timeMatch[4]);
-
-              console.log('✅ Parsed Kuwait time:', { startHours, startMinutes, endHours, endMinutes });
 
               // IMPORTANT: Convert Kuwait time to UTC before sending
               // User selects 09:00 Kuwait → We send 06:00 UTC to backend
@@ -1018,12 +970,6 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
               const slotStart = new Date(slotStartUTC);
               const slotEnd = new Date(slotEndUTC);
 
-              console.log('📅 TimeSlot conversion:', {
-                kuwaitTime: `${startHours}:${startMinutes.toString().padStart(2, '0')} - ${endHours}:${endMinutes.toString().padStart(2, '0')} Kuwait`,
-                utcTime: `${slotStart.toISOString()} - ${slotEnd.toISOString()}`,
-                willBeSavedAsUTC: `${(startHours - 3).toString().padStart(2, '0')}:${startMinutes.toString().padStart(2, '0')} UTC`
-              });
-
               // Calculate total price including custom options
               let totalPrice = service.price;
               const selectedCustomInputs = (service.customInputs?.map((input: any) => {
@@ -1040,9 +986,6 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
                 }
                 return null;
               }) ?? []).filter((v): v is { label: string; value: string | number; price?: number } => v !== null);
-
-              console.log('💰 Total price with custom options:', totalPrice);
-              console.log('📋 Selected custom inputs:', selectedCustomInputs);
 
               const cartItem: CartItem = {
                 _id: `${service._id}_${Date.now()}`,
@@ -1082,8 +1025,6 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
               // Success - silently added to cart, no alert
             } catch (error: any) {
               // Backend rejected the booking (time not available, etc.)
-              console.error('Add to cart error:', error);
-              
               let errorMessage = error.message || 'Failed to add to cart';
               
               // Parse common backend error messages
@@ -1215,11 +1156,11 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
               justifyContent: 'center',
               alignItems: 'center',
               shadowColor: '#000',
-              shadowOffset: { width: 0, height: 6 },
-              shadowOpacity: 0.4,
-              shadowRadius: 12,
-              elevation: 15,
-              borderWidth: 3,
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.35,
+              shadowRadius: 16,
+              elevation: 20,
+              borderWidth: 2,
               borderColor: '#FFFFFF',
             }}
           >

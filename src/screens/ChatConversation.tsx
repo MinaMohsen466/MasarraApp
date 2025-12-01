@@ -110,11 +110,8 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
       const chatData = await chatResponse.json();
       console.log('✅ Chat loaded:', chatData);
       
-      // Save chat ID for mark as read
       if (chatData.data && chatData.data._id) {
         setChatId(chatData.data._id);
-        
-        // Mark messages as read
         markMessagesAsRead(token, chatData.data._id);
       }
       
@@ -138,9 +135,6 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
           isMe: (msg.sender?._id || msg.sender) === userData._id
         }));
         
-        console.log('✅ Messages with flags:', messagesWithFlag);
-        
-        // Only update if message count changed (avoid unnecessary re-renders)
         if (messagesWithFlag.length !== lastMessagesCountRef.current) {
           setMessages(messagesWithFlag);
           lastMessagesCountRef.current = messagesWithFlag.length;
@@ -180,7 +174,6 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
           'Content-Type': 'application/json'
         }
       });
-      console.log('✅ Messages marked as read');
     } catch (error) {
       console.error('Error marking messages as read:', error);
     }

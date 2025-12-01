@@ -75,7 +75,6 @@ export async function getServiceReviews(
 
     return await response.json();
   } catch (error) {
-    console.error('Error fetching reviews:', error);
     throw error;
   }
 }
@@ -92,13 +91,6 @@ export async function createReview(
     if (!token) {
       throw new Error('Authentication required');
     }
-
-    console.log('📤 Sending review request:', {
-      serviceId,
-      rating,
-      bookingId: bookingId || 'undefined',
-      commentLength: comment.length
-    });
 
     const response = await fetch(
       `${API_BASE_URL}/api/reviews/service/${serviceId}`,
@@ -118,15 +110,12 @@ export async function createReview(
 
     if (!response.ok) {
       const error = await response.json();
-      console.error('❌ Review error response:', error);
       throw new Error(error.error || 'Failed to create review');
     }
 
     const result = await response.json();
-    console.log('✅ Review created successfully:', result._id);
     return result;
   } catch (error) {
-    console.error('Error creating review:', error);
     throw error;
   }
 }
@@ -148,7 +137,6 @@ export async function checkUserReviewedService(serviceId: string): Promise<boole
     
     return reviewsResponse.reviews.some(review => review.user._id === userId);
   } catch (error) {
-    console.error('Error checking user review:', error);
     return false;
   }
 }

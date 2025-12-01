@@ -50,7 +50,6 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
         setSelectedAddressId(defaultAddr._id);
       }
     } catch (error) {
-      console.error('Error loading addresses:', error);
     } finally {
       setLoading(false);
     }

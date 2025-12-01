@@ -43,7 +43,6 @@ const Privacy: React.FC<PrivacyProps> = ({ onBack }) => {
       setPrivacyData(data);
       setError(null);
     } catch (err) {
-      console.error('Error fetching privacy data:', err);
       setError(err instanceof Error ? err.message : 'Failed to load data');
     } finally {
       setIsLoading(false);

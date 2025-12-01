@@ -43,7 +43,6 @@ const About: React.FC<AboutProps> = ({ onBack }) => {
       setAboutData(data);
       setError(null);
     } catch (err) {
-      console.error('Error fetching about data:', err);
       setError(err instanceof Error ? err.message : 'Failed to load data');
     } finally {
       setIsLoading(false);

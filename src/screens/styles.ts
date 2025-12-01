@@ -12,8 +12,8 @@ const styles = StyleSheet.create({
   },
   occasionsSection: {
     paddingTop: isTablet ? 30 : 20,
-    paddingBottom: isTablet ? 50 : 40,
-    marginBottom: isTablet ? 30 : 20,
+    paddingBottom: isTablet ? 100 : 40,
+    marginBottom: isTablet ? 40 : 20,
   },
   sectionHeader: {
     flexDirection: 'row',

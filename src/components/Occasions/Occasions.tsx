@@ -23,10 +23,6 @@ const Occasions: React.FC<OccasionsProps> = ({
   const numColumns = screenWidth >= 600 ? 4 : 3;
 
   useEffect(() => {
-    console.log('📋 Occasions data:', occasions);
-    if (error) {
-      console.error('❌ Error loading occasions:', error);
-    }
   }, [occasions, error]);
 
   const renderOccasionCard = ({ item }: { item: Occasion }) => {
@@ -36,7 +32,6 @@ const Occasions: React.FC<OccasionsProps> = ({
       <TouchableOpacity
         style={styles.occasionCard}
         onPress={() => {
-          console.log('🎉 Occasion pressed:', item._id, item.name, item.nameAr);
           onSelectOccasion && onSelectOccasion(item);
         }}
         activeOpacity={0.8}>

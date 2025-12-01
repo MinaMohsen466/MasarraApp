@@ -144,7 +144,6 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
         }
       }
     } catch (error) {
-      console.error('Error loading settings:', error);
     } finally {
       setLoading(false);
     }
@@ -210,7 +209,6 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
       }
       
     } catch (error: any) {
-      console.error('QR Code generation error:', error);
       Alert.alert(
         isRTL ? 'خطأ' : 'Error', 
         error.message || (isRTL ? 'فشل إنشاء QR Code' : 'Failed to generate QR code')

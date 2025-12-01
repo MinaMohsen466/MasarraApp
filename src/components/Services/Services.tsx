@@ -23,9 +23,6 @@ const Services: React.FC<ServicesProps> = ({ onSelectService, onViewAll }) => {
     let imageUrl = null;
     if (item.images && item.images.length > 0) {
       imageUrl = getServiceImageUrl(item.images[0]);
-      console.log('📸 Service:', displayName);
-      console.log('   Raw image:', item.images[0]);
-      console.log('   Full URL:', imageUrl);
     }
     
     return (
@@ -42,14 +39,8 @@ const Services: React.FC<ServicesProps> = ({ onSelectService, onViewAll }) => {
               source={{ uri: imageUrl }}
               style={styles.serviceImage}
               resizeMode="cover"
-              onError={(e) => {
-                console.log('❌ Image load FAILED for', displayName);
-                console.log('   URL tried:', imageUrl);
-                console.log('   Error:', e.nativeEvent.error);
-              }}
-              onLoad={() => {
-                console.log('✅ Image loaded successfully:', displayName);
-              }}
+              onError={(e) => {}}
+              onLoad={() => {}}
             />
           ) : (
             <View style={styles.placeholderImage}>
@@ -130,7 +121,6 @@ const Services: React.FC<ServicesProps> = ({ onSelectService, onViewAll }) => {
           {isRTL ? 'الخدمات الشائعة' : 'TRENDING'}
         </Text>
         <TouchableOpacity onPress={() => {
-          console.log('View All clicked');
           onViewAll && onViewAll();
         }}>
           <Text style={[styles.viewAllButton, isRTL && styles.viewAllButtonRTL]}>
