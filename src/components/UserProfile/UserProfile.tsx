@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Image, ScrollView, Platform, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, Image, ScrollView, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from './styles';
@@ -22,6 +22,62 @@ interface UserProfileProps {
   userEmail?: string;
   profilePicture?: string;
 }
+
+const COUNTRY_CODES: { code: string; name: string; flag: string }[] = [
+  { code: '+965', name: 'Kuwait', flag: '🇰🇼' },
+  { code: '+966', name: 'Saudi Arabia', flag: '🇸🇦' },
+  { code: '+971', name: 'United Arab Emirates', flag: '🇦🇪' },
+  { code: '+974', name: 'Qatar', flag: '🇶🇦' },
+  { code: '+973', name: 'Bahrain', flag: '🇧🇭' },
+  { code: '+968', name: 'Oman', flag: '🇴🇲' },
+  { code: '+20', name: 'Egypt', flag: '🇪🇬' },
+  { code: '+212', name: 'Morocco', flag: '🇲🇦' },
+  { code: '+216', name: 'Tunisia', flag: '🇹🇳' },
+  { code: '+213', name: 'Algeria', flag: '🇩🇿' },
+  { code: '+218', name: 'Libya', flag: '🇱🇾' },
+  { code: '+249', name: 'Sudan', flag: '🇸🇩' },
+  { code: '+251', name: 'Ethiopia', flag: '🇪🇹' },
+  { code: '+44', name: 'United Kingdom', flag: '🇬🇧' },
+  { code: '+1', name: 'United States', flag: '🇺🇸' },
+  { code: '+91', name: 'India', flag: '🇮🇳' },
+  { code: '+86', name: 'China', flag: '🇨🇳' },
+  { code: '+81', name: 'Japan', flag: '🇯🇵' },
+  { code: '+49', name: 'Germany', flag: '🇩🇪' },
+  { code: '+33', name: 'France', flag: '🇫🇷' },
+  { code: '+39', name: 'Italy', flag: '🇮🇹' },
+  { code: '+34', name: 'Spain', flag: '🇪🇸' },
+  { code: '+61', name: 'Australia', flag: '🇦🇺' },
+  { code: '+27', name: 'South Africa', flag: '🇿🇦' },
+  { code: '+92', name: 'Pakistan', flag: '🇵🇰' },
+  { code: '+880', name: 'Bangladesh', flag: '🇧🇩' },
+  { code: '+60', name: 'Malaysia', flag: '🇲🇾' },
+  { code: '+65', name: 'Singapore', flag: '🇸🇬' },
+  { code: '+63', name: 'Philippines', flag: '🇵🇭' },
+  { code: '+90', name: 'Turkey', flag: '🇹🇷' },
+  { code: '+964', name: 'Iraq', flag: '🇮🇶' },
+  { code: '+962', name: 'Jordan', flag: '🇯🇴' },
+  { code: '+963', name: 'Syria', flag: '🇸🇾' },
+  { code: '+961', name: 'Lebanon', flag: '🇱🇧' },
+  { code: '+967', name: 'Yemen', flag: '🇾🇪' },
+  { code: '+970', name: 'Palestine', flag: '🇵🇸' }
+];
+
+const getCountryName = (phoneNumber: string) => {
+  if (!phoneNumber) return '';
+  
+  const country = COUNTRY_CODES.find(c => phoneNumber.startsWith(c.code));
+  return country ? `${country.flag} ${country.code}` : '';
+};
+
+const getPhoneWithoutCode = (phoneNumber: string) => {
+  if (!phoneNumber) return '';
+  
+  const country = COUNTRY_CODES.find(c => phoneNumber.startsWith(c.code));
+  if (country) {
+    return phoneNumber.substring(country.code.length);
+  }
+  return phoneNumber;
+};
 
 const UserProfile: React.FC<UserProfileProps> = ({ 
   onBack, 
@@ -297,7 +353,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
 
             {user.phone || userPhone ? (
               <Text style={[styles.userPhone, isRTL && styles.userPhoneRTL]}>
-                {user.phone || userPhone}
+                {getCountryName(user.phone || userPhone)} {getPhoneWithoutCode(user.phone || userPhone)}
               </Text>
             ) : (
               <Text style={[styles.noPhone, isRTL && styles.noPhoneRTL]}>

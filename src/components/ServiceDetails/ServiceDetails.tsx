@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity, FlatList, Dimensions, ActivityIndicator, Alert, Modal, Share, Animated } from 'react-native';
+import { View, Text, ScrollView, Image, TouchableOpacity, FlatList, Dimensions, ActivityIndicator, Alert, Modal, Share, Animated, TextInput } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,7 +11,7 @@ import { getServiceImageUrl, fetchServices } from '../../services/servicesApi';
 import { getImageUrl, checkTimeSlotAvailability } from '../../services/api';
 import { toggleWishlist, isWishlisted, WishlistItem } from '../../services/wishlist';
 import { addToCart, CartItem } from '../../services/cart';
-import DatePickerModal from '../DatePickerModal/DatePickerModal';
+import DatePickerModal, { clearDatePickerCacheForService } from '../DatePickerModal/DatePickerModal';
 import TimePickerModal from '../TimePickerModal/TimePickerModal';
 import AllReviews from '../../screens/AllReviews';
 import { getServiceReviews, Review, ReviewStats } from '../../services/reviewsApi';
@@ -26,11 +26,7 @@ interface ServiceDetailsProps {
 const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) => {
   const { isRTL } = useLanguage();
   const insets = useSafeAreaInsets();
-  const ACTIONS_BAR_HEIGHT = 22;
-  const EXTRA_HEIGHT = 24; // removed extra spacing so header overlays image closely
-  // Make the fixed actions bar include the notch area so its background fills the notch
-  const fixedTop = 0;
-  const fixedHeight = insets.top + ACTIONS_BAR_HEIGHT + EXTRA_HEIGHT;
+  const fixedHeight = insets.top + 46; // 22 (ACTIONS_BAR_HEIGHT) + 24 (EXTRA_HEIGHT)
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
   const flatListRef = useRef<FlatList>(null);
@@ -47,21 +43,16 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
   const [checkingAvailability, setCheckingAvailability] = useState(false);
   
   // Custom inputs state - stores selected option index for each custom input
-  const [customInputSelections, setCustomInputSelections] = useState<{ [key: string]: number }>({});
-  // State to control custom inputs expansion
-  const [showCustomInputs, setShowCustomInputs] = useState(false);
+  const [customInputSelections, setCustomInputSelections] = useState<{ [key: string]: number | string }>({});
+  // State to control which custom inputs are expanded
+  const [expandedCustomInputs, setExpandedCustomInputs] = useState<{ [key: string]: boolean }>({});
   
-
-  // State for decoration option and more info
-  const [showDecorationOption, setShowDecorationOption] = useState(false);
-  const [moreInfoText, setMoreInfoText] = useState('');
   // Loading state for add to cart
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   // Reviews state
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewStats, setReviewStats] = useState<ReviewStats | null>(null);
   const [loadingReviews, setLoadingReviews] = useState(false);
-  const [showAllReviews, setShowAllReviews] = useState(false);
   const [showAllReviewsModal, setShowAllReviewsModal] = useState(false);
 
   // Animation states
@@ -324,7 +315,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
     <View style={styles.container}>
 
       {/* Fixed actions bar under notch (not scrolling) */}
-  <View style={[styles.fixedActionsRow, { top: fixedTop, height: fixedHeight, paddingTop: insets.top }]}> 
+  <View style={[styles.fixedActionsRow, { top: 0, height: fixedHeight, paddingTop: insets.top }]}> 
         <View style={styles.actionsLeft}> 
           <TouchableOpacity onPress={onBack} activeOpacity={0.7} style={[styles.actionButton, styles.actionButtonLarge]} accessibilityLabel="Back">
             <Svg width={26} height={26} viewBox="0 0 24 24" fill="none">
@@ -477,14 +468,6 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
             {displayDescription}
           </Text>
 
-          {/* Product Option */}
-          {service.customInputs && service.customInputs.length > 0 && (
-            <Text style={[styles.productOption, isRTL && styles.productOptionRTL]}>
-              {isRTL ? 'خيارات المنتج: ' : 'Product Option: '}
-              Add your own custom text
-            </Text>
-          )}
-
           {/* Vendor Policy Section */}
           {service.policies && service.policies.length > 0 && (
             <View style={styles.policiesSection}>
@@ -538,7 +521,13 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
                       <TouchableOpacity 
                         style={[styles.bookingRow, isRTL && styles.bookingRowRTL]} 
                         activeOpacity={0.8}
-                        onPress={() => setShowDatePicker(true)}>
+                        onPress={() => {
+                          // حذف cache البيانات القديمة قبل فتح modal التاريخ
+                          if (service) {
+                            clearDatePickerCacheForService(service._id, service.vendor?._id || '');
+                          }
+                          setShowDatePicker(true);
+                        }}>
                         <View style={styles.bookingIconWrap}>
                           <View style={styles.calendarIconSmallBorder}>
                             <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
@@ -598,150 +587,140 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
                   {service.customInputs && service.customInputs.length > 0 && (
                     <View style={styles.customTextContainer}>
                       <Text style={[styles.customTextHeader, isRTL && styles.descriptionTextRTL]}>
-                        {isRTL ? 'نص مخصص' : 'CUSTOM TEXT'}
+                        {isRTL ? 'خيارات' : 'OPTIONS'}
                       </Text>
 
-                      {/* Add Option Button */}
-                      <TouchableOpacity 
-                        style={styles.addOptionButton} 
-                        activeOpacity={0.8}
-                        onPress={() => setShowCustomInputs(!showCustomInputs)}>
-                        <Text style={styles.addOptionText}>
-                          {isRTL ? 'إضافة خيار' : 'Add Option'}
-                        </Text>
-                        <Svg 
-                          width={20} 
-                          height={20} 
-                          viewBox="0 0 24 24" 
-                          fill="none"
-                          style={{ transform: [{ rotate: showCustomInputs ? '90deg' : '0deg' }] }}>
-                          <Path 
-                            d="M9 18l6-6-6-6" 
-                            stroke={colors.primary} 
-                            strokeWidth={2} 
-                            strokeLinecap="round" 
-                            strokeLinejoin="round" 
-                          />
-                        </Svg>
-                      </TouchableOpacity>
-
-                      {/* Custom Inputs Options - shown inside same container when expanded */}
-                      {showCustomInputs && service.customInputs.map((input: any, index: number) => {
+                      {/* Each Custom Input as Separate Option */}
+                      {service.customInputs.map((input: any, index: number) => {
+                        const inputLabel = isRTL ? input.labelAr : input.label;
+                        const inputType = input.type;
                         const inputOptions = isRTL ? input.optionsAr : input.options;
-                        const selectedIndex = customInputSelections[input._id];
+                        const isExpanded = expandedCustomInputs[input._id] || false;
+                        const selectedValue = customInputSelections[input._id];
 
                         return (
-                          <View key={input._id} style={{ marginTop: 12 }}>
-                            {/* Options List - directly visible, no title */}
-                            {inputOptions.map((option: string, optIndex: number) => {
-                              const isSelected = selectedIndex === optIndex;
-                              const price = input.optionPrices[optIndex];
+                          <View key={input._id} style={styles.optionCardContainer}>
+                            {/* Add Option Button - shows the label and toggle */}
+                            <TouchableOpacity 
+                              style={styles.addOptionButton}
+                              activeOpacity={0.8}
+                              onPress={() => {
+                                setExpandedCustomInputs({
+                                  ...expandedCustomInputs,
+                                  [input._id]: !isExpanded,
+                                });
+                              }}>
+                              <Text style={styles.addOptionText}>
+                                {inputLabel}
+                              </Text>
+                              <Svg 
+                                width={20} 
+                                height={20} 
+                                viewBox="0 0 24 24" 
+                                fill="none"
+                                style={{ transform: [{ rotate: isExpanded ? '90deg' : '0deg' }] }}>
+                                <Path 
+                                  d="M9 18l6-6-6-6" 
+                                  stroke={colors.primary} 
+                                  strokeWidth={2} 
+                                  strokeLinecap="round" 
+                                  strokeLinejoin="round" 
+                                />
+                              </Svg>
+                            </TouchableOpacity>
 
-                              return (
-                                <TouchableOpacity
-                                  key={optIndex}
-                                  style={[styles.optionRow, isSelected && styles.optionRowSelected]}
-                                  activeOpacity={0.7}
-                                  onPress={() => {
-                                    // Toggle selection
-                                    if (isSelected) {
-                                      // Deselect if already selected
-                                      const newSelections = { ...customInputSelections };
-                                      delete newSelections[input._id];
-                                      setCustomInputSelections(newSelections);
-                                    } else {
-                                      // Select this option
+                            {/* Options Content - shown when expanded */}
+                            {isExpanded && (
+                              <View style={styles.optionExpandedContent}>
+                                {/* Text Input */}
+                                {inputType === 'text' && (
+                                  <TextInput
+                                    style={[styles.textInputField, isRTL && styles.textInputFieldRTL]}
+                                    placeholder={isRTL ? input.placeholderAr : input.placeholder}
+                                    placeholderTextColor="#999"
+                                    value={selectedValue as string || ''}
+                                    onChangeText={(text) => {
                                       setCustomInputSelections({
                                         ...customInputSelections,
-                                        [input._id]: optIndex,
+                                        [input._id]: text,
                                       });
-                                    }
-                                  }}>
-                                  <View style={styles.checkboxContainer}>
-                                    <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-                                      {isSelected && (
-                                        <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
-                                          <Path d="M20 6L9 17l-5-5" stroke={colors.textWhite} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
-                                        </Svg>
-                                      )}
-                                    </View>
-                                    <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
-                                      {option}
-                                    </Text>
-                                  </View>
-                                  <Text style={[styles.optionPrice, isSelected && styles.optionPriceSelected]}>
-                                    +{price.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
-                                  </Text>
-                                </TouchableOpacity>
-                              );
-                            })}
+                                    }}
+                                    textAlign={isRTL ? 'right' : 'left'}
+                                  />
+                                )}
+
+                                {/* Number Input */}
+                                {inputType === 'number' && (
+                                  <TextInput
+                                    style={[styles.textInputField, isRTL && styles.textInputFieldRTL]}
+                                    placeholder={isRTL ? input.placeholderAr : input.placeholder}
+                                    placeholderTextColor="#999"
+                                    keyboardType="number-pad"
+                                    value={selectedValue as string || ''}
+                                    onChangeText={(text) => {
+                                      const num = parseInt(text) || '';
+                                      if (num === '' || (input.validation && num >= (input.validation.min || 0) && num <= (input.validation.max || 999))) {
+                                        setCustomInputSelections({
+                                          ...customInputSelections,
+                                          [input._id]: num as any,
+                                        });
+                                      }
+                                    }}
+                                    textAlign={isRTL ? 'right' : 'left'}
+                                  />
+                                )}
+
+                                {/* Radio Single or Multiple */}
+                                {(inputType === 'radio-single' || inputType === 'radio-multiple') && inputOptions && inputOptions.length > 0 && (
+                                  inputOptions.map((option: string, optIndex: number) => {
+                                    const isSelected = selectedValue === optIndex;
+                                    const price = input.optionPrices?.[optIndex] || 0;
+
+                                    return (
+                                      <TouchableOpacity
+                                        key={optIndex}
+                                        style={[styles.optionRow, isSelected && styles.optionRowSelected]}
+                                        activeOpacity={0.7}
+                                        onPress={() => {
+                                          if (isSelected) {
+                                            const newSelections = { ...customInputSelections };
+                                            delete newSelections[input._id];
+                                            setCustomInputSelections(newSelections);
+                                          } else {
+                                            setCustomInputSelections({
+                                              ...customInputSelections,
+                                              [input._id]: optIndex,
+                                            });
+                                          }
+                                        }}>
+                                        <View style={styles.checkboxContainer}>
+                                          <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+                                            {isSelected && (
+                                              <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+                                                <Path d="M20 6L9 17l-5-5" stroke={colors.textWhite} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+                                              </Svg>
+                                            )}
+                                          </View>
+                                          <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
+                                            {option}
+                                          </Text>
+                                        </View>
+                                        <Text style={[styles.optionPrice, isSelected && styles.optionPriceSelected]}>
+                                          +{price.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
+                                        </Text>
+                                      </TouchableOpacity>
+                                    );
+                                  })
+                                )}
+                              </View>
+                            )}
                           </View>
                         );
                       })}
                     </View>
                   )}
 
-                  {/* Decoration Option Section */}
-                  <View style={styles.customTextContainer}>
-                    <Text style={[styles.customTextHeader, isRTL && styles.descriptionTextRTL]}>
-                      {isRTL ? 'خيار الديكور' : 'DECORATION OPTION'}
-                    </Text>
 
-                    {/* Add Option Button */}
-                    <TouchableOpacity 
-                      style={styles.addOptionButton} 
-                      activeOpacity={0.8}
-                      onPress={() => setShowDecorationOption(!showDecorationOption)}>
-                      <Text style={styles.addOptionText}>
-                        {isRTL ? 'إضافة خيار' : 'Add Option'}
-                      </Text>
-                      <Svg 
-                        width={20} 
-                        height={20} 
-                        viewBox="0 0 24 24" 
-                        fill="none"
-                        style={{ transform: [{ rotate: showDecorationOption ? '90deg' : '0deg' }] }}>
-                        <Path 
-                          d="M9 18l6-6-6-6" 
-                          stroke={colors.primary} 
-                          strokeWidth={2} 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                        />
-                      </Svg>
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Decoration Options List (when expanded) */}
-                  {showDecorationOption && (
-                    <View style={styles.customInputsContainer}>
-                      <View style={styles.customInputCard}>
-                        <View style={styles.customInputHeader}>
-                          <Text style={styles.customInputLabel}>
-                            {isRTL ? 'خيارات الديكور' : 'Decoration Options'}
-                          </Text>
-                        </View>
-                        <View style={styles.optionsContainer}>
-                          <Text style={styles.placeholderText}>
-                            {isRTL ? 'لا توجد خيارات ديكور متاحة' : 'No decoration options available'}
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-                  )}
-
-                  {/* More Info Section */}
-                  <View style={styles.moreInfoContainer}>
-                    <Text style={[styles.customTextHeader, isRTL && styles.descriptionTextRTL]}>
-                      {isRTL ? 'مزيد من المعلومات' : 'MORE INFO'}
-                    </Text>
-                    
-                    <View style={styles.moreInfoInputWrapper}>
-                      <Text style={styles.moreInfoPlaceholder}>
-                        {isRTL ? 'اكتب معلومات إضافية' : 'Type additional info'}
-                      </Text>
-                    </View>
-                  </View>
 
           {/* Reviews Section */}
           {reviewStats && reviewStats.totalRatings > 0 && (
@@ -973,17 +952,31 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
               // Calculate total price including custom options
               let totalPrice = service.price;
               const selectedCustomInputs = (service.customInputs?.map((input: any) => {
-                const selectedIndex = customInputSelections[input._id];
-                if (selectedIndex !== undefined) {
-                  const selectedOption = (isRTL ? input.optionsAr : input.options)[selectedIndex];
-                  const optionPrice = Number(input.optionPrices[selectedIndex] ?? 0);
-                  totalPrice += optionPrice; // Add option price to total
+                const selectedValue = customInputSelections[input._id];
+                
+                // Handle radio buttons (single and multiple)
+                if (input.type === 'radio-single' || input.type === 'radio-multiple') {
+                  const selectedIndex = selectedValue;
+                  if (selectedIndex !== undefined) {
+                    const selectedOption = (isRTL ? input.optionsAr : input.options)[selectedIndex];
+                    const optionPrice = Number(input.optionPrices[selectedIndex] ?? 0);
+                    totalPrice += optionPrice; // Add option price to total
+                    return {
+                      label: String(isRTL ? input.labelAr : input.label),
+                      value: selectedOption as string | number,
+                      price: optionPrice
+                    } as { label: string; value: string | number; price?: number };
+                  }
+                } 
+                // Handle text and number inputs
+                else if ((input.type === 'text' || input.type === 'number') && selectedValue !== undefined && selectedValue !== '') {
                   return {
                     label: String(isRTL ? input.labelAr : input.label),
-                    value: selectedOption as string | number,
-                    price: optionPrice
+                    value: selectedValue,
+                    price: 0 // Text/number inputs don't have option prices
                   } as { label: string; value: string | number; price?: number };
                 }
+                
                 return null;
               }) ?? []).filter((v): v is { label: string; value: string | number; price?: number } => v !== null);
 
@@ -995,12 +988,12 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
                 nameAr: service.nameAr,
                 vendorName: service.vendor?.name,
                 image: service.images && service.images.length > 0 ? service.images[0] : undefined,
-                price: totalPrice, // Use total price including custom options
+                price: service.price,
+                totalPrice: totalPrice, // Total price including custom options
                 quantity: 1, // Default quantity is 1, user can change in Cart (for unlimited services)
                 selectedDate,
                 selectedTime,
                 customInputs: selectedCustomInputs,
-                moreInfo: moreInfoText,
                 timeSlot: {
                   start: slotStart,
                   end: slotEnd
@@ -1019,8 +1012,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
               setSelectedDate(null);
               setSelectedTime(null);
               setCustomInputSelections({});
-              setMoreInfoText('');
-              setShowCustomInputs(false);
+              setExpandedCustomInputs({});
               
               // Success - silently added to cart, no alert
             } catch (error: any) {

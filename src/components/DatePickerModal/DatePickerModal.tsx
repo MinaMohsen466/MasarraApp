@@ -19,6 +19,27 @@ interface DatePickerModalProps {
 // Cache للبيانات المحملة بالفعل
 const availabilityCache = new Map<string, Map<string, { available: boolean; slots: number }>>();
 
+// دالة لحذف الـ cache - تُستدعى بعد تأكيد الحجز
+export const clearDatePickerCache = () => {
+  availabilityCache.clear();
+};
+
+// دالة لحذف cache لخدمة معينة
+export const clearDatePickerCacheForService = (serviceId: string, vendorId: string) => {
+  const keys = Array.from(availabilityCache.keys()).filter(key => 
+    key.startsWith(`${serviceId}-${vendorId}`)
+  );
+  keys.forEach(key => availabilityCache.delete(key));
+};
+
+// دالة لحذف cache لشهر معين من خدمة معينة (تستخدم عند الرجوع لنفس الخدمة)
+export const clearDatePickerCacheForMonth = (serviceId: string, vendorId: string, year: number, month: number) => {
+  const cacheKey = `${serviceId}-${vendorId}-${year}-${month}`;
+  if (availabilityCache.has(cacheKey)) {
+    availabilityCache.delete(cacheKey);
+  }
+};
+
 const DatePickerModal: React.FC<DatePickerModalProps> = ({
   visible,
   onClose,

@@ -86,13 +86,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
 
   const getServiceName = (booking: Booking) => {
     const service = booking.services[0]?.service;
-    if (!service) return isRTL ? 'خدمة' : 'Service';
-    
-    if (typeof service === 'string') return isRTL ? 'خدمة' : 'Service';
-    
-    return isRTL 
-      ? (service as any)?.nameAr || (service as any)?.name || 'خدمة'
-      : (service as any)?.name || (service as any)?.nameAr || 'Service';
+    if (!service || typeof service === 'string') return isRTL ? 'خدمة' : 'Service';
+    return isRTL ? (service as any)?.nameAr || (service as any)?.name || 'خدمة' : (service as any)?.name || 'Service';
   };
 
   const getServiceId = (booking: Booking) => {
@@ -102,79 +97,60 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
 
   const getVendorName = (booking: Booking) => {
     const vendor = booking.services[0]?.vendor;
-    if (!vendor) return isRTL ? 'مقدم الخدمة' : 'Vendor';
-    
-    if (typeof vendor !== 'object') return isRTL ? 'مقدم الخدمة' : 'Vendor';
-    
+    if (!vendor || typeof vendor !== 'object') return isRTL ? 'مقدم الخدمة' : 'Vendor';
     return isRTL 
-      ? (vendor as any)?.nameAr 
-        || (vendor as any)?.vendorProfile?.businessName_ar 
-        || (vendor as any)?.vendorProfile?.businessName
-        || (vendor as any)?.name 
-        || 'مقدم الخدمة'
-      : (vendor as any)?.name 
-        || (vendor as any)?.vendorProfile?.businessName
-        || (vendor as any)?.vendorProfile?.businessName_ar
-        || 'Vendor';
+      ? (vendor as any)?.nameAr || (vendor as any)?.vendorProfile?.businessName_ar || (vendor as any)?.name || 'مقدم الخدمة'
+      : (vendor as any)?.name || (vendor as any)?.vendorProfile?.businessName || 'Vendor';
   };
 
   const getDescription = (booking: Booking) => {
     const service = booking.services[0]?.service;
     if (!service || typeof service === 'string') return isRTL ? 'لا يوجد وصف' : 'No description';
-    
-    return isRTL 
-      ? (service as any)?.descriptionAr || (service as any)?.description || 'لا يوجد وصف' 
-      : (service as any)?.description || (service as any)?.descriptionAr || 'No description';
+    return isRTL ? (service as any)?.descriptionAr || (service as any)?.description || 'لا يوجد وصف' : (service as any)?.description || 'No description';
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDateTime = (dateString: string, isTime: boolean = false) => {
     const date = new Date(dateString);
-    const day = date.getDate();
-    const month = date.getMonth() + 1;
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
-  };
-
-  const formatTime = (timeString: string) => {
-    const date = new Date(timeString);
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    const displayHours = hours % 12 || 12;
-    return `${displayHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${ampm}`;
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'confirmed':
-        return '#4CAF50';
-      case 'pending':
-        return '#FF9800';
-      case 'cancelled':
-        return '#F44336';
-      case 'completed':
-        return '#2196F3';
-      default:
-        return '#757575';
+    if (isTime) {
+      const hours = date.getHours();
+      const minutes = date.getMinutes();
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      const displayHours = hours % 12 || 12;
+      return `${displayHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${ampm}`;
     }
+    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
   };
 
-  const getStatusText = (status: string) => {
-    if (isRTL) {
-      switch (status.toLowerCase()) {
-        case 'confirmed':
-          return 'مؤكد';
-        case 'pending':
-          return 'قيد الانتظار';
-        case 'cancelled':
-          return 'ملغي';
-        case 'completed':
-          return 'مكتمل';
-        default:
-          return status;
-      }
-    }
-    return status.charAt(0).toUpperCase() + status.slice(1);
+  const getStatusStyle = (status: string) => {
+    const statusLower = status.toLowerCase();
+    const colors: { [key: string]: string } = {
+      'confirmed': '#4CAF50',
+      'pending': '#FF9800',
+      'cancelled': '#F44336',
+      'completed': '#2196F3'
+    };
+    const labels: { [key: string]: { ar: string; en: string } } = {
+      'confirmed': { ar: 'مؤكد', en: 'Confirmed' },
+      'pending': { ar: 'قيد الانتظار', en: 'Pending' },
+      'cancelled': { ar: 'ملغي', en: 'Cancelled' },
+      'completed': { ar: 'مكتمل', en: 'Completed' }
+    };
+    return {
+      color: colors[statusLower] || '#757575',
+      text: isRTL ? labels[statusLower]?.ar || status : labels[statusLower]?.en || status.charAt(0).toUpperCase() + status.slice(1)
+    };
+  };
+
+  // Get total price from booking or calculate from customInputs if available
+  const getTotalPrice = (booking: Booking): number => {
+    if (booking.totalPrice) return booking.totalPrice;
+    const service = booking.services?.[0];
+    if (!service) return 0;
+    let total = service.price || 0;
+    service.customInputs?.forEach((input: any) => {
+      if (input.price) total += input.price;
+    });
+    return total;
   };
 
   const handleQRCode = async (booking: Booking) => {
@@ -193,10 +169,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
 
       const canCreate = await canCreateQRCode(booking, settings, token);
       if (!canCreate) {
-        Alert.alert(
-          isRTL ? 'غير مسموح' : 'Not Allowed',
-          isRTL ? 'لا يمكن إنشاء رمز QR لهذا نوع الحدث' : 'QR codes cannot be created for this occasion type'
-        );
+        Alert.alert(isRTL ? 'غير مسموح' : 'Not Allowed', isRTL ? 'لا يمكن إنشاء رمز QR لهذا نوع الحدث' : 'QR codes cannot be created for this occasion type');
         return;
       }
 
@@ -207,12 +180,6 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
     } catch (error) {
       console.error('Error preparing QR code:', error);
       Alert.alert(isRTL ? 'خطأ' : 'Error', isRTL ? 'حدث خطأ' : 'An error occurred');
-    }
-  };
-
-  const handleReview = (bookingId: string, serviceId: string, serviceName: string) => {
-    if (onWriteReview) {
-      onWriteReview(bookingId, serviceId, serviceName);
     }
   };
 
@@ -278,8 +245,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
                     {getServiceName(booking)}
                   </Text>
                 </View>
-                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(booking.status) }]}>
-                  <Text style={styles.statusText}>{getStatusText(booking.status)}</Text>
+                <View style={[styles.statusBadge, { backgroundColor: getStatusStyle(booking.status).color }]}>
+                  <Text style={styles.statusText}>{getStatusStyle(booking.status).text}</Text>
                 </View>
               </View>
 
@@ -292,14 +259,14 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
               <View style={styles.infoRow}>
                 <Text style={styles.infoIcon}>📅</Text>
                 <Text style={styles.infoText}>
-                  {formatDate(booking.eventDate)}
+                  {formatDateTime(booking.eventDate)}
                 </Text>
               </View>
 
               <View style={styles.infoRow}>
                 <Text style={styles.infoIcon}>🕐</Text>
                 <Text style={styles.infoText}>
-                  {formatTime(booking.eventTime.start)} - {formatTime(booking.eventTime.end)}
+                  {formatDateTime(booking.eventTime.start, true)} - {formatDateTime(booking.eventTime.end, true)}
                 </Text>
               </View>
 
@@ -317,13 +284,32 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
                 </Text>
               </View>
 
+              {/* Custom Inputs / Add-ons */}
+              {booking.services[0]?.customInputs && booking.services[0].customInputs.length > 0 && (
+                <View style={styles.customInputsContainer}>
+                  <Text style={styles.customInputsTitle}>
+                    {isRTL ? 'الإضافات:' : 'Add-ons:'}
+                  </Text>
+                  {booking.services[0].customInputs.map((input: any, index: number) => (
+                    <View key={index} style={styles.customInputRow}>
+                      <Text style={styles.customInputLabel}>
+                        {input.label}:
+                      </Text>
+                      <Text style={styles.customInputValue}>
+                        {typeof input.value === 'number' ? input.value : String(input.value)}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
               {/* Price */}
               <View style={styles.priceContainer}>
                 <Text style={styles.priceLabel}>
                   {isRTL ? 'المبلغ الإجمالي:' : 'Total Amount:'}
                 </Text>
                 <Text style={styles.priceValue}>
-                  KWD {booking.totalPrice.toFixed(3).replace(/\.?0+$/, '')}
+                  KWD {getTotalPrice(booking).toFixed(3).replace(/\.?0+$/, '')}
                 </Text>
               </View>
 
@@ -357,8 +343,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
                   style={styles.actionButton}
                   onPress={() => {
                     const serviceId = getServiceId(booking);
-                    if (serviceId) {
-                      handleReview(booking._id, serviceId, getServiceName(booking));
+                    if (serviceId && onWriteReview) {
+                      onWriteReview(booking._id, serviceId, getServiceName(booking));
                     }
                   }}
                 >

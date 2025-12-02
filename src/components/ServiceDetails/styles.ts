@@ -236,19 +236,6 @@ export const styles = StyleSheet.create({
     textAlign: 'right',
     writingDirection: 'rtl',
   },
-  productOption: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginBottom: 20,
-    fontStyle: 'italic',
-    backgroundColor: '#F9F9F9',
-    padding: 12,
-    borderRadius: 8,
-  },
-  productOptionRTL: {
-    textAlign: 'right',
-    writingDirection: 'rtl',
-  },
   policiesSection: {
     marginTop: 4,
     marginBottom: 12,
@@ -443,38 +430,48 @@ export const styles = StyleSheet.create({
     borderRadius: 12,
   },
 
-  /* Custom Inputs Section */
-  customInputsContainer: {
-    backgroundColor: '#F9F9F9',
-    borderRadius: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    marginTop: 12,
-    marginBottom: 20,
-  },
-  customInputCard: {
-    backgroundColor: colors.background,
-    borderRadius: 12,
-    marginBottom: 12,
-    overflow: 'hidden',
-  },
-  customInputHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E8E8E8',
-  },
-  customInputLabel: {
+  optionGroupTitle: {
     fontSize: 14,
     fontWeight: '600',
     color: colors.textDark,
+    marginBottom: 10,
+    marginTop: 4,
   },
-  optionsContainer: {
-    padding: 12,
+
+  optionCardContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    marginBottom: 12,
+    overflow: 'hidden',
   },
+
+  optionExpandedContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#F9F9F9',
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+  },
+
+  /* Custom Inputs Section */
+  textInputField: {
+    borderWidth: 1,
+    borderColor: '#D0D0D0',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: colors.textDark,
+    backgroundColor: '#FAFAFA',
+    marginBottom: 8,
+  },
+
+  textInputFieldRTL: {
+    fontFamily: 'System',
+  },
+
   optionRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -527,34 +524,6 @@ export const styles = StyleSheet.create({
   },
   optionPriceSelected: {
     color: colors.primary,
-  },
-
-  /* More Info Section */
-  moreInfoContainer: {
-    backgroundColor: '#F9F9F9',
-    borderRadius: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    marginTop: 12,
-    marginBottom: 20,
-  },
-  moreInfoInputWrapper: {
-    backgroundColor: colors.background,
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    minHeight: 80,
-  },
-  moreInfoPlaceholder: {
-    fontSize: 14,
-    color: '#999',
-    fontStyle: 'italic',
-  },
-  placeholderText: {
-    fontSize: 13,
-    color: '#999',
-    textAlign: 'center',
-    paddingVertical: 20,
   },
 
   /* Bottom Action Buttons */

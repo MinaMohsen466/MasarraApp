@@ -163,19 +163,15 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
     }
   };
 
-  const handleOpenDrawer = () => {
-    setIsDrawerVisible(true);
-  };
-
-  const handleCloseDrawer = () => {
-    setIsDrawerVisible(false);
+  const toggleDrawer = (state?: boolean) => {
+    setIsDrawerVisible(state ?? !isDrawerVisible);
   };
 
   const handleNavigation = (route: string) => {
     if (onNavigate) {
       onNavigate(route.toLowerCase());
     }
-    handleCloseDrawer();
+    toggleDrawer(false);
   };
 
   const handleCheckout = async () => {
@@ -266,118 +262,55 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
   };
 
   const calculateSubTotal = () => {
-    // Only calculate price for 'available_now' items
-    // 'pending_confirmation' items are free until confirmed
     return cartItems.reduce((total, item) => {
       if (!item.availabilityStatus || item.availabilityStatus === 'available_now') {
-        return total + (item.price * item.quantity);
+        const itemPrice = item.totalPrice ?? item.price;
+        return total + (itemPrice * item.quantity);
       }
       return total;
     }, 0);
   };
 
   const calculateDeliveryCharges = () => {
-    // 5 KD delivery charge per service (not per quantity)
-    // Limited services (maxBookingsPerSlot: 1) don't have delivery charges
-    // Only for available_now items
-    // Get unique unlimited services and charge 5 KD for each
     const uniqueUnlimitedServiceIds = new Set<string>();
-    
     cartItems.forEach(item => {
       if ((!item.availabilityStatus || item.availabilityStatus === 'available_now') &&
           item.maxBookingsPerSlot === -1) {
         uniqueUnlimitedServiceIds.add(item.serviceId);
       }
     });
-    
-    return uniqueUnlimitedServiceIds.size * 5; // 5 KD per unique unlimited service
+    return uniqueUnlimitedServiceIds.size * 5;
   };
 
-  const calculateTotalDeliveryCharges = () => {
-    return calculateDeliveryCharges();
-  };
-
-  const calculateTotalAmount = () => {
-    return calculateSubTotal() + calculateDeliveryCharges();
-  };
-
-  // Calculate amounts for 'available_now' items only (items that can be paid now)
   const calculatePayNowAmount = () => {
     const availableNowSubtotal = cartItems.reduce((total, item) => {
       if (!item.availabilityStatus || item.availabilityStatus === 'available_now') {
-        return total + (item.price * item.quantity);
+        const itemPrice = item.totalPrice ?? item.price;
+        return total + (itemPrice * item.quantity);
       }
       return total;
     }, 0);
-    
-    const deliveryCharges = calculateDeliveryCharges();
-    const totalWithDelivery = availableNowSubtotal + deliveryCharges;
-    return totalWithDelivery * 0.6; // 60% upfront
+    return (availableNowSubtotal + calculateDeliveryCharges()) * 0.6;
   };
 
-  // Calculate amounts for 'pending_confirmation' items + remaining 40% of 'available_now' items
   const calculatePayableAfterConfirmation = () => {
-    // 40% of available_now items (including delivery charges)
     const availableNowSubtotal = cartItems.reduce((total, item) => {
       if (!item.availabilityStatus || item.availabilityStatus === 'available_now') {
-        return total + (item.price * item.quantity);
+        const itemPrice = item.totalPrice ?? item.price;
+        return total + (itemPrice * item.quantity);
       }
       return total;
     }, 0);
-    
     const deliveryCharges = calculateDeliveryCharges();
-    const totalWithDelivery = availableNowSubtotal + deliveryCharges;
-    const availableNowRemaining = totalWithDelivery * 0.4; // 40% later
-
-    // 100% of pending_confirmation items (paid after vendor confirms - no delivery yet)
+    const availableNowRemaining = (availableNowSubtotal + deliveryCharges) * 0.4;
     const pendingTotal = cartItems.reduce((total, item) => {
       if (item.availabilityStatus === 'pending_confirmation') {
-        return total + (item.price * item.quantity); // price only, no delivery charge
+        const itemPrice = item.totalPrice ?? item.price;
+        return total + (itemPrice * item.quantity);
       }
       return total;
     }, 0);
-
     return availableNowRemaining + pendingTotal;
-  };
-
-  // Helper to check if a cart item is old/past
-  const isItemPast = (item: CartItem): boolean => {
-    // Prefer exact instant comparison when available
-    const now = new Date();
-    if (item.timeSlot && item.timeSlot.start) {
-      try {
-        const bookingInstant = new Date(item.timeSlot.start);
-        return bookingInstant < now;
-      } catch (e) {
-        // fallback to previous checks
-      }
-    }
-
-    if (!item.selectedDate || !item.selectedTime) return false;
-
-    const bookingDate = new Date(item.selectedDate);
-    const isToday = bookingDate.toDateString() === now.toDateString();
-
-    // If booking date is in the past
-    if (bookingDate < now && !isToday) {
-      return true;
-    }
-
-    // If booking is today, check time
-    if (isToday && item.selectedTime) {
-      const timeMatch = item.selectedTime.match(/(\d{1,2}):(\d{2})/);
-      if (timeMatch) {
-        const hours = parseInt(timeMatch[1]);
-        const minutes = parseInt(timeMatch[2]);
-
-        const bookingDateTime = new Date(bookingDate);
-        bookingDateTime.setHours(hours, minutes, 0, 0);
-
-        return bookingDateTime < now;
-      }
-    }
-
-    return false;
   };
 
   // If success screen should be shown
@@ -402,7 +335,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
         <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           {/* Menu Button - Left */}
           <TouchableOpacity 
-            onPress={handleOpenDrawer} 
+            onPress={() => toggleDrawer(true)} 
             style={styles.menuButton}
             activeOpacity={0.6}
             hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}>
@@ -467,7 +400,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
 
         <Drawer 
           isVisible={isDrawerVisible}
-          onClose={handleCloseDrawer}
+          onClose={() => toggleDrawer(false)}
           onNavigate={handleNavigation}
         />
       </View>
@@ -480,7 +413,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         {/* Menu Button - Left */}
         <TouchableOpacity 
-          onPress={handleOpenDrawer} 
+          onPress={() => toggleDrawer(true)} 
           style={styles.menuButton}
           activeOpacity={0.6}
           hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}>
@@ -544,10 +477,16 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
             // this keeps all items visible and prevents the summary from covering the last item
             contentContainerStyle={{ paddingBottom: summaryHeight + (insets.bottom ?? 0) + 34 }}
             showsVerticalScrollIndicator={false}>
-            {cartItems.map((item, index) => (
+            {cartItems.map((item, index) => {
+              const now = new Date();
+              const isItemOld = item.timeSlot?.start 
+                ? new Date(item.timeSlot.start) < now
+                : item.selectedDate && new Date(item.selectedDate).toDateString() < now.toDateString();
+              
+              return (
               <View key={item._id} style={styles.cartCard}>
                 {/* Old Booking Warning Badge */}
-                {isItemPast(item) && (
+                {isItemOld && (
                   <View style={styles.oldBookingBadge}>
                     <Text style={styles.oldBookingText}>
                       {isRTL ? '⚠ وقت قديم' : '⚠ Past Time'}
@@ -673,7 +612,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
                       </Text>
                     ) : (
                       <Text style={styles.priceValue}>
-                        {(item.price * item.quantity).toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
+                        {((item.totalPrice ?? item.price) * item.quantity).toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
                       </Text>
                     )}
                   </View>
@@ -708,20 +647,17 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
                   </TouchableOpacity>
                 </View>
               </View>
-            ))}
+            );
+            })}
           </ScrollView>
 
-          {/* Bottom Payment Summary */}
-          {/* place the bottom summary above the app bottom navigation (nav height ≈ 64) */}
-          {/* place summary flush above bottom navigation (no extra gap) */}
-          {/* add small gap (12px) between summary and bottom nav */}
           <View
             onLayout={(e) => setSummaryHeight(e.nativeEvent.layout.height)}
             style={[
               styles.bottomSummary,
               { 
-                bottom: (insets.bottom ?? 0) + 24, 
-                paddingBottom: Dimensions.get('window').width >= 600 ? (insets.bottom ?? 0) + 140 : (insets.bottom ?? 0) + 24,
+                bottom: (insets.bottom ?? 0) + 8, 
+                paddingBottom: Dimensions.get('window').width >= 600 ? (insets.bottom ?? 0) + 80 : (insets.bottom ?? 0) + 8,
               },
             ]}>
             {/* Totals */}
@@ -735,14 +671,14 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>{isRTL ? 'إجمالي رسوم التوصيل' : 'Total Delivery Charges'}</Text>
               <Text style={styles.summaryValueGreen}>
-                {calculateTotalDeliveryCharges().toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
+                {calculateDeliveryCharges().toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
               </Text>
             </View>
 
             <View style={[styles.summaryRow, styles.summaryRowTotal]}>
               <Text style={styles.summaryLabelTotal}>{isRTL ? 'المبلغ الإجمالي' : 'Total Amount'}</Text>
               <Text style={styles.summaryValueTotal}>
-                {calculateTotalAmount().toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
+                {(calculateSubTotal() + calculateDeliveryCharges()).toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
               </Text>
             </View>
 
@@ -798,7 +734,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
       {/* Drawer Navigation */}
       <Drawer 
         isVisible={isDrawerVisible}
-        onClose={handleCloseDrawer}
+        onClose={() => toggleDrawer(false)}
         onNavigate={handleNavigation}
       />
 

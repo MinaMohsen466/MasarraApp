@@ -132,6 +132,37 @@ export const orderHistoryStyles = StyleSheet.create({
     color: '#666666',
     flex: 1,
   },
+  customInputsContainer: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#EEEEEE',
+  },
+  customInputsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333333',
+    marginBottom: 8,
+  },
+  customInputRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 4,
+  },
+  customInputLabel: {
+    fontSize: 13,
+    color: '#666666',
+    fontWeight: '500',
+    flex: 1,
+  },
+  customInputValue: {
+    fontSize: 13,
+    color: '#333333',
+    fontWeight: '500',
+    textAlign: 'right',
+    marginLeft: 8,
+  },
   priceContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',

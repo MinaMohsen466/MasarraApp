@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL, checkTimeSlotAvailability } from './api';
+import { clearDatePickerCacheForService } from '../components/DatePickerModal/DatePickerModal';
 
 const CART_STORAGE_PREFIX = '@masarra_cart_';
 
@@ -12,6 +13,7 @@ export type CartItem = {
   vendorName?: string;
   image?: string;
   price: number;
+  totalPrice?: number; // Total price including custom option additions
   quantity: number;
   selectedDate: Date | string;
   selectedTime: string;
@@ -381,11 +383,19 @@ export async function createBookingsFromCart(address?: string): Promise<{
 
     for (const item of cartItems) {
       try {
-        // Convert customInputs from array to object format
-        const customInputsObject: { [key: string]: string | number } = {};
+        // Convert customInputs from array to object format, keeping price information
+        const customInputsObject: { [key: string]: string | number | any } = {};
+        const customInputsWithPrices: Array<{ label: string; value: string | number; price?: number }> = [];
+        
         if (item.customInputs && Array.isArray(item.customInputs)) {
           item.customInputs.forEach(input => {
             customInputsObject[input.label] = input.value;
+            // Also keep the full object with price for backend processing
+            customInputsWithPrices.push({
+              label: input.label,
+              value: input.value,
+              price: input.price
+            });
           });
         }
         
@@ -400,7 +410,9 @@ export async function createBookingsFromCart(address?: string): Promise<{
           address: address || '',
           notes: '',
           customInputs: customInputsObject,
-          specialRequests: item.moreInfo || ''
+          customInputsWithPrices: customInputsWithPrices, // Send full data including prices
+          specialRequests: item.moreInfo || '',
+          totalPrice: item.totalPrice || item.price // Send total price including custom options
         };
         
         const response = await fetch(`${API_BASE_URL}/bookings`, {
@@ -430,6 +442,9 @@ export async function createBookingsFromCart(address?: string): Promise<{
         } else {
           const booking = await response.json();
           bookings.push(booking);
+          
+          // حذف الـ cache للخدمة بعد نجاح الحجز
+          clearDatePickerCacheForService(item.serviceId, item.vendorId);
         }
       } catch (error: any) {
         errors.push({
