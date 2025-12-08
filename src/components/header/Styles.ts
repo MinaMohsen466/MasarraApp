@@ -8,6 +8,7 @@ export const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 10,
         paddingVertical: 4,
+        backgroundColor: colors.backgroundHome,
     },
     menuButton: {
         justifyContent: 'center',

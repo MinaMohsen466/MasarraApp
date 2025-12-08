@@ -8,7 +8,7 @@ const CARD_WIDTH = (SCREEN_WIDTH - 0) / 2.3;
 export const styles = StyleSheet.create({
   container: {
     paddingVertical: 20,
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: colors.backgroundHome,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -22,8 +22,8 @@ export const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: colors.primary,
+    fontWeight: '900',
+    color: colors.primaryDark,
     letterSpacing: 1,
   },
   sectionTitleRTL: {
@@ -36,8 +36,12 @@ export const styles = StyleSheet.create({
   },
   viewAllButton: {
     fontSize: 14,
-    color: colors.primary,
-    fontWeight: '600',
+    color: colors.textWhite,
+    fontWeight: '700',
+    backgroundColor: colors.primaryDark,
+    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
   viewAllButtonRTL: {
     textAlign: 'left',
@@ -177,9 +181,5 @@ export const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     color: colors.textSecondary,
-  },
-  textRTL: {
-    textAlign: 'right',
-    writingDirection: 'rtl',
   },
 });

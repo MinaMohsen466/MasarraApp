@@ -49,10 +49,13 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
   const [loading, setLoading] = useState(true);
   const [messageText, setMessageText] = useState('');
   const [sending, setSending] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const [chatId, setChatId] = useState<string>('');
   const flatListRef = useRef<FlatList>(null);
   const refreshIntervalRef = useRef<any>(null);
   const lastMessagesCountRef = useRef<number>(0);
+  const screenWidth = Dimensions.get('window').width;
+  const isTablet = screenWidth >= 600;
 
   useEffect(() => {
     loadMessages();
@@ -72,21 +75,14 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
 
   const loadMessages = async (silent = false) => {
     try {
-      if (!silent) {
-        setLoading(true);
-      }
+      if (!silent) setLoading(true);
       const token = await AsyncStorage.getItem('userToken');
-      
       if (!token) {
-        console.log('No token found');
-        if (!silent) {
-          setLoading(false);
-        }
+        if (!silent) setLoading(false);
         return;
       }
       
       // First, get or create chat with this vendor
-      console.log('📤 Sending vendor chat request with vendorId:', vendorId);
       const chatResponse = await fetch(`${API_BASE_URL}/api/chats/start`, {
         method: 'POST',
         headers: {
@@ -99,16 +95,11 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
       });
 
       if (!chatResponse.ok) {
-        const errorText = await chatResponse.text();
-        console.error('❌ Failed to get/create chat:', chatResponse.status, errorText);
-        if (!silent) {
-          setLoading(false);
-        }
+        if (!silent) setLoading(false);
         return;
       }
 
       const chatData = await chatResponse.json();
-      console.log('✅ Chat loaded:', chatData);
       
       if (chatData.data && chatData.data._id) {
         setChatId(chatData.data._id);
@@ -122,41 +113,28 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
         }
       });
       
+      const messages = chatData.data?.messages || [];
+      let currentUserId: string | null = null;
+      
       if (userResponse.ok) {
         const userData = await userResponse.json();
-        
-        // Extract messages from chat data
-        const messages = chatData.data?.messages || [];
-        const messagesWithFlag = messages.map((msg: any, index: number) => ({
-          _id: msg._id || `${String(Math.random())}-${index}-${Date.now()}`,
-          sender: msg.sender || { _id: userData._id, name: userData.name },
-          message: msg.content || msg.message || '',
-          createdAt: msg.timestamp || msg.createdAt || new Date().toISOString(),
-          isMe: (msg.sender?._id || msg.sender) === userData._id
-        }));
-        
-        if (messagesWithFlag.length !== lastMessagesCountRef.current) {
-          setMessages(messagesWithFlag);
-          lastMessagesCountRef.current = messagesWithFlag.length;
-        }
-      } else {
-        const messages = chatData.data?.messages || [];
-        const messagesWithFlag = messages.map((msg: any, index: number) => ({
-          _id: msg._id || `${String(Math.random())}-${index}-${Date.now()}`,
-          sender: msg.sender || { _id: '', name: 'Unknown' },
-          message: msg.content || msg.message || '',
-          createdAt: msg.timestamp || msg.createdAt || new Date().toISOString(),
-          isMe: false
-        }));
-        
-        // Only update if message count changed
-        if (messagesWithFlag.length !== lastMessagesCountRef.current) {
-          setMessages(messagesWithFlag);
-          lastMessagesCountRef.current = messagesWithFlag.length;
-        }
+        currentUserId = userData._id;
       }
-    } catch (error) {
-      console.error('Error loading messages:', error);
+      
+      const messagesWithFlag = messages.map((msg: any, index: number) => ({
+        _id: msg._id || `${String(Math.random())}-${index}-${Date.now()}`,
+        sender: msg.sender || { _id: '', name: 'Unknown' },
+        message: msg.content || msg.message || '',
+        createdAt: msg.timestamp || msg.createdAt || new Date().toISOString(),
+        isMe: currentUserId ? (msg.sender?._id || msg.sender) === currentUserId : false
+      }));
+      
+      if (messagesWithFlag.length !== lastMessagesCountRef.current) {
+        setMessages(messagesWithFlag);
+        lastMessagesCountRef.current = messagesWithFlag.length;
+      }
+    } catch {
+      // Silent error handling
     } finally {
       if (!silent) {
         setLoading(false);
@@ -164,7 +142,6 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
     }
   };
 
-  // Mark messages as read
   const markMessagesAsRead = async (token: string, chatId: string) => {
     try {
       await fetch(`${API_BASE_URL}/api/chats/${chatId}/read`, {
@@ -174,9 +151,7 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
           'Content-Type': 'application/json'
         }
       });
-    } catch (error) {
-      console.error('Error marking messages as read:', error);
-    }
+    } catch {}
   };
 
   const sendMessage = async () => {
@@ -184,76 +159,49 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
 
     try {
       setSending(true);
-      const messageToSend = messageText.trim(); // Save the message before clearing
+      const messageToSend = messageText.trim();
       const token = await AsyncStorage.getItem('userToken');
       
-      if (!token) {
-        console.log('No token found');
-        return;
-      }
-
-      if (!chatId) {
-        console.log('No chat ID found');
+      if (!token || !chatId) {
         Alert.alert('Error', 'Chat not initialized. Please try again.');
         setSending(false);
         return;
       }
 
+      // Clear input immediately for UX
+      setMessageText('');
+      
+      // Add message optimistically to UI
+      const newMessage: Message = {
+        _id: `temp-${Date.now()}`,
+        sender: { _id: 'me', name: 'You' },
+        message: messageToSend,
+        createdAt: new Date().toISOString(),
+        isMe: true
+      };
+      
+      setMessages(prev => [newMessage, ...prev]);
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 50);
+
+      // Send message in background (non-blocking)
       const response = await fetch(`${API_BASE_URL}/api/chats/${chatId}/messages`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          content: messageToSend
-        })
+        body: JSON.stringify({ content: messageToSend })
       });
 
       if (response.ok) {
-        const result = await response.json();
-        console.log('✅ Message sent:', result);
-        
-        // Clear input immediately
-        setMessageText('');
-        
-        // Immediately reload messages after sending
-        await loadMessages(false);
-        
-        // Get user data for the new message
-        const userResponse = await fetch(`${API_BASE_URL}/api/auth/me`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        if (userResponse.ok) {
-          const userData = await userResponse.json();
-          
-          // Create new message object with the message we sent (not the current state)
-          const newMessage: Message = {
-            _id: result._id || result.messageId || String(Date.now()),
-            sender: {
-              _id: userData._id,
-              name: userData.name || 'You'
-            },
-            message: messageToSend, // Use the saved message, not messageText
-            createdAt: new Date().toISOString(),
-            isMe: true
-          };
-          
-          // Scroll to bottom
-          setTimeout(() => {
-            flatListRef.current?.scrollToEnd({ animated: true });
-          }, 100);
-        }
+        // Reload messages silently in background to sync
+        loadMessages(true);
       } else {
-        const errorText = await response.text();
-        console.error('❌ Failed to send message:', response.status, errorText);
+        // Revert on failure
+        setMessages(prev => prev.filter(m => m._id !== newMessage._id));
         Alert.alert('Error', 'Failed to send message. Please try again.');
       }
-    } catch (error) {
-      console.error('Error sending message:', error);
+    } catch {
       Alert.alert('Error', 'Error sending message. Please check your connection.');
     } finally {
       setSending(false);
@@ -269,67 +217,51 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
     return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
   };
 
-  const renderMessage = ({ item }: { item: Message }) => {
-    const isMe = item.isMe;
-    
-    return (
-      <View style={[styles.messageRow, isMe && styles.messageRowMe]}>
-        {!isMe && vendorImage && (
-          <Image
-            source={{ uri: getImageUrl(vendorImage) }}
-            style={styles.messageAvatar}
-          />
-        )}
-        <View style={[
-          styles.messageBubble,
-          isMe ? styles.messageBubbleMe : styles.messageBubbleThem
-        ]}>
-          <Text style={[
-            styles.messageText,
-            isMe && styles.messageTextMe
-          ]}>
-            {item.message}
-          </Text>
-          <Text style={[
-            styles.messageTime,
-            isMe && styles.messageTimeMe
-          ]}>
-            {formatTime(item.createdAt)}
-          </Text>
-        </View>
+  const renderMessage = ({ item }: { item: Message }) => (
+    <View style={[styles.messageRow, item.isMe && styles.messageRowMe]}>
+      {!item.isMe && vendorImage && !imageError && (
+        <Image 
+          source={{ uri: getImageUrl(vendorImage) }} 
+          style={styles.messageAvatar}
+          onError={() => setImageError(true)}
+        />
+      )}
+      <View style={[styles.messageBubble, item.isMe ? styles.messageBubbleMe : styles.messageBubbleThem]}>
+        <Text style={[styles.messageText, item.isMe && styles.messageTextMe]}>{item.message}</Text>
+        <Text style={[styles.messageTime, item.isMe && styles.messageTimeMe]}>{formatTime(item.createdAt)}</Text>
       </View>
-    );
-  };
+    </View>
+  );
+
+  const renderHeader = () => (
+    <View style={styles.header}>
+      <TouchableOpacity onPress={onBack} style={styles.backButton}>
+        <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+          <Path d="M15 18l-6-6 6-6" stroke="#00695C" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+        </Svg>
+      </TouchableOpacity>
+      <View style={styles.headerContent}>
+        {vendorImage && !imageError ? (
+          <Image 
+            source={{ uri: getImageUrl(vendorImage) }} 
+            style={styles.headerAvatar}
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          <View style={styles.headerAvatarPlaceholder}>
+            <Text style={styles.headerAvatarText}>{vendorName.charAt(0).toUpperCase()}</Text>
+          </View>
+        )}
+        <Text style={styles.headerTitle}>{vendorName}</Text>
+      </View>
+      <View style={styles.placeholder} />
+    </View>
+  );
 
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-              <Path d="M15 18l-6-6 6-6" stroke="#00695C" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-            </Svg>
-          </TouchableOpacity>
-          
-          <View style={styles.headerContent}>
-            {vendorImage ? (
-              <Image
-                source={{ uri: getImageUrl(vendorImage) }}
-                style={styles.headerAvatar}
-              />
-            ) : (
-              <View style={styles.headerAvatarPlaceholder}>
-                <Text style={styles.headerAvatarText}>
-                  {vendorName.charAt(0).toUpperCase()}
-                </Text>
-              </View>
-            )}
-            <Text style={styles.headerTitle}>{vendorName}</Text>
-          </View>
-          
-          <View style={styles.placeholder} />
-        </View>
-        
+        {renderHeader()}
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#00695C" />
         </View>
@@ -338,64 +270,40 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <KeyboardAvoidingView 
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
-        
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-              <Path d="M15 18l-6-6 6-6" stroke="#00695C" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-            </Svg>
-          </TouchableOpacity>
-          
-          <View style={styles.headerContent}>
-            {vendorImage ? (
-              <Image
-                source={{ uri: getImageUrl(vendorImage) }}
-                style={styles.headerAvatar}
-              />
-            ) : (
-              <View style={styles.headerAvatarPlaceholder}>
-                <Text style={styles.headerAvatarText}>
-                  {vendorName.charAt(0).toUpperCase()}
-                </Text>
-              </View>
-            )}
-            <Text style={styles.headerTitle}>{vendorName}</Text>
-          </View>
-          
-          <View style={styles.placeholder} />
+    <View style={styles.container}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        {renderHeader()}
+
+        <View style={[styles.messagesContainer, { paddingBottom: isTablet ? 160 : 130 }]}>
+          {messages.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>
+                {isRTL ? 'لا توجد رسائل بعد' : 'No messages yet'}
+              </Text>
+              <Text style={styles.emptySubtext}>
+                {isRTL 
+                  ? 'ابدأ المحادثة مع الدعم' 
+                  : 'Start the conversation with the admin'}
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              ref={flatListRef}
+              data={messages}
+              renderItem={renderMessage}
+              keyExtractor={(item) => item._id}
+              contentContainerStyle={[styles.messagesContent, { paddingBottom: isTablet ? 100 : 50 }]}
+              onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
+            />
+          )}
         </View>
+      </SafeAreaView>
 
-        {/* Messages List */}
-        {messages.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>💬</Text>
-            <Text style={styles.emptyText}>
-              {isRTL ? 'لا توجد رسائل بعد' : 'No messages yet'}
-            </Text>
-            <Text style={styles.emptySubtext}>
-              {isRTL 
-                ? 'ابدأ المحادثة مع مقدم الخدمة' 
-                : 'Start the conversation with the vendor'}
-            </Text>
-          </View>
-        ) : (
-          <FlatList
-            ref={flatListRef}
-            data={messages}
-            renderItem={renderMessage}
-            keyExtractor={(item) => item._id}
-            contentContainerStyle={styles.messagesContent}
-            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
-          />
-        )}
-
-        {/* Input Area */}
+      {/* Input Area - Fixed at bottom above navigation */}
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
+        style={styles.inputWrapper}>
         <View style={styles.inputContainer}>
           <TextInput
             style={[styles.input, isRTL && styles.inputRTL]}
@@ -420,7 +328,7 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -428,6 +336,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
+  },
+  safeArea: {
+    flex: 1,
+  },
+  inputWrapper: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
   header: {
     flexDirection: 'row',
@@ -480,6 +397,10 @@ const styles = StyleSheet.create({
   placeholder: {
     width: 40,
   },
+  messagesContainer: {
+    flex: 1,
+    backgroundColor: '#F5F5F5',
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -490,10 +411,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 40,
-  },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: 16,
+    paddingVertical: 40,
   },
   emptyText: {
     fontSize: 18,
@@ -561,31 +479,33 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     paddingVertical: 12,
     paddingHorizontal: 16,
+    paddingBottom: 62,
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#E0E0E0',
   },
   input: {
     flex: 1,
-    maxHeight: 100,
+    maxHeight: 120,
     backgroundColor: '#F5F5F5',
     borderRadius: 24,
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 16,
-    fontSize: 15,
+    fontSize: 16,
     color: '#212121',
-    marginRight: 8,
+    marginRight: 12,
   },
   inputRTL: {
     textAlign: 'right',
   },
   sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: '#00695C',
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 2,
   },
   sendButtonDisabled: {
     opacity: 0.5,

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useLanguage } from '../contexts/LanguageContext';
 import { colors } from '../constants/colors';
+import { API_URL } from '../config/api.config';
 
 interface VerifyEmailProps {
   email: string;
@@ -63,7 +64,7 @@ const VerifyEmail: React.FC<VerifyEmailProps> = ({ email, userId, onVerified, on
 
     setLoading(true);
     try {
-      const response = await fetch('http://10.0.2.2:3000/api/auth/verify-email', {
+      const response = await fetch(`${API_URL}/auth/verify-email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -77,16 +78,8 @@ const VerifyEmail: React.FC<VerifyEmailProps> = ({ email, userId, onVerified, on
         throw new Error(data.error || 'Verification failed');
       }
 
-      Alert.alert(
-        isRTL ? 'تم التحقق' : 'Verified',
-        isRTL ? 'تم التحقق من بريدك الإلكتروني بنجاح' : 'Your email has been verified successfully',
-        [
-          {
-            text: 'OK',
-            onPress: () => onVerified(data.token, data.user),
-          },
-        ]
-      );
+      // Call onVerified directly without alert
+      onVerified(data.token, data.user);
     } catch (error) {
       console.error('Error verifying OTP:', error);
       Alert.alert(

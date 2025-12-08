@@ -309,9 +309,6 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleContainer}>
-              <View style={styles.iconContainer}>
-                <Text style={styles.iconText}>👤</Text>
-              </View>
               <Text style={[styles.sectionTitle, isRTL && styles.sectionTitleRTL]}>
                 {isRTL ? 'المعلومات الشخصية' : 'Personal Information'}
               </Text>
@@ -342,19 +339,19 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
                 </View>
                 <View style={styles.fieldColumn}>
                   <Text style={[styles.fieldLabel, isRTL && styles.fieldLabelRTL]}>
-                    {isRTL ? 'البريد الإلكتروني' : 'Email Address'}
+                    {isRTL ? 'رقم الهاتف' : 'Phone Number'}
                   </Text>
                   <Text style={[styles.fieldValue, isRTL && styles.fieldValueRTL]}>
-                    {user?.email || 'Not provided'}
+                    {user?.phone && user.phone.trim() !== '' ? user.phone : (isRTL ? 'غير متوفر' : 'Not provided')}
                   </Text>
                 </View>
               </View>
               <View style={styles.fieldSingle}>
                 <Text style={[styles.fieldLabel, isRTL && styles.fieldLabelRTL]}>
-                  {isRTL ? 'رقم الهاتف' : 'Phone Number'}
+                  {isRTL ? 'البريد الإلكتروني' : 'Email Address'}
                 </Text>
                 <Text style={[styles.fieldValue, isRTL && styles.fieldValueRTL]}>
-                  {user?.phone && user.phone.trim() !== '' ? user.phone : (isRTL ? 'غير متوفر' : 'Not provided')}
+                  {user?.email || 'Not provided'}
                 </Text>
               </View>
             </View>
@@ -457,9 +454,6 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
         {/* Change Password Section */}
         <View style={styles.passwordSection}>
           <View style={styles.passwordHeader}>
-            <View style={styles.passwordIconContainer}>
-              <Text style={styles.passwordIcon}>🔒</Text>
-            </View>
             <View style={styles.passwordContent}>
               <Text style={[styles.passwordTitle, isRTL && styles.passwordTitleRTL]}>
                 {isRTL ? 'تغيير كلمة المرور' : 'Change Password'}
@@ -484,9 +478,6 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
         {/* Delete Account Section */}
         <View style={[styles.passwordSection, { backgroundColor: '#fff5f5', borderColor: '#ffcccc' }]}>
           <View style={styles.passwordHeader}>
-            <View style={styles.passwordIconContainer}>
-              <Text style={styles.passwordIcon}>⚠️</Text>
-            </View>
             <View style={styles.passwordContent}>
               <Text style={[styles.passwordTitle, isRTL && styles.passwordTitleRTL, { color: '#d32f2f' }]}>
                 {isRTL ? 'حذف الحساب' : 'Delete Account'}

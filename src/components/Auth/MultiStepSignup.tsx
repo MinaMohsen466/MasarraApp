@@ -6,9 +6,6 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
-  ActivityIndicator,
-  Modal,
-  FlatList,
   StyleSheet,
   Platform,
   KeyboardAvoidingView,
@@ -17,46 +14,6 @@ import { styles } from './styles';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { colors } from '../../constants/colors';
 import { signup } from '../../services/api';
-
-// Country codes data with flags
-const COUNTRY_CODES = [
-  { code: '+965', name: 'Kuwait', label: 'Kuwait', flag: '🇰🇼' },
-  { code: '+966', name: 'Saudi Arabia', label: 'Saudi Arabia', flag: '🇸🇦' },
-  { code: '+971', name: 'United Arab Emirates', label: 'UAE', flag: '🇦🇪' },
-  { code: '+974', name: 'Qatar', label: 'Qatar', flag: '🇶🇦' },
-  { code: '+973', name: 'Bahrain', label: 'Bahrain', flag: '🇧🇭' },
-  { code: '+968', name: 'Oman', label: 'Oman', flag: '🇴🇲' },
-  { code: '+20', name: 'Egypt', label: 'Egypt', flag: '🇪🇬' },
-  { code: '+212', name: 'Morocco', label: 'Morocco', flag: '🇲🇦' },
-  { code: '+216', name: 'Tunisia', label: 'Tunisia', flag: '🇹🇳' },
-  { code: '+213', name: 'Algeria', label: 'Algeria', flag: '🇩🇿' },
-  { code: '+218', name: 'Libya', label: 'Libya', flag: '🇱🇾' },
-  { code: '+249', name: 'Sudan', label: 'Sudan', flag: '🇸🇩' },
-  { code: '+251', name: 'Ethiopia', label: 'Ethiopia', flag: '🇪🇹' },
-  { code: '+44', name: 'United Kingdom', label: 'UK', flag: '🇬🇧' },
-  { code: '+1', name: 'USA/Canada', label: 'USA/Canada', flag: '🇺🇸' },
-  { code: '+91', name: 'India', label: 'India', flag: '🇮🇳' },
-  { code: '+86', name: 'China', label: 'China', flag: '🇨🇳' },
-  { code: '+81', name: 'Japan', label: 'Japan', flag: '🇯🇵' },
-  { code: '+49', name: 'Germany', label: 'Germany', flag: '🇩🇪' },
-  { code: '+33', name: 'France', label: 'France', flag: '🇫🇷' },
-  { code: '+39', name: 'Italy', label: 'Italy', flag: '🇮🇹' },
-  { code: '+34', name: 'Spain', label: 'Spain', flag: '🇪🇸' },
-  { code: '+61', name: 'Australia', label: 'Australia', flag: '🇦🇺' },
-  { code: '+27', name: 'South Africa', label: 'South Africa', flag: '🇿🇦' },
-  { code: '+92', name: 'Pakistan', label: 'Pakistan', flag: '🇵🇰' },
-  { code: '+880', name: 'Bangladesh', label: 'Bangladesh', flag: '🇧🇩' },
-  { code: '+60', name: 'Malaysia', label: 'Malaysia', flag: '🇲🇾' },
-  { code: '+65', name: 'Singapore', label: 'Singapore', flag: '🇸🇬' },
-  { code: '+63', name: 'Philippines', label: 'Philippines', flag: '🇵🇭' },
-  { code: '+90', name: 'Turkey', label: 'Turkey', flag: '🇹🇷' },
-  { code: '+964', name: 'Iraq', label: 'Iraq', flag: '🇮🇶' },
-  { code: '+962', name: 'Jordan', label: 'Jordan', flag: '🇯🇴' },
-  { code: '+963', name: 'Syria', label: 'Syria', flag: '🇸🇾' },
-  { code: '+961', name: 'Lebanon', label: 'Lebanon', flag: '🇱🇧' },
-  { code: '+967', name: 'Yemen', label: 'Yemen', flag: '🇾🇪' },
-  { code: '+970', name: 'Palestine', label: 'Palestine', flag: '🇵🇸' },
-];
 
 interface MultiStepSignupProps {
   onBack: () => void;
@@ -67,7 +24,6 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
   const { isRTL } = useLanguage();
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [showCountryModal, setShowCountryModal] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
@@ -75,7 +31,7 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [countryCode, setCountryCode] = useState('+965');
+  const [countryCode, setCountryCode] = useState('965');
   const [phone, setPhone] = useState('');
 
   // Step 2: Email Verification
@@ -139,7 +95,7 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
         name,
         email,
         password,
-        phone: `${countryCode}${phone}`,
+        phone: `+${countryCode}${phone}`,
         role: 'customer',
       });
 
@@ -269,7 +225,7 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
       onSignupSuccess(userToken, { 
         email, 
         name, 
-        phone: `${countryCode}${phone}`,
+        phone: `+${countryCode}${phone}`,
         role: 'customer' 
       });
     } catch (error) {
@@ -299,7 +255,7 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
             onSignupSuccess(userToken, { 
               email, 
               name, 
-              phone: `${countryCode}${phone}`,
+              phone: `+${countryCode}${phone}`,
               role: 'customer' 
             });
           },
@@ -308,58 +264,6 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
       ]
     );
   };
-
-  const getCountryFlag = (code: string) => {
-    const country = COUNTRY_CODES.find(c => c.code === code);
-    return country?.flag || '🌍';
-  };
-
-  const renderCountryModal = () => (
-    <Modal
-      visible={showCountryModal}
-      animationType="slide"
-      transparent
-      onRequestClose={() => setShowCountryModal(false)}>
-      <View style={multiStepStyles.modalOverlay}>
-        <View style={multiStepStyles.modalContent}>
-          <View style={multiStepStyles.modalHeader}>
-            <Text style={[multiStepStyles.modalTitle, isRTL && multiStepStyles.modalTitleRTL]}>
-              {isRTL ? 'اختر مفتاح الدولة' : 'Select Country Code'}
-            </Text>
-            <TouchableOpacity onPress={() => setShowCountryModal(false)}>
-              <Text style={multiStepStyles.modalCloseBtn}>✕</Text>
-            </TouchableOpacity>
-          </View>
-
-          <FlatList
-            data={COUNTRY_CODES}
-            keyExtractor={(item) => item.code}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[
-                  multiStepStyles.countryItem,
-                  countryCode === item.code && multiStepStyles.countryItemSelected,
-                ]}
-                onPress={() => {
-                  setCountryCode(item.code);
-                  setShowCountryModal(false);
-                }}>
-                <Text style={[multiStepStyles.countryFlag]}>
-                  {item.flag}
-                </Text>
-                <Text style={[multiStepStyles.countryCode, countryCode === item.code && multiStepStyles.countryCodeSelected]}>
-                  {item.code}
-                </Text>
-                <Text style={[multiStepStyles.countryName, countryCode === item.code && multiStepStyles.countryNameSelected]}>
-                  {item.name}
-                </Text>
-              </TouchableOpacity>
-            )}
-          />
-        </View>
-      </View>
-    </Modal>
-  );
 
   const renderStep1 = () => (
     <ScrollView
@@ -445,28 +349,28 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
           </View>
         </View>
 
-        {/* Country Code + Phone */}
-        <View style={multiStepStyles.phoneContainer}>
-          <View style={multiStepStyles.countryCodeInputContainer}>
-            <Text style={[styles.label, isRTL && styles.labelRTL]}>
-              {isRTL ? 'الدولة' : 'Country'}
-            </Text>
-            <TouchableOpacity
-              style={[multiStepStyles.countryCodeButton, isRTL && multiStepStyles.countryCodeButtonRTL]}
-              onPress={() => setShowCountryModal(true)}
-              disabled={isLoading}>
-              <Text style={multiStepStyles.countryCodeText}>{getCountryFlag(countryCode)} {countryCode}</Text>
-              <Text style={multiStepStyles.countryCodeArrow}>▼</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={[multiStepStyles.phoneInputContainer, isRTL && multiStepStyles.phoneInputContainerRTL]}>
-            <Text style={[styles.label, isRTL && styles.labelRTL]}>
-              {isRTL ? 'رقم الهاتف' : 'Phone'}
-            </Text>
+        {/* Phone Number with Country Code */}
+        <View style={styles.inputContainer}>
+          <Text style={[styles.label, isRTL && styles.labelRTL]}>
+            {isRTL ? 'رقم الهاتف' : 'Phone Number'}
+          </Text>
+          <View style={multiStepStyles.phoneInputWrapper}>
+            <View style={multiStepStyles.phonePrefix}>
+              <Text style={multiStepStyles.plusSign}>+</Text>
+              <TextInput
+                style={multiStepStyles.countryCodeInput}
+                value={countryCode}
+                onChangeText={setCountryCode}
+                placeholder="965"
+                placeholderTextColor="#999"
+                keyboardType="number-pad"
+                maxLength={4}
+                editable={!isLoading}
+              />
+            </View>
             <TextInput
               ref={(ref) => { if (inputRefs.current) inputRefs.current[3] = ref; }}
-              style={[styles.input, isRTL && styles.inputRTL]}
+              style={[multiStepStyles.phoneInput, isRTL && styles.inputRTL]}
               value={phone}
               onChangeText={setPhone}
               placeholder={isRTL ? 'أدخل رقم الهاتف' : 'Enter phone number'}
@@ -498,8 +402,6 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
           </Text>
         </TouchableOpacity>
       </View>
-
-      {renderCountryModal()}
     </ScrollView>
   );
 
@@ -767,44 +669,44 @@ const multiStepStyles = StyleSheet.create({
   descriptionRTL: {
     textAlign: 'right',
   },
-  phoneContainer: {
+  phoneInputWrapper: {
     flexDirection: 'row',
-    gap: 12,
-  },
-  countryCodeInputContainer: {
-    flex: 0.35,
-  },
-  countryCodeButton: {
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    overflow: 'hidden',
+  },
+  phonePrefix: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    backgroundColor: '#f5f5f5',
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+    borderRightWidth: 1,
+    borderRightColor: '#ddd',
   },
-  countryCodeButtonRTL: {
-    flexDirection: 'row-reverse',
-  },
-  countryButtonFlag: {
-    fontSize: 20,
-    marginHorizontal: 8,
-  },
-  countryCodeText: {
+  plusSign: {
     fontSize: 16,
     fontWeight: '600',
     color: colors.textDark,
+    marginRight: 4,
   },
-  countryCodeArrow: {
-    fontSize: 12,
-    color: colors.textSecondary,
+  countryCodeInput: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textDark,
+    padding: 0,
+    width: 40,
+    textAlign: 'center',
   },
-  phoneInputContainer: {
-    flex: 0.65,
-  },
-  phoneInputContainerRTL: {
-    flex: 0.65,
+  phoneInput: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: colors.textDark,
+    borderWidth: 0,
   },
   otpContainer: {
     flexDirection: 'row',
@@ -825,72 +727,6 @@ const multiStepStyles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: colors.textDark,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '70%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.textDark,
-    textAlign: 'left',
-  },
-  modalTitleRTL: {
-    textAlign: 'right',
-  },
-  modalCloseBtn: {
-    fontSize: 24,
-    color: colors.textSecondary,
-  },
-  countryItem: {
-    flexDirection: 'row',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-    alignItems: 'center',
-  },
-  countryItemSelected: {
-    backgroundColor: '#E8F5F4',
-  },
-  countryFlag: {
-    fontSize: 24,
-    marginRight: 12,
-  },
-  countryCode: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.textDark,
-    marginRight: 12,
-    width: 50,
-  },
-  countryCodeSelected: {
-    color: colors.primary,
-  },
-  countryName: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    flex: 1,
-  },
-  countryNameSelected: {
-    color: colors.primary,
-    fontWeight: '600',
   },
   rowContainer: {
     flexDirection: 'row',

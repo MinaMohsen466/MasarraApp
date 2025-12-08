@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { View, Text, TouchableOpacity, FlatList, Image, ActivityIndicator, Dimensions } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { styles } from './styles';
@@ -22,23 +22,17 @@ const Occasions: React.FC<OccasionsProps> = ({
   const screenWidth = Dimensions.get('window').width;
   const numColumns = screenWidth >= 600 ? 4 : 3;
 
-  useEffect(() => {
-  }, [occasions, error]);
-
   const renderOccasionCard = ({ item }: { item: Occasion }) => {
     const displayName = isRTL ? item.nameAr : item.name;
     
     return (
       <TouchableOpacity
         style={styles.occasionCard}
-        onPress={() => {
-          onSelectOccasion && onSelectOccasion(item);
-        }}
+        onPress={() => onSelectOccasion?.(item)}
         activeOpacity={0.8}>
         <View style={styles.iconContainer}>
           {item.image ? (
             <Image 
-              key={item.image}
               source={{ uri: getImageUrl(item.image) }}
               style={styles.occasionImage}
               resizeMode="cover"

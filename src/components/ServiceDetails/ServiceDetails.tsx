@@ -43,7 +43,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
   const [checkingAvailability, setCheckingAvailability] = useState(false);
   
   // Custom inputs state - stores selected option index for each custom input
-  const [customInputSelections, setCustomInputSelections] = useState<{ [key: string]: number | string }>({});
+  const [customInputSelections, setCustomInputSelections] = useState<{ [key: string]: number | string | number[] }>({});
   // State to control which custom inputs are expanded
   const [expandedCustomInputs, setExpandedCustomInputs] = useState<{ [key: string]: boolean }>({});
   
@@ -104,9 +104,10 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
         const screenHeight = Dimensions.get('window').height;
         const screenWidth = Dimensions.get('window').width;
         
-        // Cart icon is typically at the right side of bottom tab bar
-        // Adjust these values based on your actual tab bar design
-        const targetX = screenWidth - 50;  // Right side of screen minus padding
+        // Cart icon position changes based on text direction
+        // In RTL (Arabic): cart is on the LEFT side of screen
+        // In LTR (English): cart is on the RIGHT side of screen
+        const targetX = isRTL ? 50 : screenWidth - 50;  // Left in RTL, Right in LTR
         const targetY = screenHeight - 65;  // Bottom tab bar height ~65px
         
         // Calculate icon size (60x60)
@@ -673,7 +674,12 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
                                 {/* Radio Single or Multiple */}
                                 {(inputType === 'radio-single' || inputType === 'radio-multiple') && inputOptions && inputOptions.length > 0 && (
                                   inputOptions.map((option: string, optIndex: number) => {
-                                    const isSelected = selectedValue === optIndex;
+                                    // For radio-multiple, selectedValue will be an array
+                                    const isMultiple = inputType === 'radio-multiple';
+                                    const selectedArray = isMultiple ? (selectedValue as number[] || []) : [];
+                                    const isSelected = isMultiple 
+                                      ? selectedArray.includes(optIndex)
+                                      : selectedValue === optIndex;
                                     const price = input.optionPrices?.[optIndex] || 0;
 
                                     return (
@@ -682,15 +688,35 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
                                         style={[styles.optionRow, isSelected && styles.optionRowSelected]}
                                         activeOpacity={0.7}
                                         onPress={() => {
-                                          if (isSelected) {
-                                            const newSelections = { ...customInputSelections };
-                                            delete newSelections[input._id];
-                                            setCustomInputSelections(newSelections);
+                                          if (isMultiple) {
+                                            // For radio-multiple, toggle the selection
+                                            const currentArray = selectedArray;
+                                            const newArray = isSelected
+                                              ? currentArray.filter(idx => idx !== optIndex)
+                                              : [...currentArray, optIndex];
+                                            
+                                            if (newArray.length === 0) {
+                                              const newSelections = { ...customInputSelections };
+                                              delete newSelections[input._id];
+                                              setCustomInputSelections(newSelections);
+                                            } else {
+                                              setCustomInputSelections({
+                                                ...customInputSelections,
+                                                [input._id]: newArray,
+                                              });
+                                            }
                                           } else {
-                                            setCustomInputSelections({
-                                              ...customInputSelections,
-                                              [input._id]: optIndex,
-                                            });
+                                            // For radio-single, replace the selection
+                                            if (isSelected) {
+                                              const newSelections = { ...customInputSelections };
+                                              delete newSelections[input._id];
+                                              setCustomInputSelections(newSelections);
+                                            } else {
+                                              setCustomInputSelections({
+                                                ...customInputSelections,
+                                                [input._id]: optIndex,
+                                              });
+                                            }
                                           }
                                         }}>
                                         <View style={styles.checkboxContainer}>
@@ -956,29 +982,37 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
                 
                 // Handle radio buttons (single and multiple)
                 if (input.type === 'radio-single' || input.type === 'radio-multiple') {
-                  const selectedIndex = selectedValue;
-                  if (selectedIndex !== undefined) {
-                    const selectedOption = (isRTL ? input.optionsAr : input.options)[selectedIndex];
-                    const optionPrice = Number(input.optionPrices[selectedIndex] ?? 0);
-                    totalPrice += optionPrice; // Add option price to total
-                    return {
-                      label: String(isRTL ? input.labelAr : input.label),
-                      value: selectedOption as string | number,
-                      price: optionPrice
-                    } as { label: string; value: string | number; price?: number };
+                  // For radio-multiple, selectedValue is an array; for radio-single, it's a number
+                  const isMultiple = input.type === 'radio-multiple';
+                  const selectedIndices = isMultiple ? (selectedValue as number[] || []) : (selectedValue !== undefined ? [selectedValue as number] : []);
+                  
+                  if (selectedIndices.length > 0) {
+                    const selectedOptions = selectedIndices.map((index: number) => {
+                      const selectedOption = (isRTL ? input.optionsAr : input.options)[index];
+                      const optionPrice = Number(input.optionPrices[index] ?? 0);
+                      totalPrice += optionPrice; // Add option price to total
+                      return {
+                        label: String(input.label), // Always use English label for backend matching
+                        value: selectedOption as string | number,
+                        price: optionPrice
+                      };
+                    });
+                    
+                    // Return single object for radio-single, array for radio-multiple
+                    return isMultiple ? selectedOptions : selectedOptions[0];
                   }
                 } 
                 // Handle text and number inputs
                 else if ((input.type === 'text' || input.type === 'number') && selectedValue !== undefined && selectedValue !== '') {
                   return {
-                    label: String(isRTL ? input.labelAr : input.label),
+                    label: String(input.label), // Always use English label for backend matching
                     value: selectedValue,
                     price: 0 // Text/number inputs don't have option prices
                   } as { label: string; value: string | number; price?: number };
                 }
                 
                 return null;
-              }) ?? []).filter((v): v is { label: string; value: string | number; price?: number } => v !== null);
+              }) ?? []).filter((v): v is { label: string; value: string | number; price?: number } | { label: string; value: string | number; price?: number }[] => v !== null);
 
               const cartItem: CartItem = {
                 _id: `${service._id}_${Date.now()}`,

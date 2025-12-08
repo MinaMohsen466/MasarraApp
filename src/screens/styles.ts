@@ -7,7 +7,7 @@ const isTablet = SCREEN_WIDTH >= 600;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.backgroundHome,
     paddingBottom: isTablet ? 120 : 80, // إضافة مساحة تحت Bottom Nav على التابلت
   },
   occasionsSection: {
@@ -27,8 +27,8 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: isTablet ? 22 : 18,
-    fontWeight: '700',
-    color: colors.primary,
+    fontWeight: '900',
+    color: colors.primaryDark,
     letterSpacing: 1,
   },
   sectionTitleRTL: {
@@ -36,8 +36,12 @@ const styles = StyleSheet.create({
   },
   viewAllButton: {
     fontSize: isTablet ? 16 : 14,
-    color: colors.primary,
-    fontWeight: '600',
+    color: colors.textWhite,
+    fontWeight: '700',
+    backgroundColor: colors.primaryDark,
+    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
   viewAllButtonRTL: {
     textAlign: 'left',

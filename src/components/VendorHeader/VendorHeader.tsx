@@ -23,6 +23,7 @@ interface VendorHeaderProps {
 
 const VendorHeader: React.FC<VendorHeaderProps> = ({ vendor, occasions = [], onFilterPress, onSortPress, overrideRating, overrideTotalReviews }) => {
   const { isRTL } = useLanguage();
+  const [imageError, setImageError] = React.useState(false);
   const rating = overrideRating !== undefined ? overrideRating : (vendor.vendorProfile?.rating || 0);
   const totalReviews = overrideTotalReviews !== undefined ? overrideTotalReviews : (vendor.vendorProfile?.totalReviews || 0);
   const description = isRTL 
@@ -58,11 +59,12 @@ const VendorHeader: React.FC<VendorHeaderProps> = ({ vendor, occasions = [], onF
         <View style={[styles.topRow, isRTL && styles.topRowRTL]}>
           {/* Vendor Image */}
           <View style={styles.imageContainer}>
-            {imageUrl ? (
+            {imageUrl && !imageError ? (
               <Image
                 source={{ uri: imageUrl }}
                 style={styles.vendorImage}
                 resizeMode="cover"
+                onError={() => setImageError(true)}
               />
             ) : (
               <View style={styles.letterAvatar}>

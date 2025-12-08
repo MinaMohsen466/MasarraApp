@@ -19,9 +19,11 @@ interface HomeProps {
   currentRoute?: string;
   onSelectService?: (serviceId: string) => void;
   onSelectOccasion?: (occasion: any) => void;
+  onShowChat?: () => void;
+  onHideChat?: () => void;
 }
 
-const Home: React.FC<HomeProps> = ({ onNavigate, currentRoute, onSelectService, onSelectOccasion }) => {
+const Home: React.FC<HomeProps> = ({ onNavigate, currentRoute, onSelectService, onSelectOccasion, onShowChat, onHideChat }) => {
   const { isRTL, t } = useLanguage();
   const { user } = useAuth();
   const { data: occasions, isLoading, error } = useOccasions();
@@ -71,6 +73,8 @@ const Home: React.FC<HomeProps> = ({ onNavigate, currentRoute, onSelectService, 
           setShowUserProfile(false);
           if (onSelectService) onSelectService(serviceId);
         }}
+        onShowChat={onShowChat}
+        onHideChat={onHideChat}
       />
     );
   }

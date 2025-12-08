@@ -7,6 +7,7 @@ export const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8F8F8',
+    height: '100%',
   },
   actionsRow: {
     paddingHorizontal: 16,
@@ -439,20 +440,20 @@ export const styles = StyleSheet.create({
   },
 
   optionCardContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
+    // backgroundColor: '#FFFFFF',
+    // borderRadius: 8,
+    // borderWidth: 1,
+    // borderColor: '#E0E0E0',
     marginBottom: 12,
-    overflow: 'hidden',
+    // overflow: 'hidden',
   },
 
   optionExpandedContent: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#F9F9F9',
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+  //   backgroundColor: '#F9F9F9',
+  //   borderTopWidth: 1,
+  //   borderTopColor: '#E0E0E0',
   },
 
   /* Custom Inputs Section */

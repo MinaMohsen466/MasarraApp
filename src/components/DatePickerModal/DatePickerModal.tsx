@@ -92,62 +92,48 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
     
     try {
       const availabilityMap = new Map();
-      
       const year = currentMonth.getFullYear();
       const month = currentMonth.getMonth();
       const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
       const today = new Date();
       const todayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
 
-      const batchSize = 10;
-      const batches = [];
-      
-      for (let i = 0; i < daysInMonth; i += batchSize) {
-        const batchEnd = Math.min(i + batchSize, daysInMonth);
-        const batch = Array.from({ length: batchEnd - i }, (_, idx) => {
-          const day = i + idx + 1;
-          const date = new Date(Date.UTC(year, month, day));
-          
-          if (date < todayUTC) {
-            const dateYear = date.getUTCFullYear();
-            const dateMonth = (date.getUTCMonth() + 1).toString().padStart(2, '0');
-            const dateDay = date.getUTCDate().toString().padStart(2, '0');
-            const dateKey = `${dateYear}-${dateMonth}-${dateDay}`;
-            return Promise.resolve({ dateKey, available: false, slots: 0 });
-          }
-          
-          return checkDateAvailability(serviceId, vendorId, date, token)
-            .then(result => {
-              const dateYear = date.getUTCFullYear();
-              const dateMonth = (date.getUTCMonth() + 1).toString().padStart(2, '0');
-              const dateDay = date.getUTCDate().toString().padStart(2, '0');
-              const dateKey = `${dateYear}-${dateMonth}-${dateDay}`;
-              const dayOfWeek = date.getUTCDay();
-              return { dateKey, available: result.available, slots: result.slots, dayOfWeek };
-            })
-            .catch(() => {
-              const dateYear = date.getUTCFullYear();
-              const dateMonth = (date.getUTCMonth() + 1).toString().padStart(2, '0');
-              const dateDay = date.getUTCDate().toString().padStart(2, '0');
-              const dateKey = `${dateYear}-${dateMonth}-${dateDay}`;
-              return { dateKey, available: false, slots: 0 };
-            });
-        });
-        
-        batches.push(batch);
+      // حدد جميع الأيام وافصل الماضية عن المستقبلية
+      const futureDates: Date[] = [];
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(Date.UTC(year, month, day));
+        if (date < todayUTC) {
+          const dateKey = `${date.getUTCFullYear()}-${(date.getUTCMonth() + 1).toString().padStart(2, '0')}-${date.getUTCDate().toString().padStart(2, '0')}`;
+          availabilityMap.set(dateKey, { available: false, slots: 0 });
+        } else {
+          futureDates.push(date);
+        }
       }
 
-      for (const batch of batches) {
-        const results = await Promise.all(batch);
-        results.forEach(({ dateKey, available, slots, dayOfWeek }) => {
-          availabilityMap.set(dateKey, { available, slots });
-        });
-        setAvailability(new Map(availabilityMap));
-      }
+      // حمّل جميع الأيام المستقبلية بشكل متوازي (كل الـ API calls مرة واحدة)
+      const allPromises = futureDates.map(date =>
+        checkDateAvailability(serviceId, vendorId, date, token)
+          .then(result => {
+            const dateKey = `${date.getUTCFullYear()}-${(date.getUTCMonth() + 1).toString().padStart(2, '0')}-${date.getUTCDate().toString().padStart(2, '0')}`;
+            return { dateKey, available: result.available, slots: result.slots };
+          })
+          .catch(() => {
+            const dateKey = `${date.getUTCFullYear()}-${(date.getUTCMonth() + 1).toString().padStart(2, '0')}-${date.getUTCDate().toString().padStart(2, '0')}`;
+            return { dateKey, available: false, slots: 0 };
+          })
+      );
 
+      // انتظر جميع النتائج مرة واحدة
+      const results = await Promise.all(allPromises);
+      results.forEach(({ dateKey, available, slots }) => {
+        availabilityMap.set(dateKey, { available, slots });
+      });
+
+      // حدّث UI مرة واحدة فقط بعد تحميل كل البيانات
+      setAvailability(new Map(availabilityMap));
       availabilityCache.set(cacheKey, availabilityMap);
-      setLoading(false);
     } finally {
+      setLoading(false);
       loadingRef.current = false;
     }
   };
@@ -194,16 +180,11 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
     if (!selectedDate) return false;
     return date.toDateString() === selectedDate.toDateString();
   };
-  const getDateKey = (date: Date) => {
-    const year = date.getUTCFullYear();
-    const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
-    const day = date.getUTCDate().toString().padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
+  const getDateKey = (date: Date) => 
+    `${date.getUTCFullYear()}-${(date.getUTCMonth() + 1).toString().padStart(2, '0')}-${date.getUTCDate().toString().padStart(2, '0')}`;
 
   const isPastDate = (date: Date) => {
     const today = new Date();
-    // مقارنة بـ UTC
     const todayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
     return date < todayUTC;
   };

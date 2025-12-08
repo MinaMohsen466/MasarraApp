@@ -2,7 +2,7 @@ import { StyleSheet } from 'react-native';
 import { colors, colorUtils } from '../../constants/colors';
 
 export const styles = StyleSheet.create({
-  addressesContainer: { flex: 1, padding: 16, backgroundColor: colors.backgroundLight },
+  addressesContainer: { flex: 1, padding: 16, backgroundColor: '#ffffff'},
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   headerTitle: { fontSize: 24, fontWeight: '700' },
   // Prominent Add button - now matches back button color

@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, Image, Alert, ScrollView, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { styles } from './styles';
 import { fetchAddresses, createAddress, updateAddress, deleteAddress, setDefaultAddress } from '../../services/api';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({ onBack, token }) => {
+  const { isRTL } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [addresses, setAddresses] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -54,10 +56,14 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({ o
   };
 
   const confirmDelete = (addr: any) => {
-    Alert.alert('Delete address', 'Are you sure you want to delete this address?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => handleDelete(addr._id) }
-    ]);
+    Alert.alert(
+      isRTL ? 'حذف العنوان' : 'Delete address',
+      isRTL ? 'هل أنت متأكد من رغبتك في حذف هذا العنوان؟' : 'Are you sure you want to delete this address?',
+      [
+        { text: isRTL ? 'إلغاء' : 'Cancel', style: 'cancel' },
+        { text: isRTL ? 'حذف' : 'Delete', style: 'destructive', onPress: () => handleDelete(addr._id) }
+      ]
+    );
   };
 
   const handleDelete = async (id: string) => {
@@ -98,9 +104,9 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({ o
 
   if (!addresses || addresses.length === 0) {
     return (
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 100}>
+      <KeyboardAvoidingView style={{ flex: 1, backgroundColor: '#ffffff' }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 100}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 140 }} keyboardShouldPersistTaps="handled">
+          <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 140, backgroundColor: '#ffffff' }} keyboardShouldPersistTaps="handled">
             <View style={styles.addressesContainer}>
               {/* header: back icon (left) + add button (right) */}
               <View style={styles.headerRow}>
@@ -112,7 +118,7 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({ o
                   )}
                 </View>
                 <TouchableOpacity style={styles.addButton} onPress={() => setShowForm(true)}>
-                  <Text style={styles.addButtonText}>+ Add Address</Text>
+                  <Text style={styles.addButtonText}>{isRTL ? '+ إضافة عنوان' : '+ Add Address'}</Text>
                 </TouchableOpacity>
               </View>
 
@@ -120,28 +126,32 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({ o
                 <View style={styles.emptyIconWrap}>
                   <Image source={require('../../imgs/user.png')} style={styles.emptyIcon} />
                 </View>
-                <Text style={styles.emptyTitle}>No addresses added yet</Text>
-                <Text style={styles.emptySubtitle}>Add your addresses to make booking services faster and easier.</Text>
+                <Text style={styles.emptyTitle}>{isRTL ? 'لم تضف عنوان بعد' : 'No addresses added yet'}</Text>
+                <Text style={styles.emptySubtitle}>{isRTL ? 'أضف عناوينك لتسريع حجز الخدمات وتسهيلها' : 'Add your addresses to make booking services faster and easier.'}</Text>
 
-                <TouchableOpacity style={styles.primaryButton} onPress={() => setShowForm(true)}>
-                  <Text style={styles.primaryButtonText}>+ Add Your First Address</Text>
+                <TouchableOpacity style={styles.primaryButton} onPress={() => {
+                  setForm({ name: '', street: '', houseNumber: '', floorNumber: '', city: '' });
+                  setEditingId(null);
+                  setShowForm(true);
+                }}>
+                  <Text style={styles.primaryButtonText}>{isRTL ? '+ إضافة عنوانك الأول' : '+ Add Your First Address'}</Text>
                 </TouchableOpacity>
               </View>
 
               {showForm && (
                 <View style={styles.formContainer}>
-                  <TextInput placeholder="Name" value={form.name} onChangeText={(t) => setForm(s => ({ ...s, name: t }))} style={styles.input} />
-                  <TextInput placeholder="Street" value={form.street} onChangeText={(t) => setForm(s => ({ ...s, street: t }))} style={styles.input} />
-                  <TextInput placeholder="House Number" value={form.houseNumber} onChangeText={(t) => setForm(s => ({ ...s, houseNumber: t }))} style={styles.input} />
-                  <TextInput placeholder="Floor Number" value={form.floorNumber} onChangeText={(t) => setForm(s => ({ ...s, floorNumber: t }))} style={styles.input} />
-                  <TextInput placeholder="City" value={form.city} onChangeText={(t) => setForm(s => ({ ...s, city: t }))} style={styles.input} />
+                  <TextInput placeholder={isRTL ? "الاسم" : "Name"} value={form.name} onChangeText={(t) => setForm(s => ({ ...s, name: t }))} style={styles.input} />
+                  <TextInput placeholder={isRTL ? "الشارع" : "Street"} value={form.street} onChangeText={(t) => setForm(s => ({ ...s, street: t }))} style={styles.input} />
+                  <TextInput placeholder={isRTL ? "رقم المنزل" : "House Number"} value={form.houseNumber} onChangeText={(t) => setForm(s => ({ ...s, houseNumber: t }))} style={styles.input} />
+                  <TextInput placeholder={isRTL ? "رقم الطابق" : "Floor Number"} value={form.floorNumber} onChangeText={(t) => setForm(s => ({ ...s, floorNumber: t }))} style={styles.input} />
+                  <TextInput placeholder={isRTL ? "المدينة" : "City"} value={form.city} onChangeText={(t) => setForm(s => ({ ...s, city: t }))} style={styles.input} />
 
                   <View style={styles.formButtonsRow}>
                     <TouchableOpacity style={styles.secondaryButton} onPress={() => setShowForm(false)}>
-                      <Text style={styles.secondaryButtonText}>Cancel</Text>
+                      <Text style={styles.secondaryButtonText}>{isRTL ? 'إلغاء' : 'Cancel'}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.primaryButtonSmall} onPress={handleSubmit}>
-                      <Text style={styles.primaryButtonTextSmall}>Add Address</Text>
+                      <Text style={styles.primaryButtonTextSmall}>{isRTL ? 'إضافة عنوان' : 'Add Address'}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -154,9 +164,9 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({ o
   }
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 100}>
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: '#ffffff' }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 100}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 140 }} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 140, backgroundColor: '#ffffff' }} keyboardShouldPersistTaps="handled">
           <View style={styles.addressesContainer}>
             {/* header: back icon (left) + add button (right) */}
             <View style={styles.headerRow}>
@@ -167,8 +177,12 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({ o
                   </TouchableOpacity>
                 )}
               </View>
-              <TouchableOpacity style={styles.addButton} onPress={() => setShowForm(true)}>
-                <Text style={styles.addButtonText}>+ Add Address</Text>
+              <TouchableOpacity style={styles.addButton} onPress={() => {
+                setForm({ name: '', street: '', houseNumber: '', floorNumber: '', city: '' });
+                setEditingId(null);
+                setShowForm(true);
+              }}>
+                <Text style={styles.addButtonText}>{isRTL ? '+ إضافة عنوان' : '+ Add Address'}</Text>
               </TouchableOpacity>
             </View>
 
@@ -180,20 +194,20 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({ o
                 <View style={styles.actionsRow}>
                   {addr.isDefault ? (
                     <View style={styles.defaultBadge}>
-                      <Text style={styles.defaultBadgeText}>Default</Text>
+                      <Text style={styles.defaultBadgeText}>{isRTL ? 'الافتراضي' : 'Default'}</Text>
                     </View>
                   ) : (
                     <TouchableOpacity onPress={() => handleSetDefault(addr._id)} style={styles.setDefaultLink}>
-                      <Text style={styles.setDefaultLinkText}>Set as Default</Text>
+                      <Text style={styles.setDefaultLinkText}>{isRTL ? 'اجعله الافتراضي' : 'Set as Default'}</Text>
                     </TouchableOpacity>
                   )}
 
                   <TouchableOpacity onPress={() => startEdit(addr)} style={styles.actionButton}>
-                    <Text style={styles.actionButtonText}>Edit</Text>
+                    <Text style={styles.actionButtonText}>{isRTL ? 'تعديل' : 'Edit'}</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity onPress={() => confirmDelete(addr)} style={styles.deleteButton}>
-                    <Text style={styles.deleteButtonText}>Delete</Text>
+                    <Text style={styles.deleteButtonText}>{isRTL ? 'حذف' : 'Delete'}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -201,18 +215,18 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({ o
 
             {showForm && (
               <View style={styles.formContainer}>
-                <TextInput placeholder="Name" value={form.name} onChangeText={(t) => setForm(s => ({ ...s, name: t }))} style={styles.input} />
-                <TextInput placeholder="Street" value={form.street} onChangeText={(t) => setForm(s => ({ ...s, street: t }))} style={styles.input} />
-                <TextInput placeholder="House Number" value={form.houseNumber} onChangeText={(t) => setForm(s => ({ ...s, houseNumber: t }))} style={styles.input} />
-                <TextInput placeholder="Floor Number" value={form.floorNumber} onChangeText={(t) => setForm(s => ({ ...s, floorNumber: t }))} style={styles.input} />
-                <TextInput placeholder="City" value={form.city} onChangeText={(t) => setForm(s => ({ ...s, city: t }))} style={styles.input} />
+                <TextInput placeholder={isRTL ? "الاسم" : "Name"} value={form.name} onChangeText={(t) => setForm(s => ({ ...s, name: t }))} style={styles.input} />
+                <TextInput placeholder={isRTL ? "الشارع" : "Street"} value={form.street} onChangeText={(t) => setForm(s => ({ ...s, street: t }))} style={styles.input} />
+                <TextInput placeholder={isRTL ? "رقم المنزل" : "House Number"} value={form.houseNumber} onChangeText={(t) => setForm(s => ({ ...s, houseNumber: t }))} style={styles.input} />
+                <TextInput placeholder={isRTL ? "رقم الطابق" : "Floor Number"} value={form.floorNumber} onChangeText={(t) => setForm(s => ({ ...s, floorNumber: t }))} style={styles.input} />
+                <TextInput placeholder={isRTL ? "المدينة" : "City"} value={form.city} onChangeText={(t) => setForm(s => ({ ...s, city: t }))} style={styles.input} />
 
                 <View style={styles.formButtonsRow}>
                   <TouchableOpacity style={styles.secondaryButton} onPress={() => setShowForm(false)}>
-                    <Text style={styles.secondaryButtonText}>Cancel</Text>
+                    <Text style={styles.secondaryButtonText}>{isRTL ? 'إلغاء' : 'Cancel'}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.primaryButtonSmall} onPress={handleSubmit}>
-                    <Text style={styles.primaryButtonTextSmall}>Add Address</Text>
+                    <Text style={styles.primaryButtonTextSmall}>{isRTL ? 'إضافة عنوان' : 'Add Address'}</Text>
                   </TouchableOpacity>
                 </View>
               </View>

@@ -4,6 +4,7 @@ import { styles } from './styles';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { login, User } from '../../services/api';
+import { API_URL } from '../../config/api.config';
 import VerifyEmail from '../../screens/VerifyEmail';
 import ForgotPasswordModal from './ForgotPasswordModal';
 import MultiStepSignup from './MultiStepSignup';
@@ -63,8 +64,20 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
       } catch (err: any) {
         // If server requires email verification, show VerifyEmail screen
         if (err?.requiresVerification) {
-          // Show verification screen without extra alert
-          setPendingUserId(err.userId || '');
+          const userId = err.userId || '';
+          setPendingUserId(userId);
+          
+          // Resend verification code automatically
+          try {
+            await fetch(`${API_URL}/auth/resend-verification`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId })
+            });
+          } catch (resendError) {
+            console.error('Failed to resend code:', resendError);
+          }
+          // Show verification screen directly without alert
           setShowVerifyEmail(true);
           return;
         }

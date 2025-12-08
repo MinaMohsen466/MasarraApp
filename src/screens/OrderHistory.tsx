@@ -257,30 +257,26 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
 
               {/* Booking Info */}
               <View style={styles.infoRow}>
-                <Text style={styles.infoIcon}>📅</Text>
                 <Text style={styles.infoText}>
-                  {formatDateTime(booking.eventDate)}
+                  {isRTL ? 'التاريخ: ' : 'Date: '}{formatDateTime(booking.eventDate)}
                 </Text>
               </View>
 
               <View style={styles.infoRow}>
-                <Text style={styles.infoIcon}>🕐</Text>
                 <Text style={styles.infoText}>
-                  {formatDateTime(booking.eventTime.start, true)} - {formatDateTime(booking.eventTime.end, true)}
+                  {isRTL ? 'الوقت: ' : 'Time: '}{formatDateTime(booking.eventTime.start, true)} - {formatDateTime(booking.eventTime.end, true)}
                 </Text>
               </View>
 
               <View style={styles.infoRow}>
-                <Text style={styles.infoIcon}>📍</Text>
                 <Text style={styles.infoText} numberOfLines={1}>
-                  {booking.location || (isRTL ? 'غير محدد' : 'Not specified')}
+                  {isRTL ? 'الموقع: ' : 'Location: '}{booking.location || (isRTL ? 'غير محدد' : 'Not specified')}
                 </Text>
               </View>
 
               <View style={styles.infoRow}>
-                <Text style={styles.infoIcon}>👤</Text>
                 <Text style={styles.infoText}>
-                  {getVendorName(booking)}
+                  {isRTL ? 'مقدم الخدمة: ' : 'Vendor: '}{getVendorName(booking)}
                 </Text>
               </View>
 
@@ -296,7 +292,11 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
                         {input.label}:
                       </Text>
                       <Text style={styles.customInputValue}>
-                        {typeof input.value === 'number' ? input.value : String(input.value)}
+                        {Array.isArray(input.value) 
+                          ? input.value.join(', ')
+                          : typeof input.value === 'number' 
+                          ? input.value 
+                          : String(input.value)}
                       </Text>
                     </View>
                   ))}

@@ -17,7 +17,7 @@ export type CartItem = {
   quantity: number;
   selectedDate: Date | string;
   selectedTime: string;
-  customInputs?: Array<{ label: string; value: string | number; price?: number }>;
+  customInputs?: Array<{ label: string; value: string | number; price?: number } | Array<{ label: string; value: string | number; price?: number }>>;
   moreInfo?: string;
   timeSlot: { start: string | Date; end: string | Date };
   availabilityStatus?: 'available_now' | 'pending_confirmation';
@@ -389,13 +389,31 @@ export async function createBookingsFromCart(address?: string): Promise<{
         
         if (item.customInputs && Array.isArray(item.customInputs)) {
           item.customInputs.forEach(input => {
-            customInputsObject[input.label] = input.value;
-            // Also keep the full object with price for backend processing
-            customInputsWithPrices.push({
-              label: input.label,
-              value: input.value,
-              price: input.price
-            });
+            // Handle radio-multiple selections (array of values) and other types
+            if (Array.isArray(input)) {
+              // This is a radio-multiple selection - array of option objects
+              const values: (string | number)[] = [];
+              input.forEach(option => {
+                values.push(option.value);
+                customInputsWithPrices.push({
+                  label: option.label,
+                  value: option.value,
+                  price: option.price
+                });
+              });
+              // Store as array for radio-multiple
+              if (input.length > 0) {
+                customInputsObject[input[0].label] = values;
+              }
+            } else {
+              // Regular input (text, number, radio-single)
+              customInputsObject[input.label] = input.value;
+              customInputsWithPrices.push({
+                label: input.label,
+                value: input.value,
+                price: input.price
+              });
+            }
           });
         }
         

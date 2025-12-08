@@ -10,8 +10,9 @@ export const colors = {
   primaryDark: '#1F4644',       // Dark teal (emphasis)
   
   // Background Colors
-  background: '#FFFFFF',        // White background
-  backgroundLight: '#F5F5F5',   // Light gray background
+  background: '#cedfd7',        // Light green background (same as home)
+  backgroundLight: '#cedfd7',   // Light green background (same as home)
+  backgroundHome: '#cedfd7',    // Light green background for home
   overlay: 'rgba(0, 0, 0, 0.5)', // Semi-transparent overlay
   
   // Text Colors

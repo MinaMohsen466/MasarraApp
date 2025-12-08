@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity, Alert, Platform, ActivityIndicator, Dimensions } from 'react-native';
+﻿import React, { useState } from 'react';
+import { View, Text, ScrollView, Image, TouchableOpacity, Alert, ActivityIndicator, Dimensions } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -9,7 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { getCart, removeFromCart, updateCartItemQuantity, clearCart, CartItem, checkCartAvailability, createBookingsFromCart } from '../services/cart';
 import { getServiceImageUrl } from '../services/servicesApi';
 import { getImageUrl } from '../services/api';
-import { StyleSheet } from 'react-native';
+import { styles } from './cartStyles';
 import Drawer from '../components/Drawer';
 import OrderSuccess from './OrderSuccess';
 import AddressSelection from '../components/AddressSelection/AddressSelection';
@@ -22,12 +22,13 @@ interface CartProps {
 }
 
 const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
-  const { isRTL } = useLanguage();
+  const { isRTL, t } = useLanguage();
   const { user, isLoggedIn } = useAuth();
   const insets = useSafeAreaInsets();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentProfilePicture, setCurrentProfilePicture] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
   const [showSuccessScreen, setShowSuccessScreen] = useState(false);
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
@@ -88,13 +89,11 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
         isRTL && item.nameAr ? item.nameAr : item.name
       ).join(', ');
       
-      Alert.alert(
-        isRTL ? '⚠ تنبيه: حجوزات قديمة' : '⚠ Alert: Old Bookings',
-        isRTL 
-          ? `لديك ${oldItems.length} حجز(حجوزات) بتاريخ قديم في السلة:\n\n${oldItemNames}\n\nالرجاء تحديث أو إزالة هذه الحجوزات.`
-          : `You have ${oldItems.length} booking(s) with past date/time in your cart:\n\n${oldItemNames}\n\nPlease update or remove these bookings.`,
-        [{ text: isRTL ? 'حسناً' : 'OK' }]
-      );
+      const message = t('oldBookingsMessage')
+        .replace('{count}', oldItems.length.toString())
+        .replace('{items}', oldItemNames);
+      
+      Alert.alert(t('oldBookingsAlert'), message, [{ text: t('ok') }]);
     }
   };
 
@@ -140,20 +139,22 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
   }, [isLoggedIn]);
 
   const handleRemoveItem = async (id: string) => {
-    Alert.alert(
-      isRTL ? 'تأكيد' : 'Confirm',
-      isRTL ? 'هل تريد إزالة هذا العنصر من السلة؟' : 'Remove this item from cart?',
-      [
-        { text: isRTL ? 'إلغاء' : 'Cancel', style: 'cancel' },
-        {
-          text: isRTL ? 'إزالة' : 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            await removeFromCart(id);
-            await loadCart();
-          },
+    const buttons = [
+      {
+        text: t('remove'),
+        style: 'destructive' as const,
+        onPress: async () => {
+          await removeFromCart(id);
+          await loadCart();
         },
-      ]
+      },
+      { text: t('cancel'), style: 'cancel' as const },
+    ];
+
+    Alert.alert(
+      t('confirmDelete'),
+      t('removeItemMessage'),
+      isRTL ? buttons : buttons.reverse()
     );
   };
 
@@ -182,20 +183,15 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
 
       if (!available) {
         setIsProcessingCheckout(false);
-        const errorMessage = unavailableItems
+        const errorItems = unavailableItems
           .map(({ item, reason }) => {
             const itemName = isRTL ? (item.nameAr || item.name) : item.name;
-            return `• ${itemName} (${item.selectedTime})\n  ${reason}`;
+            return `â€¢ ${itemName} (${item.selectedTime})\n  ${reason}`;
           })
           .join('\n\n');
 
-        Alert.alert(
-          isRTL ? 'بعض العناصر غير متاحة' : 'Some Items Unavailable',
-          isRTL 
-            ? 'بعض العناصر في سلتك لم تعد متاحة:\n\n' + errorMessage + '\n\nالرجاء إزالتها قبل المتابعة.'
-            : 'Some items in your cart are no longer available:\n\n' + errorMessage + '\n\nPlease remove them before proceeding.',
-          [{ text: isRTL ? 'حسناً' : 'OK' }]
-        );
+        const message = t('unavailableItemsMessage').replace('{items}', errorItems);
+        Alert.alert(t('someItemsUnavailable'), message, [{ text: t('ok') }]);
         return;
       }
 
@@ -205,11 +201,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
     } catch (error) {
       setIsProcessingCheckout(false);
       console.error('Error during checkout:', error);
-      Alert.alert(
-        isRTL ? 'خطأ' : 'Error',
-        isRTL ? 'حدث خطأ أثناء معالجة الطلب' : 'Error processing your order',
-        [{ text: isRTL ? 'حسناً' : 'OK' }]
-      );
+      Alert.alert(t('error'), t('errorProcessingOrder'), [{ text: t('ok') }]);
     }
   };
 
@@ -219,7 +211,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
       setShowAddressSelection(false);
       setIsProcessingCheckout(true);
 
-      const fullAddress = `${address.street}${address.houseNumber ? ', منزل ' + address.houseNumber : ''}${address.floorNumber ? ', طابق ' + address.floorNumber : ''}, ${address.city}`;
+      const fullAddress = `${address.street}${address.houseNumber ? ', Ù…Ù†Ø²Ù„ ' + address.houseNumber : ''}${address.floorNumber ? ', Ø·Ø§Ø¨Ù‚ ' + address.floorNumber : ''}, ${address.city}`;
       
       const { success, bookings, errors } = await createBookingsFromCart(fullAddress);
 
@@ -227,20 +219,15 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
 
       if (!success) {
         // Some bookings failed
-        const errorMessage = errors
+        const errorItems = errors
           .map(({ item, error }) => {
             const itemName = isRTL ? (item.nameAr || item.name) : item.name;
-            return `• ${itemName}\n  ${error}`;
+            return `â€¢ ${itemName}\n  ${error}`;
           })
           .join('\n\n');
 
-        Alert.alert(
-          isRTL ? 'خطأ في إنشاء الحجوزات' : 'Booking Error',
-          isRTL 
-            ? 'فشل إنشاء بعض الحجوزات:\n\n' + errorMessage
-            : 'Failed to create some bookings:\n\n' + errorMessage,
-          [{ text: isRTL ? 'حسناً' : 'OK' }]
-        );
+        const message = t('failedToCreateBookings').replace('{items}', errorItems);
+        Alert.alert(t('bookingError'), message, [{ text: t('ok') }]);
         return;
       }
 
@@ -253,11 +240,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
     } catch (error) {
       setIsProcessingCheckout(false);
       console.error('Error creating bookings:', error);
-      Alert.alert(
-        isRTL ? 'خطأ' : 'Error',
-        isRTL ? 'حدث خطأ أثناء إنشاء الحجوزات' : 'Error creating bookings',
-        [{ text: isRTL ? 'حسناً' : 'OK' }]
-      );
+      Alert.alert(t('error'), t('errorCreatingBookings'), [{ text: t('ok') }]);
     }
   };
 
@@ -353,7 +336,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
           {/* Center - MY CART Text */}
           <View style={styles.titleContainer}>
             <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
-              {isRTL ? 'سلتي' : 'MY CART'}
+              {t('myCart')}
             </Text>
           </View>
 
@@ -387,14 +370,12 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
             />
           </Svg>
           <Text style={[styles.emptyText, { marginTop: 20, fontSize: 18 }]}>
-            {isRTL ? 'يجب تسجيل الدخول لعرض السلة' : 'Please login to view cart'}
+            {t('pleaseLoginToViewCart')}
           </Text>
           <TouchableOpacity 
             style={[styles.checkoutButton, { marginTop: 20, width: 200 }]}
             onPress={() => onNavigate && onNavigate('auth')}>
-            <Text style={styles.checkoutButtonText}>
-              {isRTL ? 'تسجيل الدخول' : 'Login'}
-            </Text>
+            <Text style={styles.checkoutButtonText}>{t('login')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -431,7 +412,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
         {/* Center - MY CART Text */}
         <View style={styles.titleContainer}>
           <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
-            {isRTL ? 'سلتي' : 'MY CART'}
+            {t('myCart')}
           </Text>
         </View>
 
@@ -441,11 +422,12 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
           onPress={handleUserIconPress}
           activeOpacity={0.6}
           hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}>
-          {isLoggedIn && currentProfilePicture ? (
+          {isLoggedIn && currentProfilePicture && !imageError ? (
             <Image 
               source={{ uri: getImageUrl(currentProfilePicture) }}
               style={styles.profileIcon}
               resizeMode="cover"
+              onError={() => setImageError(true)}
             />
           ) : (
             <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
@@ -463,19 +445,19 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
 
       {loading ? (
         <View style={styles.centerContent}>
-          <Text style={styles.emptyText}>{isRTL ? 'جاري التحميل...' : 'Loading...'}</Text>
+          <Text style={styles.emptyText}>{t('loading')}</Text>
         </View>
       ) : cartItems.length === 0 ? (
         <View style={styles.centerContent}>
-          <Text style={styles.emptyText}>{isRTL ? 'السلة فارغة' : 'Cart is empty'}</Text>
+          <Text style={styles.emptyText}>{t('cartEmpty')}</Text>
         </View>
       ) : (
         <>
           <ScrollView 
             style={styles.scrollView}
-            // reserve space equal to measured summary height + safe area so items can scroll above it
-            // this keeps all items visible and prevents the summary from covering the last item
-            contentContainerStyle={{ paddingBottom: summaryHeight + (insets.bottom ?? 0) + 34 }}
+            contentContainerStyle={{ 
+              paddingBottom: Dimensions.get('window').width >= 600 ? (summaryHeight + (insets.bottom ?? 0) + 50) : (summaryHeight + (insets.bottom ?? 0) + 20)
+            }}
             showsVerticalScrollIndicator={false}>
             {cartItems.map((item, index) => {
               const now = new Date();
@@ -488,15 +470,13 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
                 {/* Old Booking Warning Badge */}
                 {isItemOld && (
                   <View style={styles.oldBookingBadge}>
-                    <Text style={styles.oldBookingText}>
-                      {isRTL ? '⚠ وقت قديم' : '⚠ Past Time'}
-                    </Text>
+                    <Text style={styles.oldBookingText}>{t('pastTimeWarning')}</Text>
                   </View>
                 )}
 
                 {/* Remove Button */}
                 <TouchableOpacity 
-                  style={styles.removeButton}
+                  style={[styles.removeButton, isRTL && styles.removeButtonRTL]}
                   onPress={() => handleRemoveItem(item._id)}>
                   <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
                     <Path d="M18 6L6 18M6 6l12 12" stroke="#555" strokeWidth={2} strokeLinecap="round" />
@@ -504,15 +484,15 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
                 </TouchableOpacity>
 
                 {/* Item Header with Image and Title */}
-                <View style={styles.itemHeader}>
+                <View style={[styles.itemHeader, isRTL && styles.itemHeaderRTL]}>
                   {item.image && (
                     <Image
                       source={{ uri: getServiceImageUrl(item.image) }}
-                      style={styles.itemImage}
+                      style={[styles.itemImage, isRTL && styles.itemImageRTL]}
                       resizeMode="cover"
                     />
                   )}
-                  <View style={styles.itemHeaderText}>
+                  <View style={[styles.itemHeaderText, isRTL && styles.itemHeaderTextRTL]}>
                     <Text style={[styles.itemName, isRTL && styles.itemNameRTL]}>
                       {isRTL && item.nameAr ? item.nameAr : item.name}
                     </Text>
@@ -544,7 +524,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
                           }}
                           activeOpacity={0.7}
                         >
-                          <Text style={{ color: colors.textWhite, fontSize: 14, fontWeight: 'bold' }}>−</Text>
+                          <Text style={{ color: colors.textWhite, fontSize: 14, fontWeight: 'bold' }}>âˆ’</Text>
                         </TouchableOpacity>
 
                         <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textDark, minWidth: 30, textAlign: 'center' }}>
@@ -576,12 +556,9 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
                 </View>
 
                 {/* Date and Time */}
-                <View style={styles.dateTimeSection}>
-                  <View style={styles.dateTimeRow}>
-                    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-                      <Path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" stroke={colors.primary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
-                    </Svg>
-                    <Text style={styles.dateTimeText}>
+                <View style={[styles.dateTimeSection, isRTL && styles.dateTimeSectionRTL]}>
+                  <View style={[styles.dateTimeRow, isRTL && styles.dateTimeRowRTL]}>
+                    {isRTL && <Text style={styles.dateTimeText}>
                       {item.selectedDate 
                         ? new Date(item.selectedDate).toLocaleDateString(isRTL ? 'ar-KW' : 'en-US', { 
                             day: '2-digit',
@@ -589,49 +566,100 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
                             year: 'numeric' 
                           })
                         : '-'}
-                    </Text>
+                    </Text>}
+                    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                      <Path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" stroke={colors.primary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+                    </Svg>
+                    {!isRTL && <Text style={styles.dateTimeText}>
+                      {item.selectedDate 
+                        ? new Date(item.selectedDate).toLocaleDateString(isRTL ? 'ar-KW' : 'en-US', { 
+                            day: '2-digit',
+                            month: '2-digit', 
+                            year: 'numeric' 
+                          })
+                        : '-'}
+                    </Text>}
                   </View>
 
-                  <View style={styles.dateTimeRow}>
+                  <View style={[styles.dateTimeRow, isRTL && styles.dateTimeRowRTL]}>
+                    {isRTL && <Text style={styles.dateTimeText}>
+                      {item.selectedTime || '-'}
+                    </Text>}
                     <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
                       <Path d="M12 7v6l4 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke={colors.primary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
                     </Svg>
-                    <Text style={styles.dateTimeText}>
+                    {!isRTL && <Text style={styles.dateTimeText}>
                       {item.selectedTime || '-'}
-                    </Text>
+                    </Text>}
                   </View>
                 </View>
 
                 {/* Amount and Delivery */}
                 <View style={styles.priceSection}>
                   <View style={styles.priceRow}>
-                    <Text style={styles.priceLabel}>{isRTL ? 'المبلغ' : 'Amount'}</Text>
-                    {item.availabilityStatus === 'pending_confirmation' ? (
-                      <Text style={[styles.priceValue, { color: colors.textSecondary, fontSize: 12 }]}>
-                        {isRTL ? 'بعد التأكيد' : 'After Confirmation'}
-                      </Text>
+                    {isRTL ? (
+                      <>
+                        {item.availabilityStatus === 'pending_confirmation' ? (
+                          <Text style={[styles.priceValue, { color: colors.textSecondary, fontSize: 12 }]}>
+                            {t('afterConfirmation')}
+                          </Text>
+                        ) : (
+                          <Text style={styles.priceValue}>
+                            {isRTL ? 'د.ك' : 'KD'} {((item.totalPrice ?? item.price) * item.quantity).toFixed(3)}
+                          </Text>
+                        )}
+                        <Text style={[styles.priceLabel, { marginLeft: 'auto' }]}>{t('amount')}</Text>
+                      </>
                     ) : (
-                      <Text style={styles.priceValue}>
-                        {((item.totalPrice ?? item.price) * item.quantity).toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
-                      </Text>
+                      <>
+                        <Text style={styles.priceLabel}>{t('amount')}</Text>
+                        {item.availabilityStatus === 'pending_confirmation' ? (
+                          <Text style={[styles.priceValue, { color: colors.textSecondary, fontSize: 12 }]}>
+                            {t('afterConfirmation')}
+                          </Text>
+                        ) : (
+                          <Text style={styles.priceValue}>
+                            {isRTL ? 'د.ك' : 'KD'} {((item.totalPrice ?? item.price) * item.quantity).toFixed(3)}
+                          </Text>
+                        )}
+                      </>
                     )}
                   </View>
                   <View style={styles.priceRow}>
-                    <Text style={styles.priceLabel}>{isRTL ? 'رسوم التوصيل' : 'Delivery Charges'}</Text>
-                    {item.availabilityStatus === 'pending_confirmation' ? (
-                      <Text style={[styles.deliveryChargeValue, { color: colors.textSecondary, fontSize: 12 }]}>
-                        {isRTL ? 'بعد التأكيد' : 'After Confirmation'}
-                      </Text>
-                    ) : item.maxBookingsPerSlot === -1 ? (
-                      // Unlimited service: show 5 KD (flat rate per service, not per quantity)
-                      <Text style={styles.deliveryChargeValue}>
-                        {(5).toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
-                      </Text>
+                    {isRTL ? (
+                      <>
+                        {item.availabilityStatus === 'pending_confirmation' ? (
+                          <Text style={[styles.deliveryChargeValue, { color: colors.textSecondary, fontSize: 12 }]}>
+                            {t('afterConfirmation')}
+                          </Text>
+                        ) : item.maxBookingsPerSlot === -1 ? (
+                          <Text style={styles.deliveryChargeValue}>
+                            {isRTL ? 'د.ك' : 'KD'} {(5).toFixed(3)}
+                          </Text>
+                        ) : (
+                          <Text style={styles.deliveryChargeValue}>
+                            {isRTL ? 'د.ك' : 'KD'} {(0).toFixed(3)}
+                          </Text>
+                        )}
+                        <Text style={[styles.priceLabel, { marginLeft: 'auto' }]}>{t('deliveryCharges')}</Text>
+                      </>
                     ) : (
-                      // Limited service: no delivery charge
-                      <Text style={styles.deliveryChargeValue}>
-                        {(0).toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
-                      </Text>
+                      <>
+                        <Text style={styles.priceLabel}>{t('deliveryCharges')}</Text>
+                        {item.availabilityStatus === 'pending_confirmation' ? (
+                          <Text style={[styles.deliveryChargeValue, { color: colors.textSecondary, fontSize: 12 }]}>
+                            {t('afterConfirmation')}
+                          </Text>
+                        ) : item.maxBookingsPerSlot === -1 ? (
+                          <Text style={styles.deliveryChargeValue}>
+                            {isRTL ? 'د.ك' : 'KD'} {(5).toFixed(3)}
+                          </Text>
+                        ) : (
+                          <Text style={styles.deliveryChargeValue}>
+                            {isRTL ? 'د.ك' : 'KD'} {(0).toFixed(3)}
+                          </Text>
+                        )}
+                      </>
                     )}
                   </View>
                 </View>
@@ -641,9 +669,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
                   <TouchableOpacity 
                     style={styles.viewDetailsButton}
                     onPress={() => onViewDetails && onViewDetails(item.serviceId)}>
-                    <Text style={styles.viewDetailsText}>
-                      {isRTL ? 'عرض التفاصيل' : 'View Details'}
-                    </Text>
+                    <Text style={styles.viewDetailsText}>{t('viewDetails')}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -657,28 +683,28 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
               styles.bottomSummary,
               { 
                 bottom: (insets.bottom ?? 0) + 8, 
-                paddingBottom: Dimensions.get('window').width >= 600 ? (insets.bottom ?? 0) + 80 : (insets.bottom ?? 0) + 8,
+                paddingBottom: Dimensions.get('window').width >= 600 ? (insets.bottom ?? 0) + 120 : (insets.bottom ?? 0) + 30,
               },
             ]}>
             {/* Totals */}
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>{isRTL ? 'المجموع الفرعي' : 'Sub Total'}</Text>
+              <Text style={styles.summaryLabel}>{t('subTotal')}</Text>
               <Text style={styles.summaryValue}>
-                {calculateSubTotal().toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
+                {isRTL ? 'د.ك' : 'KD'} {calculateSubTotal().toFixed(3)}
               </Text>
             </View>
             
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>{isRTL ? 'إجمالي رسوم التوصيل' : 'Total Delivery Charges'}</Text>
+              <Text style={styles.summaryLabel}>{t('totalDeliveryCharges')}</Text>
               <Text style={styles.summaryValueGreen}>
-                {calculateDeliveryCharges().toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
+                {isRTL ? 'د.ك' : 'KD'} {calculateDeliveryCharges().toFixed(3)}
               </Text>
             </View>
 
             <View style={[styles.summaryRow, styles.summaryRowTotal]}>
-              <Text style={styles.summaryLabelTotal}>{isRTL ? 'المبلغ الإجمالي' : 'Total Amount'}</Text>
+              <Text style={styles.summaryLabelTotal}>{t('totalAmount')}</Text>
               <Text style={styles.summaryValueTotal}>
-                {(calculateSubTotal() + calculateDeliveryCharges()).toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
+                {isRTL ? 'د.ك' : 'KD'} {(calculateSubTotal() + calculateDeliveryCharges()).toFixed(3)}
               </Text>
             </View>
 
@@ -687,18 +713,16 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
 
             {/* Payment Options */}
             <View style={styles.paymentRow}>
-              <Text style={styles.paymentLabel}>{isRTL ? 'الدفع الآن' : 'Pay Now'}</Text>
+              <Text style={styles.paymentLabel}>{t('payNow')}</Text>
               <Text style={styles.paymentValue}>
-                {calculatePayNowAmount().toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
+                {isRTL ? 'د.ك' : 'KD'} {calculatePayNowAmount().toFixed(3)}
               </Text>
             </View>
 
             <View style={styles.paymentRow}>
-              <Text style={styles.paymentLabelOrange}>
-                {isRTL ? 'الدفع بعد التأكيد' : 'Payable After Confirmation'}
-              </Text>
+              <Text style={styles.paymentLabelOrange}>{t('payableAfterConfirmation')}</Text>
               <Text style={styles.paymentValueOrange}>
-                {calculatePayableAfterConfirmation().toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
+                {isRTL ? 'د.ك' : 'KD'} {calculatePayableAfterConfirmation().toFixed(3)}
               </Text>
             </View>
 
@@ -713,9 +737,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
               {isProcessingCheckout ? (
                 <ActivityIndicator color={colors.textWhite} />
               ) : (
-                <Text style={styles.checkoutButtonText}>
-                  {isRTL ? 'المتابعة إلى الدفع' : 'PROCEED TO CHECKOUT'}
-                </Text>
+                <Text style={styles.checkoutButtonText}>{t('checkout')}</Text>
               )}
             </TouchableOpacity>
 
@@ -723,9 +745,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
               style={styles.continueShoppingButton}
               onPress={() => onNavigate && onNavigate('home')}
               disabled={isProcessingCheckout}>
-              <Text style={styles.continueShoppingButtonText}>
-                {isRTL ? 'متابعة التسوق' : 'CONTINUE SHOPPING'}
-              </Text>
+              <Text style={styles.continueShoppingButtonText}>{t('continueShopping')}</Text>
             </TouchableOpacity>
           </View>
         </>
@@ -748,381 +768,5 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    paddingBottom: 12,
-    backgroundColor: colors.background,
-    borderBottomWidth: 0,
-    borderBottomColor: 'transparent',
-  },
-  menuButton: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 44,
-    height: 44,
-  },
-  titleContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  profileButton: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: colors.primary,
-    backgroundColor: colors.backgroundLight || '#F5F5F5',
-  },
-  profileIcon: {
-    width: '100%',
-    height: '100%',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.primary,
-    letterSpacing: 1,
-  },
-  headerTitleRTL: {
-    textAlign: 'right',
-  },
-  centerContent: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 40,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  scrollView: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: Dimensions.get('window').width >= 600 ? 120 : 80,
-  },
-  cartCard: {
-    backgroundColor: colors.background,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    position: 'relative',
-  },
-  oldBookingBadge: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    backgroundColor: '#FF6B6B',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    zIndex: 5,
-  },
-  oldBookingText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  removeButton: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    zIndex: 10,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  itemHeader: {
-    flexDirection: 'row',
-    marginBottom: 12,
-  },
-  itemImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
-    marginRight: 12,
-  },
-  itemHeaderText: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  itemName: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.primary,
-    marginBottom: 4,
-  },
-  itemNameRTL: {
-    textAlign: 'right',
-  },
-  vendorName: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginBottom: 4,
-  },
-  vendorNameRTL: {
-    textAlign: 'right',
-  },
-  itemQty: {
-    fontSize: 11,
-    color: colors.textSecondary,
-  },
-  dateTimeSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    backgroundColor: '#F9F9F9',
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  dateTimeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  dateTimeText: {
-    fontSize: 12,
-    color: colors.textDark,
-    fontWeight: '500',
-  },
-  priceSection: {
-    paddingVertical: 8,
-    marginBottom: 12,
-  },
-  priceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  priceLabel: {
-    fontSize: 13,
-    color: colors.textDark,
-    fontWeight: '500',
-  },
-  priceValue: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  deliveryChargeValue: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#28A745',
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  viewDetailsButton: {
-    flex: 1,
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  viewDetailsText: {
-    color: colors.textWhite,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  editButton: {
-    paddingHorizontal: 20,
-    backgroundColor: '#F0F0F0',
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  totalsCard: {
-    backgroundColor: colors.background,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  totalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  totalRowFinal: {
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
-    paddingTop: 12,
-    marginTop: 6,
-  },
-  totalLabel: {
-    fontSize: 14,
-    color: colors.textDark,
-    fontWeight: '500',
-  },
-  totalLabelFinal: {
-    fontSize: 15,
-    color: colors.textDark,
-    fontWeight: '700',
-  },
-  totalValue: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  totalValueGreen: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#28A745',
-  },
-  totalValueFinal: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  bottomSummary: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    paddingBottom: Dimensions.get('window').width >= 600 ? 140 : 14,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    /* remove shadow so bottom nav appears flush */
-    shadowColor: 'transparent',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0,
-    shadowRadius: 0,
-    elevation: 0,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 5,
-  },
-  summaryRowTotal: {
-    marginBottom: 8,
-  },
-  summaryLabel: {
-    fontSize: 12,
-    color: colors.textDark,
-    fontWeight: '500',
-  },
-  summaryLabelTotal: {
-    fontSize: 13,
-    color: colors.textDark,
-    fontWeight: '700',
-  },
-  summaryValue: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  summaryValueGreen: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#00B383',
-  },
-  summaryValueTotal: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#D0D0D0',
-    marginVertical: 8,
-  },
-  paymentRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 5,
-  },
-  paymentLabel: {
-    fontSize: 12,
-    color: colors.textDark,
-    fontWeight: '600',
-  },
-  paymentValue: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.textDark,
-  },
-  paymentLabelOrange: {
-    fontSize: 12,
-    color: '#FF8C00',
-    fontWeight: '600',
-  },
-  paymentValueOrange: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#FF8C00',
-  },
-  checkoutButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    paddingVertical: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 10,
-    marginBottom: 6,
-  },
-  checkoutButtonDisabled: {
-    backgroundColor: colors.textSecondary,
-    opacity: 0.6,
-  },
-  checkoutButtonText: {
-    color: colors.textWhite,
-    fontSize: 13,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  continueShoppingButton: {
-    backgroundColor: '#00695C',
-    borderRadius: 8,
-    paddingVertical: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  continueShoppingButtonText: {
-    color: colors.textWhite,
-    fontSize: 13,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-});
 
 export default Cart;

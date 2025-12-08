@@ -146,7 +146,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
 
       {/* Vendors/Store Icon */}
       <TouchableOpacity 
-        style={styles.navItem}
+        style={[styles.navItem, isActive('vendors') && styles.navItemActive]}
         onPress={() => handlePress('vendors')}
         activeOpacity={0.7}>
         <Svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none">

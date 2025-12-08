@@ -1,10 +1,10 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image, ActivityIndicator, FlatList, StatusBar, Platform, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, Image, ActivityIndicator, FlatList, StatusBar, Dimensions } from 'react-native';
 import { styles } from './styles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useVendors } from '../../hooks/useVendors';
-import { Vendor, getVendorImageUrl } from '../../services/vendorsApi';
+import { Vendor } from '../../services/vendorsApi';
 import { API_BASE_URL } from '../../config/api.config';
 
 interface VendorsProps {
@@ -16,33 +16,35 @@ const Vendors: React.FC<VendorsProps> = ({ onSelectVendor, onBack }) => {
   const { isRTL } = useLanguage();
   const screenWidth = Dimensions.get('window').width;
   const numColumns = screenWidth >= 600 ? 4 : 3;
-  // removed useSafeAreaInsets to reduce extra top spacing on some devices
   const { data: vendors, isLoading, error } = useVendors();
 
+  const [imageErrors, setImageErrors] = React.useState<Set<string>>(new Set());
+
   const renderVendorCard = ({ item }: { item: Vendor }) => {
-    // Get first letter of vendor name for avatar
-    const firstLetter = item.name.charAt(0).toUpperCase();
-    
-    // Get vendor image from vendorProfile.profilePicture
     const vendorImage = item.vendorProfile?.profilePicture || item.image;
     const imageUrl = vendorImage 
       ? (vendorImage.startsWith('http') ? vendorImage : `${API_BASE_URL}${vendorImage}`)
       : null;
     
+    const hasError = imageUrl && imageErrors.has(item._id);
+    
     return (
       <TouchableOpacity
         style={styles.vendorCard}
-        onPress={() => onSelectVendor && onSelectVendor(item._id, item.name)}
+        onPress={() => onSelectVendor?.(item._id, item.name)}
         activeOpacity={0.8}>
         <View style={styles.imageContainer}>
-          {imageUrl ? (
+          {imageUrl && !hasError ? (
             <Image
               source={{ uri: imageUrl }}
               style={styles.vendorImage}
               resizeMode="cover"
+              onError={() => {
+                setImageErrors(prev => new Set(prev).add(item._id));
+              }}
             />
           ) : (
-            <Text style={styles.letterAvatar}>{firstLetter}</Text>
+            <Text style={styles.letterAvatar}>{item.name.charAt(0).toUpperCase()}</Text>
           )}
         </View>
         <Text style={[styles.vendorName, isRTL && styles.vendorNameRTL]} numberOfLines={2}>
@@ -53,8 +55,7 @@ const Vendors: React.FC<VendorsProps> = ({ onSelectVendor, onBack }) => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.backgroundLight }]}> 
-      {/* set StatusBar color to match page and avoid extra top filler spacing */}
+    <View style={[styles.container, { backgroundColor: colors.backgroundLight }]}>
       <StatusBar backgroundColor={colors.backgroundLight} barStyle="dark-content" translucent={false} />
       {/* Header */}
       <View style={[styles.header, isRTL && styles.headerRTL]}>
@@ -67,18 +68,19 @@ const Vendors: React.FC<VendorsProps> = ({ onSelectVendor, onBack }) => {
         <View style={styles.placeholder} />
       </View>
 
-      {/* Content */}
-      {isLoading ? (
+      {isLoading && (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
-      ) : error ? (
+      )}
+      {error && (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>
             {isRTL ? 'فشل في تحميل الموردين' : 'Failed to load vendors'}
           </Text>
         </View>
-      ) : (
+      )}
+      {!isLoading && !error && (
         <FlatList
           key={numColumns}
           data={vendors}

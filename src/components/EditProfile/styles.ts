@@ -4,7 +4,7 @@ import { colors, colorUtils } from '../../constants/colors';
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.primary,
+    backgroundColor: '#FFFFFF',
     marginBottom: 40,
   },
   headerBackground: {
@@ -18,7 +18,7 @@ export const styles = StyleSheet.create({
   header: {
     backgroundColor: 'transparent',
     paddingHorizontal: 16,
-    paddingTop: 20,
+    paddingTop: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -126,6 +126,17 @@ export const styles = StyleSheet.create({
   },
   viewMode: {
     gap: 20,
+    backgroundColor: colors.backgroundHome,
+    padding: 20,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   fieldRow: {
     flexDirection: 'row',
@@ -159,6 +170,17 @@ export const styles = StyleSheet.create({
   },
   photoSection: {
     marginBottom: 8,
+    backgroundColor: colors.backgroundHome,
+    padding: 20,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   photoLabel: {
     fontSize: 14,
@@ -236,6 +258,17 @@ export const styles = StyleSheet.create({
   formRow: {
     flexDirection: 'row',
     gap: 16,
+    backgroundColor: colors.backgroundHome,
+    padding: 20,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   formColumn: {
     flex: 1,

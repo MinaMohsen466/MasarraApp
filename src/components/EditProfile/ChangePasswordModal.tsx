@@ -206,9 +206,6 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
         <View style={modalStyles.modal}>
           {/* Header */}
           <View style={modalStyles.header}>
-            <View style={modalStyles.headerIcon}>
-              <Text style={modalStyles.headerIconText}>🔓</Text>
-            </View>
             <Text style={[modalStyles.title, isRTL && modalStyles.titleRTL]}>
               {isRTL ? 'تغيير كلمة المرور' : 'Change Password'}
             </Text>
@@ -240,7 +237,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
                   <TouchableOpacity
                     style={modalStyles.eyeButton}
                     onPress={() => setShowCurrentPassword(!showCurrentPassword)}>
-                    <Text style={modalStyles.eyeIcon}>{showCurrentPassword ? '👁' : '👁‍🗨'}</Text>
+                    <Text style={modalStyles.eyeIcon}>{showCurrentPassword ? '○' : '●'}</Text>
                   </TouchableOpacity>
                 </View>
                 {/* Forgot Password Link */}
@@ -297,7 +294,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
                   <TouchableOpacity
                     style={modalStyles.eyeButton}
                     onPress={() => setShowNewPassword(!showNewPassword)}>
-                    <Text style={modalStyles.eyeIcon}>{showNewPassword ? '👁' : '👁‍🗨'}</Text>
+                    <Text style={modalStyles.eyeIcon}>{showNewPassword ? '○' : '●'}</Text>
                   </TouchableOpacity>
               </View>
               <Text style={[modalStyles.hint, isRTL && modalStyles.hintRTL]}>
@@ -323,7 +320,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
                   <TouchableOpacity
                     style={modalStyles.eyeButton}
                     onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-                    <Text style={modalStyles.eyeIcon}>{showConfirmPassword ? '👁' : '👁‍🗨'}</Text>
+                    <Text style={modalStyles.eyeIcon}>{showConfirmPassword ? '○' : '●'}</Text>
                   </TouchableOpacity>
               </View>
             </View>

@@ -29,6 +29,7 @@ const AllReviews: React.FC<AllReviewsProps> = ({
   serviceName,
   onBack,
 }) => {
+  const [imageErrors, setImageErrors] = React.useState<Set<string>>(new Set());
   const { isRTL } = useLanguage();
 
   return (
@@ -115,10 +116,13 @@ const AllReviews: React.FC<AllReviewsProps> = ({
               {/* Header: Avatar + Name + Date + Rating in one row */}
               <View style={styles.reviewHeader}>
                 <View style={styles.reviewUserSection}>
-                  {review.user.profilePicture ? (
+                  {review.user.profilePicture && !imageErrors.has(review._id) ? (
                     <Image
                       source={{ uri: getImageUrl(review.user.profilePicture) }}
                       style={styles.avatar}
+                      onError={() => {
+                        setImageErrors(prev => new Set(prev).add(review._id));
+                      }}
                     />
                   ) : (
                     <View style={styles.avatarPlaceholder}>

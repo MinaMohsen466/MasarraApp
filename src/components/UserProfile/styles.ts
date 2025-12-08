@@ -4,7 +4,7 @@ import { colors } from '../../constants/colors';
 export const styles = StyleSheet.create({
   fullPageContainer: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFFFFF',
     position: 'relative',
   },
   headerBar: {
@@ -74,18 +74,28 @@ export const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFFFFF',
   },
   contentContainer: {
     paddingVertical: 20,
     paddingBottom: 40,
   },
   userInfoSection: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.backgroundHome,
     paddingVertical: 40,
     paddingHorizontal: 20,
     alignItems: 'center',
     marginBottom: 20,
+    marginHorizontal: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   userInfoRow: {
     width: '100%',

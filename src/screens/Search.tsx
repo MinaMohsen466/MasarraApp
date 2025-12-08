@@ -155,7 +155,7 @@ const Search: React.FC<SearchProps> = ({ onBack, onSelectService, onSelectOccasi
   const isLoading = servicesLoading || occasionsLoading;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
@@ -228,15 +228,6 @@ const Search: React.FC<SearchProps> = ({ onBack, onSelectService, onSelectOccasi
         </View>
       ) : searchQuery.trim() === '' ? (
         <View style={styles.centerContainer}>
-          <Svg width={80} height={80} viewBox="0 0 24 24" fill="none">
-            <Path
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              stroke="#E0E0E0"
-              strokeWidth={1.5}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </Svg>
           <Text style={styles.emptyText}>
             {isRTL ? 'ابدأ البحث...' : 'Start searching...'}
           </Text>
@@ -248,7 +239,6 @@ const Search: React.FC<SearchProps> = ({ onBack, onSelectService, onSelectOccasi
         </View>
       ) : filteredResults.length === 0 ? (
         <View style={styles.centerContainer}>
-          <Text style={styles.noResultsIcon}>🔍</Text>
           <Text style={styles.emptyText}>
             {isRTL ? 'لا توجد نتائج' : 'No results found'}
           </Text>
@@ -274,16 +264,15 @@ const Search: React.FC<SearchProps> = ({ onBack, onSelectService, onSelectOccasi
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.backgroundHome,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    paddingTop: 26,
+    paddingBottom: 8,
+    backgroundColor: colors.backgroundHome,
   },
   backButton: {
     width: 40,
@@ -329,8 +318,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     gap: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    backgroundColor: colors.backgroundHome,
   },
   filterTab: {
     paddingVertical: 8,

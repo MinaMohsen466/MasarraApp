@@ -27,6 +27,7 @@ export const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 8,
+    zIndex: 1000,
   },
   containerRTL: {
     flexDirection: 'row-reverse',
@@ -37,12 +38,16 @@ export const styles = StyleSheet.create({
     paddingVertical: isTablet ? 12 : 8,
     paddingHorizontal: isTablet ? 16 : 12,
     minWidth: isTablet ? 70 : 50,
+    borderBottomWidth: 0,
+    borderBottomColor: 'transparent',
+  },
+  navItemActive: {
   },
   cartBadge: {
     position: 'absolute',
     top: -4,
     right: -8,
-    backgroundColor: '#DC3545',
+    backgroundColor: colors.primary,
     borderRadius: 10,
     minWidth: 18,
     height: 18,
@@ -52,7 +57,7 @@ export const styles = StyleSheet.create({
   },
   cartBadgeText: {
     color: colors.textWhite,
-    fontSize: 11,
+    fontSize: 9,
     fontWeight: '700',
   },
 });

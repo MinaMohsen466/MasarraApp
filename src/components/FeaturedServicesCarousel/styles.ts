@@ -16,7 +16,7 @@ export const styles = StyleSheet.create({
     height: isTablet ? 300 : 240,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: colors.backgroundHome,
   },
   slideContainer: {
     width: SCREEN_WIDTH,
@@ -28,7 +28,7 @@ export const styles = StyleSheet.create({
     height: '100%',
     borderRadius: isTablet ? 20 : 16,
     overflow: 'hidden',
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: colors.backgroundHome,
   },
   featuredImage: {
     width: '100%',

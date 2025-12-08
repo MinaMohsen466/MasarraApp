@@ -46,10 +46,8 @@ const Chat: React.FC<ChatProps> = ({ onBack }) => {
       if (response.ok) {
         const result = await response.json();
         const admins = Array.isArray(result) ? result : (result.data || []);
-        
-        if (admins && admins.length > 0) {
-          const admin = admins[0];
-          setAdminId(admin._id);
+        if (admins?.length > 0) {
+          setAdminId(admins[0]._id);
         } else {
           setError('No admin found');
         }

@@ -7,7 +7,7 @@ const isTablet = SCREEN_WIDTH >= 600;
 export const orderHistoryStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: '#FFFFFF',
   },
   headerBackground: {
     position: 'absolute',
@@ -25,7 +25,7 @@ export const orderHistoryStyles = StyleSheet.create({
     // vertical padding removed; header height is controlled by JS (insets.top + 56)
     backgroundColor: 'transparent',
     zIndex: 1,
-    marginTop: 16,
+    marginTop: 12,
   },
   backButton: {
     width: 40,
@@ -58,7 +58,7 @@ export const orderHistoryStyles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: '#FFFFFF',
   },
   scrollContent: {
     paddingBottom: isTablet ? 120 : 50,
@@ -79,11 +79,16 @@ export const orderHistoryStyles = StyleSheet.create({
     fontWeight: '500',
   },
   bookingCard: {
-    backgroundColor: colors.background,
+    backgroundColor: '#FFFFFF',
     marginHorizontal: 16,
     marginVertical: 14,
     borderRadius: 12,
     padding: 16,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   cardHeader: {
     flexDirection: 'row',

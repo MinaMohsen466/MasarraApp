@@ -3,7 +3,7 @@ import { colors } from '../../constants/colors';
 
 export const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: colors.backgroundHome,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 32,
@@ -66,7 +66,7 @@ export const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   getStartedButton: {
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: colors.backgroundHome,
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 12,

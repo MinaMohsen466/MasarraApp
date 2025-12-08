@@ -128,7 +128,7 @@ const WriteReview: React.FC<WriteReviewProps> = ({
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+          <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" style={!isRTL && { transform: [{ rotate: '180deg' }] }}>
             <Path
               d={isRTL ? "M15 18l-6-6 6-6" : "M9 18l6-6-6-6"}
               stroke={colors.primary}
