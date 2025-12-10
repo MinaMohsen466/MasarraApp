@@ -211,7 +211,17 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
       setShowAddressSelection(false);
       setIsProcessingCheckout(true);
 
-      const fullAddress = `${address.street}${address.houseNumber ? ', Ù…Ù†Ø²Ù„ ' + address.houseNumber : ''}${address.floorNumber ? ', Ø·Ø§Ø¨Ù‚ ' + address.floorNumber : ''}, ${address.city}`;
+      // Build address parts array
+      const addressParts = [address.street];
+      if (address.houseNumber) {
+        addressParts.push(isRTL ? `منزل ${address.houseNumber}` : `House ${address.houseNumber}`);
+      }
+      if (address.floorNumber) {
+        addressParts.push(isRTL ? `طابق ${address.floorNumber}` : `Floor ${address.floorNumber}`);
+      }
+      addressParts.push(address.city);
+      
+      const fullAddress = addressParts.join(', ');
       
       const { success, bookings, errors } = await createBookingsFromCart(fullAddress);
 

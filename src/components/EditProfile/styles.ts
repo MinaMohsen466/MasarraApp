@@ -196,6 +196,9 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 16,
   },
+  photoCircleWrapper: {
+    position: 'relative',
+  },
   photoCircle: {
     width: 90,
     height: 90,
@@ -225,6 +228,33 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textSecondary,
   },
+  removePhotoIcon: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#ff3b30',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 5,
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  removePhotoIconText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
+    lineHeight: 16,
+  },
   choosePhotoButton: {
     backgroundColor: colors.primary,
     paddingVertical: 12,
@@ -243,6 +273,7 @@ export const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: colors.textWhite,
+    textAlign: 'center',
   },
   choosePhotoTextRTL: {
     fontFamily: 'System',

@@ -69,6 +69,7 @@ const Drawer: React.FC<DrawerProps> = ({
   const menuItems = [
     { id: 'home', titleKey: 'home', route: 'Home' },
     { id: 'occasions', titleKey: 'occasions', route: 'Occasions' },
+    { id: 'packages', titleKey: 'packages', route: 'Packages' },
     { id: 'about', titleKey: 'aboutUs', route: 'About' },
     { id: 'account', titleKey: 'myAccount', route: 'Account' },
     { id: 'terms', titleKey: 'termsConditions', route: 'Terms' },

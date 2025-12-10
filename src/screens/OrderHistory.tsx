@@ -85,6 +85,16 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
   };
 
   const getServiceName = (booking: Booking) => {
+    // Check if this is a package booking by looking for [PKG:...] in specialRequests
+    const specialRequests = booking.specialRequests || '';
+    const pkgMatch = specialRequests.match(/\[PKG:([^\]]+)\]/);
+    
+    if (pkgMatch && pkgMatch[1]) {
+      // Extract package name from the marker
+      return pkgMatch[1];
+    }
+    
+    // Fallback to service name
     const service = booking.services[0]?.service;
     if (!service || typeof service === 'string') return isRTL ? 'خدمة' : 'Service';
     return isRTL ? (service as any)?.nameAr || (service as any)?.name || 'خدمة' : (service as any)?.name || 'Service';
@@ -107,6 +117,16 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
     const service = booking.services[0]?.service;
     if (!service || typeof service === 'string') return isRTL ? 'لا يوجد وصف' : 'No description';
     return isRTL ? (service as any)?.descriptionAr || (service as any)?.description || 'لا يوجد وصف' : (service as any)?.description || 'No description';
+  };
+
+  const formatLocation = (location: string) => {
+    if (!location) return isRTL ? 'غير محدد' : 'Not specified';
+    
+    // The location comes formatted from Cart like: "street, منزل X, طابق Y, city"
+    // Just clean it up and return it properly formatted
+    return location
+      .replace(/,\s*/g, ', ') // Normalize spacing after commas
+      .trim();
   };
 
   const formatDateTime = (dateString: string, isTime: boolean = false) => {
@@ -269,8 +289,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
               </View>
 
               <View style={styles.infoRow}>
-                <Text style={styles.infoText} numberOfLines={1}>
-                  {isRTL ? 'الموقع: ' : 'Location: '}{booking.location || (isRTL ? 'غير محدد' : 'Not specified')}
+                <Text style={styles.infoText} numberOfLines={2}>
+                  {isRTL ? 'الموقع: ' : 'Location: '}{formatLocation(booking.location)}
                 </Text>
               </View>
 

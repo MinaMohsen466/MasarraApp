@@ -13,9 +13,15 @@ export const LOCAL_IP = '192.168.1.127'; // Real device IP
 
 /**
  * Get the appropriate base URL based on platform
+ * Android Emulator uses 10.0.2.2
+ * Real devices use the local network IP
  */
 export const getBaseUrl = (): string => {
-  // For real devices on the same network, use LOCAL_IP
+  // Only use 10.0.2.2 for Android in debug mode (not for APK release)
+  if (Platform.OS === 'android' && __DEV__) {
+    return 'http://10.0.2.2:3000';
+  }
+  // For real devices and APK builds, use LOCAL_IP
   return `http://${LOCAL_IP}:3000`;
 };
 

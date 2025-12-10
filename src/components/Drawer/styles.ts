@@ -79,8 +79,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     paddingBottom: 30,
     paddingTop: 25,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderMedium,
+    borderTopWidth: 0,
     marginTop: 10,
   },
   

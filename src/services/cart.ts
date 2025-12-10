@@ -22,6 +22,10 @@ export type CartItem = {
   timeSlot: { start: string | Date; end: string | Date };
   availabilityStatus?: 'available_now' | 'pending_confirmation';
   maxBookingsPerSlot?: number; // -1 for unlimited, 1 (or other number) for limited
+  isPackage?: boolean; // true if this is a package
+  mainServiceId?: string; // For packages: ID of the main limited service to check availability
+  packageName?: string; // Package name in English
+  packageNameAr?: string; // Package name in Arabic
 };
 
 // In-memory cache to avoid reading from AsyncStorage repeatedly
@@ -319,9 +323,12 @@ export async function checkCartAvailability(): Promise<{
           continue;
         }
 
+        // For packages, check the main service availability, for regular services check the service itself
+        const serviceIdToCheck = item.isPackage && item.mainServiceId ? item.mainServiceId : item.serviceId;
+
         // Get available time slots from backend
         const slots = await checkTimeSlotAvailability(
-          item.serviceId,
+          serviceIdToCheck,
           item.vendorId,
           selectedDate,
           token
@@ -417,11 +424,18 @@ export async function createBookingsFromCart(address?: string): Promise<{
           });
         }
         
-        const bookingData = {
-          serviceId: item.serviceId,
+        // For packages, send in packages array format. For regular services, send as serviceId
+        // Store package name in specialRequests for display purposes
+        let specialRequestsText = item.moreInfo || '';
+        if (item.isPackage && item.packageName) {
+          specialRequestsText = `[PKG:${item.packageName}]${specialRequestsText ? ' ' + specialRequestsText : ''}`;
+        }
+        
+        const bookingData: any = {
           eventDate: item.selectedDate,
+          eventTime: item.selectedTime, // Add eventTime for packages
           timeSlot: {
-            start: item.timeSlot.start,
+            start: item.timeSlot.start, // Use parsed Date objects from timeSlot
             end: item.timeSlot.end
           },
           quantity: item.quantity,
@@ -429,9 +443,19 @@ export async function createBookingsFromCart(address?: string): Promise<{
           notes: '',
           customInputs: customInputsObject,
           customInputsWithPrices: customInputsWithPrices, // Send full data including prices
-          specialRequests: item.moreInfo || '',
+          specialRequests: specialRequestsText,
           totalPrice: item.totalPrice || item.price // Send total price including custom options
         };
+
+        // Add serviceId for regular services or packages array for packages
+        if (item.isPackage) {
+          bookingData.packages = [{
+            package: item.serviceId,
+            price: item.totalPrice || item.price
+          }];
+        } else {
+          bookingData.serviceId = item.serviceId;
+        }
         
         const response = await fetch(`${API_BASE_URL}/bookings`, {
           method: 'POST',

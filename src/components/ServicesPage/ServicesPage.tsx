@@ -8,12 +8,16 @@ import { useServices } from '../../hooks/useServices';
 import { Service, getServiceImageUrl } from '../../services/servicesApi';
 import { Vendor, fetchVendors } from '../../services/vendorsApi';
 import { getServiceReviews } from '../../services/reviewsApi';
+import { useVendorPackages } from '../../hooks/usePackages';
+import { Package } from '../Packages/Packages';
+import { getImageUrl } from '../../services/api';
 import VendorHeader from '../VendorHeader/VendorHeader';
 import SortModal from '../SortModal/SortModal';
 import FilterModal from '../FilterModal/FilterModal';
 
 interface ServicesPageProps {
   onSelectService?: (service: Service) => void;
+  onSelectPackage?: (pkg: Package) => void;
   onBack?: () => void;
   vendorId?: string; // Optional vendor filter
   vendorName?: string; // Optional vendor name for display
@@ -23,6 +27,7 @@ interface ServicesPageProps {
 
 const ServicesPage: React.FC<ServicesPageProps> = ({
   onSelectService,
+  onSelectPackage,
   onBack,
   vendorId,
   vendorName,
@@ -31,6 +36,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
 }) => {
   const { isRTL } = useLanguage();
   const { data: services, isLoading, error } = useServices();
+  const { data: packages } = useVendorPackages(vendorId || '');
   const [vendor, setVendor] = useState<Vendor | null>(null);
   const [loadingVendor, setLoadingVendor] = useState(!!vendorId);
   const [showFilter, setShowFilter] = useState(false);
@@ -234,6 +240,98 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
     );
   };
 
+  const renderPackageCard = ({ item }: { item: Package }) => {
+    const displayName = isRTL ? item.nameAr : item.name;
+    const displayPrice = item.discountPrice > 0 ? item.discountPrice : item.totalPrice;
+    
+    return (
+      <TouchableOpacity
+        style={styles.serviceCard}
+        onPress={() => onSelectPackage && onSelectPackage(item)}
+        activeOpacity={0.8}>
+        <View style={styles.imageContainer}>
+          {item.images && item.images.length > 0 ? (
+            <Image
+              source={{ uri: getImageUrl(item.images[0]) }}
+              style={styles.serviceImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={styles.placeholderImage}>
+              <Text style={styles.placeholderText}>No Image</Text>
+            </View>
+          )}
+          {item.discountPrice > 0 && (
+            <View style={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              backgroundColor: '#ff3b30',
+              paddingHorizontal: 8,
+              paddingVertical: 4,
+              borderRadius: 4,
+            }}>
+              <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>
+                {Math.round(((item.totalPrice - item.discountPrice) / item.totalPrice) * 100)}% OFF
+              </Text>
+            </View>
+          )}
+        </View>
+        <View style={styles.infoContainer}>
+          <Text 
+            style={[styles.serviceName, isRTL && styles.serviceNameRTL]} 
+            numberOfLines={2}>
+            {displayName}
+          </Text>
+          <View style={{
+            flexDirection: isRTL ? 'row-reverse' : 'row',
+            alignItems: 'center',
+            marginTop: 4,
+          }}>
+            <Text style={{
+              fontSize: 10,
+              color: colors.primary,
+              fontWeight: 'bold',
+              backgroundColor: colors.primary + '15',
+              paddingHorizontal: 6,
+              paddingVertical: 2,
+              borderRadius: 4,
+            }}>
+              {isRTL ? 'باقة' : 'PACKAGE'}
+            </Text>
+          </View>
+          <View style={[styles.priceContainer, isRTL && styles.priceContainerRTL, { marginTop: 8 }]}>
+            {item.discountPrice > 0 && (
+              <Text style={{
+                fontSize: 12,
+                color: '#999',
+                textDecorationLine: 'line-through',
+                marginRight: 6,
+              }}>
+                {item.totalPrice.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
+              </Text>
+            )}
+            <Text style={[styles.priceValue, isRTL && styles.priceValueRTL]}>
+              {displayPrice.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
+            </Text>
+          </View>
+          {item.totalReviews > 0 && (
+            <View style={{
+              flexDirection: isRTL ? 'row-reverse' : 'row',
+              alignItems: 'center',
+              marginTop: 4,
+            }}>
+              <Text style={{ color: '#FFB800', fontSize: 12 }}>★</Text>
+              <Text style={{ fontSize: 12, color: '#666', marginLeft: 4 }}>
+                {item.rating.toFixed(1)} ({item.totalReviews})
+              </Text>
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   // Show loading state
   if ((isLoading || loadingVendor) && vendorId) {
     return (
@@ -412,10 +510,53 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
             />
           ) : null
         }
+        ListFooterComponent={
+          <>
+            {vendorId && packages && packages.length > 0 && (
+              <View>
+                <View style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 16,
+                  marginTop: 16,
+                }}>
+                  <Text style={{
+                    fontSize: 20,
+                    fontWeight: 'bold',
+                    color: colors.primary,
+                    textAlign: isRTL ? 'right' : 'left',
+                  }}>
+                    {isRTL ? 'الباقات' : 'Packages'}
+                  </Text>
+                  <View style={{
+                    height: 3,
+                    width: 50,
+                    backgroundColor: colors.primary,
+                    marginTop: 8,
+                    alignSelf: isRTL ? 'flex-end' : 'flex-start',
+                  }} />
+                </View>
+                <View style={{
+                  flexDirection: isRTL ? 'row-reverse' : 'row',
+                  flexWrap: 'wrap',
+                  paddingHorizontal: 8,
+                }}>
+                  {packages.map((pkg) => (
+                    <View key={pkg._id} style={{ width: '50%', padding: 8 }}>
+                      {renderPackageCard({ item: pkg })}
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+          </>
+        }
         ListEmptyComponent={
           <View style={styles.centerContainer}>
             <Text style={[styles.emptyText, isRTL && styles.textRTL]}>
-              {isRTL ? 'لا توجد خدمات لهذا المورد' : 'No services for this vendor'}
+              {vendorId 
+                ? (isRTL ? 'لا توجد خدمات أو باقات لهذا المورد' : 'No services or packages for this vendor')
+                : (isRTL ? 'لا توجد خدمات متاحة' : 'No services available')
+              }
             </Text>
           </View>
         }

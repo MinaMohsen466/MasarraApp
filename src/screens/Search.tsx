@@ -99,11 +99,11 @@ const Search: React.FC<SearchProps> = ({ onBack, onSelectService, onSelectOccasi
 
   const renderSearchResult = ({ item }: { item: any }) => (
     <TouchableOpacity
-      style={styles.resultItem}
+      style={[styles.resultItem, isRTL && styles.resultItemRTL]}
       onPress={() => handleResultPress(item)}
       activeOpacity={0.7}>
       {/* Image */}
-      <View style={styles.resultImageContainer}>
+      <View style={[styles.resultImageContainer, isRTL && styles.resultImageContainerRTL]}>
         {item.image ? (
           <Image
             source={{ uri: item.type === 'service' ? getServiceImageUrl(item.image) : item.image }}
@@ -125,7 +125,7 @@ const Search: React.FC<SearchProps> = ({ onBack, onSelectService, onSelectOccasi
       </View>
 
       {/* Content */}
-      <View style={styles.resultContent}>
+      <View style={[styles.resultContent, isRTL && styles.resultContentRTL]}>
         <Text style={[styles.resultName, isRTL && styles.resultNameRTL]}>
           {item.displayName}
         </Text>
@@ -140,10 +140,10 @@ const Search: React.FC<SearchProps> = ({ onBack, onSelectService, onSelectOccasi
       </View>
 
       {/* Arrow */}
-      <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+      <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" style={{ marginLeft: 8 }}>
         <Path
           d={isRTL ? "M15 18l-6-6 6-6" : "M9 18l6-6-6-6"}
-          stroke="#9E9E9E"
+          stroke={colors.primary}
           strokeWidth={2}
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -155,109 +155,113 @@ const Search: React.FC<SearchProps> = ({ onBack, onSelectService, onSelectOccasi
   const isLoading = servicesLoading || occasionsLoading;
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-            <Path
-              d={isRTL ? "M9 18l6-6-6-6" : "M15 18l-6-6 6-6"}
-              stroke={colors.primary}
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </Svg>
-        </TouchableOpacity>
+    <View style={{ flex: 1, backgroundColor: colors.backgroundHome }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.backgroundHome }} edges={['top', 'bottom']}>
+        <View style={{ flex: 1, backgroundColor: colors.backgroundHome }}>
+          {/* Header */}
+          <View style={[styles.header, isRTL && styles.headerRTL]}>
+          <TouchableOpacity onPress={onBack} style={[styles.backButton, isRTL && styles.backButtonRTL]}>
+            <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+              <Path
+                d={isRTL ? "M9 18l6-6-6-6" : "M15 18l-6-6 6-6"}
+                stroke={colors.primary}
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
+          </TouchableOpacity>
 
-        <View style={styles.searchInputContainer}>
-          <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" style={styles.searchIcon}>
-            <Path
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              stroke="#9E9E9E"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
+          <View style={styles.searchInputContainer}>
+            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" style={styles.searchIcon}>
+              <Path
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                stroke="#9E9E9E"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
+            <TextInput
+              style={[styles.searchInput, isRTL && styles.searchInputRTL]}
+              placeholder={isRTL ? 'ابحث عن خدمات، مناسبات...' : 'Search services, occasions...'}
+              placeholderTextColor="#9E9E9E"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoFocus
             />
-          </Svg>
-          <TextInput
-            style={[styles.searchInput, isRTL && styles.searchInputRTL]}
-            placeholder={isRTL ? 'ابحث عن خدمات، مناسبات...' : 'Search services, occasions...'}
-            placeholderTextColor="#9E9E9E"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            autoFocus
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
+                <Text style={styles.clearButtonText}>✕</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
+        {/* Filter Tabs */}
+        <View style={styles.filterContainer}>
+          <TouchableOpacity
+            style={[styles.filterTab, searchType === 'all' && styles.filterTabActive]}
+            onPress={() => setSearchType('all')}>
+            <Text style={[styles.filterTabText, searchType === 'all' && styles.filterTabTextActive]}>
+              {isRTL ? 'الكل' : 'All'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterTab, searchType === 'services' && styles.filterTabActive]}
+            onPress={() => setSearchType('services')}>
+            <Text style={[styles.filterTabText, searchType === 'services' && styles.filterTabTextActive]}>
+              {isRTL ? 'الخدمات' : 'Services'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterTab, searchType === 'occasions' && styles.filterTabActive]}
+            onPress={() => setSearchType('occasions')}>
+            <Text style={[styles.filterTabText, searchType === 'occasions' && styles.filterTabTextActive]}>
+              {isRTL ? 'المناسبات' : 'Occasions'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Results */}
+        {isLoading ? (
+          <View style={styles.centerContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : searchQuery.trim() === '' ? (
+          <View style={styles.centerContainer}>
+            <Text style={styles.emptyText}>
+              {isRTL ? 'ابدأ البحث...' : 'Start searching...'}
+            </Text>
+            <Text style={styles.emptySubtext}>
+              {isRTL 
+                ? 'ابحث عن خدمات، مناسبات، أو مقدمي خدمات' 
+                : 'Search for services, occasions, or vendors'}
+            </Text>
+          </View>
+        ) : filteredResults.length === 0 ? (
+          <View style={styles.centerContainer}>
+            <Text style={styles.emptyText}>
+              {isRTL ? 'لا توجد نتائج' : 'No results found'}
+            </Text>
+            <Text style={styles.emptySubtext}>
+              {isRTL 
+                ? `لم نجد أي نتائج لـ "${searchQuery}"` 
+                : `We couldn't find any results for "${searchQuery}"`}
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            data={filteredResults}
+            renderItem={renderSearchResult}
+            keyExtractor={(item) => `${item.type}-${item._id}`}
+            contentContainerStyle={styles.resultsList}
+            showsVerticalScrollIndicator={false}
           />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
-              <Text style={styles.clearButtonText}>✕</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+        )}
       </View>
-
-      {/* Filter Tabs */}
-      <View style={styles.filterContainer}>
-        <TouchableOpacity
-          style={[styles.filterTab, searchType === 'all' && styles.filterTabActive]}
-          onPress={() => setSearchType('all')}>
-          <Text style={[styles.filterTabText, searchType === 'all' && styles.filterTabTextActive]}>
-            {isRTL ? 'الكل' : 'All'}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterTab, searchType === 'services' && styles.filterTabActive]}
-          onPress={() => setSearchType('services')}>
-          <Text style={[styles.filterTabText, searchType === 'services' && styles.filterTabTextActive]}>
-            {isRTL ? 'الخدمات' : 'Services'}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterTab, searchType === 'occasions' && styles.filterTabActive]}
-          onPress={() => setSearchType('occasions')}>
-          <Text style={[styles.filterTabText, searchType === 'occasions' && styles.filterTabTextActive]}>
-            {isRTL ? 'المناسبات' : 'Occasions'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Results */}
-      {isLoading ? (
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      ) : searchQuery.trim() === '' ? (
-        <View style={styles.centerContainer}>
-          <Text style={styles.emptyText}>
-            {isRTL ? 'ابدأ البحث...' : 'Start searching...'}
-          </Text>
-          <Text style={styles.emptySubtext}>
-            {isRTL 
-              ? 'ابحث عن خدمات، مناسبات، أو مقدمي خدمات' 
-              : 'Search for services, occasions, or vendors'}
-          </Text>
-        </View>
-      ) : filteredResults.length === 0 ? (
-        <View style={styles.centerContainer}>
-          <Text style={styles.emptyText}>
-            {isRTL ? 'لا توجد نتائج' : 'No results found'}
-          </Text>
-          <Text style={styles.emptySubtext}>
-            {isRTL 
-              ? `لم نجد أي نتائج لـ "${searchQuery}"` 
-              : `We couldn't find any results for "${searchQuery}"`}
-          </Text>
-        </View>
-      ) : (
-        <FlatList
-          data={filteredResults}
-          renderItem={renderSearchResult}
-          keyExtractor={(item) => `${item.type}-${item._id}`}
-          contentContainerStyle={styles.resultsList}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
     </SafeAreaView>
+    </View>
   );
 };
 
@@ -270,9 +274,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 26,
+    paddingTop: 12,
     paddingBottom: 8,
     backgroundColor: colors.backgroundHome,
+  },
+  headerRTL: {
+    flexDirection: 'row-reverse',
   },
   backButton: {
     width: 40,
@@ -280,6 +287,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
+  },
+  backButtonRTL: {
+    marginRight: 0,
+    marginLeft: 8,
   },
   searchInputContainer: {
     flex: 1,
@@ -373,8 +384,15 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F5F5F5',
   },
+  resultItemRTL: {
+    flexDirection: 'row-reverse',
+  },
   resultImageContainer: {
     marginRight: 12,
+  },
+  resultImageContainerRTL: {
+    marginRight: 0,
+    marginLeft: 12,
   },
   resultImage: {
     width: 60,
@@ -392,6 +410,10 @@ const styles = StyleSheet.create({
   resultContent: {
     flex: 1,
     marginRight: 12,
+  },
+  resultContentRTL: {
+    marginRight: 0,
+    marginLeft: 12,
   },
   resultName: {
     fontSize: 16,

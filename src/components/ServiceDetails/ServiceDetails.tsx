@@ -485,8 +485,8 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
                     : '';
 
                   return (
-                    <View key={index} style={styles.policyCard}>
-                      <View style={styles.policyIconContainer}>
+                    <View key={index} style={[styles.policyCard, isRTL && styles.policyCardRTL]}>
+                      <View style={[styles.policyIconContainer, isRTL && styles.policyIconContainerRTL]}>
                         {policy.image ? (
                           <Image
                             source={{ uri: getImageUrl(policy.image) }}
@@ -501,7 +501,10 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
                         <Text style={[styles.policyName, isRTL && styles.policyNameRTL]}>
                           {policyName}
                         </Text>
-                        <Text style={[styles.policyDescription, isRTL && styles.policyDescriptionRTL]}>
+                        <Text 
+                          style={[styles.policyDescription, isRTL && styles.policyDescriptionRTL]}
+                          numberOfLines={2}
+                          ellipsizeMode="tail">
                           {description}
                         </Text>
                       </View>
@@ -529,7 +532,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
                           }
                           setShowDatePicker(true);
                         }}>
-                        <View style={styles.bookingIconWrap}>
+                        <View style={[styles.bookingIconWrap, isRTL && styles.bookingIconWrapRTL]}>
                           <View style={styles.calendarIconSmallBorder}>
                             <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
                               <Path d="M7 11h10M7 7h10M7 3h10" stroke={colors.primary} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
@@ -549,7 +552,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
                         activeOpacity={0.8}
                         onPress={() => selectedDate && setShowTimePicker(true)}
                         disabled={!selectedDate}>
-                        <View style={styles.bookingIconWrap}>
+                        <View style={[styles.bookingIconWrap, isRTL && styles.bookingIconWrapRTL]}>
                           <View style={styles.clockIconSmallBorder}>
                             <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
                               <Path d="M12 7v6l4 2" stroke={colors.primary} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
@@ -1012,7 +1015,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
                 }
                 
                 return null;
-              }) ?? []).filter((v): v is { label: string; value: string | number; price?: number } | { label: string; value: string | number; price?: number }[] => v !== null);
+              }) ?? []).filter((v): v is { label: string; value: string | number; price?: number } => v !== null);
 
               const cartItem: CartItem = {
                 _id: `${service._id}_${Date.now()}`,
@@ -1027,7 +1030,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
                 quantity: 1, // Default quantity is 1, user can change in Cart (for unlimited services)
                 selectedDate,
                 selectedTime,
-                customInputs: selectedCustomInputs,
+                customInputs: selectedCustomInputs.filter(v => v !== null && v !== undefined),
                 timeSlot: {
                   start: slotStart,
                   end: slotEnd

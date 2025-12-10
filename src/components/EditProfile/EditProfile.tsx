@@ -10,6 +10,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import ChangePasswordModal from './ChangePasswordModal';
 import PasswordPromptModal from '../PasswordPromptModal/PasswordPromptModal';
 import { API_URL } from '../../config/api.config';
+import { CustomAlert } from '../CustomAlert';
 
 interface EditProfileProps {
   onBack?: () => void;
@@ -28,6 +29,14 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
   const [phone, setPhone] = useState(user?.phone && user.phone.trim() !== '' ? user.phone : '');
   const [profileImage, setProfileImage] = useState<string | null>(user?.profilePicture || null);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Alert states
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    buttons: Array<{text: string; onPress?: () => void; style?: 'default' | 'cancel' | 'destructive'}>;
+  }>({ visible: false, title: '', message: '', buttons: [] });
 
   // Log user data on mount
   useEffect(() => {
@@ -72,6 +81,25 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
     fetchUserData();
   }, []);
 
+  const showAlert = (title: string, message: string, buttons: Array<{text: string; onPress?: () => void; style?: 'default' | 'cancel' | 'destructive'}>) => {
+    setAlertConfig({ visible: true, title, message, buttons });
+  };
+  
+  const handleRemovePhoto = () => {
+    showAlert(
+      isRTL ? 'حذف الصورة' : 'Remove Photo',
+      isRTL ? 'هل أنت متأكد من حذف صورة الملف الشخصي؟' : 'Are you sure you want to remove your profile photo?',
+      [
+        { text: isRTL ? 'إلغاء' : 'Cancel', style: 'cancel' },
+        { 
+          text: isRTL ? 'حذف' : 'Remove', 
+          style: 'destructive',
+          onPress: () => setProfileImage(null)
+        },
+      ]
+    );
+  };
+
   const handleChoosePhoto = async () => {
     try {
       
@@ -94,7 +122,7 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
           if (granted === PermissionsAndroid.RESULTS.GRANTED) {
             // ok
           } else if (granted === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
-            Alert.alert(
+            showAlert(
               isRTL ? 'إذن مطلوب' : 'Permission Required',
               isRTL ? 'الرجاء السماح بالوصول إلى المعرض من إعدادات التطبيق' : 'Please allow access to photo library from app settings',
               [
@@ -104,9 +132,10 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
             );
             return;
           } else {
-            Alert.alert(
+            showAlert(
               isRTL ? 'إذن مطلوب' : 'Permission Required',
-              isRTL ? 'الرجاء السماح بالوصول إلى المعرض' : 'Please allow access to photo library'
+              isRTL ? 'الرجاء السماح بالوصول إلى المعرض' : 'Please allow access to photo library',
+              [{ text: 'OK' }]
             );
             return;
           }
@@ -127,9 +156,10 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
       }
 
       if (result.errorCode) {
-        Alert.alert(
+        showAlert(
           isRTL ? 'خطأ' : 'Error',
-          result.errorMessage || (isRTL ? 'فشل اختيار الصورة' : 'Failed to pick image')
+          result.errorMessage || (isRTL ? 'فشل اختيار الصورة' : 'Failed to pick image'),
+          [{ text: 'OK' }]
         );
         return;
       }
@@ -138,18 +168,20 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
         setProfileImage(result.assets[0].uri);
       }
     } catch (error: any) {
-      Alert.alert(
+      showAlert(
         isRTL ? 'خطأ' : 'Error',
-        error.message || (isRTL ? 'فشل اختيار الصورة' : 'Failed to pick image')
+        error.message || (isRTL ? 'فشل اختيار الصورة' : 'Failed to pick image'),
+        [{ text: 'OK' }]
       );
     }
   };
 
   const handleSaveChanges = async () => {
     if (!name.trim()) {
-      Alert.alert(
+      showAlert(
         isRTL ? 'خطأ' : 'Error',
-        isRTL ? 'الرجاء إدخال الاسم' : 'Please enter your name'
+        isRTL ? 'الرجاء إدخال الاسم' : 'Please enter your name',
+        [{ text: 'OK' }]
       );
       return;
     }
@@ -171,15 +203,17 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
 
       await updateUserProfile(name.trim(), phone.trim(), imageToSend);
 
-      Alert.alert(
+      showAlert(
         isRTL ? 'نجح' : 'Success',
-        isRTL ? 'تم تحديث الملف الشخصي بنجاح' : 'Profile updated successfully'
+        isRTL ? 'تم تحديث الملف الشخصي بنجاح' : 'Profile updated successfully',
+        [{ text: 'OK' }]
       );
       setIsEditing(false);
     } catch (error) {
-      Alert.alert(
+      showAlert(
         isRTL ? 'خطأ' : 'Error',
-        isRTL ? 'فشل تحديث الملف الشخصي' : 'Failed to update profile'
+        isRTL ? 'فشل تحديث الملف الشخصي' : 'Failed to update profile',
+        [{ text: 'OK' }]
       );
     } finally {
       setIsLoading(false);
@@ -230,7 +264,7 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
         throw new Error(data.error || 'Failed to delete account');
       }
 
-      Alert.alert(
+      showAlert(
         isRTL ? 'تم الحذف' : 'Account Deleted',
         isRTL ? 'تم حذف حسابك بنجاح' : 'Your account has been deleted successfully',
         [
@@ -244,9 +278,10 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
         ]
       );
     } catch (error) {
-      Alert.alert(
+      showAlert(
         isRTL ? 'خطأ' : 'Error',
-        error instanceof Error ? error.message : isRTL ? 'فشل حذف الحساب' : 'Failed to delete account'
+        error instanceof Error ? error.message : isRTL ? 'فشل حذف الحساب' : 'Failed to delete account',
+        [{ text: 'OK' }]
       );
     }
   };
@@ -364,24 +399,34 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
                   {isRTL ? 'صورة الملف الشخصي' : 'Profile Photo'}
                 </Text>
                 <View style={styles.photoContainer}>
-                  <View style={styles.photoCircle}>
-                    {profileImage ? (
-                      <Image 
-                        source={{ uri: getImageUri(profileImage) || undefined }} 
-                        style={styles.photoImage}
-                        onLoad={() => {
-                          console.log('✅ Profile image loaded successfully!');
-                        }}
-                        onError={(error) => {
-                          console.error('❌ Profile image failed to load:', {
-                            error: error.nativeEvent.error,
-                            profileImage: profileImage,
-                            uri: getImageUri(profileImage)
-                          });
-                        }}
-                      />
-                    ) : (
-                      <Text style={styles.photoInitials}>{getInitials()}</Text>
+                  <View style={styles.photoCircleWrapper}>
+                    <View style={styles.photoCircle}>
+                      {profileImage ? (
+                        <Image 
+                          source={{ uri: getImageUri(profileImage) || undefined }} 
+                          style={styles.photoImage}
+                          onLoad={() => {
+                            console.log('✅ Profile image loaded successfully!');
+                          }}
+                          onError={(error) => {
+                            console.error('❌ Profile image failed to load:', {
+                              error: error.nativeEvent.error,
+                              profileImage: profileImage,
+                              uri: getImageUri(profileImage)
+                            });
+                          }}
+                        />
+                      ) : (
+                        <Text style={styles.photoInitials}>{getInitials()}</Text>
+                      )}
+                    </View>
+                    {profileImage && (
+                      <TouchableOpacity 
+                        style={styles.removePhotoIcon}
+                        onPress={handleRemovePhoto}
+                        activeOpacity={0.8}>
+                        <Text style={styles.removePhotoIconText}>✕</Text>
+                      </TouchableOpacity>
                     )}
                   </View>
                   <TouchableOpacity 
@@ -516,6 +561,15 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
           : 'To confirm account deletion, please enter your password. This action cannot be undone'}
         onConfirm={confirmDeleteAccount}
         onCancel={() => setShowDeleteAccountModal(false)}
+      />
+      
+      {/* Custom Alert */}
+      <CustomAlert
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttons={alertConfig.buttons}
+        onClose={() => setAlertConfig({ ...alertConfig, visible: false })}
       />
     </View>
   );

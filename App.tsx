@@ -10,9 +10,11 @@ import colors from './src/constants/colors';
 import Header from "./src/components/header/Header";
 import BottomNavigation from "./src/components/BottomNavigation";
 import Occasions from "./src/components/Occasions";
+import Packages from "./src/components/Packages";
 import ServicesPage from "./src/components/ServicesPage";
 import Vendors from "./src/components/Vendors";
 import ServiceDetails from "./src/components/ServiceDetails";
+import PackageDetails from "./src/components/PackageDetails";
 import Home from "./src/screens/Home";
 import Cart from "./src/screens/Cart";
 import SplashScreen from "./src/components/SplashScreen";
@@ -47,6 +49,8 @@ function App() {
   const [selectedVendorName, setSelectedVendorName] = useState<string | undefined>(undefined);
   const [selectedServiceId, setSelectedServiceId] = useState<string | undefined>(undefined);
   const [selectedServiceOrigin, setSelectedServiceOrigin] = useState<'home' | 'services' | 'vendor-services' | 'occasion-services' | undefined>(undefined);
+  const [selectedPackageId, setSelectedPackageId] = useState<string | undefined>(undefined);
+  const [selectedPackageOrigin, setSelectedPackageOrigin] = useState<'packages' | 'vendor-services' | undefined>(undefined);
   const [selectedOccasionId, setSelectedOccasionId] = useState<string | undefined>(undefined);
   const [selectedOccasionName, setSelectedOccasionName] = useState<string | undefined>(undefined);
   const [selectedOccasionOrigin, setSelectedOccasionOrigin] = useState<'home' | 'occasions' | undefined>(undefined);
@@ -76,6 +80,17 @@ function App() {
       }
       setSelectedServiceId(undefined);
       setSelectedServiceOrigin(undefined);
+    } else if (currentRoute === 'package-details') {
+      // Route back based on where the package was opened from
+      if (selectedPackageOrigin === 'packages') {
+        setCurrentRoute('packages');
+      } else if (selectedPackageOrigin === 'vendor-services') {
+        setCurrentRoute('vendor-services');
+      } else {
+        setCurrentRoute('home');
+      }
+      setSelectedPackageId(undefined);
+      setSelectedPackageOrigin(undefined);
     } else if (currentRoute === 'occasion-services') {
       // Go back to the origin (home or occasions)
       if (selectedOccasionOrigin === 'home') {
@@ -105,6 +120,12 @@ function App() {
     setSelectedServiceId(serviceId);
     setSelectedServiceOrigin(origin);
     setCurrentRoute('service-details');
+  };
+
+  const handlePackageSelect = (packageId: string, origin?: 'packages' | 'vendor-services') => {
+    setSelectedPackageId(packageId);
+    setSelectedPackageOrigin(origin);
+    setCurrentRoute('package-details');
   };
 
   const handleOccasionSelect = (occasionId: string, occasionName: string, origin?: 'home' | 'occasions') => {
@@ -146,6 +167,8 @@ function App() {
             onBack={handleBack}
           />
         );
+      case 'packages':
+        return <Packages onBack={handleBack} onSelectPackage={(pkg) => handlePackageSelect(pkg._id, 'packages')} />;
       case 'occasion-services':
         return (
           <ServicesPage 
@@ -173,6 +196,7 @@ function App() {
         return (
           <ServicesPage 
             onSelectService={(service) => handleServiceSelect(service._id, 'vendor-services')}
+            onSelectPackage={(pkg) => handlePackageSelect(pkg._id, 'vendor-services')}
             onBack={handleBack}
             vendorId={selectedVendorId}
             vendorName={selectedVendorName}
@@ -182,6 +206,13 @@ function App() {
         return (
           <ServiceDetails 
             serviceId={selectedServiceId!}
+            onBack={handleBack}
+          />
+        );
+      case 'package-details':
+        return (
+          <PackageDetails 
+            packageId={selectedPackageId!}
             onBack={handleBack}
           />
         );
@@ -208,7 +239,7 @@ function App() {
     }
   };
 
-  const routesWithoutHeader = ['occasions', 'categories', 'services', 'vendors', 'vendor-services', 'occasion-services', 'service-details', 'cart', 'about', 'terms', 'privacy', 'contact', 'profile', 'addresses', 'search'];
+  const routesWithoutHeader = ['occasions', 'packages', 'categories', 'services', 'vendors', 'vendor-services', 'occasion-services', 'service-details', 'package-details', 'cart', 'about', 'terms', 'privacy', 'contact', 'profile', 'addresses', 'search'];
   const shouldShowHeader = !routesWithoutHeader.includes(currentRoute);
   
   const routesWithoutSafeArea = ['about', 'terms', 'privacy', 'contact', 'service-details', 'cart', 'profile', 'search'];

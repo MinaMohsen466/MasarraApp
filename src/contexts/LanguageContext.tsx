@@ -19,6 +19,7 @@ const translations = {
     // Drawer Menu Items
     home: 'Home',
     occasions: 'Occasions',
+    packages: 'Packages',
     aboutUs: 'About Us',
     myAccount: 'My Account',
     termsConditions: 'Terms & Conditions',
@@ -78,6 +79,7 @@ const translations = {
     // Drawer Menu Items
     home: 'الرئيسية',
     occasions: 'المناسبات',
+    packages: 'الباقات',
     aboutUs: 'من نحن',
     myAccount: 'حسابي',
     termsConditions: 'الشروط والأحكام',

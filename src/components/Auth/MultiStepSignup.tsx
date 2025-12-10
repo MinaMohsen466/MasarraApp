@@ -14,6 +14,7 @@ import { styles } from './styles';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { colors } from '../../constants/colors';
 import { signup } from '../../services/api';
+import { API_URL } from '../../config/api.config';
 
 interface MultiStepSignupProps {
   onBack: () => void;
@@ -146,7 +147,7 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
 
     setIsLoading(true);
     try {
-      const response = await fetch('http://10.0.2.2:3000/api/auth/verify-email', {
+      const response = await fetch(`${API_URL}/auth/verify-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, verificationCode: otpCode }),
@@ -201,7 +202,7 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
     setIsLoading(true);
     try {
       // Save address for the newly created user
-      const response = await fetch('http://10.0.2.2:3000/api/addresses', {
+      const response = await fetch(`${API_URL}/addresses`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

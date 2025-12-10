@@ -272,11 +272,18 @@ export const styles = StyleSheet.create({
     alignItems: 'flex-start',
     padding: 0,
   },
+  policyCardRTL: {
+    flexDirection: 'row-reverse',
+  },
   policyIconContainer: {
     width: 40,
     height: 40,
     marginRight: 12,
     flexShrink: 0,
+  },
+  policyIconContainerRTL: {
+    marginRight: 0,
+    marginLeft: 12,
   },
   policyIcon: {
     width: '100%',
@@ -311,6 +318,7 @@ export const styles = StyleSheet.create({
   },
   policyDescriptionRTL: {
     writingDirection: 'rtl',
+    textAlign: 'right',
   },
 
   /* Booking / availability preview: match vendor policy card width and style */
@@ -353,7 +361,11 @@ export const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
   },
   bookingIconWrap: {
-    marginRight: 14,
+    marginRight: 16,
+  },
+  bookingIconWrapRTL: {
+    marginRight: 0,
+    marginLeft: 16,
   },
   calendarIconSmallBorder: {
     width: 36,
