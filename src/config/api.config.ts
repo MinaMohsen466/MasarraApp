@@ -8,20 +8,37 @@ import { Platform } from 'react-native';
  * - For Real Device: Use your computer's local IP (e.g., 192.168.1.127)
  */
 
-// 🔧 CHANGE THIS TO YOUR COMPUTER'S IP ADDRESS
-export const LOCAL_IP = '192.168.1.127'; // Real device IP
+// 🔧 Production Server Configuration
+export const PRODUCTION_URL = 'https://masarrakw.com';
+export const LOCAL_IP = '192.168.1.127'; // For local development only
+
+// Set to true to use local server in development, false to always use AWS
+const USE_LOCAL_IN_DEV = false;
 
 /**
  * Get the appropriate base URL based on platform
- * Android Emulator uses 10.0.2.2
- * Real devices use the local network IP
+ * - Production: Uses masarrakw.com
+ * - Development (Android Emulator): Uses 10.0.2.2:3000
+ * - Development (Real Device): Uses local IP
  */
 export const getBaseUrl = (): string => {
-  // Only use 10.0.2.2 for Android in debug mode (not for APK release)
-  if (Platform.OS === 'android' && __DEV__) {
+  // Always use production server if USE_LOCAL_IN_DEV is false
+  if (!USE_LOCAL_IN_DEV) {
+    return PRODUCTION_URL;
+  }
+  
+  // In production/release mode, always use the production server
+  if (!__DEV__) {
+    return PRODUCTION_URL;
+  }
+  
+  // In development mode only (if USE_LOCAL_IN_DEV is true):
+  // Android Emulator uses 10.0.2.2
+  if (Platform.OS === 'android') {
     return 'http://10.0.2.2:3000';
   }
-  // For real devices and APK builds, use LOCAL_IP
+  
+  // iOS Simulator and real devices in dev mode use local IP
   return `http://${LOCAL_IP}:3000`;
 };
 

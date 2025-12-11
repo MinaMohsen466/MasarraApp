@@ -29,6 +29,9 @@ export interface Service {
   description: string;
   descriptionAr: string;
   price: number;
+  salePrice?: number;
+  discountPercentage?: number;
+  isOnSale?: boolean;
   bookingType?: 'limited' | 'unlimited';
   images: string[];
   vendor: {
@@ -68,6 +71,18 @@ export const fetchServices = async (): Promise<Service[]> => {
     }
     
     const data = await response.json();
+    
+    // Debug: Log discount info for Birthday Party Catering
+    const birthdayCatering = data.find((s: any) => s.name === 'Birthday Party Catering');
+    if (birthdayCatering) {
+      console.log('Birthday Party Catering from API:', {
+        price: birthdayCatering.price,
+        salePrice: birthdayCatering.salePrice,
+        discountPercentage: birthdayCatering.discountPercentage,
+        isOnSale: birthdayCatering.isOnSale
+      });
+    }
+    
     return data;
   } catch (error) {
     throw error;

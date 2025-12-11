@@ -1,5 +1,5 @@
 ﻿import React, { useState } from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity, Alert, ActivityIndicator, Dimensions } from 'react-native';
+import { View, Text, ScrollView, Image, TouchableOpacity, Alert, ActivityIndicator, Dimensions, TextInput } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -14,6 +14,8 @@ import Drawer from '../components/Drawer';
 import OrderSuccess from './OrderSuccess';
 import AddressSelection from '../components/AddressSelection/AddressSelection';
 import { API_BASE_URL } from '../config/api.config';
+import { CustomAlert } from '../components/CustomAlert';
+import { validateCoupon, Coupon } from '../services/couponApi';
 
 interface CartProps {
   onBack?: () => void;
@@ -37,6 +39,18 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
   const [userToken, setUserToken] = useState<string>('');
   // measured height of the bottom summary (used to reserve scroll space)
   const [summaryHeight, setSummaryHeight] = useState<number>(300);
+  // Custom Alert state
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertButtons, setAlertButtons] = useState<Array<{text: string; onPress?: () => void; style?: 'default' | 'cancel' | 'destructive'}>>([]);
+  // Coupon state
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+  const [couponMessage, setCouponMessage] = useState('');
+  const [couponError, setCouponError] = useState('');
 
   const loadCart = async () => {
     const items = await getCart();
@@ -93,7 +107,10 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
         .replace('{count}', oldItems.length.toString())
         .replace('{items}', oldItemNames);
       
-      Alert.alert(t('oldBookingsAlert'), message, [{ text: t('ok') }]);
+      setAlertTitle(t('oldBookingsAlert'));
+      setAlertMessage(message);
+      setAlertButtons([{ text: t('ok'), style: 'default' }]);
+      setAlertVisible(true);
     }
   };
 
@@ -151,11 +168,10 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
       { text: t('cancel'), style: 'cancel' as const },
     ];
 
-    Alert.alert(
-      t('confirmDelete'),
-      t('removeItemMessage'),
-      isRTL ? buttons : buttons.reverse()
-    );
+    setAlertTitle(t('confirmDelete'));
+    setAlertMessage(t('removeItemMessage'));
+    setAlertButtons(isRTL ? buttons : buttons.reverse());
+    setAlertVisible(true);
   };
 
   const handleUserIconPress = () => {
@@ -186,12 +202,15 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
         const errorItems = unavailableItems
           .map(({ item, reason }) => {
             const itemName = isRTL ? (item.nameAr || item.name) : item.name;
-            return `â€¢ ${itemName} (${item.selectedTime})\n  ${reason}`;
+            return `• ${itemName} (${item.selectedTime})\n  ${reason}`;
           })
           .join('\n\n');
 
         const message = t('unavailableItemsMessage').replace('{items}', errorItems);
-        Alert.alert(t('someItemsUnavailable'), message, [{ text: t('ok') }]);
+        setAlertTitle(t('someItemsUnavailable'));
+        setAlertMessage(message);
+        setAlertButtons([{ text: t('ok'), style: 'default' }]);
+        setAlertVisible(true);
         return;
       }
 
@@ -201,7 +220,10 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
     } catch (error) {
       setIsProcessingCheckout(false);
       console.error('Error during checkout:', error);
-      Alert.alert(t('error'), t('errorProcessingOrder'), [{ text: t('ok') }]);
+      setAlertTitle(t('error'));
+      setAlertMessage(t('errorProcessingOrder'));
+      setAlertButtons([{ text: t('ok'), style: 'default' }]);
+      setAlertVisible(true);
     }
   };
 
@@ -223,7 +245,15 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
       
       const fullAddress = addressParts.join(', ');
       
-      const { success, bookings, errors } = await createBookingsFromCart(fullAddress);
+      // Prepare coupon data if applied
+      const couponData = appliedCoupon && couponDiscount > 0 ? {
+        code: appliedCoupon.code,
+        discountAmount: couponDiscount,
+        originalPrice: calculateTotalBeforeDiscount(),
+        deductFrom: appliedCoupon.deductFrom || 'vendor'
+      } : undefined;
+      
+      const { success, bookings, errors } = await createBookingsFromCart(fullAddress, couponData);
 
       setIsProcessingCheckout(false);
 
@@ -232,12 +262,15 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
         const errorItems = errors
           .map(({ item, error }) => {
             const itemName = isRTL ? (item.nameAr || item.name) : item.name;
-            return `â€¢ ${itemName}\n  ${error}`;
+            return `• ${itemName}\n  ${error}`;
           })
           .join('\n\n');
 
         const message = t('failedToCreateBookings').replace('{items}', errorItems);
-        Alert.alert(t('bookingError'), message, [{ text: t('ok') }]);
+        setAlertTitle(t('bookingError'));
+        setAlertMessage(message);
+        setAlertButtons([{ text: t('ok'), style: 'default' }]);
+        setAlertVisible(true);
         return;
       }
 
@@ -250,7 +283,10 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
     } catch (error) {
       setIsProcessingCheckout(false);
       console.error('Error creating bookings:', error);
-      Alert.alert(t('error'), t('errorCreatingBookings'), [{ text: t('ok') }]);
+      setAlertTitle(t('error'));
+      setAlertMessage(t('errorCreatingBookings'));
+      setAlertButtons([{ text: t('ok'), style: 'default' }]);
+      setAlertVisible(true);
     }
   };
 
@@ -275,15 +311,83 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
     return uniqueUnlimitedServiceIds.size * 5;
   };
 
-  const calculatePayNowAmount = () => {
-    const availableNowSubtotal = cartItems.reduce((total, item) => {
-      if (!item.availabilityStatus || item.availabilityStatus === 'available_now') {
-        const itemPrice = item.totalPrice ?? item.price;
-        return total + (itemPrice * item.quantity);
+  const calculateTotalBeforeDiscount = () => {
+    return calculateSubTotal() + calculateDeliveryCharges();
+  };
+
+  const calculateTotalAfterDiscount = () => {
+    const total = calculateTotalBeforeDiscount();
+    return Math.max(0, total - couponDiscount);
+  };
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      setCouponError(isRTL ? 'الرجاء إدخال رمز الكوبون' : 'Please enter coupon code');
+      return;
+    }
+
+    setIsApplyingCoupon(true);
+    setCouponError('');
+    setCouponMessage('');
+
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token || !user?._id) {
+        setCouponError(isRTL ? 'الرجاء تسجيل الدخول أولاً' : 'Please login first');
+        setIsApplyingCoupon(false);
+        return;
       }
-      return total;
-    }, 0);
-    return (availableNowSubtotal + calculateDeliveryCharges()) * 0.6;
+
+      const cartItemsData = cartItems
+        .filter(item => !item.availabilityStatus || item.availabilityStatus === 'available_now')
+        .map(item => ({
+          serviceId: item.serviceId,
+          vendorId: item.vendorId
+        }));
+
+      const total = calculateTotalBeforeDiscount();
+      
+      console.log('Sending coupon validation request:', {
+        couponCode: couponCode.trim(),
+        total,
+        userId: user._id,
+        cartItemsCount: cartItemsData.length
+      });
+      
+      const result = await validateCoupon(couponCode.trim(), total, user._id, cartItemsData, token);
+      
+      console.log('Coupon validation result:', result);
+
+      if (result.valid && result.coupon && result.discountAmount !== undefined) {
+        setAppliedCoupon(result.coupon);
+        setCouponDiscount(result.discountAmount);
+        setCouponMessage(
+          isRTL 
+            ? `تم تطبيق الكوبون بنجاح! خصم ${result.coupon.discountType === 'percentage' ? result.coupon.discountValue + '%' : result.coupon.discountValue + ' د.ك'}`
+            : `Coupon applied successfully! Discount ${result.coupon.discountType === 'percentage' ? result.coupon.discountValue + '%' : 'KD ' + result.coupon.discountValue}`
+        );
+      } else {
+        setCouponError(result.message || (isRTL ? 'كوبون غير صالح' : 'Invalid coupon'));
+      }
+    } catch (error) {
+      console.error('Error applying coupon:', error);
+      setCouponError(isRTL ? 'حدث خطأ أثناء تطبيق الكوبون' : 'Error applying coupon');
+    } finally {
+      setIsApplyingCoupon(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponDiscount(0);
+    setCouponCode('');
+    setCouponMessage('');
+    setCouponError('');
+  };
+
+  const calculatePayNowAmount = () => {
+    const total = calculateTotalAfterDiscount();
+    return total * 0.6;
   };
 
   const calculatePayableAfterConfirmation = () => {
@@ -295,7 +399,9 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
       return total;
     }, 0);
     const deliveryCharges = calculateDeliveryCharges();
-    const availableNowRemaining = (availableNowSubtotal + deliveryCharges) * 0.4;
+    const totalBeforeDiscount = availableNowSubtotal + deliveryCharges;
+    const totalAfterDiscount = Math.max(0, totalBeforeDiscount - couponDiscount);
+    const availableNowRemaining = totalAfterDiscount * 0.4;
     const pendingTotal = cartItems.reduce((total, item) => {
       if (item.availabilityStatus === 'pending_confirmation') {
         const itemPrice = item.totalPrice ?? item.price;
@@ -484,15 +590,6 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
                   </View>
                 )}
 
-                {/* Remove Button */}
-                <TouchableOpacity 
-                  style={[styles.removeButton, isRTL && styles.removeButtonRTL]}
-                  onPress={() => handleRemoveItem(item._id)}>
-                  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-                    <Path d="M18 6L6 18M6 6l12 12" stroke="#555" strokeWidth={2} strokeLinecap="round" />
-                  </Svg>
-                </TouchableOpacity>
-
                 {/* Item Header with Image and Title */}
                 <View style={[styles.itemHeader, isRTL && styles.itemHeaderRTL]}>
                   {item.image && (
@@ -534,7 +631,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
                           }}
                           activeOpacity={0.7}
                         >
-                          <Text style={{ color: colors.textWhite, fontSize: 14, fontWeight: 'bold' }}>âˆ’</Text>
+                          <Text style={{ color: colors.textWhite, fontSize: 14, fontWeight: 'bold' }}>−</Text>
                         </TouchableOpacity>
 
                         <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textDark, minWidth: 30, textAlign: 'center' }}>
@@ -677,6 +774,13 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
                 {/* Action Buttons */}
                 <View style={styles.actionButtons}>
                   <TouchableOpacity 
+                    style={styles.deleteButton}
+                    onPress={() => handleRemoveItem(item._id)}>
+                    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                      <Path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke="#FF6B6B" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                    </Svg>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
                     style={styles.viewDetailsButton}
                     onPress={() => onViewDetails && onViewDetails(item.serviceId)}>
                     <Text style={styles.viewDetailsText}>{t('viewDetails')}</Text>
@@ -696,6 +800,60 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
                 paddingBottom: Dimensions.get('window').width >= 600 ? (insets.bottom ?? 0) + 120 : (insets.bottom ?? 0) + 30,
               },
             ]}>
+            {/* Coupon Section */}
+            <View style={styles.couponContainer}>
+              <View style={styles.couponInputRow}>
+                <TextInput
+                  style={[styles.couponInput, isRTL && styles.couponInputRTL]}
+                  placeholder={isRTL ? 'أدخل رمز الكوبون' : 'Enter coupon code'}
+                  placeholderTextColor={colors.textSecondary}
+                  value={couponCode}
+                  onChangeText={(text) => {
+                    setCouponCode(text.toUpperCase());
+                    setCouponError('');
+                    setCouponMessage('');
+                  }}
+                  editable={!appliedCoupon}
+                  autoCapitalize="characters"
+                />
+                
+                {/* Status Icon */}
+                {(couponMessage || couponError) && (
+                  <View style={styles.couponStatusIcon}>
+                    <Text style={couponMessage ? styles.successIcon : styles.errorIcon}>
+                      {couponMessage ? '✓' : '✗'}
+                    </Text>
+                  </View>
+                )}
+                
+                {appliedCoupon ? (
+                  <TouchableOpacity 
+                    style={styles.removeButton}
+                    onPress={handleRemoveCoupon}>
+                    <Text style={styles.removeButtonText}>
+                      {isRTL ? 'إزالة' : 'Remove'}
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity 
+                    style={[
+                      styles.applyButton,
+                      (isApplyingCoupon || !couponCode.trim()) && styles.applyButtonDisabled
+                    ]}
+                    onPress={handleApplyCoupon}
+                    disabled={isApplyingCoupon || !couponCode.trim()}>
+                    {isApplyingCoupon ? (
+                      <ActivityIndicator size="small" color={colors.textWhite} />
+                    ) : (
+                      <Text style={styles.applyButtonText}>
+                        {isRTL ? 'تطبيق' : 'Apply'}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
             {/* Totals */}
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>{t('subTotal')}</Text>
@@ -711,10 +869,21 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
               </Text>
             </View>
 
+            {appliedCoupon && couponDiscount > 0 && (
+              <View style={styles.discountRow}>
+                <Text style={styles.discountLabel}>
+                  {isRTL ? 'الخصم' : 'Discount'} ({appliedCoupon.code})
+                </Text>
+                <Text style={styles.discountValue}>
+                  - {isRTL ? 'د.ك' : 'KD'} {couponDiscount.toFixed(3)}
+                </Text>
+              </View>
+            )}
+
             <View style={[styles.summaryRow, styles.summaryRowTotal]}>
               <Text style={styles.summaryLabelTotal}>{t('totalAmount')}</Text>
               <Text style={styles.summaryValueTotal}>
-                {isRTL ? 'د.ك' : 'KD'} {(calculateSubTotal() + calculateDeliveryCharges()).toFixed(3)}
+                {isRTL ? 'د.ك' : 'KD'} {calculateTotalAfterDiscount().toFixed(3)}
               </Text>
             </View>
 
@@ -774,6 +943,15 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
         onClose={() => setShowAddressSelection(false)}
         onSelectAddress={handleAddressSelected}
         token={userToken}
+      />
+
+      {/* Custom Alert */}
+      <CustomAlert
+        visible={alertVisible}
+        title={alertTitle}
+        message={alertMessage}
+        buttons={alertButtons}
+        onClose={() => setAlertVisible(false)}
       />
     </View>
   );

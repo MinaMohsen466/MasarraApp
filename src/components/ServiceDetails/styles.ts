@@ -135,10 +135,30 @@ export const styles = StyleSheet.create({
   imageSlide: {
     width: SCREEN_WIDTH,
     height: 380,
+    position: 'relative',
   },
   carouselImage: {
     width: '100%',
     height: '100%',
+  },
+  imageDiscountBadge: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 6,
+  },
+  imageDiscountText: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
   },
   paginationContainer: {
     position: 'absolute',

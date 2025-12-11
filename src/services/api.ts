@@ -467,6 +467,16 @@ export interface Booking {
   services: BookingService[];
   packages: any[];
   totalPrice: number;
+  coupon?: {
+    code: string;
+    discountAmount: number;
+    originalPrice: number;
+    deductFrom: string;
+    deductionSplit?: {
+      adminPercentage: number;
+      vendorPercentage: number;
+    };
+  };
   status: string;
   paymentStatus: string;
   specialRequests?: string;

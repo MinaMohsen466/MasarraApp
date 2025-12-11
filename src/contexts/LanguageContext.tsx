@@ -58,6 +58,20 @@ const translations = {
     payableAfterConfirmation: 'Payable After Confirmation',
     checkout: 'Checkout',
     continueShopping: 'Continue Shopping',
+    
+    // Coupon
+    couponCode: 'Coupon Code',
+    enterCouponCode: 'Enter coupon code',
+    apply: 'Apply',
+    applyCoupon: 'Apply Coupon',
+    removeCoupon: 'Remove',
+    couponApplied: 'Coupon applied successfully!',
+    discount: 'Discount',
+    invalidCoupon: 'Invalid coupon code',
+    couponError: 'Error applying coupon',
+    enterCoupon: 'Please enter coupon code',
+    pleaseLogin: 'Please login first',
+    
     pastTimeWarning: '⚠ Past Time',
     oldBookingsAlert: '⚠ Alert: Old Bookings',
     oldBookingsMessage: 'You have {count} booking(s) with past date/time in your cart:\n\n{items}\n\nPlease update or remove these bookings.',
@@ -118,6 +132,20 @@ const translations = {
     payableAfterConfirmation: 'الدفع بعد التأكيد',
     checkout: 'إتمام الطلب',
     continueShopping: 'متابعة التسوق',
+    
+    // Coupon
+    couponCode: 'رمز الكوبون',
+    enterCouponCode: 'أدخل رمز الكوبون',
+    apply: 'تطبيق',
+    applyCoupon: 'تطبيق الكوبون',
+    removeCoupon: 'إزالة',
+    couponApplied: 'تم تطبيق الكوبون بنجاح!',
+    discount: 'الخصم',
+    invalidCoupon: 'رمز كوبون غير صالح',
+    couponError: 'حدث خطأ أثناء تطبيق الكوبون',
+    enterCoupon: 'الرجاء إدخال رمز الكوبون',
+    pleaseLogin: 'الرجاء تسجيل الدخول أولاً',
+    
     pastTimeWarning: '⚠ وقت قديم',
     oldBookingsAlert: '⚠ تنبيه: حجوزات قديمة',
     oldBookingsMessage: 'لديك {count} حجز(حجوزات) بتاريخ قديم في السلة:\n\n{items}\n\nالرجاء تحديث أو إزالة هذه الحجوزات.',

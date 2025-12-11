@@ -238,7 +238,28 @@ export async function updateCartItemQuantity(cartItemId: string, quantity: numbe
     const itemIndex = currentCart.findIndex(item => item._id === cartItemId);
     
     if (itemIndex !== -1) {
-      currentCart[itemIndex].quantity = quantity;
+      const item = currentCart[itemIndex];
+      item.quantity = quantity;
+      
+      // Recalculate totalPrice: (quantity × basePrice) + (quantity × optionsTotal)
+      let optionsTotal = 0;
+      if (item.customInputs && Array.isArray(item.customInputs)) {
+        item.customInputs.forEach(input => {
+          if (Array.isArray(input)) {
+            // radio-multiple selection
+            input.forEach(opt => {
+              if (opt.price) optionsTotal += opt.price;
+            });
+          } else if (input.price) {
+            // single input
+            optionsTotal += input.price;
+          }
+        });
+      }
+      
+      // Formula: quantity × (basePrice + options)
+      item.totalPrice = (item.price + optionsTotal) * quantity;
+      
       await saveCart(currentCart);
     }
     
@@ -373,7 +394,10 @@ export async function checkCartAvailability(): Promise<{
 }
 
 // Create bookings from cart items in the backend
-export async function createBookingsFromCart(address?: string): Promise<{
+export async function createBookingsFromCart(
+  address?: string,
+  couponData?: { code: string; discountAmount: number; originalPrice: number; deductFrom: string }
+): Promise<{
   success: boolean;
   bookings: any[];
   errors: any[];
@@ -446,6 +470,24 @@ export async function createBookingsFromCart(address?: string): Promise<{
           specialRequests: specialRequestsText,
           totalPrice: item.totalPrice || item.price // Send total price including custom options
         };
+
+        // Add coupon data if provided and calculate discounted price
+        if (couponData) {
+          // Calculate this item's share of the discount
+          const itemOriginalPrice = item.totalPrice || item.price;
+          const itemDiscountShare = (itemOriginalPrice / couponData.originalPrice) * couponData.discountAmount;
+          const itemFinalPrice = itemOriginalPrice - itemDiscountShare;
+          
+          bookingData.coupon = {
+            code: couponData.code,
+            discountAmount: itemDiscountShare,
+            originalPrice: itemOriginalPrice,
+            deductFrom: couponData.deductFrom
+          };
+          
+          // Update totalPrice to reflect the discounted price
+          bookingData.totalPrice = itemFinalPrice;
+        }
 
         // Add serviceId for regular services or packages array for packages
         if (item.isPackage) {

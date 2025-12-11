@@ -152,6 +152,15 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
       result = result.filter(service => service.bookingType === filters.bookingType);
     }
 
+    // Apply discount filter
+    if (filters.onSale) {
+      result = result.filter(service => {
+        const hasSalePrice = service.salePrice && service.salePrice > 0 && service.salePrice < service.price;
+        const hasDiscountPercentage = service.discountPercentage && service.discountPercentage > 0;
+        return service.isOnSale && (hasSalePrice || hasDiscountPercentage);
+      });
+    }
+
     // Apply sorting
     result.sort((a, b) => {
       switch (sortBy) {
@@ -179,6 +188,21 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
       ? getServiceImageUrl(item.images[0]) 
       : null;
     
+    // Calculate discount
+    let finalPrice = item.price;
+    let originalPrice = item.price;
+    let discountPercent = 0;
+
+    if (item.salePrice && item.salePrice > 0 && item.salePrice < item.price) {
+      finalPrice = item.salePrice;
+      discountPercent = Math.round(((item.price - item.salePrice) / item.price) * 100);
+    } else if (item.discountPercentage && item.discountPercentage > 0) {
+      discountPercent = item.discountPercentage;
+      finalPrice = item.price * (1 - item.discountPercentage / 100);
+    }
+
+    const hasDiscount = discountPercent > 0;
+    
     return (
       <TouchableOpacity
         style={styles.serviceCard}
@@ -197,6 +221,13 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
           ) : (
             <View style={styles.placeholderImage}>
               <Text style={styles.placeholderText}>No Image</Text>
+            </View>
+          )}
+          
+          {/* Discount Badge */}
+          {hasDiscount && (
+            <View style={styles.discountBadge}>
+              <Text style={styles.discountText}>-{discountPercent}%</Text>
             </View>
           )}
         </View>
@@ -231,9 +262,20 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
             <Text style={[styles.priceLabel, isRTL && styles.priceLabelRTL]}>
               {isRTL ? 'السعر يبدأ من' : 'Price starts from'}
             </Text>
-            <Text style={[styles.priceValue, isRTL && styles.priceValueRTL]}>
-              {item.price.toFixed(3)} {isRTL ? 'د.ك' : 'KD'} {isRTL ? 'يومياً' : 'per day'}
-            </Text>
+            {hasDiscount ? (
+              <View style={{ gap: 2 }}>
+                <Text style={[styles.priceValue, isRTL && styles.priceValueRTL]}>
+                  {isRTL ? `${finalPrice.toFixed(3)} د.ك` : `${finalPrice.toFixed(3)} KD`}
+                </Text>
+                <Text style={[styles.originalPrice, isRTL && styles.originalPriceRTL]}>
+                  {isRTL ? `${originalPrice.toFixed(3)} د.ك` : `${originalPrice.toFixed(3)} KD`}
+                </Text>
+              </View>
+            ) : (
+              <Text style={[styles.priceValue, isRTL && styles.priceValueRTL]}>
+                {isRTL ? `${item.price.toFixed(3)} د.ك` : `${item.price.toFixed(3)} KD`}
+              </Text>
+            )}
           </View>
         </View>
       </TouchableOpacity>

@@ -7,7 +7,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 interface FilterModalProps {
   visible: boolean;
   onClose: () => void;
-  onApplyFilter: (filters: { minPrice?: number; maxPrice?: number; bookingType?: string }) => void;
+  onApplyFilter: (filters: { minPrice?: number; maxPrice?: number; bookingType?: string; onSale?: boolean }) => void;
 }
 
 const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose, onApplyFilter }) => {
@@ -15,12 +15,14 @@ const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose, onApplyFilt
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(20000);
   const [bookingType, setBookingType] = useState<string>('all');
+  const [onSale, setOnSale] = useState<boolean>(false);
 
   const handleApplyFilter = () => {
     onApplyFilter({ 
       minPrice, 
       maxPrice,
-      bookingType: bookingType === 'all' ? undefined : bookingType
+      bookingType: bookingType === 'all' ? undefined : bookingType,
+      onSale: onSale ? true : undefined
     });
     onClose();
   };
@@ -29,6 +31,7 @@ const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose, onApplyFilt
     setMinPrice(0);
     setMaxPrice(20000);
     setBookingType('all');
+    setOnSale(false);
   };
 
   return (
@@ -162,6 +165,23 @@ const FilterModal: React.FC<FilterModalProps> = ({ visible, onClose, onApplyFilt
                 </Text>
               </TouchableOpacity>
             </View>
+          </View>
+
+          {/* Discounts Only Filter */}
+          <View style={styles.filterSection}>
+            <TouchableOpacity 
+              style={styles.discountToggleContainer}
+              onPress={() => setOnSale(!onSale)}
+              activeOpacity={0.7}>
+              <View style={[styles.checkbox, onSale && styles.checkboxActive]}>
+                {onSale && (
+                  <Text style={styles.checkmark}>✓</Text>
+                )}
+              </View>
+              <Text style={[styles.discountToggleText, isRTL && styles.textRTL]}>
+                {isRTL ? 'الخدمات المخفضة فقط' : 'Discounts Only'}
+              </Text>
+            </TouchableOpacity>
           </View>
 
           {/* Action Buttons */}

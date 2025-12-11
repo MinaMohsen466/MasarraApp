@@ -192,6 +192,19 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
 
   const service = services?.find(s => s._id === serviceId);
 
+  // Debug: Log service discount info
+  React.useEffect(() => {
+    if (service) {
+      console.log('Service Discount Info:', {
+        name: service.name,
+        price: service.price,
+        salePrice: service.salePrice,
+        discountPercentage: service.discountPercentage,
+        isOnSale: service.isOnSale
+      });
+    }
+  }, [service]);
+
   // Check availability whenever date or time changes
   React.useEffect(() => {
     const checkAvailability = async () => {
@@ -299,8 +312,24 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
   const displayName = isRTL ? service.nameAr : service.name;
   const displayDescription = isRTL ? service.descriptionAr : service.description;
 
+  // Calculate discount percentage
+  const hasDiscount = service.isOnSale && (
+    (service.salePrice && service.salePrice > 0 && service.salePrice < service.price) || 
+    (service.discountPercentage && service.discountPercentage > 0)
+  );
+  
+  let discountPercent = 0;
+  if (hasDiscount) {
+    // Priority: use salePrice if available, otherwise use discountPercentage
+    if (service.salePrice && service.salePrice > 0 && service.salePrice < service.price) {
+      discountPercent = Math.round(((service.price - service.salePrice) / service.price) * 100);
+    } else if (service.discountPercentage && service.discountPercentage > 0) {
+      discountPercent = service.discountPercentage;
+    }
+  }
+
   // Render image carousel item
-  const renderImageItem = ({ item }: { item: string }) => {
+  const renderImageItem = ({ item, index }: { item: string; index: number }) => {
     return (
       <View style={styles.imageSlide}>
         <Image
@@ -308,6 +337,12 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
           style={styles.carouselImage}
           resizeMode="cover"
         />
+        {/* Show discount badge only on first image */}
+        {index === 0 && hasDiscount && discountPercent > 0 && (
+          <View style={styles.imageDiscountBadge}>
+            <Text style={styles.imageDiscountText}>-{discountPercent}%</Text>
+          </View>
+        )}
       </View>
     );
   };
@@ -329,7 +364,18 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
           <TouchableOpacity activeOpacity={0.7} onPress={async () => {
             if (!service) return;
             const img = service.images && service.images.length > 0 ? getServiceImageUrl(service.images[0]) : undefined;
-            const item: WishlistItem = { _id: service._id, name: service.name, image: img, price: service.price };
+            
+            // Calculate display price for wishlist
+            let displayPrice = service.price;
+            if (service.isOnSale) {
+              if (service.salePrice && service.salePrice > 0 && service.salePrice < service.price) {
+                displayPrice = service.salePrice;
+              } else if (service.discountPercentage && service.discountPercentage > 0) {
+                displayPrice = service.price * (1 - service.discountPercentage / 100);
+              }
+            }
+            
+            const item: WishlistItem = { _id: service._id, name: service.name, image: img, price: displayPrice };
             await toggleWishlist(item);
             const now = await isWishlisted(service._id);
             setIsSaved(now);
@@ -347,7 +393,18 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
               try {
                 const serviceName = isRTL ? service.nameAr : service.name;
                 const vendorName = service.vendor?.name || '';
-                const price = service.price.toFixed(3);
+                
+                // Calculate display price
+                let displayPrice = service.price;
+                if (service.isOnSale) {
+                  if (service.salePrice && service.salePrice > 0 && service.salePrice < service.price) {
+                    displayPrice = service.salePrice;
+                  } else if (service.discountPercentage && service.discountPercentage > 0) {
+                    displayPrice = service.price * (1 - service.discountPercentage / 100);
+                  }
+                }
+                
+                const price = displayPrice.toFixed(3);
                 
                 const message = isRTL
                   ? `${serviceName}\n${vendorName}\n${price} د.ك\n\nشاهد هذه الخدمة الرائعة!`
@@ -433,14 +490,36 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
 
           {/* Price Badge */}
           <View style={styles.priceBadge}>
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={styles.priceLabel}>
                 {isRTL ? 'السعر يبدأ من' : 'Price starts from'}
               </Text>
-              <Text style={styles.priceValue}>
-                {service.price.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}{' '}
-                <Text style={styles.priceUnit}>{isRTL ? 'يومياً' : 'per day'}</Text>
-              </Text>
+              
+              {service.isOnSale === true && (service.salePrice && service.salePrice > 0 && service.salePrice < service.price || service.discountPercentage && service.discountPercentage > 0) ? (
+                <View style={{ gap: 4 }}>
+                  {/* Sale Price */}
+                  <Text style={styles.priceValue}>
+                    {(() => {
+                      // Priority: use salePrice if available, otherwise calculate from discountPercentage
+                      const finalPrice = (service.salePrice && service.salePrice > 0 && service.salePrice < service.price)
+                        ? service.salePrice 
+                        : service.price * (1 - (service.discountPercentage || 0) / 100);
+                      return `${finalPrice.toFixed(3)} ${isRTL ? 'د.ك' : 'KD'}`;
+                    })()}{' '}
+                    <Text style={styles.priceUnit}>{isRTL ? 'يومياً' : 'per day'}</Text>
+                  </Text>
+                  
+                  {/* Original Price (strikethrough) */}
+                  <Text style={[styles.priceValue, { textDecorationLine: 'line-through', color: '#999', fontSize: 14 }]}>
+                    {service.price.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
+                  </Text>
+                </View>
+              ) : (
+                <Text style={styles.priceValue}>
+                  {service.price.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}{' '}
+                  <Text style={styles.priceUnit}>{isRTL ? 'يومياً' : 'per day'}</Text>
+                </Text>
+              )}
             </View>
             <View style={styles.ratingContainer}>
               {reviewStats ? (
@@ -979,7 +1058,17 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
               const slotEnd = new Date(slotEndUTC);
 
               // Calculate total price including custom options
-              let totalPrice = service.price;
+              // Use salePrice if available, otherwise calculate from discountPercentage, otherwise use regular price
+              let basePrice = service.price;
+              if (service.isOnSale) {
+                if (service.salePrice && service.salePrice > 0 && service.salePrice < service.price) {
+                  basePrice = service.salePrice;
+                } else if (service.discountPercentage && service.discountPercentage > 0) {
+                  basePrice = service.price * (1 - service.discountPercentage / 100);
+                }
+              }
+              
+              let totalPrice = basePrice;
               const selectedCustomInputs = (service.customInputs?.map((input: any) => {
                 const selectedValue = customInputSelections[input._id];
                 
@@ -1025,7 +1114,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({ serviceId, onBack }) =>
                 nameAr: service.nameAr,
                 vendorName: service.vendor?.name,
                 image: service.images && service.images.length > 0 ? service.images[0] : undefined,
-                price: service.price,
+                price: basePrice, // Use sale price or regular price
                 totalPrice: totalPrice, // Total price including custom options
                 quantity: 1, // Default quantity is 1, user can change in Cart (for unlimited services)
                 selectedDate,

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator, FlatList } from 'react-native';
+import { SvgUri } from 'react-native-svg';
 import { colors } from '../constants/colors';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useOccasions } from '../hooks/useOccasions';
@@ -103,10 +104,19 @@ const Home: React.FC<HomeProps> = ({ onNavigate, currentRoute, onSelectService, 
         }}>
         <View style={styles.iconContainer}>
           {item.image ? (
-            <Image
-              source={{ uri: getImageUrl(item.image) }}
-              style={styles.occasionImage}
-            />
+            item.image.toLowerCase().endsWith('.svg') ? (
+              <SvgUri
+                uri={getImageUrl(item.image)}
+                width="80%"
+                height="80%"
+                fill="#d2ded6"
+              />
+            ) : (
+              <Image
+                source={{ uri: getImageUrl(item.image) }}
+                style={styles.occasionImage}
+              />
+            )
           ) : (
             <View style={styles.placeholderIcon} />
           )}

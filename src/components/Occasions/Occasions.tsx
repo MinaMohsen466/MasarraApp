@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, FlatList, Image, ActivityIndicator, Dimensions } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { SvgUri } from 'react-native-svg';
 import { styles } from './styles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -32,11 +33,20 @@ const Occasions: React.FC<OccasionsProps> = ({
         activeOpacity={0.8}>
         <View style={styles.iconContainer}>
           {item.image ? (
-            <Image 
-              source={{ uri: getImageUrl(item.image) }}
-              style={styles.occasionImage}
-              resizeMode="cover"
-            />
+            item.image.toLowerCase().endsWith('.svg') ? (
+              <SvgUri
+                uri={getImageUrl(item.image)}
+                width="80%"
+                height="80%"
+                fill="#d2ded6"
+              />
+            ) : (
+              <Image 
+                source={{ uri: getImageUrl(item.image) }}
+                style={styles.occasionImage}
+                resizeMode="cover"
+              />
+            )
           ) : (
             <View style={styles.placeholderIcon} />
           )}

@@ -97,11 +97,31 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.backgroundLight,
     overflow: 'hidden',
     borderRadius: 16,
+    position: 'relative',
   },
   serviceImage: {
     width: '100%',
     height: '100%',
     backgroundColor: colors.backgroundLight,
+  },
+  discountBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  discountText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   placeholderImage: {
     width: '100%',
@@ -161,6 +181,15 @@ export const styles = StyleSheet.create({
     color: colors.primary,
   },
   priceValueRTL: {
+    textAlign: 'right',
+  },
+  originalPrice: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#999',
+    textDecorationLine: 'line-through',
+  },
+  originalPriceRTL: {
     textAlign: 'right',
   },
   centerContainer: {

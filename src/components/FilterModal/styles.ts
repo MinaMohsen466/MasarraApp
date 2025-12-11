@@ -160,6 +160,36 @@ export const styles = StyleSheet.create({
   bookingTypeTextActive: {
     color: '#fff',
   },
+  discountToggleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 4,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#ccc',
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary,
+  },
+  checkmark: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  discountToggleText: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '600',
+  },
   buttonContainer: {
     flexDirection: 'row',
     gap: 12,

@@ -19,6 +19,26 @@ const Services: React.FC<ServicesProps> = ({ onSelectService, onViewAll }) => {
     const displayName = isRTL ? item.nameAr : item.name;
     const displayDescription = isRTL ? item.descriptionAr : item.description;
     
+    // Calculate discount and final price
+    const hasDiscount = item.isOnSale && (
+      (item.salePrice && item.salePrice > 0 && item.salePrice < item.price) || 
+      (item.discountPercentage && item.discountPercentage > 0)
+    );
+    
+    let discountPercent = 0;
+    let finalPrice = item.price;
+    
+    if (hasDiscount) {
+      // Priority: use salePrice if available, otherwise use discountPercentage
+      if (item.salePrice && item.salePrice > 0 && item.salePrice < item.price) {
+        finalPrice = item.salePrice;
+        discountPercent = Math.round(((item.price - item.salePrice) / item.price) * 100);
+      } else if (item.discountPercentage && item.discountPercentage > 0) {
+        discountPercent = item.discountPercentage;
+        finalPrice = item.price * (1 - item.discountPercentage / 100);
+      }
+    }
+    
     // Try to get image URL
     let imageUrl = null;
     if (item.images && item.images.length > 0) {
@@ -34,14 +54,21 @@ const Services: React.FC<ServicesProps> = ({ onSelectService, onViewAll }) => {
         {/* Service Image */}
         <View style={styles.imageContainer}>
           {imageUrl ? (
-            <Image
-              key={item.images[0]}
-              source={{ uri: imageUrl }}
-              style={styles.serviceImage}
-              resizeMode="cover"
-              onError={(e) => {}}
-              onLoad={() => {}}
-            />
+            <>
+              <Image
+                key={item.images[0]}
+                source={{ uri: imageUrl }}
+                style={styles.serviceImage}
+                resizeMode="cover"
+                onError={(e) => {}}
+                onLoad={() => {}}
+              />
+              {hasDiscount && discountPercent > 0 && (
+                <View style={styles.discountBadge}>
+                  <Text style={styles.discountText}>-{discountPercent}%</Text>
+                </View>
+              )}
+            </>
           ) : (
             <View style={styles.placeholderImage}>
               <Text style={styles.placeholderText}>No Image</Text>
@@ -70,9 +97,20 @@ const Services: React.FC<ServicesProps> = ({ onSelectService, onViewAll }) => {
             <Text style={[styles.priceLabel, isRTL && styles.priceLabelRTL]}>
               {isRTL ? 'السعر يبدأ من' : 'Price starts from'}
             </Text>
-            <Text style={[styles.priceValue, isRTL && styles.priceValueRTL]}>
-              {isRTL ? `${item.price.toFixed(3)} د.ك` : `${item.price.toFixed(3)} KD`}
-            </Text>
+            {hasDiscount ? (
+              <View style={{ gap: 2 }}>
+                <Text style={[styles.priceValue, isRTL && styles.priceValueRTL]}>
+                  {isRTL ? `${finalPrice.toFixed(3)} د.ك` : `${finalPrice.toFixed(3)} KD`}
+                </Text>
+                <Text style={[styles.originalPrice, isRTL && styles.originalPriceRTL]}>
+                  {isRTL ? `${item.price.toFixed(3)} د.ك` : `${item.price.toFixed(3)} KD`}
+                </Text>
+              </View>
+            ) : (
+              <Text style={[styles.priceValue, isRTL && styles.priceValueRTL]}>
+                {isRTL ? `${item.price.toFixed(3)} د.ك` : `${item.price.toFixed(3)} KD`}
+              </Text>
+            )}
           </View>
         </View>
       </TouchableOpacity>

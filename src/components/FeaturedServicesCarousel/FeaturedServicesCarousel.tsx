@@ -53,6 +53,22 @@ const FeaturedServicesCarousel: React.FC<FeaturedServicesCarouselProps> = ({ onS
       ? getServiceImageUrl(item.images[0]) 
       : null;
 
+    // Calculate discount percentage or use provided one
+    const hasDiscount = item.isOnSale && (
+      (item.salePrice && item.salePrice > 0 && item.salePrice < item.price) || 
+      (item.discountPercentage && item.discountPercentage > 0)
+    );
+    
+    let discountPercent = 0;
+    if (hasDiscount) {
+      // Priority: use salePrice if available, otherwise use discountPercentage
+      if (item.salePrice && item.salePrice > 0 && item.salePrice < item.price) {
+        discountPercent = Math.round(((item.price - item.salePrice) / item.price) * 100);
+      } else if (item.discountPercentage && item.discountPercentage > 0) {
+        discountPercent = item.discountPercentage;
+      }
+    }
+
     return (
       <TouchableOpacity
         style={styles.slideContainer}
@@ -60,11 +76,18 @@ const FeaturedServicesCarousel: React.FC<FeaturedServicesCarouselProps> = ({ onS
         activeOpacity={0.9}>
         <View style={styles.imageCard}>
           {imageUrl ? (
-            <Image
-              source={{ uri: imageUrl }}
-              style={styles.featuredImage}
-              resizeMode="cover"
-            />
+            <>
+              <Image
+                source={{ uri: imageUrl }}
+                style={styles.featuredImage}
+                resizeMode="cover"
+              />
+              {hasDiscount && discountPercent > 0 && (
+                <View style={styles.discountBadge}>
+                  <Text style={styles.discountText}>-{discountPercent}%</Text>
+                </View>
+              )}
+            </>
           ) : (
             <View style={styles.placeholderSlide}>
               <Text style={styles.placeholderText}>No Image</Text>
