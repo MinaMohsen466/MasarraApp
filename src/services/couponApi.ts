@@ -59,7 +59,9 @@ export const validateCoupon = async (
       vendorIds: cartItems.map(item => item.vendorId).filter(Boolean)
     };
     
-    console.log('API Request - Validate Coupon:', requestBody);
+    if (__DEV__) {
+      console.log('API Request - Validate Coupon:', requestBody);
+    }
     
     const response = await fetch(`${API_BASE_URL}/api/coupons/validate`, {
       method: 'POST',
@@ -72,7 +74,9 @@ export const validateCoupon = async (
 
     const data = await response.json();
     
-    console.log('API Response - Validate Coupon:', data);
+    if (__DEV__) {
+      console.log('API Response - Validate Coupon:', data);
+    }
 
     if (!response.ok) {
       return {
@@ -100,11 +104,13 @@ export const validateCoupon = async (
     }
 
     return data;
-  } catch (error) {
-    console.error('Error validating coupon:', error);
+  } catch (error: any) {
+    if (__DEV__) {
+      console.error('Error validating coupon:', error);
+    }
     return {
       valid: false,
-      message: 'Network error. Please try again.'
+      message: error.message?.includes('Network') ? 'تعذر الاتصال بالسيرفر' : 'حدث خطأ. حاول مرة أخرى.'
     };
   }
 };

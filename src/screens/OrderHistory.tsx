@@ -65,17 +65,17 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
       setFilteredBookings(sortedBookings);
       
       // Check which bookings are allowed for QR code (in parallel)
-      if (settings) {
-        const promises = sortedBookings.map(booking =>
-          canCreateQRCode(booking, settings, token)
-            .then(canCreate => canCreate ? booking._id : null)
-            .catch(() => null)
-        );
-        
-        const results = await Promise.all(promises);
-        const allowed = new Set(results.filter(Boolean) as string[]);
-        setQrAllowedBookings(allowed);
-      }
+      // Note: settings is used for background images, not for validation anymore
+      const promises = sortedBookings.map(booking =>
+        canCreateQRCode(booking, settings, token)
+          .then(canCreate => canCreate ? booking._id : null)
+          .catch(() => null)
+      );
+      
+      const results = await Promise.all(promises);
+      const allowed = new Set(results.filter(Boolean) as string[]);
+      console.log('[OrderHistory] QR allowed bookings:', Array.from(allowed));
+      setQrAllowedBookings(allowed);
     } catch (error) {
       console.error('Error loading bookings:', error);
       Alert.alert(
@@ -203,18 +203,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
         return;
       }
 
-      const settings = await getQRCodeSettings(token);
-      if (!settings) {
-        Alert.alert(isRTL ? 'خطأ' : 'Error', isRTL ? 'فشل تحميل الإعدادات' : 'Failed to load settings');
-        return;
-      }
-
-      const canCreate = await canCreateQRCode(booking, settings, token);
-      if (!canCreate) {
-        Alert.alert(isRTL ? 'غير مسموح' : 'Not Allowed', isRTL ? 'لا يمكن إنشاء رمز QR لهذا نوع الحدث' : 'QR codes cannot be created for this occasion type');
-        return;
-      }
-
+      // No need to check canCreateQRCode here - button only shows for allowed bookings
       const existingQR = await getQRCodeByBooking(token, booking._id);
       setSelectedBooking(booking);
       setSelectedQRCode(existingQR);
@@ -231,7 +220,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
         {/* header background to fill notch */}
         <View style={[styles.headerBackground, { height: insets.top + 78 }]} />
 
-        <View style={[styles.header, { height: insets.top + 78 }]}>
+        <View style={[styles.header, { height: insets.top + 90 }, isRTL && { flexDirection: 'row-reverse' }]}>
           <TouchableOpacity onPress={onBack} style={styles.backButton}>
             <Text style={styles.backButtonText}>
               {isRTL ? '›' : '‹'}
@@ -254,7 +243,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
       {/* header background to fill notch */}
       <View style={[styles.headerBackground, { height: insets.top + 78 }]} />
 
-      <View style={[styles.header, { height: insets.top + 78 }]}>
+      <View style={[styles.header, { height: insets.top + 90 }, isRTL && { flexDirection: 'row-reverse' }]}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Text style={styles.backButtonText}>
             {isRTL ? '›' : '‹'}

@@ -819,7 +819,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
                 
                 {/* Status Icon */}
                 {(couponMessage || couponError) && (
-                  <View style={styles.couponStatusIcon}>
+                  <View style={[styles.couponStatusIcon, isRTL && styles.couponStatusIconRTL]}>
                     <Text style={couponMessage ? styles.successIcon : styles.errorIcon}>
                       {couponMessage ? '✓' : '✗'}
                     </Text>
@@ -828,7 +828,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
                 
                 {appliedCoupon ? (
                   <TouchableOpacity 
-                    style={styles.removeButton}
+                    style={styles.removeCouponButton}
                     onPress={handleRemoveCoupon}>
                     <Text style={styles.removeButtonText}>
                       {isRTL ? 'إزالة' : 'Remove'}

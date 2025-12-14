@@ -78,49 +78,71 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
       if (!silent) setLoading(true);
       const token = await AsyncStorage.getItem('userToken');
       if (!token) {
+        console.log('[ChatConversation] No token found');
         if (!silent) setLoading(false);
         return;
       }
       
-      // First, get or create chat with this vendor
-      const chatResponse = await fetch(`${API_BASE_URL}/api/chats/start`, {
-        method: 'POST',
+      console.log('[ChatConversation] Loading chat with admin...');
+      
+      // Only admin chat is supported - get all chats and find admin chat
+      const chatResponse = await fetch(`${API_BASE_URL}/api/chats`, {
+        method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          vendorId: vendorId
-        })
-      });
-
-      if (!chatResponse.ok) {
-        if (!silent) setLoading(false);
-        return;
-      }
-
-      const chatData = await chatResponse.json();
-      
-      if (chatData.data && chatData.data._id) {
-        setChatId(chatData.data._id);
-        markMessagesAsRead(token, chatData.data._id);
-      }
-      
-      // Get current user ID to mark messages as "mine"
-      const userResponse = await fetch(`${API_BASE_URL}/api/auth/me`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
         }
       });
       
-      const messages = chatData.data?.messages || [];
-      let currentUserId: string | null = null;
+      if (!chatResponse.ok) {
+        console.log('[ChatConversation] Failed to fetch chats:', chatResponse.status);
+        if (!silent) setLoading(false);
+        return;
+      }
       
+      const chatsData = await chatResponse.json();
+      console.log('[ChatConversation] All chats response:', chatsData);
+      
+      const chats = Array.isArray(chatsData) ? chatsData : (chatsData.data || []);
+      console.log('[ChatConversation] Processing', chats.length, 'chats');
+      
+      // Find admin chat - admin chat has vendor: null
+      const adminChat = chats.find((chat: any) => {
+        console.log('[ChatConversation] Checking chat:', {
+          id: chat._id,
+          vendor: chat.vendor,
+          vendorIsNull: chat.vendor === null
+        });
+        return chat.vendor === null;
+      });
+      
+      if (!adminChat) {
+        console.log('[ChatConversation] No admin chat found in user chats');
+        if (!silent) setLoading(false);
+        return;
+      }
+      
+      console.log('[ChatConversation] Found admin chat:', adminChat._id);
+      setChatId(adminChat._id);
+      markMessagesAsRead(token, adminChat._id);
+      
+      // Load messages from chat
+      const messages = adminChat.messages || [];
+      console.log('[ChatConversation] Found', messages.length, 'messages');
+      
+      // Get current user ID
+      const userResponse = await fetch(`${API_BASE_URL}/api/auth/me`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      let currentUserId: string | null = null;
       if (userResponse.ok) {
         const userData = await userResponse.json();
         currentUserId = userData._id;
+        console.log('[ChatConversation] Current user ID:', currentUserId);
       }
       
+      // Format messages
       const messagesWithFlag = messages.map((msg: any, index: number) => ({
         _id: msg._id || `${String(Math.random())}-${index}-${Date.now()}`,
         sender: msg.sender || { _id: '', name: 'Unknown' },
@@ -133,8 +155,10 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
         setMessages(messagesWithFlag);
         lastMessagesCountRef.current = messagesWithFlag.length;
       }
-    } catch {
-      // Silent error handling
+      
+      console.log('[ChatConversation] Messages loaded successfully');
+    } catch (error) {
+      console.error('[ChatConversation] Error loading messages:', error);
     } finally {
       if (!silent) {
         setLoading(false);
@@ -180,8 +204,9 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
         isMe: true
       };
       
-      setMessages(prev => [newMessage, ...prev]);
-      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 50);
+      // Add to end of array (bottom of chat)
+      setMessages(prev => [...prev, newMessage]);
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
 
       // Send message in background (non-blocking)
       const response = await fetch(`${API_BASE_URL}/api/chats/${chatId}/messages`, {

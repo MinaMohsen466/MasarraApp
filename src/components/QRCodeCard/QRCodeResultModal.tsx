@@ -118,7 +118,7 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                     styles.cardBackground,
                     { width: maxCardWidth, maxHeight: maxCardHeight, aspectRatio: cardAspectRatio || 0.7 }
                   ]}
-                  imageStyle={{ resizeMode: 'cover' }}
+                  imageStyle={{ resizeMode: 'stretch' }}
                 >
                   {/* Semi-transparent overlay for better text visibility */}
                   <View style={styles.cardOverlay} />

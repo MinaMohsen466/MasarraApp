@@ -96,7 +96,7 @@ export const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
   },
-  removeButton: {
+  removeIconButton: {
     position: 'absolute',
     top: 12,
     right: 12,
@@ -374,13 +374,17 @@ export const styles = StyleSheet.create({
   },
   couponStatusIcon: {
     position: 'absolute',
-    right: 90,
+    right: 100,
     alignItems: 'center',
     justifyContent: 'center',
     width: 28,
     height: 28,
     borderRadius: 14,
     backgroundColor: 'transparent',
+  },
+  couponStatusIconRTL: {
+    right: 'auto',
+    left: 10,
   },
   successIcon: {
     fontSize: 20,
@@ -410,7 +414,7 @@ export const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
-  removeButton: {
+  removeCouponButton: {
     backgroundColor: '#FF6B6B',
     borderRadius: 8,
     paddingHorizontal: 16,

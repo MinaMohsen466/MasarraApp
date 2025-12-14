@@ -156,8 +156,8 @@ const Search: React.FC<SearchProps> = ({ onBack, onSelectService, onSelectOccasi
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.backgroundHome }}>
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.backgroundHome }} edges={['top', 'bottom']}>
-        <View style={{ flex: 1, backgroundColor: colors.backgroundHome }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top', 'bottom']}>
+        <View style={{ flex: 1, backgroundColor: 'transparent' }}>
           {/* Header */}
           <View style={[styles.header, isRTL && styles.headerRTL]}>
           <TouchableOpacity onPress={onBack} style={[styles.backButton, isRTL && styles.backButtonRTL]}>

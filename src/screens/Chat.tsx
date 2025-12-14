@@ -1,12 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ActivityIndicator,
-  StyleSheet,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLanguage } from '../contexts/LanguageContext';
 import { API_BASE_URL } from '../config/api.config';
@@ -18,9 +11,8 @@ interface ChatProps {
 
 const Chat: React.FC<ChatProps> = ({ onBack }) => {
   const { isRTL } = useLanguage();
-  const [loading, setLoading] = useState(true);
   const [adminId, setAdminId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadAdminId();
@@ -28,15 +20,16 @@ const Chat: React.FC<ChatProps> = ({ onBack }) => {
 
   const loadAdminId = async () => {
     try {
-      setLoading(true);
       const token = await AsyncStorage.getItem('userToken');
       
       if (!token) {
-        setError('No token');
+        console.log('[Chat] No token found');
+        setAdminId('admin'); // Fallback to 'admin' string
         setLoading(false);
         return;
       }
 
+      console.log('[Chat] Fetching admin user...');
       const response = await fetch(`${API_BASE_URL}/api/auth/users?role=admin`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -46,105 +39,52 @@ const Chat: React.FC<ChatProps> = ({ onBack }) => {
       if (response.ok) {
         const result = await response.json();
         const admins = Array.isArray(result) ? result : (result.data || []);
+        console.log('[Chat] Admin users:', admins);
         if (admins?.length > 0) {
           setAdminId(admins[0]._id);
+          console.log('[Chat] Admin ID set to:', admins[0]._id);
         } else {
-          setError('No admin found');
+          console.log('[Chat] No admins found, using fallback');
+          setAdminId('admin');
         }
       } else {
-        setError('Failed to load admin');
+        console.log('[Chat] Failed to fetch admin:', response.status);
+        setAdminId('admin'); // Fallback to 'admin' string
       }
     } catch (error) {
-      setError('Error loading admin');
+      console.error('[Chat] Error loading admin:', error);
+      setAdminId('admin'); // Fallback to 'admin' string
     } finally {
       setLoading(false);
     }
   };
 
-  // If loading or error, show loading screen
-  if (loading || error) {
+  // Show loading while fetching admin ID
+  if (loading || !adminId) {
     return (
-      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Text style={styles.backButtonText}>
-              {isRTL ? '›' : '‹'}
-            </Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>
-            {isRTL ? 'المحادثة' : 'Chat'}
-          </Text>
-          <View style={styles.placeholder} />
-        </View>
-        <View style={styles.loadingContainer}>
-          {error ? (
-            <Text style={styles.errorText}>{error}</Text>
-          ) : (
-            <ActivityIndicator size="large" color="#00695C" />
-          )}
-        </View>
-      </SafeAreaView>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#000000" />
+      </View>
     );
   }
 
-  // If admin found, show chat conversation directly
-  if (adminId) {
-    return (
-      <ChatConversation
-        onBack={onBack}
-        vendorId={adminId}
-        vendorName="Admin"
-        vendorImage={undefined}
-      />
-    );
-  }
-
-  return null;
+  // Show chat conversation with admin
+  return (
+    <ChatConversation
+      onBack={onBack}
+      vendorId={adminId}
+      vendorName={isRTL ? 'الدعم الفني' : 'Support'}
+      vendorImage={undefined}
+    />
+  );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  backButtonText: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#00695C',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#212121',
-  },
-  placeholder: {
-    width: 40,
-  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#d32f2f',
-    textAlign: 'center',
+    backgroundColor: '#fff',
   },
 });
 

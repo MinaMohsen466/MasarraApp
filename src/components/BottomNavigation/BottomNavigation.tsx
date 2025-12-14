@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, TouchableOpacity, Text, Dimensions } from 'react-native';
-import Svg, { Path, Circle, G } from 'react-native-svg';
+import Svg, { Path, Circle, G, Rect, Ellipse, Line } from 'react-native-svg';
 import { styles } from './styles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -106,40 +106,16 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
         style={styles.navItem}
         onPress={() => handlePress('categories')}
         activeOpacity={0.7}>
-        <Svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none">
+        <Svg width={iconSize} height={iconSize} viewBox="0 0 120 120" fill="none">
           <G>
-            <Path
-              d="M3 3H10V10H3V3Z"
-              stroke={colors.primary}
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              fill={isActive('categories') ? colors.primary : 'none'}
-            />
-            <Path
-              d="M14 3H21V10H14V3Z"
-              stroke={colors.primary}
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              fill={isActive('categories') ? colors.primary : 'none'}
-            />
-            <Path
-              d="M14 14H21V21H14V14Z"
-              stroke={colors.primary}
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              fill={isActive('categories') ? colors.primary : 'none'}
-            />
-            <Path
-              d="M3 14H10V21H3V14Z"
-              stroke={colors.primary}
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              fill={isActive('categories') ? colors.primary : 'none'}
-            />
+            {/* Top Left */}
+            <Rect x="6" y="6" width="48" height="48" rx="12" fill={isActive('categories') ? colors.primary : colors.primary} />
+            {/* Top Right */}
+            <Rect x="66" y="6" width="48" height="48" rx="12" fill={isActive('categories') ? colors.primary : "#A0E7E5"} opacity={isActive('categories') ? 1 : 0.6} />
+            {/* Bottom Left */}
+            <Rect x="6" y="66" width="48" height="48" rx="12" fill={isActive('categories') ? colors.primary : "#A0E7E5"} opacity={isActive('categories') ? 1 : 0.6} />
+            {/* Bottom Right */}
+            <Rect x="66" y="66" width="48" height="48" rx="12" fill={isActive('categories') ? colors.primary : colors.primary} />
           </G>
         </Svg>
       </TouchableOpacity>

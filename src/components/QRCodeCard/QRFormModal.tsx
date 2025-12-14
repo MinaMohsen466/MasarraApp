@@ -128,22 +128,45 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
   }, [visible, existingQRCode, booking]);
 
   const loadSettings = async () => {
+    console.log('[QRFormModal] loadSettings called, loading:', loading);
     setLoading(true);
     try {
       const token = await AsyncStorage.getItem('userToken');
-      if (!token) return;
+      console.log('[QRFormModal] Token:', token ? 'Found' : 'Not found');
+      if (!token) {
+        console.log('[QRFormModal] No token, returning');
+        setLoading(false);
+        return;
+      }
 
+      console.log('[QRFormModal] Calling getQRCodeSettings...');
       const fetchedSettings = await getQRCodeSettings(token);
+      console.log('[QRFormModal] Fetched settings:', fetchedSettings);
+      console.log('[QRFormModal] Background images count:', fetchedSettings?.backgroundImages?.length);
+      
+      if (fetchedSettings?.backgroundImages?.length > 0) {
+        fetchedSettings.backgroundImages.forEach((img, index) => {
+          console.log(`[QRFormModal] Image ${index}:`, {
+            name: img.name,
+            url: img.url,
+            path: img.path,
+            isDefault: img.isDefault
+          });
+        });
+      }
+      
       if (fetchedSettings) {
         setSettings(fetchedSettings);
         // Set default background if available
         if (!selectedBackgroundId && fetchedSettings.backgroundImages?.length > 0) {
           const defaultBg = fetchedSettings.backgroundImages.find(img => img.isDefault && img.isActive) 
             || fetchedSettings.backgroundImages[0];
+          console.log('[QRFormModal] Setting default background:', defaultBg.name);
           setSelectedBackgroundId(defaultBg._id);
         }
       }
     } catch (error) {
+      console.error('[QRFormModal] Error loading settings:', error);
     } finally {
       setLoading(false);
     }
@@ -266,15 +289,31 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
                 {/* Main Card Preview */}
                 <View style={styles.cardPreviewContainer}>
                   {selectedImage ? (
-                    <ImageBackground
-                      source={{ uri: getBackgroundImageUrl(selectedImage.path) }}
-                      style={styles.cardPreview}
-                      resizeMode="cover"
-                    >
-                      <View style={styles.qrPlaceholder}>
-                        <Text style={styles.qrPlaceholderText}>QR</Text>
-                      </View>
-                    </ImageBackground>
+                    <>
+                      {console.log('[QRFormModal] Selected image:', {
+                        name: selectedImage.name,
+                        url: selectedImage.url,
+                        path: selectedImage.path,
+                        hasUrl: !!selectedImage.url,
+                        hasPath: !!selectedImage.path,
+                        finalUri: selectedImage.url || selectedImage.path
+                      })}
+                      <ImageBackground
+                        source={{ uri: selectedImage.url || selectedImage.path }}
+                        style={styles.cardPreview}
+                        resizeMode="cover"
+                        onLoad={() => console.log('[Preview Image] Loaded successfully:', selectedImage.name)}
+                        onError={(error) => {
+                          console.log('[Preview Image Error]', selectedImage.name);
+                          console.log('[Preview Image Error Details]', error.nativeEvent);
+                          console.log('[Preview Image URI]', selectedImage.url || selectedImage.path);
+                        }}
+                      >
+                        <View style={styles.qrPlaceholder}>
+                          <Text style={styles.qrPlaceholderText}>QR</Text>
+                        </View>
+                      </ImageBackground>
+                    </>
                   ) : (
                     <View style={[styles.cardPreview, styles.emptyCard]}>
                       <View style={styles.qrPlaceholder}>
@@ -292,21 +331,36 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
                       horizontal
                       showsHorizontalScrollIndicator={false}
                       keyExtractor={item => item._id}
-                      renderItem={({ item }) => (
-                        <TouchableOpacity
-                          style={[
-                            styles.imageThumbnail,
-                            selectedBackgroundId === item._id && styles.imageThumbnailActive
-                          ]}
-                          onPress={() => setSelectedBackgroundId(item._id)}
-                        >
-                          <Image
-                            source={{ uri: getBackgroundImageUrl(item.path) }}
-                            style={styles.imageThumbnailImage}
-                            resizeMode="cover"
-                          />
-                        </TouchableOpacity>
-                      )}
+                      renderItem={({ item }) => {
+                        console.log('[QRFormModal] Thumbnail item:', {
+                          id: item._id,
+                          name: item.name,
+                          url: item.url,
+                          path: item.path,
+                          finalUri: item.url || item.path
+                        });
+                        return (
+                          <TouchableOpacity
+                            style={[
+                              styles.imageThumbnail,
+                              selectedBackgroundId === item._id && styles.imageThumbnailActive
+                            ]}
+                            onPress={() => setSelectedBackgroundId(item._id)}
+                          >
+                            <Image
+                              source={{ uri: item.url || item.path }}
+                              style={styles.imageThumbnailImage}
+                              resizeMode="cover"
+                              onLoad={() => console.log('[Thumbnail] Loaded successfully:', item.name)}
+                              onError={(error) => {
+                                console.log('[Thumbnail Image Error]', item.name);
+                                console.log('[Thumbnail URL]', item.url || item.path);
+                                console.log('[Thumbnail Error Details]', error.nativeEvent);
+                              }}
+                            />
+                          </TouchableOpacity>
+                        );
+                      }}
                     />
                   </View>
                 )}

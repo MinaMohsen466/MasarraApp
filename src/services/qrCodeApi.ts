@@ -45,6 +45,7 @@ export interface QRCodeSettings {
     name: string;
     filename: string;
     path: string;
+    url?: string; // Backend provides this with full URL
     isDefault: boolean;
     isActive: boolean;
     font: {
@@ -64,69 +65,69 @@ export interface QRCodeSettings {
 
 export const getQRCodeSettings = async (token: string): Promise<QRCodeSettings | null> => {
   try {
-    // Try to fetch full settings from public endpoint (no auth required)
-    let settings: QRCodeSettings | null = null;
+    console.log('[QR Settings] Fetching settings for background images...');
+    console.log('[QR Settings] API Base URL:', API_BASE_URL);
     
+    // Try to get background images from public endpoint
     try {
-      const settingsResponse = await fetch(`${API_BASE_URL}/qr-codes/public/settings`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+      const endpoint = `${API_BASE_URL}/qr-codes/public/background-images`;
+      console.log('[QR Settings] Trying endpoint:', endpoint);
+      
+      const publicResponse = await fetch(endpoint, {
+        method: 'GET'
       });
       
-      if (settingsResponse.ok) {
-        settings = await settingsResponse.json();
-      }
-    } catch (settingsError) {
-      // Could not fetch public QR settings
-    }
-
-    // If no settings from public endpoint, try admin endpoint with token
-    if (!settings || !settings.allowedOccasions?.length) {
-      try {
-        const settingsResponse = await fetch(`${API_BASE_URL}/qr-codes/settings`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+      console.log('[QR Settings] Response status:', publicResponse.status);
+      
+      if (publicResponse.ok) {
+        const backgroundImages = await publicResponse.json();
+        console.log('[QR Settings] Raw response:', backgroundImages);
+        console.log('[QR Settings] Got', backgroundImages?.length || 0, 'background images');
         
-        if (settingsResponse.ok) {
-          const adminSettings = await settingsResponse.json();
-          settings = adminSettings;
+        if (backgroundImages?.length > 0) {
+          backgroundImages.forEach((img: any, index: number) => {
+            console.log(`[QR Settings] Image ${index}:`, {
+              _id: img._id,
+              name: img.name,
+              path: img.path,
+              url: img.url,
+              filename: img.filename,
+              isActive: img.isActive,
+              showForAll: img.showForAll
+            });
+          });
         }
-      } catch (adminError) {
-        // Could not fetch admin QR settings
+        
+        // Return settings with background images
+        return {
+          displaySettings: {
+            showCustomerInfo: false,
+            showContactInfo: true,
+            showEventTime: true,
+            showEventDate: true,
+            showLocation: true,
+            showServices: true,
+            showSpecialRequests: false,
+            showPrice: false
+          },
+          qrCodeStyle: {
+            size: 300,
+            errorCorrectionLevel: 'M',
+            margin: 4
+          },
+          backgroundImages: Array.isArray(backgroundImages) ? backgroundImages : [],
+          allowedOccasions: []
+        };
+      } else {
+        const errorText = await publicResponse.text();
+        console.log('[QR Settings] Public endpoint failed with:', errorText);
       }
+    } catch (publicError) {
+      console.log('[QR Settings] Public endpoint error:', publicError);
     }
 
-    // Ensure we have a complete settings object
-    if (!settings) {
-      settings = {
-        displaySettings: {
-          showCustomerInfo: false,
-          showContactInfo: true,
-          showEventTime: true,
-          showEventDate: true,
-          showLocation: true,
-          showServices: true,
-          showSpecialRequests: false,
-          showPrice: false
-        },
-        qrCodeStyle: {
-          size: 300,
-          errorCorrectionLevel: 'M',
-          margin: 4
-        },
-        backgroundImages: [],
-        allowedOccasions: []
-      };
-    }
-
-    return settings;
-  } catch (error) {
+    console.log('[QR Settings] Could not fetch background images');
+    // Return minimal settings
     return {
       displaySettings: {
         showCustomerInfo: false,
@@ -146,6 +147,9 @@ export const getQRCodeSettings = async (token: string): Promise<QRCodeSettings |
       backgroundImages: [],
       allowedOccasions: []
     };
+  } catch (error) {
+    console.error('[QR Settings] Error:', error);
+    return null;
   }
 };
 
@@ -186,6 +190,9 @@ export const generateQRCode = async (
       payload.serviceId = serviceId;
     }
 
+    console.log('[QR Generate] Payload:', payload);
+    console.log('[QR Generate] Booking ID:', bookingId);
+
     const response = await fetch(`${API_BASE_URL}/qr-codes/generate/${bookingId}`, {
       method: 'POST',
       headers: {
@@ -195,13 +202,19 @@ export const generateQRCode = async (
       body: JSON.stringify(payload)
     });
 
+    console.log('[QR Generate] Response status:', response.status);
+
     if (!response.ok) {
       const error = await response.json();
+      console.log('[QR Generate] Error response:', error);
       throw new Error(error.error || error.message || 'Failed to generate QR code');
     }
 
-    return await response.json();
+    const result = await response.json();
+    console.log('[QR Generate] Success:', result);
+    return result;
   } catch (error) {
+    console.error('[QR Generate] Exception:', error);
     throw error;
   }
 };
@@ -226,70 +239,85 @@ export const fetchServiceDetails = async (serviceId: string, token: string): Pro
   }
 };
 
-export const canCreateQRCode = async (booking: any, settings: QRCodeSettings, token?: string): Promise<boolean> => {
-  // Check if QR code feature is enabled
-  if (!settings) {
+export const canCreateQRCode = async (booking: any, settings: QRCodeSettings | null, token?: string): Promise<boolean> => {
+  // Since we cannot reliably get QR settings from AWS server (requires admin role),
+  // we'll use a simpler approach: check if the service has occasions
+  // The backend will validate properly when actually generating the QR code
+  
+  if (!token) {
+    console.log('[QR Check] No token provided');
     return false;
   }
 
   // Get the first service from booking
   const service = booking?.services?.[0];
   if (!service) {
-    return false;
-  }
-
-  // Get allowed occasions from settings
-  const allowedOccasions = settings.allowedOccasions || [];
-  
-  if (!allowedOccasions.length) {
+    console.log('[QR Check] No service in booking');
     return false;
   }
 
   // Get the service data
   let serviceData = typeof service.service === 'string' ? null : service.service;
+  const serviceId = typeof service.service === 'string' ? service.service : service.service?._id;
   
   // If service is not populated, try to fetch full details
   if (!serviceData || !serviceData.occasions) {
-    if (token) {
-      const serviceId = typeof service.service === 'string' ? service.service : service.service?._id;
-      if (serviceId) {
-        serviceData = await fetchServiceDetails(serviceId, token);
-      }
+    if (serviceId) {
+      console.log('[QR Check] Fetching service details for:', serviceId);
+      serviceData = await fetchServiceDetails(serviceId, token);
     }
   }
 
-  // If still no service data, try to allow based on other info
+  // If still no service data, return false
   if (!serviceData) {
-    return true; // Let server handle validation
+    console.log('[QR Check] Could not load service data');
+    return false;
   }
 
   // Get occasions from service
   const serviceOccasions = serviceData.occasions || [];
   
+  console.log('[QR Check] Service occasions:', JSON.stringify(serviceOccasions.map((so: any) => 
+    so.occasion?._id || so.occasion
+  )));
+  
   if (!serviceOccasions.length) {
+    console.log('[QR Check] Service has no occasions');
     return false;
   }
 
-  // Check if ANY of the service's occasions are in the allowed occasions
-  // The logic is: the service must have at least ONE occasion that matches an allowed occasion
+  // Since we cannot access settings (requires admin), we'll check if the booking
+  // has the necessary occasion IDs that are typically allowed for QR codes
+  // The specific IDs from the database that are allowed:
+  const ALLOWED_OCCASION_IDS = [
+    '69395e40adf42c3be3938a1c', // من QR Settings allowedOccasions
+    '69395e41adf42c3be3938a24'  // من QR Settings allowedOccasions
+  ];
+
+  // Check if ANY of the service's occasions match the allowed ones
   const hasAllowedOccasion = serviceOccasions.some((svc: any) => {
     const serviceOccasionId = svc.occasion?._id || svc.occasion;
     if (!serviceOccasionId) {
       return false;
     }
 
-    // Check if this service's occasion exists in allowed occasions
-    const isAllowed = allowedOccasions.some((ao: any) => {
-      const allowedOccasionId = ao.occasion?._id || ao.occasion;
-      const isMatch = String(serviceOccasionId) === String(allowedOccasionId);
-      const isEnabled = ao.isEnabled !== false;
-      
-      return isMatch && isEnabled;
-    });
-
+    const isAllowed = ALLOWED_OCCASION_IDS.includes(String(serviceOccasionId));
+    
+    if (isAllowed) {
+      console.log(`[QR Check] ✓ Match found: ${serviceOccasionId} is in allowed list`);
+    }
+    
     return isAllowed;
   });
 
+  if (hasAllowedOccasion) {
+    console.log('[QR Check] ✓ QR code allowed for booking:', booking._id);
+  } else {
+    console.log('[QR Check] ✗ QR code NOT allowed - service occasions not in allowed list');
+    console.log('[QR Check] Service has occasions:', serviceOccasions.map((so: any) => so.occasion?._id || so.occasion));
+    console.log('[QR Check] Allowed occasions:', ALLOWED_OCCASION_IDS);
+  }
+  
   return hasAllowedOccasion;
 };
 
@@ -303,17 +331,12 @@ export const getQRImageUrl = (qrToken: string): string => {
 };
 
 export const getBackgroundImageUrl = (imagePath: string): string => {
-  // Convert backend path to full API URL
-  if (!imagePath) return '';
-  
-  // If already a full URL, return as is
-  if (imagePath.startsWith('http')) {
-    return imagePath;
+  // Backend provides direct S3 URLs in path field
+  if (!imagePath) {
+    console.log('[Image URL] No path provided');
+    return '';
   }
   
-  // Remove leading slashes and convert backslashes to forward slashes
-  const cleanPath = imagePath.replace(/^[\\/]+/, '').replace(/\\/g, '/');
-  
-  // Return full URL
-  return `${API_BASE_URL}/${cleanPath}`;
+  console.log('[Image URL] Using path directly:', imagePath);
+  return imagePath;
 };
