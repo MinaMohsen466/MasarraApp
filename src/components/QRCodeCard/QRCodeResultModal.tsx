@@ -11,8 +11,8 @@ import {
   Modal,
   Image,
   useWindowDimensions,
+  Clipboard,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { colors } from '../../constants/colors';
 import { getBackgroundImageUrl } from '../../services/qrCodeApi';
@@ -42,9 +42,6 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
   const maxCardWidth = Math.min(420, Math.floor(winWidth * 0.88));
   const maxCardHeight = Math.floor(winHeight * 0.78);
 
-  // Determine whether we should show the modal content
-  const isShown = Boolean(visible && qrCode && backgroundImage);
-
   const handleDownloadCard = async () => {
     setDownloadingCard(true);
     try {
@@ -59,18 +56,21 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
     }
   };
 
-  const handleEditDetails = () => {
-    onEdit();
-  };
+
 
   const handleCopyLink = async () => {
     setCopyingLink(true);
     try {
-      Alert.alert(
-        isRTL ? 'رابط النسخ' : 'Copy Link',
-        isRTL ? 'تم نسخ الرابط بنجاح' : 'Link copied successfully',
-        [{ text: 'OK' }]
-      );
+      if (qrCode?.qrUrl) {
+        Clipboard.setString(qrCode.qrUrl);
+        Alert.alert(
+          isRTL ? 'نجح' : 'Success',
+          isRTL ? 'تم نسخ الرابط بنجاح' : 'Link copied successfully',
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert(isRTL ? 'خطأ' : 'Error', isRTL ? 'الرابط غير متوفر' : 'Link not available');
+      }
     } catch (error) {
       Alert.alert(isRTL ? 'خطأ' : 'Error', isRTL ? 'فشل النسخ' : 'Copy failed');
     } finally {
@@ -102,7 +102,7 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
   }, [backgroundImage]);
 
   return (
-    <Modal visible={isShown} transparent animationType="fade">
+    <Modal visible={visible && Boolean(qrCode && backgroundImage)} transparent animationType="fade">
       <View style={styles.overlay}>
         <View style={styles.container}>
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -256,11 +256,11 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                   {/* QR Code Box - Below content */}
                   <View style={styles.qrCodeBoxContainer}>
                     {/* Only show QR code if it's a real QR (not preview) */}
-                    {qrCode?.qrCodeImage && qrCode._id !== 'preview' ? (
+                    {(qrCode?.qrCode || qrCode?.qrCodeImage) && qrCode._id !== 'preview' ? (
                       <>
                         <View style={styles.qrCodeBox}>
                           <Image
-                            source={{ uri: qrCode.qrCodeImage }}
+                            source={{ uri: qrCode.qrCode || qrCode.qrCodeImage }}
                             style={{ width: 120, height: 120 }}
                             resizeMode="contain"
                           />
@@ -303,7 +303,7 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                 )}
               </TouchableOpacity>
 
-              <TouchableOpacity style={[styles.button, styles.editButton]} onPress={handleEditDetails}>
+              <TouchableOpacity style={[styles.button, styles.editButton]} onPress={onEdit}>
                 <Text style={styles.editButtonText}>{isRTL ? 'تعديل البيانات' : 'Edit Details'}</Text>
               </TouchableOpacity>
 

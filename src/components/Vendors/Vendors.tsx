@@ -16,7 +16,7 @@ const Vendors: React.FC<VendorsProps> = ({ onSelectVendor, onBack }) => {
   const { isRTL } = useLanguage();
   const screenWidth = Dimensions.get('window').width;
   const numColumns = screenWidth >= 600 ? 4 : 3;
-  const { data: vendors, isLoading, error } = useVendors();
+  const { data: vendors, isLoading, error, refetch } = useVendors();
 
   const [imageErrors, setImageErrors] = React.useState<Set<string>>(new Set());
 
@@ -82,10 +82,10 @@ const Vendors: React.FC<VendorsProps> = ({ onSelectVendor, onBack }) => {
       )}
       {!isLoading && !error && (
         <FlatList
-          key={numColumns}
-          data={vendors}
+          key={String(numColumns)}
+          data={vendors || []}
           renderItem={renderVendorCard}
-          keyExtractor={(item) => item._id}
+          keyExtractor={(item, index) => (item && item._id) ? item._id : String(index)}
           numColumns={numColumns}
           contentContainerStyle={styles.gridContainer}
           columnWrapperStyle={[styles.row, isRTL && styles.rowRTL]}

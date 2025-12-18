@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator, FlatList } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Image, FlatList, Animated } from 'react-native';
 import { SvgUri } from 'react-native-svg';
 import { colors } from '../constants/colors';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -27,12 +27,48 @@ interface HomeProps {
 const Home: React.FC<HomeProps> = ({ onNavigate, currentRoute, onSelectService, onSelectOccasion, onShowChat, onHideChat }) => {
   const { isRTL, t } = useLanguage();
   const { user } = useAuth();
-  const { data: occasions, isLoading, error } = useOccasions();
-  const { data: services } = useServices();
+  const { data: occasions, isLoading: occasionsLoading, error } = useOccasions();
+  const { data: services, isLoading: servicesLoading } = useServices();
   const [showAuth, setShowAuth] = useState(false);
   const [showUserProfile, setShowUserProfile] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const fadeAnim = useRef(new Animated.Value(0.3)).current;
 
   const hasFeaturedServices = services?.some(service => service.isFeatured) || false;
+  const isLoading = occasionsLoading || servicesLoading;
+
+  // Pulsing animation for logo
+  useEffect(() => {
+    if (initialLoading && isLoading) {
+      const pulse = Animated.loop(
+        Animated.sequence([
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(fadeAnim, {
+            toValue: 0.3,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      pulse.start();
+      return () => pulse.stop();
+    }
+  }, [initialLoading, isLoading, fadeAnim]);
+
+  // Hide initial loading screen when data is ready
+  useEffect(() => {
+    if (!isLoading && initialLoading) {
+      // Add small delay for smooth transition
+      const timer = setTimeout(() => {
+        setInitialLoading(false);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, initialLoading]);
 
   useEffect(() => {
     if (currentRoute === 'auth') {
@@ -46,6 +82,19 @@ const Home: React.FC<HomeProps> = ({ onNavigate, currentRoute, onSelectService, 
       setShowUserProfile(false);
     }
   }, [currentRoute]);
+
+  // Show loading screen with logo while initial data is loading
+  if (initialLoading && isLoading) {
+    return (
+      <View style={styles.loadingScreen}>
+        <Animated.Image
+          source={require('../imgs/logo.png')}
+          style={[styles.loadingLogo, { opacity: fadeAnim }]}
+          resizeMode="contain"
+        />
+      </View>
+    );
+  }
 
   // If showing user profile screen
   if (showUserProfile) {
@@ -184,11 +233,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate, currentRoute, onSelectService, 
           </TouchableOpacity>
         </View>
 
-        {isLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.primary} />
-          </View>
-        ) : error ? (
+        {error ? (
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>{t('failedToLoad')}</Text>
           </View>

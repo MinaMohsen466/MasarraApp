@@ -203,8 +203,10 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
         return;
       }
 
+      console.log('[OrderHistory] Fetching QR code for booking:', booking._id);
       // No need to check canCreateQRCode here - button only shows for allowed bookings
       const existingQR = await getQRCodeByBooking(token, booking._id);
+      console.log('[OrderHistory] Existing QR code found:', existingQR);
       setSelectedBooking(booking);
       setSelectedQRCode(existingQR);
       setQrModalVisible(true);

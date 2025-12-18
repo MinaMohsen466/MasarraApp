@@ -38,7 +38,15 @@ export const fetchVendors = async (): Promise<Vendor[]> => {
     }
     
     const data = await response.json();
-    return data;
+    // API may return a wrapper object { vendors, total, pages, currentPage }
+    // Normalize to return an array of vendors as expected by the hook.
+    if (data && Array.isArray(data.vendors)) {
+      return data.vendors as Vendor[];
+    }
+    if (Array.isArray(data)) {
+      return data as Vendor[];
+    }
+    return [] as Vendor[];
   } catch (error) {
     throw error;
   }

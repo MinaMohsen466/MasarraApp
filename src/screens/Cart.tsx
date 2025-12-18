@@ -25,7 +25,7 @@ interface CartProps {
 
 const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
   const { isRTL, t } = useLanguage();
-  const { user, isLoggedIn } = useAuth();
+  const { user, isLoggedIn, token } = useAuth();
   const insets = useSafeAreaInsets();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -114,36 +114,14 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
     }
   };
 
-  // Fetch user profile picture once on mount
+  // Use AuthContext as single source of truth for user data
   React.useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const token = await AsyncStorage.getItem('userToken');
-        if (!token) return;
+    // set token from context (used for checkout calls)
+    setUserToken(token || '');
 
-        setUserToken(token);
-        
-        const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        if (response.ok) {
-          const userData = await response.json();
-          if (userData.profilePicture) {
-            setCurrentProfilePicture(userData.profilePicture);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-      }
-    };
-
-    if (isLoggedIn) {
-      fetchUserData();
-    }
-  }, [isLoggedIn]);
+    // Use the profilePicture from AuthContext user to avoid refetching and re-downloading image
+    setCurrentProfilePicture(user?.profilePicture || null);
+  }, [isLoggedIn, user, token]);
 
   // Load cart on mount and when cart changes (only if logged in)
   React.useEffect(() => {

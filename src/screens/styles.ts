@@ -112,6 +112,18 @@ const styles = StyleSheet.create({
     color: colors.error,
     fontSize: 14,
   },
+  loadingScreen: {
+    flex: 1,
+    backgroundColor: colors.backgroundHome,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingLogo: {
+    width: SCREEN_WIDTH * 0.4,
+    height: SCREEN_HEIGHT * 0.25,
+    maxWidth: 200,
+    maxHeight: 250,
+  },
 });
 
 export { styles };

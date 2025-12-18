@@ -8,6 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import EditProfile from '../EditProfile';
 import Wishlist from '../Wishlist/Wishlist';
 import OrderHistory from '../../screens/OrderHistory';
+import MyEvents from '../../screens/MyEvents';
 import Chat from '../../screens/Chat';
 import WriteReview from '../../screens/WriteReview';
 import { API_URL } from '../../config/api.config';
@@ -43,6 +44,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showWishlist, setShowWishlist] = useState(false);
   const [showOrderHistory, setShowOrderHistory] = useState(false);
+  const [showMyEvents, setShowMyEvents] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [showWriteReview, setShowWriteReview] = useState(false);
   const [reviewData, setReviewData] = useState<{bookingId: string; serviceId: string; serviceName: string} | null>(null);
@@ -104,6 +106,10 @@ const UserProfile: React.FC<UserProfileProps> = ({
 
   const handleOrderHistory = () => {
     setShowOrderHistory(true);
+  };
+
+  const handleMyEvents = () => {
+    setShowMyEvents(true);
   };
 
   const handleChat = () => {
@@ -196,6 +202,11 @@ const UserProfile: React.FC<UserProfileProps> = ({
       setShowChat(false);
       onHideChat?.();
     }} />;
+  }
+
+  // Show My Events screen
+  if (showMyEvents) {
+    return <MyEvents onBack={() => setShowMyEvents(false)} />;
   }
 
   // If user is not logged in, show login prompt
@@ -349,6 +360,16 @@ const UserProfile: React.FC<UserProfileProps> = ({
           activeOpacity={0.7}>
           <Text style={[styles.menuTextWhite, isRTL && styles.menuTextWhiteRTL]}>
             {isRTL ? 'سجل الطلبات' : 'Order History'}
+          </Text>
+        </TouchableOpacity>
+
+        {/* My Events */}
+        <TouchableOpacity 
+          style={styles.menuItem}
+          onPress={handleMyEvents}
+          activeOpacity={0.7}>
+          <Text style={[styles.menuText, isRTL && styles.menuTextRTL]}>
+            {isRTL ? 'فعالياتي' : 'My Events'}
           </Text>
         </TouchableOpacity>
 

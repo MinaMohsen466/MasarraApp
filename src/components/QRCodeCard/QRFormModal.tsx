@@ -68,13 +68,32 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
       setIsUpdated(false); // Reset updated flag when modal opens
       
       if (existingQRCode?.customDetails) {
-        // If editing existing QR code
+        // If QR code already exists, show it directly instead of edit form
+        // Store existing QR code data
+        setGeneratedQRCode(existingQRCode);
         setFormData(existingQRCode.customDetails);
-        setSelectedBackgroundId(existingQRCode.selectedBackgroundImage);
+        
+        // Handle selectedBackgroundImage - could be object or string ID
+        let backgroundId = null;
+        if (existingQRCode.selectedBackgroundImage) {
+          if (typeof existingQRCode.selectedBackgroundImage === 'object') {
+            // Server returns it as {id, name, url}
+            backgroundId = existingQRCode.selectedBackgroundImage.id || existingQRCode.selectedBackgroundImage._id;
+          } else {
+            // It's already a string ID
+            backgroundId = existingQRCode.selectedBackgroundImage;
+          }
+        }
+        setSelectedBackgroundId(backgroundId);
+        
         // Store original data for change detection
         setOriginalFormData(existingQRCode.customDetails);
-        setOriginalBackgroundId(existingQRCode.selectedBackgroundImage);
+        setOriginalBackgroundId(backgroundId);
         setHasChanges(false);
+        
+        // Show result modal directly
+        setShowResultModal(true);
+        setIsPreviewMode(false);
       } else if (booking) {
         // Load booking data
         // Use eventTime.start for date to avoid timezone issues
@@ -128,32 +147,15 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
   }, [visible, existingQRCode, booking]);
 
   const loadSettings = async () => {
-    console.log('[QRFormModal] loadSettings called, loading:', loading);
     setLoading(true);
     try {
       const token = await AsyncStorage.getItem('userToken');
-      console.log('[QRFormModal] Token:', token ? 'Found' : 'Not found');
       if (!token) {
-        console.log('[QRFormModal] No token, returning');
         setLoading(false);
         return;
       }
 
-      console.log('[QRFormModal] Calling getQRCodeSettings...');
       const fetchedSettings = await getQRCodeSettings(token);
-      console.log('[QRFormModal] Fetched settings:', fetchedSettings);
-      console.log('[QRFormModal] Background images count:', fetchedSettings?.backgroundImages?.length);
-      
-      if (fetchedSettings?.backgroundImages?.length > 0) {
-        fetchedSettings.backgroundImages.forEach((img, index) => {
-          console.log(`[QRFormModal] Image ${index}:`, {
-            name: img.name,
-            url: img.url,
-            path: img.path,
-            isDefault: img.isDefault
-          });
-        });
-      }
       
       if (fetchedSettings) {
         setSettings(fetchedSettings);
@@ -161,12 +163,10 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
         if (!selectedBackgroundId && fetchedSettings.backgroundImages?.length > 0) {
           const defaultBg = fetchedSettings.backgroundImages.find(img => img.isDefault && img.isActive) 
             || fetchedSettings.backgroundImages[0];
-          console.log('[QRFormModal] Setting default background:', defaultBg.name);
           setSelectedBackgroundId(defaultBg._id);
         }
       }
     } catch (error) {
-      console.error('[QRFormModal] Error loading settings:', error);
     } finally {
       setLoading(false);
     }
@@ -289,31 +289,16 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
                 {/* Main Card Preview */}
                 <View style={styles.cardPreviewContainer}>
                   {selectedImage ? (
-                    <>
-                      {console.log('[QRFormModal] Selected image:', {
-                        name: selectedImage.name,
-                        url: selectedImage.url,
-                        path: selectedImage.path,
-                        hasUrl: !!selectedImage.url,
-                        hasPath: !!selectedImage.path,
-                        finalUri: selectedImage.url || selectedImage.path
-                      })}
-                      <ImageBackground
-                        source={{ uri: selectedImage.url || selectedImage.path }}
-                        style={styles.cardPreview}
-                        resizeMode="cover"
-                        onLoad={() => console.log('[Preview Image] Loaded successfully:', selectedImage.name)}
-                        onError={(error) => {
-                          console.log('[Preview Image Error]', selectedImage.name);
-                          console.log('[Preview Image Error Details]', error.nativeEvent);
-                          console.log('[Preview Image URI]', selectedImage.url || selectedImage.path);
-                        }}
-                      >
+                    <ImageBackground
+                      source={{ uri: selectedImage.url || selectedImage.path }}
+                      style={styles.cardPreview}
+                      resizeMode="cover"
+                    >
                         <View style={styles.qrPlaceholder}>
                           <Text style={styles.qrPlaceholderText}>QR</Text>
                         </View>
                       </ImageBackground>
-                    </>
+
                   ) : (
                     <View style={[styles.cardPreview, styles.emptyCard]}>
                       <View style={styles.qrPlaceholder}>
@@ -331,16 +316,8 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
                       horizontal
                       showsHorizontalScrollIndicator={false}
                       keyExtractor={item => item._id}
-                      renderItem={({ item }) => {
-                        console.log('[QRFormModal] Thumbnail item:', {
-                          id: item._id,
-                          name: item.name,
-                          url: item.url,
-                          path: item.path,
-                          finalUri: item.url || item.path
-                        });
-                        return (
-                          <TouchableOpacity
+                      renderItem={({ item }) => (
+                        <TouchableOpacity
                             style={[
                               styles.imageThumbnail,
                               selectedBackgroundId === item._id && styles.imageThumbnailActive
@@ -351,16 +328,9 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
                               source={{ uri: item.url || item.path }}
                               style={styles.imageThumbnailImage}
                               resizeMode="cover"
-                              onLoad={() => console.log('[Thumbnail] Loaded successfully:', item.name)}
-                              onError={(error) => {
-                                console.log('[Thumbnail Image Error]', item.name);
-                                console.log('[Thumbnail URL]', item.url || item.path);
-                                console.log('[Thumbnail Error Details]', error.nativeEvent);
-                              }}
-                            />
-                          </TouchableOpacity>
-                        );
-                      }}
+                          />
+                        </TouchableOpacity>
+                      )}
                     />
                   </View>
                 )}
@@ -484,9 +454,13 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
                   <Text style={styles.generateButtonText}>
                     {isRTL ? 'لا توجد تغييرات' : 'No Changes'}
                   </Text>
-                ) : (
+                ) : existingQRCode ? (
                   <Text style={styles.generateButtonText}>
                     {isRTL ? 'تحديث والمراجعة' : 'Update & Review'}
+                  </Text>
+                ) : (
+                  <Text style={styles.generateButtonText}>
+                    {isRTL ? 'إنشاء والمراجعة' : 'Create & Review'}
                   </Text>
                 )}
               </TouchableOpacity>
