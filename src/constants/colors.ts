@@ -13,6 +13,7 @@ export const colors = {
   background: '#cedfd7',        // Light green background (same as home)
   backgroundLight: '#cedfd7',   // Light green background (same as home)
   backgroundHome: '#cedfd7',    // Light green background for home
+  backgroundCard: '#deece8ff',   // Very light background for cards
   overlay: 'rgba(0, 0, 0, 0.5)', // Semi-transparent overlay
   
   // Text Colors

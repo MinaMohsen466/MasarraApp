@@ -78,7 +78,7 @@ export const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingVertical: 20,
-    paddingBottom: 40,
+    paddingBottom: 80,
   },
   userInfoSection: {
     backgroundColor: colors.backgroundHome,

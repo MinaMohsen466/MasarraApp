@@ -293,6 +293,12 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
                       source={{ uri: selectedImage.url || selectedImage.path }}
                       style={styles.cardPreview}
                       resizeMode="cover"
+                      onError={(error) => {
+                        console.log('[QRFormModal] Preview image load error:', error.nativeEvent);
+                      }}
+                      onLoad={() => {
+                        console.log('[QRFormModal] Preview image loaded:', selectedImage._id);
+                      }}
                     >
                         <View style={styles.qrPlaceholder}>
                           <Text style={styles.qrPlaceholderText}>QR</Text>
@@ -322,12 +328,18 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
                               styles.imageThumbnail,
                               selectedBackgroundId === item._id && styles.imageThumbnailActive
                             ]}
-                            onPress={() => setSelectedBackgroundId(item._id)}
+                            onPress={() => {
+                              console.log('[QRFormModal] Selected background image:', item._id, item.name);
+                              setSelectedBackgroundId(item._id);
+                            }}
                           >
                             <Image
                               source={{ uri: item.url || item.path }}
                               style={styles.imageThumbnailImage}
                               resizeMode="cover"
+                              onError={(error) => {
+                                console.log('[QRFormModal] Thumbnail load error:', item._id, error.nativeEvent);
+                              }}
                           />
                         </TouchableOpacity>
                       )}

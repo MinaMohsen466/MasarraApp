@@ -5,10 +5,11 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Image,
   FlatList,
-  StyleSheet,
-  Dimensions,
+  Clipboard,
+  Linking,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -16,245 +17,10 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { colors } from '../constants/colors';
 import { CustomAlert } from '../components/CustomAlert';
 import { API_URL } from '../config/api.config';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.backgroundHome,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    backgroundColor: colors.backgroundHome,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  backButton: {
-    padding: 8,
-    width: 40,
-  },
-  backIcon: {
-    fontSize: 24,
-    color: colors.primaryDark,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.primaryDark,
-  },
-  placeholder: {
-    width: 40,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  filterSection: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    gap: 12,
-  },
-  dateFilterButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: colors.primary,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-  },
-  dateFilterText: {
-    fontSize: 14,
-    color: colors.primary,
-  },
-  occasionFilterButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: colors.primary,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-  },
-  occasionFilterText: {
-    fontSize: 14,
-    color: colors.primary,
-  },
-  filterContainer: {
-    maxHeight: 50,
-    marginBottom: 16,
-  },
-  filterContent: {
-    paddingHorizontal: 16,
-    gap: 8,
-  },
-  filterButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#f0f0f0',
-    marginRight: 8,
-  },
-  filterButtonActive: {
-    backgroundColor: colors.primary,
-  },
-  filterButtonText: {
-    fontSize: 14,
-    color: colors.textDark,
-    fontWeight: '500',
-  },
-  filterButtonTextActive: {
-    color: '#ffffff',
-    fontWeight: '600',
-  },
-  tableHeader: {
-    flexDirection: 'row',
-    backgroundColor: colors.primaryDark,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-  },
-  tableHeaderText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#ffffff',
-  },
-  dateColumn: {
-    flex: 0.3,
-  },
-  occasionColumn: {
-    flex: 0.5,
-  },
-  actionColumn: {
-    flex: 0.2,
-    textAlign: 'right' as const,
-  },
-  listContent: {
-    paddingBottom: 20,
-  },
-  eventCard: {
-    backgroundColor: '#ffffff',
-    marginHorizontal: 16,
-    marginVertical: 8,
-    borderRadius: 8,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  eventHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  eventInfo: {
-    flex: 1,
-    flexDirection: 'row',
-    gap: 16,
-  },
-  eventDate: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.primaryDark,
-    minWidth: 80,
-  },
-  eventDetails: {
-    flex: 1,
-  },
-  eventTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.primaryDark,
-    marginBottom: 4,
-  },
-  eventVendor: {
-    fontSize: 14,
-    color: colors.primary,
-    fontWeight: '500',
-  },
-  menuButton: {
-    padding: 4,
-    width: 30,
-    alignItems: 'center',
-  },
-  menuIcon: {
-    fontSize: 24,
-    color: colors.textDark,
-    fontWeight: '700',
-  },
-  menuDropdown: {
-    position: 'absolute',
-    right: 16,
-    top: 40,
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
-    minWidth: 180,
-    zIndex: 1000,
-  },
-  menuItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-  },
-  menuItemText: {
-    fontSize: 14,
-    color: colors.textDark,
-  },
-  menuDivider: {
-    height: 1,
-    backgroundColor: '#e0e0e0',
-  },
-  guestInfo: {
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-  },
-  guestName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textDark,
-    marginBottom: 4,
-  },
-  guestContact: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginBottom: 4,
-  },
-  guestDate: {
-    fontSize: 11,
-    color: colors.textSecondary,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-  },
-});
+import { myEventsStyles as styles } from './myEventsStyles';
+import { fetchOccasions } from '../services/api';
+import { canCreateQRCode, getQRCodeByBooking } from '../services/qrCodeApi';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 interface MyEventsProps {
   onBack?: () => void;
@@ -266,6 +32,7 @@ interface EventGuest {
   email: string;
   phone: string;
   joinedAt: string;
+  user?: any;
 }
 
 interface EventService {
@@ -290,6 +57,13 @@ interface MyEvent {
   guestLimit: number;
 }
 
+interface Occasion {
+  _id: string;
+  name: string;
+  nameAr: string;
+  isActive: boolean;
+}
+
 const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
   const { isRTL } = useLanguage();
   const insets = useSafeAreaInsets();
@@ -301,14 +75,36 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
+  
+  // Date and Occasion filters
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedOccasion, setSelectedOccasion] = useState<string>('');
+  const [occasions, setOccasions] = useState<Occasion[]>([]);
+  const [showOccasionPicker, setShowOccasionPicker] = useState(false);
+  
+  // Guest list - inline display (not modal)
+  const [expandedGuestListId, setExpandedGuestListId] = useState<string | null>(null);
+  const [guestsData, setGuestsData] = useState<{ [key: string]: EventGuest[] }>({});
+  const [loadingGuests, setLoadingGuests] = useState<{ [key: string]: boolean }>({});
 
   useEffect(() => {
     loadEvents();
+    loadOccasions();
   }, []);
 
   useEffect(() => {
     filterEvents();
-  }, [events, selectedFilter]);
+  }, [events, selectedFilter, selectedDate, selectedOccasion]);
+
+  const loadOccasions = async () => {
+    try {
+      const data = await fetchOccasions();
+      setOccasions(data);
+    } catch (error) {
+      console.error('Error loading occasions:', error);
+    }
+  };
 
   const loadEvents = async () => {
     try {
@@ -324,24 +120,33 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
         return;
       }
 
-      // Fetch events where user is a guest
-      const response = await fetch(`${API_URL}/bookings/my-events`, {
+      // Fetch user's own bookings
+      const response = await fetch(`${API_URL}/bookings`, {
+        method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
       });
-
-      const data = await response.json();
       
-      if (data.success) {
-        setEvents(data.data || []);
-      } else {
-        showAlert(
-          isRTL ? 'خطأ' : 'Error',
-          data.message || (isRTL ? 'فشل تحميل الفعاليات' : 'Failed to load events')
-        );
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
       }
-    } catch (error) {
+
+      const bookings = await response.json();
+      
+      // Filter bookings that can create QR codes
+      const filteredBookings = [];
+      for (const booking of (Array.isArray(bookings) ? bookings : [])) {
+        const canCreate = await canCreateQRCode(booking, null, token);
+        if (canCreate) {
+          filteredBookings.push(booking);
+        }
+      }
+      
+      setEvents(filteredBookings);
+      
+    } catch (error: any) {
       console.error('Error loading events:', error);
       showAlert(
         isRTL ? 'خطأ' : 'Error',
@@ -353,11 +158,33 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
   };
 
   const filterEvents = () => {
-    if (selectedFilter === 'all') {
-      setFilteredEvents(events);
-    } else {
-      setFilteredEvents(events.filter(event => event.status === selectedFilter));
+    let filtered = events;
+
+    // Filter by status
+    if (selectedFilter !== 'all') {
+      filtered = filtered.filter(event => event.status === selectedFilter);
     }
+
+    // Filter by date
+    if (selectedDate) {
+      filtered = filtered.filter(event => {
+        const eventDate = new Date(event.eventDate);
+        return eventDate.toDateString() === selectedDate.toDateString();
+      });
+    }
+
+    // Filter by occasion (service name)
+    if (selectedOccasion) {
+      filtered = filtered.filter(event => {
+        if (event.services && event.services.length > 0) {
+          const serviceName = event.services[0].service?.name || '';
+          return serviceName.toLowerCase().includes(selectedOccasion.toLowerCase());
+        }
+        return false;
+      });
+    }
+
+    setFilteredEvents(filtered);
   };
 
   const showAlert = (title: string, message: string) => {
@@ -366,28 +193,181 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
     setAlertVisible(true);
   };
 
-  const handleCopyQR = (eventId: string) => {
-    // TODO: Implement QR copy functionality
-    showAlert(
-      isRTL ? 'نجح' : 'Success',
-      isRTL ? 'تم نسخ رمز QR' : 'QR code copied'
-    );
+  const handleCopyQR = async (bookingId: string) => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) {
+        showAlert(isRTL ? 'خطأ' : 'Error', isRTL ? 'يرجى تسجيل الدخول' : 'Please login');
+        return;
+      }
+
+      // Fetch QR code data from API
+      const qrData = await getQRCodeByBooking(token, bookingId);
+      
+      if (qrData && qrData.qrUrl) {
+        await Clipboard.setString(qrData.qrUrl);
+        showAlert(
+          isRTL ? 'نجح' : 'Success',
+          isRTL ? 'تم نسخ رابط QR إلى الحافظة!' : 'QR link copied to clipboard!'
+        );
+      } else {
+        showAlert(
+          isRTL ? 'تنبيه' : 'Info',
+          isRTL ? 'لا يوجد رمز QR متاح لهذا الحجز. قم بإنشائه من الحجوزات.' : 'No QR code available for this booking. Create it from bookings.'
+        );
+      }
+    } catch (error: any) {
+      console.error('Error copying QR:', error);
+      if (error?.response?.status === 404) {
+        showAlert(
+          isRTL ? 'تنبيه' : 'Info',
+          isRTL ? 'لا يوجد رمز QR متاح لهذا الحجز. قم بإنشائه من الحجوزات.' : 'No QR code available. Create it from bookings.'
+        );
+      } else {
+        showAlert(
+          isRTL ? 'خطأ' : 'Error',
+          isRTL ? 'فشل نسخ رابط QR' : 'Failed to copy QR link'
+        );
+      }
+    }
     setExpandedEventId(null);
   };
 
-  const handleViewQR = (eventId: string) => {
-    // TODO: Navigate to QR view
+  const handleViewQR = async (bookingId: string) => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) {
+        showAlert(isRTL ? 'خطأ' : 'Error', isRTL ? 'يرجى تسجيل الدخول' : 'Please login');
+        return;
+      }
+
+      // Check if QR exists
+      const qrData = await getQRCodeByBooking(token, bookingId);
+      
+      if (qrData && qrData.qrUrl) {
+        // Open QR URL in browser
+        await Linking.openURL(qrData.qrUrl);
+      } else {
+        showAlert(
+          isRTL ? 'تنبيه' : 'Info',
+          isRTL ? 'لا يوجد رمز QR متاح لهذا الحجز' : 'No QR code available for this booking'
+        );
+      }
+    } catch (error) {
+      console.error('Error viewing QR:', error);
+      showAlert(
+        isRTL ? 'خطأ' : 'Error',
+        isRTL ? 'فشل عرض QR' : 'Failed to view QR'
+      );
+    }
     setExpandedEventId(null);
   };
 
-  const handleGuestList = (eventId: string) => {
-    // TODO: Navigate to guest list
+  const handleGuestList = async (bookingId: string) => {
+    // Toggle guest list display
+    if (expandedGuestListId === bookingId) {
+      setExpandedGuestListId(null);
+      setExpandedEventId(null);
+      return;
+    }
+
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) {
+        showAlert(isRTL ? 'خطأ' : 'Error', isRTL ? 'يرجى تسجيل الدخول' : 'Please login');
+        return;
+      }
+
+      // Set loading state for this booking
+      setLoadingGuests(prev => ({ ...prev, [bookingId]: true }));
+      setExpandedGuestListId(bookingId);
+
+      // Fetch guests for this booking
+      const response = await fetch(`${API_URL}/bookings/${bookingId}/guests`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const guests = await response.json();
+        setGuestsData(prev => ({ ...prev, [bookingId]: guests || [] }));
+      } else {
+        throw new Error('Failed to fetch guests');
+      }
+    } catch (error) {
+      console.error('Error fetching guests:', error);
+      showAlert(
+        isRTL ? 'خطأ' : 'Error',
+        isRTL ? 'فشل تحميل قائمة الضيوف' : 'Failed to load guest list'
+      );
+      setExpandedGuestListId(null);
+    } finally {
+      setLoadingGuests(prev => ({ ...prev, [bookingId]: false }));
+    }
     setExpandedEventId(null);
   };
 
-  const handleOpenGuestPage = (eventId: string) => {
-    // TODO: Open guest page
-    setExpandedEventId(null);
+  const handleRemoveGuest = async (guestId: string, bookingId: string) => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) {
+        showAlert(isRTL ? 'خطأ' : 'Error', isRTL ? 'يرجى تسجيل الدخول' : 'Please login');
+        return;
+      }
+
+      const response = await fetch(
+        `${API_URL}/bookings/${bookingId}/guests/${guestId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.ok) {
+        // Update local guest list for this booking
+        setGuestsData(prev => ({
+          ...prev,
+          [bookingId]: (prev[bookingId] || []).filter(g => g._id !== guestId)
+        }));
+        
+        // Reload events to get updated data
+        await loadEvents();
+        
+        showAlert(
+          isRTL ? 'نجح' : 'Success',
+          isRTL ? 'تم حذف الضيف بنجاح' : 'Guest removed successfully'
+        );
+      } else {
+        throw new Error('Failed to remove guest');
+      }
+    } catch (error) {
+      console.error('Error removing guest:', error);
+      showAlert(
+        isRTL ? 'خطأ' : 'Error',
+        isRTL ? 'فشل حذف الضيف' : 'Failed to remove guest'
+      );
+    }
+  };
+
+  const handleDateChange = (event: any, date?: Date) => {
+    setShowDatePicker(false);
+    if (date) {
+      setSelectedDate(date);
+    }
+  };
+
+  const clearDateFilter = () => {
+    setSelectedDate(null);
+  };
+
+  const clearOccasionFilter = () => {
+    setSelectedOccasion('');
   };
 
   const formatDate = (dateString: string) => {
@@ -479,35 +459,40 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
                 {isRTL ? 'قائمة الضيوف' : 'Guest List'}
               </Text>
             </TouchableOpacity>
-            <View style={styles.menuDivider} />
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => handleOpenGuestPage(item._id)}
-            >
-              <Text style={styles.menuItemText}>
-                {isRTL ? 'فتح صفحة الضيوف' : 'Open guest page'}
-              </Text>
-            </TouchableOpacity>
           </View>
         )}
 
-        {/* Guest info */}
-        {item.guests && item.guests.length > 0 && (
-          <View style={styles.guestInfo}>
-            <Text style={styles.guestName}>{item.guests[0].name}</Text>
-            <Text style={styles.guestContact}>
-              {item.guests[0].email} • {item.guests[0].phone}
-            </Text>
-            <Text style={styles.guestDate}>
-              {new Date(item.guests[0].joinedAt).toLocaleString('en-US', {
-                month: '2-digit',
-                day: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true
-              })}
-            </Text>
+        {expandedGuestListId === item._id && (
+          <View style={styles.guestListContainer}>
+            {loadingGuests[item._id] ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color="#8B4789" />
+                <Text style={styles.loadingText}>
+                  {isRTL ? 'جاري التحميل...' : 'Loading...'}
+                </Text>
+              </View>
+            ) : (guestsData[item._id] || []).length === 0 ? (
+              <View style={styles.emptyGuestList}>
+                <Text style={styles.emptyGuestText}>
+                  {isRTL ? 'لا يوجد ضيوف' : 'No guests'}
+                </Text>
+              </View>
+            ) : (
+              guestsData[item._id]?.map((guest) => (
+                <View key={guest._id} style={styles.guestListItem}>
+                  <View style={styles.guestInfo}>
+                    <Text style={styles.guestName}>{guest.name}</Text>
+                    <Text style={styles.guestPhone}>{guest.phone}</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.deleteGuestButton}
+                    onPress={() => handleRemoveGuest(guest._id, item._id)}
+                  >
+                    <Text style={styles.deleteGuestButtonText}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+              ))
+            )}
           </View>
         )}
       </View>
@@ -519,7 +504,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.header}>
           <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Text style={styles.backIcon}>{isRTL ? '→' : '←'}</Text>
+            <Text style={styles.backIcon}>{isRTL ? '›' : '‹'}</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>
             {isRTL ? 'فعالياتي' : 'My Events'}
@@ -538,7 +523,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backIcon}>{isRTL ? '→' : '←'}</Text>
+          <Text style={styles.backIcon}>{isRTL ? '›' : '‹'}</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
           {isRTL ? 'فعالياتي' : 'My Events'}
@@ -548,13 +533,35 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
 
       {/* Date and Occasion Filters */}
       <View style={styles.filterSection}>
-        <TouchableOpacity style={styles.dateFilterButton}>
-          <Text style={styles.dateFilterText}>mm/dd/yyyy</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.occasionFilterButton}>
-          <Text style={styles.occasionFilterText}>
-            {isRTL ? 'اختر المناسبة' : 'Select Occasion'}
+        <TouchableOpacity 
+          style={styles.dateFilterButton}
+          onPress={() => setShowDatePicker(true)}
+        >
+          <Text style={styles.dateFilterText} numberOfLines={1}>
+            {selectedDate 
+              ? selectedDate.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })
+              : 'mm/dd/yyyy'
+            }
           </Text>
+          {selectedDate && (
+            <TouchableOpacity onPress={clearDateFilter} style={styles.clearButton}>
+              <Text style={styles.clearButtonText}>✕</Text>
+            </TouchableOpacity>
+          )}
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.occasionFilterButton}
+          onPress={() => setShowOccasionPicker(true)}
+        >
+          <Text style={styles.occasionFilterText} numberOfLines={1} ellipsizeMode="tail">
+            {selectedOccasion || (isRTL ? 'اختر المناسبة' : 'Select Occasion')}
+          </Text>
+          {selectedOccasion && (
+            <TouchableOpacity onPress={clearOccasionFilter} style={styles.clearButton}>
+              <Text style={styles.clearButtonText}>✕</Text>
+            </TouchableOpacity>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -614,6 +621,60 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
         ]}
         onClose={() => setAlertVisible(false)}
       />
+
+      {/* Date Picker Modal */}
+      {showDatePicker && (
+        <DateTimePicker
+          value={selectedDate || new Date()}
+          mode="date"
+          display="default"
+          onChange={handleDateChange}
+        />
+      )}
+
+      {/* Occasion Picker Modal */}
+      <Modal
+        visible={showOccasionPicker}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowOccasionPicker(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowOccasionPicker(false)}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>
+              {isRTL ? 'اختر المناسبة' : 'Select Occasion'}
+            </Text>
+            <ScrollView style={styles.occasionList}>
+              {occasions.map((occasion) => (
+                <TouchableOpacity
+                  key={occasion._id}
+                  style={styles.occasionItem}
+                  onPress={() => {
+                    setSelectedOccasion(isRTL ? occasion.nameAr : occasion.name);
+                    setShowOccasionPicker(false);
+                  }}
+                >
+                  <Text style={styles.occasionItemText}>
+                    {isRTL ? occasion.nameAr : occasion.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setShowOccasionPicker(false)}
+            >
+              <Text style={styles.modalCloseButtonText}>
+                {isRTL ? 'إغلاق' : 'Close'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 };

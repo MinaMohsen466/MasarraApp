@@ -744,3 +744,42 @@ export const checkTimeSlotAvailability = async (
     return [];
   }
 };
+
+/**
+ * Submit contact request
+ */
+export interface ContactRequestData {
+  title: string;
+  name: string;
+  email: string;
+  phone: string;
+  message: string;
+}
+
+export const submitContactRequest = async (data: ContactRequestData, token?: string): Promise<{ success: boolean; message?: string }> => {
+  try {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/contact`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to submit contact request');
+    }
+
+    const responseData = await response.json();
+    return responseData;
+  } catch (error) {
+    throw error;
+  }
+};

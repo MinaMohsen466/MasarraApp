@@ -1,273 +1,166 @@
-import { StyleSheet, Dimensions } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { colors } from '../constants/colors';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const isTablet = SCREEN_WIDTH >= 600;
-
 export const styles = StyleSheet.create({
-  fullPageContainer: {
+  container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
-    position: 'relative',
-  },
-  headerBackground: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: colors.primary,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-    zIndex: 0,
+    backgroundColor: '#f5f5f5',
+    paddingBottom: 50,
   },
   headerBar: {
-    backgroundColor: 'transparent',
-    paddingHorizontal: 16,
-    flexDirection: 'row',
+    width: '100%',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    zIndex: 1,
-  },
-  headerBackInline: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.textWhite,
     justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  headerSpacer: {
-    width: 40,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: colors.textWhite,
-    flex: 1,
-    textAlign: 'center',
-  },
-  headerTitleRTL: {
-    fontFamily: 'System',
-  },
-
-  // Loading
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  // Content
-  content: {
-    flex: 1,
-    marginTop: 24,
-  },
-  contentContainer: {
-    padding: 16,
-    paddingBottom: isTablet ? 120 : 24,
-  },
-
-  // Intro Section
-  introSection: {
-    marginBottom: 28,
+    backgroundColor: colors.primary,
+    position: 'relative',
+    zIndex: 10,
     paddingHorizontal: 12,
   },
-  introText: {
-    fontSize: 16,
-    lineHeight: 24,
+  backButton: {
+    position: 'absolute',
+    width: 38,
+    height: 38,
+    borderRadius: 22,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  headerTitle: {
+    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  descriptionText: {
+    fontSize: 14,
     color: '#666',
-    textAlign: 'left',
+    textAlign: 'center',
+    marginTop: 20,
+    marginBottom: 20,
+    lineHeight: 20,
   },
-  introTextRTL: {
-    textAlign: 'right',
-  },
-
-  // Contact Cards Container
-  contactCardsContainer: {
-    marginBottom: 32,
-    gap: 12,
-  },
-
-  // Contact Card
   contactCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    paddingVertical: 18,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: '#E8E8E8',
+    elevation: 1,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 3.84,
-    elevation: 3,
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
   },
-
-  // Icon Container
-  iconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 10,
-    backgroundColor: `${colors.primary}15`,
-    justifyContent: 'center',
+  contactIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#E8F5F3',
     alignItems: 'center',
-    marginRight: 14,
-  },
-
-  // Contact Details
-  contactDetails: {
-    flex: 1,
     justifyContent: 'center',
-    alignItems: 'flex-start',
+    marginRight: 12,
   },
-  contactDetailsRTL: {
-    alignItems: 'flex-end',
+  contactTextContainer: {
+    flex: 1,
   },
-
-  // Contact Label
   contactLabel: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 11,
     color: '#999',
+    fontWeight: '500',
     marginBottom: 4,
-    textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  contactLabelRTL: {
-    textAlign: 'right',
-  },
-
-  // Contact Value
   contactValue: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
     color: '#333',
+    fontWeight: '500',
   },
-  contactValueRTL: {
-    textAlign: 'right',
+  additionalInfoContainer: {
+    marginTop: 12,
+    marginBottom: 20,
   },
-
-  // Additional Section
-  additionalSection: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E8E8E8',
-  },
-
-  // Additional Title
-  additionalTitle: {
+  additionalInfoTitle: {
     fontSize: 14,
-    fontWeight: '600',
     color: colors.primary,
-    marginBottom: 10,
-    textAlign: 'left',
+    fontWeight: '600',
+    marginBottom: 8,
   },
-  additionalTitleRTL: {
-    textAlign: 'right',
-  },
-
-  // Additional Text
-  additionalText: {
+  additionalInfoText: {
     fontSize: 13,
-    lineHeight: 20,
     color: '#666',
-    textAlign: 'left',
+    lineHeight: 18,
   },
-  additionalTextRTL: {
-    textAlign: 'right',
-  },
-
-  // Form Section
-  formSection: {
+  formCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 16,
-    marginTop: 20,
-    borderWidth: 1,
-    borderColor: '#E8E8E8',
-    marginBottom: 58,
+    padding: 20,
+    marginBottom: 30,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
   },
-
-  // Form Title
   formTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: colors.primary,
-    marginBottom: 16,
-    textAlign: 'left',
+    marginBottom: 20,
   },
-  formTitleRTL: {
-    textAlign: 'right',
-  },
-
-  // Input Fields
-  input: {
-    borderWidth: 1,
-    borderColor: '#DDD',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+  inputContainer: {
     marginBottom: 12,
-    fontSize: 14,
-    color: '#333',
-    backgroundColor: '#F9F9F9',
   },
-  inputRTL: {
-    textAlign: 'right',
-  },
-
-  // Message Input
-  messageInput: {
-    borderWidth: 1,
-    borderColor: '#DDD',
+  input: {
+    backgroundColor: '#f9f9f9',
     borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 16,
+    padding: 14,
     fontSize: 14,
     color: '#333',
-    backgroundColor: '#F9F9F9',
-    height: 120,
+    borderWidth: 1,
+    borderColor: '#e8e8e8',
   },
-  messageInputRTL: {
-    textAlign: 'right',
+  textArea: {
+    height: 100,
+    textAlignVertical: 'top',
   },
-
-  // Submit Button
   submitButton: {
     backgroundColor: colors.primary,
     borderRadius: 8,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    justifyContent: 'center',
+    padding: 16,
     alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
     shadowOpacity: 0.15,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
   },
-
   submitButtonDisabled: {
-    opacity: 0.6,
+    backgroundColor: '#ccc',
+    elevation: 0,
   },
-
   submitButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
-    textAlign: 'center',
+  },
+  textRTL: {
+    textAlign: 'right',
+    writingDirection: 'rtl',
+  },
+  inputRTL: {
+    textAlign: 'right',
+    writingDirection: 'rtl',
   },
 });

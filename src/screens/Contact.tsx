@@ -1,366 +1,305 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ActivityIndicator,
-  ScrollView,
-  Linking,
-  Alert,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, ScrollView, Alert, ActivityIndicator, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path, Circle } from 'react-native-svg';
 import { useLanguage } from '../contexts/LanguageContext';
-import { colors } from '../constants/colors';
+import { useAuth } from '../contexts/AuthContext';
 import { useSiteSettings } from '../hooks/useSiteSettings';
-import { styles } from './contactStyles';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_BASE_URL } from '../config/api.config';
+import { submitContactRequest } from '../services/api';
+import { colors } from '../constants/colors';
+import { styles as contactStyles } from './contactStyles';
 
-interface ContactProps {
-  onBack: () => void;
-}
+const Contact: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
+	const { isRTL } = useLanguage();
+	const insets = useSafeAreaInsets();
+	const { user, token } = useAuth();
+	const { data: siteSettings, isLoading: loadingSettings } = useSiteSettings();
 
-const Contact: React.FC<ContactProps> = ({ onBack }) => {
-  const { isRTL, t } = useLanguage();
-  const { data: siteSettings, isLoading } = useSiteSettings();
-  const insets = useSafeAreaInsets();
-  
-  // Form state
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    subject: '',
-    message: ''
-  });
-  const [submitting, setSubmitting] = useState(false);
+	const [name, setName] = useState('');
+	const [email, setEmail] = useState('');
+	const [phone, setPhone] = useState('');
+	const [subject, setSubject] = useState('');
+	const [message, setMessage] = useState('');
+	const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleCallPress = (phone: string) => {
-    const phoneUrl = `tel:${phone}`;
-    Linking.canOpenURL(phoneUrl)
-      .then((supported) => {
-        if (supported) {
-          Linking.openURL(phoneUrl);
-        } else {
-          Alert.alert('Error', 'Could not open phone dialer');
-        }
-      })
-      .catch(() => {
-        Alert.alert('Error', 'Could not open phone dialer');
-      });
-  };
+	const handleSubmit = async () => {
+		// Validation
+		if (!name.trim()) {
+			Alert.alert(
+				isRTL ? 'خطأ' : 'Error',
+				isRTL ? 'الرجاء إدخال اسمك' : 'Please enter your name'
+			);
+			return;
+		}
 
-  const handleEmailPress = (email: string) => {
-    const emailUrl = `mailto:${email}`;
-    Linking.canOpenURL(emailUrl)
-      .then((supported) => {
-        if (supported) {
-          Linking.openURL(emailUrl);
-        } else {
-          Alert.alert('Error', 'Could not open email client');
-        }
-      })
-      .catch(() => {
-        Alert.alert('Error', 'Could not open email client');
-      });
-  };
+		if (!email.trim()) {
+			Alert.alert(
+				isRTL ? 'خطأ' : 'Error',
+				isRTL ? 'الرجاء إدخال بريدك الإلكتروني' : 'Please enter your email'
+			);
+			return;
+		}
 
-  const handleSubmitForm = async () => {
-    // Validate form
-    if (!formData.name.trim() || !formData.email.trim() || !formData.phone.trim() || !formData.message.trim()) {
-      Alert.alert(isRTL ? 'تنبيه' : 'Alert', isRTL ? 'يرجى ملء جميع الحقول المطلوبة' : 'Please fill in all required fields');
-      return;
-    }
+		if (!phone.trim()) {
+			Alert.alert(
+				isRTL ? 'خطأ' : 'Error',
+				isRTL ? 'الرجاء إدخال رقم هاتفك' : 'Please enter your phone number'
+			);
+			return;
+		}
 
-    try {
-      setSubmitting(true);
-      const token = await AsyncStorage.getItem('userToken');
+		if (!message.trim()) {
+			Alert.alert(
+				isRTL ? 'خطأ' : 'Error',
+				isRTL ? 'الرجاء إدخال نص الرسالة' : 'Please enter message content'
+			);
+			return;
+		}
 
-      const response = await fetch(`${API_BASE_URL}/api/contact`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` })
-        },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          title: formData.subject || 'General Inquiry',
-          message: formData.message
-        })
-      });
+		if (message.length < 10) {
+			Alert.alert(
+				isRTL ? 'خطأ' : 'Error',
+				isRTL ? 'الرجاء كتابة رسالة لا تقل عن 10 أحرف' : 'Please write a message with at least 10 characters'
+			);
+			return;
+		}
 
-      if (response.ok) {
-        Alert.alert(
-          isRTL ? 'نجح' : 'Success',
-          isRTL ? 'تم إرسال رسالتك بنجاح' : 'Your message has been sent successfully',
-          [
-            {
-              text: isRTL ? 'حسناً' : 'OK',
-              onPress: () => {
-                // Clear form
-                setFormData({
-                  name: '',
-                  email: '',
-                  phone: '',
-                  subject: '',
-                  message: ''
-                });
-              }
-            }
-          ]
-        );
-      } else {
-        const errorData = await response.json();
-        Alert.alert(isRTL ? 'خطأ' : 'Error', errorData.message || (isRTL ? 'فشل إرسال الرسالة' : 'Failed to send message'));
-      }
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      Alert.alert(isRTL ? 'خطأ' : 'Error', isRTL ? 'حدث خطأ في الإرسال' : 'An error occurred while sending');
-    } finally {
-      setSubmitting(false);
-    }
-  };
+		setIsSubmitting(true);
 
-  const contactInfo = [
-    {
-      id: 'email',
-      icon: (
-        <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
-          <Path
-            d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
-            stroke={colors.primary}
-            strokeWidth={1.5}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <Path
-            d="M22 6l-10 7L2 6"
-            stroke={colors.primary}
-            strokeWidth={1.5}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </Svg>
-      ),
-      label: isRTL ? 'البريد الإلكتروني' : 'Email',
-      value: siteSettings?.contactEmail || 'N/A',
-      onPress: () => {
-        if (siteSettings?.contactEmail) {
-          handleEmailPress(siteSettings.contactEmail);
-        }
-      },
-    },
-    {
-      id: 'phone',
-      icon: (
-        <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
-          <Path
-            d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
-            stroke={colors.primary}
-            strokeWidth={1.5}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill="none"
-          />
-        </Svg>
-      ),
-      label: isRTL ? 'رقم الهاتف' : 'Phone',
-      value: siteSettings?.contactPhone || 'N/A',
-      onPress: () => {
-        if (siteSettings?.contactPhone) {
-          handleCallPress(siteSettings.contactPhone);
-        }
-      },
-    },
-  ];
+		try {
+			await submitContactRequest(
+				{
+					title: subject.trim() || (isRTL ? 'استفسار عام' : 'General Inquiry'),
+					name: name.trim(),
+					email: email.trim(),
+					phone: phone.trim(),
+					message: message.trim(),
+				},
+				token || undefined
+			);
 
-  return (
-    <View style={[styles.fullPageContainer, { paddingTop: insets.top }]}>
-      {/* Header Background */}
-      <View style={[styles.headerBackground, { height: insets.top + 66 }]} />
+			Alert.alert(
+				isRTL ? 'نجح!' : 'Success!',
+				isRTL ? 'تم إرسال رسالتك بنجاح' : 'Your message has been sent successfully',
+				[
+					{
+						text: isRTL ? 'حسناً' : 'OK',
+						onPress: () => {
+							// Clear form
+							setSubject('');
+							setMessage('');
+							if (!user) {
+								setName('');
+								setEmail('');
+								setPhone('');
+							}
+						},
+					},
+				]
+			);
+		} catch (error: any) {
+			Alert.alert(
+				isRTL ? 'خطأ' : 'Error',
+				error.message || (isRTL ? 'فشل في إرسال الرسالة' : 'Failed to send message')
+			);
+		} finally {
+			setIsSubmitting(false);
+		}
+	};
 
-      {/* Header Bar */}
-      <View style={styles.headerBar}>
-        <TouchableOpacity
-          onPress={onBack}
-          style={styles.headerBackInline}
-          activeOpacity={0.7}>
-          <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-            <Path
-              d={isRTL ? 'M9 18l6-6-6-6' : 'M15 18l-6-6 6-6'}
-              stroke={colors.primary}
-              strokeWidth={2.5}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </Svg>
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
-          {isRTL ? 'اتصل بنا' : 'Contact Us'}
-        </Text>
-        <View style={styles.headerSpacer} />
-      </View>
+	return (
+		<View style={contactStyles.container}> 
+			<View style={[contactStyles.headerBar, { height: insets.top + 60 }]}> 
+				<TouchableOpacity
+					onPress={() => onBack && onBack()}
+					style={[
+						contactStyles.backButton,
+						{
+							top: insets.top + 12,
+							left: isRTL ? undefined : 12,
+							right: isRTL ? 12 : undefined,
+							position: 'absolute',
+						}
+					]}
+					activeOpacity={0.8}
+				>
+					<Text style={{ fontSize: 20, color: colors.primary }}>{isRTL ? '›' : '‹'}</Text>
+				</TouchableOpacity>
+				<Text style={[contactStyles.headerTitle, { marginTop: insets.top + 8 }]}>
+					{isRTL ? 'اتصل بنا' : 'Contact Us'}
+				</Text>
+			</View>
 
-      {isLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      ) : (
-        <ScrollView
-          style={styles.content}
-          contentContainerStyle={styles.contentContainer}
-          showsVerticalScrollIndicator={false}>
-          {/* Intro Section */}
-          <View style={styles.introSection}>
-            <Text style={[styles.introText, isRTL && styles.introTextRTL]}>
-              {isRTL
-                ? 'نحن هنا لمساعدتك. اتصل بنا عبر البريد الإلكتروني أو الهاتف'
-                : 'We are here to help you. Contact us via email or phone'}
-            </Text>
-          </View>
+			<ScrollView 
+				style={contactStyles.content}
+				showsVerticalScrollIndicator={false}
+			>
+				{/* Description Text */}
+				<Text style={[contactStyles.descriptionText, isRTL && contactStyles.textRTL]}>
+					{isRTL ? 'نحن هنا لمساعدتك. تواصل معنا عبر البريد الإلكتروني أو الهاتف' : 'We are here to help you. Contact us via email or phone'}
+				</Text>
 
-          {/* Contact Info Cards */}
-          <View style={styles.contactCardsContainer}>
-            {contactInfo.map((item) => (
-              <TouchableOpacity
-                key={item.id}
-                style={styles.contactCard}
-                onPress={item.onPress}
-                activeOpacity={0.7}>
-                {/* Icon Container */}
-                <View style={styles.iconContainer}>
-                  {item.icon}
-                </View>
+				{/* Contact Cards */}
+				{loadingSettings ? (
+					<View style={[contactStyles.contactCard, { alignItems: 'center' }]}>
+						<ActivityIndicator size="small" color={colors.primary} />
+					</View>
+				) : siteSettings && (siteSettings.contactEmail || siteSettings.contactPhone) ? (
+					<View>
+						{/* Email Card */}
+						{siteSettings.contactEmail && (
+							<TouchableOpacity 
+								style={contactStyles.contactCard}
+								onPress={() => Linking.openURL(`mailto:${siteSettings.contactEmail}`)}
+								activeOpacity={0.7}
+							>
+								<View style={contactStyles.contactIconContainer}>
+									<Text style={{fontSize: 24}}>📧</Text>
+								</View>
+								<View style={contactStyles.contactTextContainer}>
+									<Text style={[contactStyles.contactLabel, isRTL && contactStyles.textRTL]}>
+										{isRTL ? 'البريد الإلكتروني' : 'EMAIL'}
+									</Text>
+									<Text style={[contactStyles.contactValue, isRTL && contactStyles.textRTL]}>
+										{siteSettings.contactEmail}
+									</Text>
+								</View>
+								<Text style={{fontSize: 20, color: '#999'}}>›</Text>
+							</TouchableOpacity>
+						)}
 
-                {/* Contact Details */}
-                <View style={[styles.contactDetails, isRTL && styles.contactDetailsRTL]}>
-                  <Text style={[styles.contactLabel, isRTL && styles.contactLabelRTL]}>
-                    {item.label}
-                  </Text>
-                  <Text
-                    style={[styles.contactValue, isRTL && styles.contactValueRTL]}
-                    numberOfLines={2}
-                    selectable>
-                    {item.value}
-                  </Text>
-                </View>
+					{/* Phone Card */}
+					{siteSettings.contactPhone && (
+						<TouchableOpacity 
+							style={contactStyles.contactCard}
+							onPress={() => Linking.openURL(`tel:${siteSettings.contactPhone}`)}
+							activeOpacity={0.7}
+						>
+							<View style={contactStyles.contactIconContainer}>
+								<Text style={{fontSize: 24}}>📞</Text>
+							</View>
+							<View style={contactStyles.contactTextContainer}>
+								<Text style={[contactStyles.contactLabel, isRTL && contactStyles.textRTL]}>
+									{isRTL ? 'الهاتف' : 'PHONE'}
+								</Text>
+								<Text style={[contactStyles.contactValue, isRTL && contactStyles.textRTL]}>
+									{siteSettings.contactPhone}
+								</Text>
+							</View>
+							<Text style={{fontSize: 20, color: '#999'}}>›</Text>
+						</TouchableOpacity>
+					)}
+			</View>
+			) : null}
 
-                {/* Arrow Icon */}
-                <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-                  <Path
-                    d={isRTL ? 'M15 18l-6-6 6-6' : 'M9 18l6-6-6-6'}
-                    stroke={colors.primary}
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </Svg>
-              </TouchableOpacity>
-            ))}
-          </View>
+			{/* Additional Information */}
+			<View style={contactStyles.additionalInfoContainer}>
+				<Text style={[contactStyles.additionalInfoTitle, isRTL && contactStyles.textRTL]}>
+					{isRTL ? 'معلومات إضافية' : 'Additional Information'}
+				</Text>
+				<Text style={[contactStyles.additionalInfoText, isRTL && contactStyles.textRTL]}>						{isRTL ? 'يمكنك أيضاً التواصل معنا عبر نموذج الاتصال في التطبيق' : 'You can also reach us through the contact form in the app'}
+					</Text>
+				</View>
 
-          {/* Additional Info */}
-          <View style={styles.additionalSection}>
-            <Text style={[styles.additionalTitle, isRTL && styles.additionalTitleRTL]}>
-              {isRTL ? 'معلومات إضافية' : 'Additional Information'}
-            </Text>
-            <Text style={[styles.additionalText, isRTL && styles.additionalTextRTL]}>
-              {isRTL
-                ? 'يمكنك أيضاً التواصل معنا من خلال نموذج الاتصال في التطبيق'
-                : 'You can also reach us through the contact form in the app'}
-            </Text>
-          </View>
+				{/* Contact Form Card */}
+				<View style={contactStyles.formCard}>
+					<Text style={[contactStyles.formTitle, isRTL && contactStyles.textRTL]}>
+						{isRTL ? 'أرسل لنا رسالة' : 'Send us a Message'}
+					</Text>
 
-          {/* Contact Form Section */}
-          {/* @ts-ignore */}
-          <View style={styles.formSection}>
-            <Text style={[styles.formTitle, isRTL && styles.formTitleRTL]}>
-              {isRTL ? 'أرسل لنا رسالة' : 'Send us a Message'}
-            </Text>
+					{/* Name Input */}
+					<View style={contactStyles.inputContainer}>
+						<TextInput
+							style={[contactStyles.input, isRTL && contactStyles.inputRTL]}
+							value={name}
+							onChangeText={setName}
+							placeholder={isRTL ? 'الاسم *' : 'Name *'}
+							placeholderTextColor="#999"
+							editable={!isSubmitting}
+							autoComplete="off"
+						/>
+					</View>
 
-            {/* Name Input */}
-            <TextInput
-              style={[styles.input, isRTL && styles.inputRTL]}
-              placeholder={isRTL ? 'الاسم *' : 'Name *'}
-              placeholderTextColor="#999"
-              value={formData.name}
-              onChangeText={(text) => setFormData({ ...formData, name: text })}
-              editable={!submitting}
-            />
+					{/* Email Input */}
+					<View style={contactStyles.inputContainer}>
+						<TextInput
+							style={[contactStyles.input, isRTL && contactStyles.inputRTL]}
+							value={email}
+							onChangeText={setEmail}
+							placeholder={isRTL ? 'البريد الإلكتروني *' : 'Email *'}
+							placeholderTextColor="#999"
+							keyboardType="email-address"
+							autoCapitalize="none"
+							editable={!isSubmitting}
+							autoComplete="off"
+						/>
+					</View>
 
-            {/* Email Input */}
-            <TextInput
-              style={[styles.input, isRTL && styles.inputRTL]}
-              placeholder={isRTL ? 'البريد الإلكتروني *' : 'Email *'}
-              placeholderTextColor="#999"
-              value={formData.email}
-              onChangeText={(text) => setFormData({ ...formData, email: text })}
-              keyboardType="email-address"
-              editable={!submitting}
-            />
+					{/* Phone Input */}
+					<View style={contactStyles.inputContainer}>
+						<TextInput
+							style={[contactStyles.input, isRTL && contactStyles.inputRTL]}
+							value={phone}
+							onChangeText={setPhone}
+							placeholder={isRTL ? 'رقم الهاتف *' : 'Phone Number *'}
+							placeholderTextColor="#999"
+							keyboardType="phone-pad"
+							editable={!isSubmitting}
+							autoComplete="off"
+						/>
+					</View>
 
-            {/* Phone Input */}
-            <TextInput
-              style={[styles.input, isRTL && styles.inputRTL]}
-              placeholder={isRTL ? 'رقم الهاتف *' : 'Phone Number *'}
-              placeholderTextColor="#999"
-              value={formData.phone}
-              onChangeText={(text) => setFormData({ ...formData, phone: text })}
-              keyboardType="phone-pad"
-              editable={!submitting}
-            />
+					{/* Subject Input */}
+					<View style={contactStyles.inputContainer}>
+						<TextInput
+							style={[contactStyles.input, isRTL && contactStyles.inputRTL]}
+							value={subject}
+							onChangeText={setSubject}
+							placeholder={isRTL ? 'الموضوع' : 'Subject'}
+							placeholderTextColor="#999"
+							editable={!isSubmitting}
+							autoComplete="off"
+						/>
+					</View>
 
-            {/* Subject Input */}
-            <TextInput
-              style={[styles.input, isRTL && styles.inputRTL]}
-              placeholder={isRTL ? 'الموضوع' : 'Subject'}
-              placeholderTextColor="#999"
-              value={formData.subject}
-              onChangeText={(text) => setFormData({ ...formData, subject: text })}
-              editable={!submitting}
-            />
+					{/* Message Input */}
+					<View style={contactStyles.inputContainer}>
+						<TextInput
+							style={[contactStyles.input, contactStyles.textArea, isRTL && contactStyles.inputRTL]}
+							value={message}
+							onChangeText={setMessage}
+							placeholder={isRTL ? 'رسالتك *' : 'Your Message *'}
+							placeholderTextColor="#999"
+							multiline
+							numberOfLines={6}
+							textAlignVertical="top"
+							maxLength={1000}
+							editable={!isSubmitting}
+							autoComplete="off"
+						/>
+					</View>
 
-            {/* Message Input */}
-            <TextInput
-              style={[styles.messageInput, isRTL && styles.messageInputRTL]}
-              placeholder={isRTL ? 'رسالتك *' : 'Your Message *'}
-              placeholderTextColor="#999"
-              value={formData.message}
-              onChangeText={(text) => setFormData({ ...formData, message: text })}
-              multiline
-              numberOfLines={5}
-              textAlignVertical="top"
-              editable={!submitting}
-            />
-
-            {/* Submit Button */}
-            <TouchableOpacity
-              style={[
-                styles.submitButton,
-                submitting && styles.submitButtonDisabled
-              ]}
-              onPress={handleSubmitForm}
-              disabled={submitting}
-              activeOpacity={0.7}>
-              {submitting ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.submitButtonText}>
-                  {isRTL ? 'إرسال الرسالة' : 'Send Message'}
-                </Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      )}
-    </View>
-  );
+					{/* Submit Button */}
+					<TouchableOpacity
+						style={[
+							contactStyles.submitButton,
+							isSubmitting && contactStyles.submitButtonDisabled,
+						]}
+						onPress={handleSubmit}
+						disabled={isSubmitting}
+						activeOpacity={0.8}
+					>
+						{isSubmitting ? (
+							<ActivityIndicator size="small" color="#fff" />
+						) : (
+							<Text style={contactStyles.submitButtonText}>
+								{isRTL ? 'إرسال' : 'Submit'}
+							</Text>
+						)}
+					</TouchableOpacity>
+				</View>
+			</ScrollView>
+		</View>
+	);
 };
 
 export default Contact;

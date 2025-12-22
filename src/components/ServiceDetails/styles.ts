@@ -249,7 +249,7 @@ export const styles = StyleSheet.create({
     lineHeight: 21,
     color: '#666',
     marginBottom: 16,
-    backgroundColor: '#F9F9F9',
+    backgroundColor: colors.backgroundCard,
     padding: 16,
     borderRadius: 12,
   },
@@ -263,7 +263,7 @@ export const styles = StyleSheet.create({
     paddingTop: 20,
     paddingHorizontal: 0,
     paddingBottom: 20,
-    backgroundColor: '#F9F9F9',
+    backgroundColor: colors.backgroundCard,
     borderRadius: 8,
   },
   policiesTitle: {
@@ -343,7 +343,7 @@ export const styles = StyleSheet.create({
 
   /* Booking / availability preview: match vendor policy card width and style */
   bookingContainer: {
-    backgroundColor: '#F9F9F9',
+    backgroundColor: colors.backgroundCard,
     borderRadius: 8,
     paddingHorizontal: 20,
     paddingVertical: 14,
@@ -442,7 +442,7 @@ export const styles = StyleSheet.create({
 
   /* Custom Text Section - isolated header */
   customTextContainer: {
-    backgroundColor: '#F9F9F9',
+    backgroundColor: colors.backgroundCard,
     borderRadius: 8,
     paddingHorizontal: 20,
     paddingVertical: 14,

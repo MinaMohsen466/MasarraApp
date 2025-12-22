@@ -84,7 +84,7 @@ export const styles = StyleSheet.create({
   },
   serviceCard: {
     width: CARD_WIDTH,
-    backgroundColor: colors.textWhite,
+    backgroundColor: colors.backgroundCard,
     borderRadius: 16,
     marginRight: 12,
     overflow: 'hidden',
