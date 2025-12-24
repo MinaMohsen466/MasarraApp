@@ -47,16 +47,17 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
     try {
       Alert.alert(
         isRTL ? 'نجح' : 'Success',
-        isRTL ? 'تم تنزيل البطاقة بنجاح' : 'Card downloaded successfully'
+        isRTL ? 'تم تنزيل البطاقة بنجاح' : 'Card downloaded successfully',
       );
     } catch (error) {
-      Alert.alert(isRTL ? 'خطأ' : 'Error', isRTL ? 'فشل التنزيل' : 'Download failed');
+      Alert.alert(
+        isRTL ? 'خطأ' : 'Error',
+        isRTL ? 'فشل التنزيل' : 'Download failed',
+      );
     } finally {
       setDownloadingCard(false);
     }
   };
-
-
 
   const handleCopyLink = async () => {
     setCopyingLink(true);
@@ -66,10 +67,13 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
         Alert.alert(
           isRTL ? 'نجح' : 'Success',
           isRTL ? 'تم نسخ الرابط بنجاح' : 'Link copied successfully',
-          [{ text: 'OK' }]
+          [{ text: 'OK' }],
         );
       } else {
-        Alert.alert(isRTL ? 'خطأ' : 'Error', isRTL ? 'الرابط غير متوفر' : 'Link not available');
+        Alert.alert(
+          isRTL ? 'خطأ' : 'Error',
+          isRTL ? 'الرابط غير متوفر' : 'Link not available',
+        );
       }
     } catch (error) {
       Alert.alert(isRTL ? 'خطأ' : 'Error', isRTL ? 'فشل النسخ' : 'Copy failed');
@@ -103,38 +107,53 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
       qrCodeImageUri: getQRCodeImageUri(),
       hasBackgroundImage: !!backgroundImage,
       backgroundImageUri: getBackgroundImageUri(),
-      customDetails: qrCode?.customDetails
+      customDetails: qrCode?.customDetails,
     });
 
     // Try to compute natural aspect ratio of the background image to avoid side gaps
     const bgUri = getBackgroundImageUri();
     if (!bgUri) return;
-    
+
     let isActive = true;
     if (Image.getSize) {
       Image.getSize(
         bgUri,
         (w, h) => {
           if (isActive && w && h) {
-            console.log('[QRResultModal] Background image dimensions:', { w, h, ratio: w/h });
+            console.log('[QRResultModal] Background image dimensions:', {
+              w,
+              h,
+              ratio: w / h,
+            });
             setCardAspectRatio(w / h);
           }
         },
-        (error) => {
+        error => {
           console.log('[QRResultModal] Failed to get image size:', error);
-        }
+        },
       );
     }
-    return () => { isActive = false; };
+    return () => {
+      isActive = false;
+    };
   }, [qrCode, backgroundImage]);
 
   return (
-    <Modal visible={visible && Boolean(qrCode && backgroundImage)} transparent animationType="fade">
+    <Modal
+      visible={visible && Boolean(qrCode && backgroundImage)}
+      transparent
+      animationType="fade"
+    >
       <View style={styles.overlay}>
         <View style={styles.container}>
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+          >
             {/* Title */}
-            <Text style={styles.title}>{isRTL ? 'تم إنشاء QR Code!' : 'QR Code Generated!'}</Text>
+            <Text style={styles.title}>
+              {isRTL ? 'تم إنشاء QR Code!' : 'QR Code Generated!'}
+            </Text>
 
             {/* QR Card Preview with Background Image */}
             <View style={styles.cardContainer}>
@@ -143,14 +162,23 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                   source={{ uri: getBackgroundImageUri() }}
                   style={[
                     styles.cardBackground,
-                    { width: maxCardWidth, maxHeight: maxCardHeight, aspectRatio: cardAspectRatio || 0.7 }
+                    {
+                      width: maxCardWidth,
+                      maxHeight: maxCardHeight,
+                      aspectRatio: cardAspectRatio || 0.7,
+                    },
                   ]}
                   imageStyle={{ resizeMode: 'stretch' }}
-                  onError={(error) => {
-                    console.log('[QRResultModal] Background image load error:', error.nativeEvent);
+                  onError={error => {
+                    console.log(
+                      '[QRResultModal] Background image load error:',
+                      error.nativeEvent,
+                    );
                   }}
                   onLoad={() => {
-                    console.log('[QRResultModal] Background image loaded successfully');
+                    console.log(
+                      '[QRResultModal] Background image loaded successfully',
+                    );
                   }}
                 >
                   {/* Semi-transparent overlay for better text visibility */}
@@ -167,9 +195,12 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                         style={[
                           styles.nameText,
                           {
-                            fontFamily: backgroundImage?.font?.family || 'Georgia',
+                            fontFamily:
+                              backgroundImage?.font?.family || 'Georgia',
                             color: backgroundImage?.font?.color || '#000000',
-                            fontSize: backgroundImage?.font?.size ? backgroundImage.font.size + 10 : 28,
+                            fontSize: backgroundImage?.font?.size
+                              ? backgroundImage.font.size + 10
+                              : 28,
                           },
                         ]}
                         numberOfLines={2}
@@ -183,9 +214,12 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                       style={[
                         styles.andText,
                         {
-                          fontFamily: backgroundImage?.font?.family || 'Georgia',
+                          fontFamily:
+                            backgroundImage?.font?.family || 'Georgia',
                           color: backgroundImage?.font?.color || '#999999',
-                          fontSize: backgroundImage?.font?.size ? backgroundImage.font.size + 2 : 14,
+                          fontSize: backgroundImage?.font?.size
+                            ? backgroundImage.font.size + 2
+                            : 14,
                         },
                       ]}
                     >
@@ -198,9 +232,12 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                         style={[
                           styles.nameText,
                           {
-                            fontFamily: backgroundImage?.font?.family || 'Georgia',
+                            fontFamily:
+                              backgroundImage?.font?.family || 'Georgia',
                             color: backgroundImage?.font?.color || '#000000',
-                            fontSize: backgroundImage?.font?.size ? backgroundImage.font.size + 10 : 28,
+                            fontSize: backgroundImage?.font?.size
+                              ? backgroundImage.font.size + 10
+                              : 28,
                           },
                         ]}
                       >
@@ -209,7 +246,16 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                     )}
 
                     {/* Divider */}
-                    <View style={[styles.divider, { backgroundColor: backgroundImage?.font?.color || '#cccccc', marginVertical: 12 }]} />
+                    <View
+                      style={[
+                        styles.divider,
+                        {
+                          backgroundColor:
+                            backgroundImage?.font?.color || '#cccccc',
+                          marginVertical: 12,
+                        },
+                      ]}
+                    />
 
                     {/* Event Date - Large */}
                     {customDetails.eventDate && (
@@ -217,9 +263,12 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                         style={[
                           styles.dateText,
                           {
-                            fontFamily: backgroundImage?.font?.family || 'Georgia',
+                            fontFamily:
+                              backgroundImage?.font?.family || 'Georgia',
                             color: backgroundImage?.font?.color || '#333333',
-                            fontSize: backgroundImage?.font?.size ? backgroundImage.font.size + 4 : 18,
+                            fontSize: backgroundImage?.font?.size
+                              ? backgroundImage.font.size + 4
+                              : 18,
                           },
                         ]}
                       >
@@ -233,9 +282,12 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                         style={[
                           styles.infoText,
                           {
-                            fontFamily: backgroundImage?.font?.family || 'Georgia',
+                            fontFamily:
+                              backgroundImage?.font?.family || 'Georgia',
                             color: backgroundImage?.font?.color || '#666666',
-                            fontSize: backgroundImage?.font?.size ? backgroundImage.font.size - 2 : 12,
+                            fontSize: backgroundImage?.font?.size
+                              ? backgroundImage.font.size - 2
+                              : 12,
                           },
                         ]}
                       >
@@ -249,9 +301,12 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                         style={[
                           styles.infoText,
                           {
-                            fontFamily: backgroundImage?.font?.family || 'Georgia',
+                            fontFamily:
+                              backgroundImage?.font?.family || 'Georgia',
                             color: backgroundImage?.font?.color || '#666666',
-                            fontSize: backgroundImage?.font?.size ? backgroundImage.font.size - 2 : 12,
+                            fontSize: backgroundImage?.font?.size
+                              ? backgroundImage.font.size - 2
+                              : 12,
                           },
                         ]}
                         numberOfLines={3}
@@ -266,9 +321,12 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                         style={[
                           styles.infoText,
                           {
-                            fontFamily: backgroundImage?.font?.family || 'Georgia',
+                            fontFamily:
+                              backgroundImage?.font?.family || 'Georgia',
                             color: backgroundImage?.font?.color || '#666666',
-                            fontSize: backgroundImage?.font?.size ? backgroundImage.font.size - 2 : 12,
+                            fontSize: backgroundImage?.font?.size
+                              ? backgroundImage.font.size - 2
+                              : 12,
                           },
                         ]}
                       >
@@ -280,7 +338,15 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                     <View style={{ height: 16 }} />
 
                     {/* Divider before QR */}
-                    <View style={[styles.divider, { backgroundColor: backgroundImage?.font?.color || '#cccccc' }]} />
+                    <View
+                      style={[
+                        styles.divider,
+                        {
+                          backgroundColor:
+                            backgroundImage?.font?.color || '#cccccc',
+                        },
+                      ]}
+                    />
 
                     {/* Bottom Spacing */}
                     <View style={{ height: 16 }} />
@@ -296,11 +362,16 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                             source={{ uri: getQRCodeImageUri() }}
                             style={{ width: 120, height: 120 }}
                             resizeMode="contain"
-                            onError={(error) => {
-                              console.log('[QRResultModal] QR code image load error:', error.nativeEvent);
+                            onError={error => {
+                              console.log(
+                                '[QRResultModal] QR code image load error:',
+                                error.nativeEvent,
+                              );
                             }}
                             onLoad={() => {
-                              console.log('[QRResultModal] QR code image loaded successfully');
+                              console.log(
+                                '[QRResultModal] QR code image loaded successfully',
+                              );
                             }}
                           />
                         </View>
@@ -308,26 +379,46 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                           style={[
                             styles.scanText,
                             {
-                              fontFamily: backgroundImage?.font?.family || 'Georgia',
+                              fontFamily:
+                                backgroundImage?.font?.family || 'Georgia',
                               color: backgroundImage?.font?.color || '#666666',
                             },
                           ]}
                         >
-                          {isRTL ? 'امسح لعرض التفاصيل' : 'Scan to view details'}
+                          {isRTL
+                            ? 'امسح لعرض التفاصيل'
+                            : 'Scan to view details'}
                         </Text>
                       </>
                     ) : qrCode?._id === 'preview' ? (
                       <View style={styles.qrCodeBox}>
-                        <View style={{ width: 120, height: 120, backgroundColor: '#e0e0e0', justifyContent: 'center', alignItems: 'center' }}>
-                          <Text style={{ color: '#666', fontSize: 16 }}>{isRTL ? 'معاينة' : 'Preview'}</Text>
+                        <View
+                          style={{
+                            width: 120,
+                            height: 120,
+                            backgroundColor: '#e0e0e0',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <Text style={{ color: '#666', fontSize: 16 }}>
+                            {isRTL ? 'معاينة' : 'Preview'}
+                          </Text>
                         </View>
                       </View>
                     ) : null}
                   </View>
                 </ImageBackground>
               ) : (
-                <View style={[styles.cardBackground, { backgroundColor: '#f0f0f0' }]}>
-                  <Text>{isRTL ? 'لا توجد صورة خلفية' : 'No background image'}</Text>
+                <View
+                  style={[
+                    styles.cardBackground,
+                    { backgroundColor: '#f0f0f0' },
+                  ]}
+                >
+                  <Text>
+                    {isRTL ? 'لا توجد صورة خلفية' : 'No background image'}
+                  </Text>
                 </View>
               )}
             </View>
@@ -348,8 +439,13 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                 )}
               </TouchableOpacity>
 
-              <TouchableOpacity style={[styles.button, styles.editButton]} onPress={onEdit}>
-                <Text style={styles.editButtonText}>{isRTL ? 'تعديل البيانات' : 'Edit Details'}</Text>
+              <TouchableOpacity
+                style={[styles.button, styles.editButton]}
+                onPress={onEdit}
+              >
+                <Text style={styles.editButtonText}>
+                  {isRTL ? 'تعديل البيانات' : 'Edit Details'}
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -360,7 +456,9 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                 {copyingLink ? (
                   <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
-                  <Text style={styles.copyButtonText}>{isRTL ? 'نسخ الرابط' : 'Copy Link'}</Text>
+                  <Text style={styles.copyButtonText}>
+                    {isRTL ? 'نسخ الرابط' : 'Copy Link'}
+                  </Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -374,7 +472,9 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
 
             {/* Close Button */}
             <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-              <Text style={styles.closeButtonText}>{isRTL ? 'إغلاق' : 'Close'}</Text>
+              <Text style={styles.closeButtonText}>
+                {isRTL ? 'إغلاق' : 'Close'}
+              </Text>
             </TouchableOpacity>
           </ScrollView>
         </View>

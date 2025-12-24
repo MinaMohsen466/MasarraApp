@@ -1,5 +1,9 @@
 import { Platform } from 'react-native';
-import { API_URL, API_BASE_URL as BASE_URL, getImageUrl } from '../config/api.config';
+import {
+  API_URL,
+  API_BASE_URL as BASE_URL,
+  getImageUrl,
+} from '../config/api.config';
 
 // Use the centralized API_URL
 const API_BASE_URL = API_URL;
@@ -65,24 +69,26 @@ export interface Service {
 export const fetchServices = async (): Promise<Service[]> => {
   try {
     const response = await fetch(`${API_BASE_URL}/services`);
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
+
     const data = await response.json();
-    
+
     // Debug: Log discount info for Birthday Party Catering
-    const birthdayCatering = data.find((s: any) => s.name === 'Birthday Party Catering');
+    const birthdayCatering = data.find(
+      (s: any) => s.name === 'Birthday Party Catering',
+    );
     if (birthdayCatering) {
       console.log('Birthday Party Catering from API:', {
         price: birthdayCatering.price,
         salePrice: birthdayCatering.salePrice,
         discountPercentage: birthdayCatering.discountPercentage,
-        isOnSale: birthdayCatering.isOnSale
+        isOnSale: birthdayCatering.isOnSale,
       });
     }
-    
+
     return data;
   } catch (error) {
     throw error;
@@ -94,12 +100,12 @@ export const fetchServices = async (): Promise<Service[]> => {
  */
 export const getServiceImageUrl = (imagePath: string): string => {
   if (!imagePath) return '';
-  
+
   // If it's already a full URL, return as is
   if (imagePath.startsWith('http')) {
     return imagePath;
   }
-  
+
   // Use the centralized getImageUrl function
   return getImageUrl(imagePath);
 };

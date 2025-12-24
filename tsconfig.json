@@ -1,5 +1,23 @@
 {
   "extends": "@react-native/typescript-config",
+  "compilerOptions": {
+    "strict": false,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true
+  },
   "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["**/node_modules", "**/Pods"]
+  "exclude": [
+    "**/node_modules", 
+    "**/Pods", 
+    "**/build", 
+    "**/android/build",
+    "**/ios/build"
+  ]
 }

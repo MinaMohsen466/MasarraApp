@@ -50,8 +50,10 @@ const PasswordPromptModal: React.FC<PasswordPromptModalProps> = ({
       <View style={styles.overlay}>
         <View style={styles.modalContainer}>
           <Text style={[styles.title, isRTL && styles.titleRTL]}>{title}</Text>
-          <Text style={[styles.message, isRTL && styles.messageRTL]}>{message}</Text>
-          
+          <Text style={[styles.message, isRTL && styles.messageRTL]}>
+            {message}
+          </Text>
+
           <TextInput
             style={[styles.input, isRTL && styles.inputRTL]}
             value={password}

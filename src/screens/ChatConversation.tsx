@@ -38,11 +38,11 @@ interface ChatConversationProps {
   vendorImage?: string;
 }
 
-const ChatConversation: React.FC<ChatConversationProps> = ({ 
-  onBack, 
-  vendorId, 
+const ChatConversation: React.FC<ChatConversationProps> = ({
+  onBack,
+  vendorId,
   vendorName = 'Vendor',
-  vendorImage 
+  vendorImage,
 }) => {
   const { isRTL } = useLanguage();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -59,12 +59,12 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
 
   useEffect(() => {
     loadMessages();
-    
+
     // Auto-refresh messages every 10 seconds (reduced from 3 for better performance)
     refreshIntervalRef.current = setInterval(() => {
       loadMessages(true); // Silent refresh (no loading state)
     }, 10000);
-    
+
     // Cleanup on unmount
     return () => {
       if (refreshIntervalRef.current) {
@@ -82,80 +82,85 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
         if (!silent) setLoading(false);
         return;
       }
-      
+
       console.log('[ChatConversation] Loading chat with admin...');
-      
+
       // Only admin chat is supported - get all chats and find admin chat
       const chatResponse = await fetch(`${API_BASE_URL}/api/chats`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       });
-      
+
       if (!chatResponse.ok) {
-        console.log('[ChatConversation] Failed to fetch chats:', chatResponse.status);
+        console.log(
+          '[ChatConversation] Failed to fetch chats:',
+          chatResponse.status,
+        );
         if (!silent) setLoading(false);
         return;
       }
-      
+
       const chatsData = await chatResponse.json();
       console.log('[ChatConversation] All chats response:', chatsData);
-      
-      const chats = Array.isArray(chatsData) ? chatsData : (chatsData.data || []);
+
+      const chats = Array.isArray(chatsData) ? chatsData : chatsData.data || [];
       console.log('[ChatConversation] Processing', chats.length, 'chats');
-      
+
       // Find admin chat - admin chat has vendor: null
       const adminChat = chats.find((chat: any) => {
         console.log('[ChatConversation] Checking chat:', {
           id: chat._id,
           vendor: chat.vendor,
-          vendorIsNull: chat.vendor === null
+          vendorIsNull: chat.vendor === null,
         });
         return chat.vendor === null;
       });
-      
+
       if (!adminChat) {
         console.log('[ChatConversation] No admin chat found in user chats');
         if (!silent) setLoading(false);
         return;
       }
-      
+
       console.log('[ChatConversation] Found admin chat:', adminChat._id);
       setChatId(adminChat._id);
       markMessagesAsRead(token, adminChat._id);
-      
+
       // Load messages from chat
       const messages = adminChat.messages || [];
       console.log('[ChatConversation] Found', messages.length, 'messages');
-      
+
       // Get current user ID
       const userResponse = await fetch(`${API_BASE_URL}/api/auth/me`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       let currentUserId: string | null = null;
       if (userResponse.ok) {
         const userData = await userResponse.json();
         currentUserId = userData._id;
         console.log('[ChatConversation] Current user ID:', currentUserId);
       }
-      
+
       // Format messages
       const messagesWithFlag = messages.map((msg: any, index: number) => ({
         _id: msg._id || `${String(Math.random())}-${index}-${Date.now()}`,
         sender: msg.sender || { _id: '', name: 'Unknown' },
         message: msg.content || msg.message || '',
         createdAt: msg.timestamp || msg.createdAt || new Date().toISOString(),
-        isMe: currentUserId ? (msg.sender?._id || msg.sender) === currentUserId : false
+        isMe: currentUserId
+          ? (msg.sender?._id || msg.sender) === currentUserId
+          : false,
       }));
-      
+
       if (messagesWithFlag.length !== lastMessagesCountRef.current) {
         setMessages(messagesWithFlag);
         lastMessagesCountRef.current = messagesWithFlag.length;
       }
-      
+
       console.log('[ChatConversation] Messages loaded successfully');
     } catch (error) {
       console.error('[ChatConversation] Error loading messages:', error);
@@ -171,9 +176,9 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
       await fetch(`${API_BASE_URL}/api/chats/${chatId}/read`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       });
     } catch {}
   };
@@ -185,7 +190,7 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
       setSending(true);
       const messageToSend = messageText.trim();
       const token = await AsyncStorage.getItem('userToken');
-      
+
       if (!token || !chatId) {
         Alert.alert('Error', 'Chat not initialized. Please try again.');
         setSending(false);
@@ -194,29 +199,35 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
 
       // Clear input immediately for UX
       setMessageText('');
-      
+
       // Add message optimistically to UI
       const newMessage: Message = {
         _id: `temp-${Date.now()}`,
         sender: { _id: 'me', name: 'You' },
         message: messageToSend,
         createdAt: new Date().toISOString(),
-        isMe: true
+        isMe: true,
       };
-      
+
       // Add to end of array (bottom of chat)
       setMessages(prev => [...prev, newMessage]);
-      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+      setTimeout(
+        () => flatListRef.current?.scrollToEnd({ animated: true }),
+        100,
+      );
 
       // Send message in background (non-blocking)
-      const response = await fetch(`${API_BASE_URL}/api/chats/${chatId}/messages`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      const response = await fetch(
+        `${API_BASE_URL}/api/chats/${chatId}/messages`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ content: messageToSend }),
         },
-        body: JSON.stringify({ content: messageToSend })
-      });
+      );
 
       if (response.ok) {
         // Reload messages silently in background to sync
@@ -227,7 +238,10 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
         Alert.alert('Error', 'Failed to send message. Please try again.');
       }
     } catch {
-      Alert.alert('Error', 'Error sending message. Please check your connection.');
+      Alert.alert(
+        'Error',
+        'Error sending message. Please check your connection.',
+      );
     } finally {
       setSending(false);
     }
@@ -245,15 +259,24 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
   const renderMessage = ({ item }: { item: Message }) => (
     <View style={[styles.messageRow, item.isMe && styles.messageRowMe]}>
       {!item.isMe && vendorImage && !imageError && (
-        <Image 
-          source={{ uri: getImageUrl(vendorImage) }} 
+        <Image
+          source={{ uri: getImageUrl(vendorImage) }}
           style={styles.messageAvatar}
           onError={() => setImageError(true)}
         />
       )}
-      <View style={[styles.messageBubble, item.isMe ? styles.messageBubbleMe : styles.messageBubbleThem]}>
-        <Text style={[styles.messageText, item.isMe && styles.messageTextMe]}>{item.message}</Text>
-        <Text style={[styles.messageTime, item.isMe && styles.messageTimeMe]}>{formatTime(item.createdAt)}</Text>
+      <View
+        style={[
+          styles.messageBubble,
+          item.isMe ? styles.messageBubbleMe : styles.messageBubbleThem,
+        ]}
+      >
+        <Text style={[styles.messageText, item.isMe && styles.messageTextMe]}>
+          {item.message}
+        </Text>
+        <Text style={[styles.messageTime, item.isMe && styles.messageTimeMe]}>
+          {formatTime(item.createdAt)}
+        </Text>
       </View>
     </View>
   );
@@ -262,19 +285,27 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
     <View style={styles.header}>
       <TouchableOpacity onPress={onBack} style={styles.backButton}>
         <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-          <Path d="M15 18l-6-6 6-6" stroke="#00695C" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+          <Path
+            d="M15 18l-6-6 6-6"
+            stroke="#00695C"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </Svg>
       </TouchableOpacity>
       <View style={styles.headerContent}>
         {vendorImage && !imageError ? (
-          <Image 
-            source={{ uri: getImageUrl(vendorImage) }} 
+          <Image
+            source={{ uri: getImageUrl(vendorImage) }}
             style={styles.headerAvatar}
             onError={() => setImageError(true)}
           />
         ) : (
           <View style={styles.headerAvatarPlaceholder}>
-            <Text style={styles.headerAvatarText}>{vendorName.charAt(0).toUpperCase()}</Text>
+            <Text style={styles.headerAvatarText}>
+              {vendorName.charAt(0).toUpperCase()}
+            </Text>
           </View>
         )}
         <Text style={styles.headerTitle}>{vendorName}</Text>
@@ -299,15 +330,20 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
         {renderHeader()}
 
-        <View style={[styles.messagesContainer, { paddingBottom: isTablet ? 160 : 130 }]}>
+        <View
+          style={[
+            styles.messagesContainer,
+            { paddingBottom: isTablet ? 160 : 130 },
+          ]}
+        >
           {messages.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>
                 {isRTL ? 'لا توجد رسائل بعد' : 'No messages yet'}
               </Text>
               <Text style={styles.emptySubtext}>
-                {isRTL 
-                  ? 'ابدأ المحادثة مع الدعم' 
+                {isRTL
+                  ? 'ابدأ المحادثة مع الدعم'
                   : 'Start the conversation with the admin'}
               </Text>
             </View>
@@ -316,19 +352,25 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
               ref={flatListRef}
               data={messages}
               renderItem={renderMessage}
-              keyExtractor={(item) => item._id}
-              contentContainerStyle={[styles.messagesContent, { paddingBottom: isTablet ? 100 : 50 }]}
-              onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
+              keyExtractor={item => item._id}
+              contentContainerStyle={[
+                styles.messagesContent,
+                { paddingBottom: isTablet ? 100 : 50 },
+              ]}
+              onContentSizeChange={() =>
+                flatListRef.current?.scrollToEnd({ animated: false })
+              }
             />
           )}
         </View>
       </SafeAreaView>
 
       {/* Input Area - Fixed at bottom above navigation */}
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={0}
-        style={styles.inputWrapper}>
+        style={styles.inputWrapper}
+      >
         <View style={styles.inputContainer}>
           <TextInput
             style={[styles.input, isRTL && styles.inputRTL]}
@@ -339,15 +381,25 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
             multiline
             maxLength={500}
           />
-          <TouchableOpacity 
-            style={[styles.sendButton, (!messageText.trim() || sending) && styles.sendButtonDisabled]}
+          <TouchableOpacity
+            style={[
+              styles.sendButton,
+              (!messageText.trim() || sending) && styles.sendButtonDisabled,
+            ]}
             onPress={sendMessage}
-            disabled={!messageText.trim() || sending}>
+            disabled={!messageText.trim() || sending}
+          >
             {sending ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-                <Path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                <Path
+                  d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"
+                  stroke="#fff"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </Svg>
             )}
           </TouchableOpacity>

@@ -19,7 +19,7 @@ export const useVendorPackages = (vendorId: string) => {
   return useQuery({
     queryKey: ['packages', 'vendor', vendorId],
     queryFn: async () => {
-      const response = await fetch(`${API_URL}/packages?vendor=${vendorId}`);
+      const response = await fetch(`${API_URL}/packages/vendor/${vendorId}`);
       if (!response.ok) {
         throw new Error('Failed to fetch vendor packages');
       }

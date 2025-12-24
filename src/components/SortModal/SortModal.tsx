@@ -19,13 +19,26 @@ interface SortModalProps {
 
 const sortOptions: SortOption[] = [
   { id: 'newest', label: 'Newly Added', labelAr: 'الأحدث' },
-  { id: 'priceHigh', label: 'Price (high to low)', labelAr: 'السعر (الأعلى إلى الأقل)' },
-  { id: 'priceLow', label: 'Price (low to high)', labelAr: 'السعر (الأقل إلى الأعلى)' },
+  {
+    id: 'priceHigh',
+    label: 'Price (high to low)',
+    labelAr: 'السعر (الأعلى إلى الأقل)',
+  },
+  {
+    id: 'priceLow',
+    label: 'Price (low to high)',
+    labelAr: 'السعر (الأقل إلى الأعلى)',
+  },
   { id: 'nameAZ', label: 'Name A - Z', labelAr: 'الاسم أ - ي' },
   { id: 'nameZA', label: 'Name Z - A', labelAr: 'الاسم ي - أ' },
 ];
 
-const SortModal: React.FC<SortModalProps> = ({ visible, onClose, selectedSort, onSortSelect }) => {
+const SortModal: React.FC<SortModalProps> = ({
+  visible,
+  onClose,
+  selectedSort,
+  onSortSelect,
+}) => {
   const { isRTL } = useLanguage();
 
   const handleSortSelect = (sortId: string) => {
@@ -34,7 +47,12 @@ const SortModal: React.FC<SortModalProps> = ({ visible, onClose, selectedSort, o
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
       <View style={styles.overlay}>
         <View style={[styles.container, isRTL && styles.containerRTL]}>
           {/* Header */}
@@ -49,15 +67,21 @@ const SortModal: React.FC<SortModalProps> = ({ visible, onClose, selectedSort, o
 
           {/* Sort Options */}
           <View style={styles.optionsContainer}>
-            {sortOptions.map((option) => (
+            {sortOptions.map(option => (
               <TouchableOpacity
                 key={option.id}
                 style={styles.optionItem}
-                onPress={() => handleSortSelect(option.id)}>
+                onPress={() => handleSortSelect(option.id)}
+              >
                 <Text style={[styles.optionLabel, isRTL && styles.textRTL]}>
                   {isRTL ? option.labelAr : option.label}
                 </Text>
-                <View style={[styles.radio, selectedSort === option.id && styles.radioSelected]}>
+                <View
+                  style={[
+                    styles.radio,
+                    selectedSort === option.id && styles.radioSelected,
+                  ]}
+                >
                   {selectedSort === option.id && (
                     <View style={styles.radioDot} />
                   )}

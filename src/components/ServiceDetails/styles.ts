@@ -483,9 +483,9 @@ export const styles = StyleSheet.create({
   optionExpandedContent: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-  //   backgroundColor: '#F9F9F9',
-  //   borderTopWidth: 1,
-  //   borderTopColor: '#E0E0E0',
+    //   backgroundColor: '#F9F9F9',
+    //   borderTopWidth: 1,
+    //   borderTopColor: '#E0E0E0',
   },
 
   /* Custom Inputs Section */

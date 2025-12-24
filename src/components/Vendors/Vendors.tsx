@@ -1,5 +1,14 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image, ActivityIndicator, FlatList, StatusBar, Dimensions } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  ActivityIndicator,
+  FlatList,
+  StatusBar,
+  Dimensions,
+} from 'react-native';
 import { styles } from './styles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -22,17 +31,20 @@ const Vendors: React.FC<VendorsProps> = ({ onSelectVendor, onBack }) => {
 
   const renderVendorCard = ({ item }: { item: Vendor }) => {
     const vendorImage = item.vendorProfile?.profilePicture || item.image;
-    const imageUrl = vendorImage 
-      ? (vendorImage.startsWith('http') ? vendorImage : `${API_BASE_URL}${vendorImage}`)
+    const imageUrl = vendorImage
+      ? vendorImage.startsWith('http')
+        ? vendorImage
+        : `${API_BASE_URL}${vendorImage}`
       : null;
-    
+
     const hasError = imageUrl && imageErrors.has(item._id);
-    
+
     return (
       <TouchableOpacity
         style={styles.vendorCard}
         onPress={() => onSelectVendor?.(item._id, item.name)}
-        activeOpacity={0.8}>
+        activeOpacity={0.8}
+      >
         <View style={styles.imageContainer}>
           {imageUrl && !hasError ? (
             <Image
@@ -44,10 +56,15 @@ const Vendors: React.FC<VendorsProps> = ({ onSelectVendor, onBack }) => {
               }}
             />
           ) : (
-            <Text style={styles.letterAvatar}>{item.name.charAt(0).toUpperCase()}</Text>
+            <Text style={styles.letterAvatar}>
+              {item.name.charAt(0).toUpperCase()}
+            </Text>
           )}
         </View>
-        <Text style={[styles.vendorName, isRTL && styles.vendorNameRTL]} numberOfLines={2}>
+        <Text
+          style={[styles.vendorName, isRTL && styles.vendorNameRTL]}
+          numberOfLines={2}
+        >
           {item.name}
         </Text>
       </TouchableOpacity>
@@ -55,8 +72,14 @@ const Vendors: React.FC<VendorsProps> = ({ onSelectVendor, onBack }) => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.backgroundLight }]}>
-      <StatusBar backgroundColor={colors.backgroundLight} barStyle="dark-content" translucent={false} />
+    <View
+      style={[styles.container, { backgroundColor: colors.backgroundLight }]}
+    >
+      <StatusBar
+        backgroundColor={colors.backgroundLight}
+        barStyle="dark-content"
+        translucent={false}
+      />
       {/* Header */}
       <View style={[styles.header, isRTL && styles.headerRTL]}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
@@ -85,7 +108,9 @@ const Vendors: React.FC<VendorsProps> = ({ onSelectVendor, onBack }) => {
           key={String(numColumns)}
           data={vendors || []}
           renderItem={renderVendorCard}
-          keyExtractor={(item, index) => (item && item._id) ? item._id : String(index)}
+          keyExtractor={(item, index) =>
+            item && item._id ? item._id : String(index)
+          }
           numColumns={numColumns}
           contentContainerStyle={styles.gridContainer}
           columnWrapperStyle={[styles.row, isRTL && styles.rowRTL]}

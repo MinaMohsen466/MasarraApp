@@ -39,7 +39,7 @@ const AllReviews: React.FC<AllReviewsProps> = ({
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
             <Path
-              d={isRTL ? "M9 18l6-6-6-6" : "M15 18l-6-6 6-6"}
+              d={isRTL ? 'M9 18l6-6-6-6' : 'M15 18l-6-6 6-6'}
               stroke={colors.primary}
               strokeWidth={2.4}
               strokeLinecap="round"
@@ -53,11 +53,12 @@ const AllReviews: React.FC<AllReviewsProps> = ({
         <View style={styles.placeholder} />
       </View>
 
-      <ScrollView 
+      <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingBottom: Dimensions.get('window').width >= 600 ? 120 : 20,
-        }}>
+        }}
+      >
         {/* Service Name */}
         <View style={styles.serviceNameContainer}>
           <Text style={[styles.serviceName, isRTL && styles.serviceNameRTL]}>
@@ -82,7 +83,7 @@ const AllReviews: React.FC<AllReviewsProps> = ({
 
           {/* Rating Distribution */}
           <View style={styles.statsRight}>
-            {[5, 4, 3, 2, 1].map((star) => {
+            {[5, 4, 3, 2, 1].map(star => {
               const count =
                 reviewStats.ratingDistribution[
                   star as keyof typeof reviewStats.ratingDistribution
@@ -111,12 +112,13 @@ const AllReviews: React.FC<AllReviewsProps> = ({
 
         {/* Reviews List */}
         <View style={styles.reviewsList}>
-          {reviews.map((review) => (
+          {reviews.map(review => (
             <View key={review._id} style={styles.reviewCard}>
               {/* Header: Avatar + Name + Date + Rating in one row */}
               <View style={styles.reviewHeader}>
                 <View style={styles.reviewUserSection}>
-                  {review.user.profilePicture && !imageErrors.has(review._id) ? (
+                  {review.user.profilePicture &&
+                  !imageErrors.has(review._id) ? (
                     <Image
                       source={{ uri: getImageUrl(review.user.profilePicture) }}
                       style={styles.avatar}
@@ -135,14 +137,15 @@ const AllReviews: React.FC<AllReviewsProps> = ({
                     <View style={styles.nameAndDateRow}>
                       <Text
                         style={[styles.userName, isRTL && styles.userNameRTL]}
-                        numberOfLines={1}>
+                        numberOfLines={1}
+                      >
                         {review.user.name}
                       </Text>
                       <Text style={styles.separator}>•</Text>
                       <Text style={styles.reviewDate}>
                         {new Date(review.createdAt).toLocaleDateString(
                           isRTL ? 'ar-EG' : 'en-US',
-                          { month: 'short', day: 'numeric', year: 'numeric' }
+                          { month: 'short', day: 'numeric', year: 'numeric' },
                         )}
                       </Text>
                     </View>
@@ -175,7 +178,8 @@ const AllReviews: React.FC<AllReviewsProps> = ({
                     style={[
                       styles.vendorReplyText,
                       isRTL && styles.vendorReplyTextRTL,
-                    ]}>
+                    ]}
+                  >
                     {review.vendorReply.text}
                   </Text>
                 </View>

@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, TouchableOpacity, Image, ActivityIndicator, Platform } from 'react-native';
+import {
+  View,
+  TouchableOpacity,
+  Image,
+  ActivityIndicator,
+  Platform,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Svg, { Path } from 'react-native-svg';
 import { styles } from './Styles';
@@ -12,155 +18,161 @@ import { getImageUrl } from '../../services/api';
 import { API_URL } from '../../config/api.config';
 
 interface HeaderProps {
-    onNavigate?: (route: string) => void;
+  onNavigate?: (route: string) => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
-    const [isDrawerVisible, setIsDrawerVisible] = useState(false);
-    const [currentProfilePicture, setCurrentProfilePicture] = useState<string | null>(null);
-    const { isRTL } = useLanguage();
-    const { user, isLoggedIn } = useAuth();
-    const { data: siteSettings, isLoading, error } = useSiteSettings();
+  const [isDrawerVisible, setIsDrawerVisible] = useState(false);
+  const [currentProfilePicture, setCurrentProfilePicture] = useState<
+    string | null
+  >(null);
+  const { isRTL } = useLanguage();
+  const { user, isLoggedIn } = useAuth();
+  const { data: siteSettings, isLoading, error } = useSiteSettings();
 
-    // Fetch fresh user data from server
-    useEffect(() => {
-        const fetchUserData = async () => {
-            try {
-                const token = await AsyncStorage.getItem('userToken');
-                if (!token) return;
+  // Fetch fresh user data from server
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        if (!token) return;
 
-                const response = await fetch(`${API_URL}/auth/me`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
+        const response = await fetch(`${API_URL}/auth/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-                if (response.ok) {
-                    const userData = await response.json();
+        if (response.ok) {
+          const userData = await response.json();
 
-                    if (userData.profilePicture) {
-                        setCurrentProfilePicture(userData.profilePicture);
-                    }
-                }
-            } catch (error) {
-                // Handle error silently
-            }
-        };
-
-        if (isLoggedIn) {
-            fetchUserData();
+          if (userData.profilePicture) {
+            setCurrentProfilePicture(userData.profilePicture);
+          }
         }
-    }, [isLoggedIn]);
-
-    const handleOpenDrawer = () => {
-        setIsDrawerVisible(true);
+      } catch (error) {
+        // Handle error silently
+      }
     };
 
-    const handleCloseDrawer = () => {
-        setIsDrawerVisible(false);
-    };
+    if (isLoggedIn) {
+      fetchUserData();
+    }
+  }, [isLoggedIn]);
 
-    const handleNavigation = (route: string, title: string) => {
-        if (onNavigate) {
-            onNavigate(route.toLowerCase());
-        }
-        handleCloseDrawer();
-    };
+  const handleOpenDrawer = () => {
+    setIsDrawerVisible(true);
+  };
 
-    const handleUserIconPress = () => {
-        if (isLoggedIn) {
-            if (onNavigate) {
-                onNavigate('profile');
-            }
-        } else {
-            if (onNavigate) {
-                onNavigate('auth');
-            }
-        }
-    };
+  const handleCloseDrawer = () => {
+    setIsDrawerVisible(false);
+  };
 
-    return (
-        <>
-            <View style={[styles.headerContainer, isRTL && styles.headerContainerRTL]}>
-                {/* Menu Button - Left in LTR, Right in RTL */}
-                <TouchableOpacity 
-                    style={[styles.menuButton, isRTL && styles.menuButtonRTL]}
-                    onPress={handleOpenDrawer}
-                    activeOpacity={0.6}
-                    hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}>
-                <Svg
-                    width={38}
-                    height={38}
-                    viewBox="0 0 24 24"
-                    fill="none">
-                    <Path
-                        d="M4 6H20M4 12H14M4 18H9"
-                        stroke={colors.primary}
-                        strokeWidth={2.5}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                    />
-                </Svg>
-            </TouchableOpacity>
+  const handleNavigation = (route: string, title: string) => {
+    if (onNavigate) {
+      onNavigate(route.toLowerCase());
+    }
+    handleCloseDrawer();
+  };
 
-            {/* Center - Masarra Logo */}
-            <View style={styles.logoContainer}>
-                {isLoading ? (
-                    <ActivityIndicator size="small" color={colors.primary} />
-                ) : error ? (
-                    <Image 
-                        source={require('../../imgs/MasarraLogo.png')} 
-                        style={styles.logoImage}
-                        resizeMode="contain"
-                    />
-                ) : siteSettings?.headerLogo ? (
-                    <Image 
-                        key={siteSettings.headerLogo}
-                        source={{ uri: getImageUrl(siteSettings.headerLogo) }} 
-                        style={styles.logoImage}
-                        resizeMode="contain"
-                    />
-                ) : (
-                    <Image 
-                        source={require('../../imgs/MasarraLogo.png')} 
-                        style={styles.logoImage}
-                        resizeMode="contain"
-                    />
-                )}
-            </View>
+  const handleUserIconPress = () => {
+    if (isLoggedIn) {
+      if (onNavigate) {
+        onNavigate('profile');
+      }
+    } else {
+      if (onNavigate) {
+        onNavigate('auth');
+      }
+    }
+  };
 
-            {/* Right - User Profile Icon */}
-            <TouchableOpacity 
-                style={styles.profileButton}
-                onPress={handleUserIconPress}
-                activeOpacity={0.6}
-                hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}>
-                {isLoggedIn && (currentProfilePicture || user?.profilePicture) ? (
-                    <Image 
-                        source={{ uri: getImageUrl(currentProfilePicture || user?.profilePicture || '') }} 
-                        style={styles.profileIcon}
-                        resizeMode="cover"
-                        onLoad={() => {}}
-                        onError={(e) => {}}
-                    />
-                ) : (
-                    <Image 
-                        source={require('../../imgs/user.png')} 
-                        style={styles.profileIcon}
-                        resizeMode="contain"
-                    />
-                )}
-            </TouchableOpacity>
+  return (
+    <>
+      <View
+        style={[styles.headerContainer, isRTL && styles.headerContainerRTL]}
+      >
+        {/* Menu Button - Left in LTR, Right in RTL */}
+        <TouchableOpacity
+          style={[styles.menuButton, isRTL && styles.menuButtonRTL]}
+          onPress={handleOpenDrawer}
+          activeOpacity={0.6}
+          hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+        >
+          <Svg width={38} height={38} viewBox="0 0 24 24" fill="none">
+            <Path
+              d="M4 6H20M4 12H14M4 18H9"
+              stroke={colors.primary}
+              strokeWidth={2.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </Svg>
+        </TouchableOpacity>
+
+        {/* Center - Masarra Logo */}
+        <View style={styles.logoContainer}>
+          {isLoading ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : error ? (
+            <Image
+              source={require('../../imgs/MasarraLogo.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
+          ) : siteSettings?.headerLogo ? (
+            <Image
+              key={siteSettings.headerLogo}
+              source={{ uri: getImageUrl(siteSettings.headerLogo) }}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
+          ) : (
+            <Image
+              source={require('../../imgs/MasarraLogo.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
+          )}
         </View>
 
-        {/* Drawer Component */}
-        <Drawer 
-            isVisible={isDrawerVisible}
-            onClose={handleCloseDrawer}
-            onNavigate={handleNavigation}
-        />
+        {/* Right - User Profile Icon */}
+        <TouchableOpacity
+          style={styles.profileButton}
+          onPress={handleUserIconPress}
+          activeOpacity={0.6}
+          hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+        >
+          {isLoggedIn && (currentProfilePicture || user?.profilePicture) ? (
+            <Image
+              source={{
+                uri: getImageUrl(
+                  currentProfilePicture || user?.profilePicture || '',
+                ),
+              }}
+              style={styles.profileIcon}
+              resizeMode="cover"
+              onLoad={() => {}}
+              onError={e => {}}
+            />
+          ) : (
+            <Image
+              source={require('../../imgs/user.png')}
+              style={styles.profileIcon}
+              resizeMode="contain"
+            />
+          )}
+        </TouchableOpacity>
+      </View>
+
+      {/* Drawer Component */}
+      <Drawer
+        isVisible={isDrawerVisible}
+        onClose={handleCloseDrawer}
+        onNavigate={handleNavigation}
+      />
     </>
-    );
+  );
 };
 
 export default Header;

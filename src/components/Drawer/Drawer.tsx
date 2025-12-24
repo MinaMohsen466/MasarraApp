@@ -29,17 +29,15 @@ interface DrawerProps {
 }
 
 // Drawer Component
-const Drawer: React.FC<DrawerProps> = ({ 
-  isVisible, 
-  onClose, 
-  onNavigate 
-}) => {
+const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
   const { language, isRTL, setLanguage, t } = useLanguage();
   const { isLoggedIn, logout } = useAuth();
   const { data: siteSettings, isLoading } = useSiteSettings();
-  
+
   // Animation value for sliding drawer
-  const slideAnim = useRef(new Animated.Value(isRTL ? SCREEN_WIDTH : -SCREEN_WIDTH)).current;
+  const slideAnim = useRef(
+    new Animated.Value(isRTL ? SCREEN_WIDTH : -SCREEN_WIDTH),
+  ).current;
 
   // Animate drawer in/out based on visibility
   useEffect(() => {
@@ -64,7 +62,7 @@ const Drawer: React.FC<DrawerProps> = ({
   useEffect(() => {
     slideAnim.setValue(isRTL ? SCREEN_WIDTH : -SCREEN_WIDTH);
   }, [isRTL, slideAnim]);
-  
+
   // Menu Items Configuration with translations
   const menuItems = [
     { id: 'home', titleKey: 'home', route: 'Home' },
@@ -76,25 +74,32 @@ const Drawer: React.FC<DrawerProps> = ({
     { id: 'privacy', titleKey: 'privacyPolicy', route: 'Privacy' },
     { id: 'contact', titleKey: 'contact', route: 'contact' },
     { id: 'settings', titleKey: 'settings', route: 'Settings' },
-    { id: 'language', titleKey: language === 'en' ? 'switchToArabic' : 'switchToEnglish', route: 'Language' },
-    { id: isLoggedIn ? 'logout' : 'login', titleKey: isLoggedIn ? 'logOut' : 'logIn', route: isLoggedIn ? 'Logout' : 'Login' },
+    {
+      id: 'language',
+      titleKey: language === 'en' ? 'switchToArabic' : 'switchToEnglish',
+      route: 'Language',
+    },
+    {
+      id: isLoggedIn ? 'logout' : 'login',
+      titleKey: isLoggedIn ? 'logOut' : 'logIn',
+      route: isLoggedIn ? 'Logout' : 'Login',
+    },
   ];
 
   // Handle menu item press
   const handleMenuItemPress = (route: string, titleKey: string, id: string) => {
-    
     // Handle language switching
     if (id === 'language') {
       const newLang = language === 'en' ? 'ar' : 'en';
       setLanguage(newLang);
-      
+
       // Close drawer after language change with a small delay for smooth transition
       setTimeout(() => {
         onClose();
       }, 300);
       return;
     }
-    
+
     // Handle login navigation - navigate to auth page
     if (id === 'login') {
       if (onNavigate) {
@@ -103,20 +108,21 @@ const Drawer: React.FC<DrawerProps> = ({
       onClose();
       return;
     }
-    
+
     // Handle logout
     if (id === 'logout') {
       logout();
       onClose();
       return;
     }
-    
+
     // Handle My Account - navigate to Edit Profile
     if (id === 'account') {
       // Set a short-lived flag so the Profile screen opens EditProfile automatically
       try {
         AsyncStorage.setItem('openEditProfile', '1');
-      } catch (e) {
+      } catch {
+        // Error handling
       }
       if (onNavigate) {
         onNavigate('profile', t(titleKey));
@@ -124,7 +130,7 @@ const Drawer: React.FC<DrawerProps> = ({
       onClose();
       return;
     }
-    
+
     // Handle Settings - navigate to Profile
     if (id === 'settings') {
       if (onNavigate) {
@@ -133,12 +139,12 @@ const Drawer: React.FC<DrawerProps> = ({
       onClose();
       return;
     }
-    
+
     // Call navigation callback if provided
     if (onNavigate) {
       onNavigate(route, t(titleKey));
     }
-    
+
     // Close drawer after selection
     onClose();
   };
@@ -154,93 +160,99 @@ const Drawer: React.FC<DrawerProps> = ({
       transparent={true}
       animationType="none"
       onRequestClose={onClose}
-      statusBarTranslucent={true}>
-      
+      statusBarTranslucent={true}
+    >
       <View style={[styles.overlay, isRTL && styles.overlayRTL]}>
-        
         {/* Animated Drawer Panel with SafeAreaView */}
         <Animated.View
           style={{
             transform: [{ translateX: slideAnim }],
-          }}>
-          <SafeAreaView 
+          }}
+        >
+          <SafeAreaView
             style={[styles.drawerPanel, isRTL && styles.drawerPanelRTL]}
-            edges={['top', 'bottom', isRTL ? 'right' : 'left']}>
-            
+            edges={['top', 'bottom', isRTL ? 'right' : 'left']}
+          >
             <View style={styles.drawerContent}>
-            
-            {/* Close Button (X icon) */}
-            <TouchableOpacity 
-              style={[styles.closeButtonContainer, isRTL && styles.closeButtonContainerRTL]} 
-              onPress={onClose}
-              activeOpacity={0.7}>
-              <Svg
-                width={26}
-                height={26}
-                viewBox="0 0 24 24"
-                fill="none">
-                <Path
-                  d="M18 6L6 18M6 6L18 18"
-                  stroke={colors.primary}
-                  strokeWidth={2.5}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </Svg>
-            </TouchableOpacity>
-
-            {/* Menu Items List */}
-            <View style={[styles.menuItemsContainer, isRTL && styles.menuItemsContainerRTL]}>
-              {menuItems.map((item) => (
-                <TouchableOpacity
-                  key={item.id}
-                  style={[styles.menuItem, isRTL && styles.menuItemRTL]}
-                  onPress={() => handleMenuItemPress(item.route, item.titleKey, item.id)}
-                  activeOpacity={0.6}>
-                  <Text 
-                    style={[
-                      styles.menuItemText,
-                      isRTL && styles.menuItemTextRTL
-                    ]}>
-                    {t(item.titleKey)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Logo Section at Bottom */}
-            <View style={styles.logoSection}>
-              <View style={styles.logoContainer}>
-                {isLoading ? (
-                  <ActivityIndicator size="small" color={colors.primary} />
-                ) : siteSettings?.footerLogo ? (
-                  <Image 
-                    key={siteSettings.headerLogo}
-                    source={{ uri: getImageUrl(siteSettings.headerLogo) }} 
-                    style={styles.logoImage}
-                    resizeMode="contain"
+              {/* Close Button (X icon) */}
+              <TouchableOpacity
+                style={[
+                  styles.closeButtonContainer,
+                  isRTL && styles.closeButtonContainerRTL,
+                ]}
+                onPress={onClose}
+                activeOpacity={0.7}
+              >
+                <Svg width={26} height={26} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M18 6L6 18M6 6L18 18"
+                    stroke={colors.primary}
+                    strokeWidth={2.5}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   />
-                ) : (
-                  <Image 
-                    source={require('../../imgs/MasarraLogo.png')} 
-                    style={styles.logoImage}
-                    resizeMode="contain"
-                  />
-                )}
+                </Svg>
+              </TouchableOpacity>
+
+              {/* Menu Items List */}
+              <View
+                style={[
+                  styles.menuItemsContainer,
+                  isRTL && styles.menuItemsContainerRTL,
+                ]}
+              >
+                {menuItems.map(item => (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={[styles.menuItem, isRTL && styles.menuItemRTL]}
+                    onPress={() =>
+                      handleMenuItemPress(item.route, item.titleKey, item.id)
+                    }
+                    activeOpacity={0.6}
+                  >
+                    <Text
+                      style={[
+                        styles.menuItemText,
+                        isRTL && styles.menuItemTextRTL,
+                      ]}
+                    >
+                      {t(item.titleKey)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Logo Section at Bottom */}
+              <View style={styles.logoSection}>
+                <View style={styles.logoContainer}>
+                  {isLoading ? (
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  ) : siteSettings?.footerLogo ? (
+                    <Image
+                      key={siteSettings.headerLogo}
+                      source={{ uri: getImageUrl(siteSettings.headerLogo) }}
+                      style={styles.logoImage}
+                      resizeMode="contain"
+                    />
+                  ) : (
+                    <Image
+                      source={require('../../imgs/MasarraLogo.png')}
+                      style={styles.logoImage}
+                      resizeMode="contain"
+                    />
+                  )}
+                </View>
               </View>
             </View>
-            
-          </View>
-        </SafeAreaView>
+          </SafeAreaView>
         </Animated.View>
 
         {/* Overlay Touchable - Close drawer when tapping outside */}
-        <TouchableOpacity 
-          style={styles.overlayTouchable} 
+        <TouchableOpacity
+          style={styles.overlayTouchable}
           onPress={onClose}
           activeOpacity={1}
         />
-        
       </View>
     </Modal>
   );

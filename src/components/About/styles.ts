@@ -1,7 +1,6 @@
 import { StyleSheet } from 'react-native';
 import { colors } from '../../constants/colors';
 
-
 export const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -75,7 +74,6 @@ export const styles = StyleSheet.create({
     paddingVertical: 32,
     paddingBottom: 100,
     minHeight: '100%',
-  
   },
   contentText: {
     fontSize: 16,

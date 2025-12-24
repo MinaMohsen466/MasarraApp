@@ -21,7 +21,7 @@ const Chat: React.FC<ChatProps> = ({ onBack }) => {
   const loadAdminId = async () => {
     try {
       const token = await AsyncStorage.getItem('userToken');
-      
+
       if (!token) {
         console.log('[Chat] No token found');
         setAdminId('admin'); // Fallback to 'admin' string
@@ -30,15 +30,18 @@ const Chat: React.FC<ChatProps> = ({ onBack }) => {
       }
 
       console.log('[Chat] Fetching admin user...');
-      const response = await fetch(`${API_BASE_URL}/api/auth/users?role=admin`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/api/auth/users?role=admin`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
 
       if (response.ok) {
         const result = await response.json();
-        const admins = Array.isArray(result) ? result : (result.data || []);
+        const admins = Array.isArray(result) ? result : result.data || [];
         console.log('[Chat] Admin users:', admins);
         if (admins?.length > 0) {
           setAdminId(admins[0]._id);

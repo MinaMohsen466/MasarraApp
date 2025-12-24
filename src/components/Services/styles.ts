@@ -136,26 +136,69 @@ export const styles = StyleSheet.create({
   },
   infoContainer: {
     padding: 16,
+    minHeight: 160,
   },
   serviceName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: colors.textDark,
     marginBottom: 8,
+    minHeight: 24,
   },
   serviceNameRTL: {
     textAlign: 'right',
     writingDirection: 'rtl',
   },
   serviceDescription: {
-    fontSize: 14,
+    fontSize: 12,
     color: colors.textSecondary,
     lineHeight: 20,
+    marginBottom: 12,
     minHeight: 40,
+    flex: 1,
   },
   serviceDescriptionRTL: {
     textAlign: 'right',
     writingDirection: 'rtl',
+  },
+  priceRatingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    gap: 8,
+    marginTop: 'auto',
+  },
+  priceRatingRowRTL: {
+    flexDirection: 'row-reverse',
+  },
+  priceColumn: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+    gap: 2,
+  },
+  ratingRowRTL: {
+    flexDirection: 'row-reverse',
+  },
+  rating: {
+    fontSize: 12,
+    color: colors.primary,
+    fontWeight: 'bold',
+  },
+  reviews: {
+    fontSize: 10,
+    color: colors.primary,
+    fontWeight: '600',
   },
   priceContainer: {
     flexDirection: 'column',
@@ -168,7 +211,7 @@ export const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   priceLabel: {
-    fontSize: 12,
+    fontSize: 10,
     color: colors.textSecondary,
     marginBottom: 4,
   },
@@ -176,7 +219,7 @@ export const styles = StyleSheet.create({
     textAlign: 'right',
   },
   priceValue: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: '700',
     color: colors.primary,
   },
@@ -184,7 +227,7 @@ export const styles = StyleSheet.create({
     textAlign: 'right',
   },
   originalPrice: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     color: '#999',
     textDecorationLine: 'line-through',

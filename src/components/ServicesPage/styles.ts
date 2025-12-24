@@ -93,7 +93,7 @@ export const styles = StyleSheet.create({
     width: cardWidth,
     backgroundColor: colors.backgroundCard,
     borderRadius: 16,
-    overflow: 'hidden', 
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.border,
     marginBottom: 8,
@@ -173,6 +173,44 @@ export const styles = StyleSheet.create({
   serviceDescriptionRTL: {
     textAlign: 'right',
     writingDirection: 'rtl',
+  },
+  priceRatingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    gap: 8,
+  },
+  priceRatingRowRTL: {
+    flexDirection: 'row-reverse',
+  },
+  priceColumn: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+    gap: 2,
+  },
+  ratingRowRTL: {
+    flexDirection: 'row-reverse',
+  },
+  rating: {
+    fontSize: 12,
+    color: colors.primary,
+    fontWeight: 'bold',
+  },
+  reviews: {
+    fontSize: 10,
+    color: colors.primary,
+    fontWeight: '600',
   },
   priceContainer: {
     flexDirection: 'column',

@@ -32,7 +32,7 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
         <View style={styles.alertContainer}>
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.message}>{message}</Text>
-          
+
           <View style={styles.buttonsContainer}>
             {buttons.map((button, index) => (
               <TouchableOpacity
@@ -48,10 +48,12 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
                 }}
                 activeOpacity={0.8}
               >
-                <Text style={[
-                  styles.buttonText,
-                  button.style === 'cancel' && styles.cancelButtonText,
-                ]}>
+                <Text
+                  style={[
+                    styles.buttonText,
+                    button.style === 'cancel' && styles.cancelButtonText,
+                  ]}
+                >
                   {button.text}
                 </Text>
               </TouchableOpacity>

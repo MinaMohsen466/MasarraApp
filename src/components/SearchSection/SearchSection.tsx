@@ -13,11 +13,16 @@ interface SearchSectionProps {
   onSelectOccasion?: (occasion: Occasion) => void;
 }
 
-const SearchSection: React.FC<SearchSectionProps> = ({ onSearch, onSelectOccasion }) => {
+const SearchSection: React.FC<SearchSectionProps> = ({
+  onSearch,
+  onSelectOccasion,
+}) => {
   const { isRTL } = useLanguage();
   const [showOccasionModal, setShowOccasionModal] = useState(false);
   const [showDateModal, setShowDateModal] = useState(false);
-  const [selectedOccasion, setSelectedOccasion] = useState<Occasion | undefined>();
+  const [selectedOccasion, setSelectedOccasion] = useState<
+    Occasion | undefined
+  >();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   const handleOccasionSelect = (occasion: Occasion) => {
@@ -43,7 +48,8 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearch, onSelectOccasio
       <TouchableOpacity
         style={[styles.inputContainer, isRTL && styles.inputContainerRTL]}
         activeOpacity={0.7}
-        onPress={() => setShowDateModal(true)}>
+        onPress={() => setShowDateModal(true)}
+      >
         <View style={styles.iconWrapper}>
           <View style={styles.calendarIcon}>
             <View style={styles.calendarTop} />
@@ -61,17 +67,25 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearch, onSelectOccasio
       <TouchableOpacity
         style={[styles.inputContainer, isRTL && styles.inputContainerRTL]}
         activeOpacity={0.7}
-        onPress={() => setShowOccasionModal(true)}>
+        onPress={() => setShowOccasionModal(true)}
+      >
         <View style={styles.iconWrapper}>
           <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
             {/* Clean Grid Icon - 2x2 squares with proper spacing */}
-            <Path d="M4 4h6v6H4V4zM14 4h6v6h-6V4zM4 14h6v6H4v-6zM14 14h6v6h-6v-6z" fill={colors.textWhite} />
+            <Path
+              d="M4 4h6v6H4V4zM14 4h6v6h-6V4zM4 14h6v6H4v-6zM14 14h6v6h-6v-6z"
+              fill={colors.textWhite}
+            />
           </Svg>
         </View>
         <Text style={[styles.inputText, isRTL && styles.inputTextRTL]}>
-          {selectedOccasion 
-            ? (isRTL ? selectedOccasion.nameAr : selectedOccasion.name)
-            : (isRTL ? 'اختر المناسبة' : 'Select Occasion')}
+          {selectedOccasion
+            ? isRTL
+              ? selectedOccasion.nameAr
+              : selectedOccasion.name
+            : isRTL
+            ? 'اختر المناسبة'
+            : 'Select Occasion'}
         </Text>
         <View style={styles.arrowIcon}>
           <Text style={styles.arrowText}>{isRTL ? '‹' : '›'}</Text>
@@ -90,10 +104,9 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearch, onSelectOccasio
             onSearch();
           }
         }}
-        activeOpacity={0.8}>
-        <Text style={styles.searchButtonText}>
-          {isRTL ? 'بحث' : 'SEARCH'}
-        </Text>
+        activeOpacity={0.8}
+      >
+        <Text style={styles.searchButtonText}>{isRTL ? 'بحث' : 'SEARCH'}</Text>
       </TouchableOpacity>
 
       {/* Occasion Selector Modal */}

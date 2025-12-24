@@ -55,7 +55,7 @@ export interface ReviewsResponse {
 export async function getServiceReviews(
   serviceId: string,
   page: number = 1,
-  limit: number = 10
+  limit: number = 10,
 ): Promise<ReviewsResponse> {
   try {
     const response = await fetch(
@@ -65,7 +65,7 @@ export async function getServiceReviews(
         headers: {
           'Content-Type': 'application/json',
         },
-      }
+      },
     );
 
     if (!response.ok) {
@@ -84,7 +84,7 @@ export async function createReview(
   serviceId: string,
   rating: number,
   comment: string,
-  bookingId?: string
+  bookingId?: string,
 ): Promise<Review> {
   try {
     const token = await AsyncStorage.getItem('userToken');
@@ -98,14 +98,14 @@ export async function createReview(
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           rating,
           comment,
           bookingId, // إضافة bookingId
         }),
-      }
+      },
     );
 
     if (!response.ok) {
@@ -121,7 +121,9 @@ export async function createReview(
 }
 
 // Check if user already reviewed a service
-export async function checkUserReviewedService(serviceId: string): Promise<boolean> {
+export async function checkUserReviewedService(
+  serviceId: string,
+): Promise<boolean> {
   try {
     const token = await AsyncStorage.getItem('userToken');
     if (!token) {
@@ -134,7 +136,7 @@ export async function checkUserReviewedService(serviceId: string): Promise<boole
     }
 
     const reviewsResponse = await getServiceReviews(serviceId, 1, 100);
-    
+
     return reviewsResponse.reviews.some(review => review.user._id === userId);
   } catch (error) {
     return false;

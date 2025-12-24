@@ -14,15 +14,27 @@ import { getUserBookings, Booking, getImageUrl } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
 import { orderHistoryStyles as styles } from './orderHistoryStyles';
 import { QRFormModal } from '../components/QRCodeCard/QRFormModal';
-import { getQRCodeByBooking, canCreateQRCode, getQRCodeSettings } from '../services/qrCodeApi';
+import {
+  getQRCodeByBooking,
+  canCreateQRCode,
+  getQRCodeSettings,
+} from '../services/qrCodeApi';
 
 interface OrderHistoryProps {
   onBack?: () => void;
   onViewDetails?: (bookingId: string) => void;
-  onWriteReview?: (bookingId: string, serviceId: string, serviceName: string) => void;
+  onWriteReview?: (
+    bookingId: string,
+    serviceId: string,
+    serviceName: string,
+  ) => void;
 }
 
-const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWriteReview }) => {
+const OrderHistory: React.FC<OrderHistoryProps> = ({
+  onBack,
+  onViewDetails,
+  onWriteReview,
+}) => {
   const { isRTL } = useLanguage();
   const insets = useSafeAreaInsets();
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -31,7 +43,9 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
   const [qrModalVisible, setQrModalVisible] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [selectedQRCode, setSelectedQRCode] = useState<any>(null);
-  const [qrAllowedBookings, setQrAllowedBookings] = useState<Set<string>>(new Set());
+  const [qrAllowedBookings, setQrAllowedBookings] = useState<Set<string>>(
+    new Set(),
+  );
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
 
   useEffect(() => {
@@ -42,11 +56,11 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
     try {
       setLoading(true);
       const token = await AsyncStorage.getItem('userToken');
-      
+
       if (!token) {
         Alert.alert(
           isRTL ? 'خطأ' : 'Error',
-          isRTL ? 'يرجى تسجيل الدخول أولاً' : 'Please login first'
+          isRTL ? 'يرجى تسجيل الدخول أولاً' : 'Please login first',
         );
         if (onBack) onBack();
         return;
@@ -54,24 +68,25 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
 
       const [data, settings] = await Promise.all([
         getUserBookings(token),
-        getQRCodeSettings(token)
+        getQRCodeSettings(token),
       ]);
 
       // Sort by creation date, newest first
-      const sortedBookings = data.sort((a, b) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      const sortedBookings = data.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       );
       setBookings(sortedBookings);
       setFilteredBookings(sortedBookings);
-      
+
       // Check which bookings are allowed for QR code (in parallel)
       // Note: settings is used for background images, not for validation anymore
       const promises = sortedBookings.map(booking =>
         canCreateQRCode(booking, settings, token)
-          .then(canCreate => canCreate ? booking._id : null)
-          .catch(() => null)
+          .then(canCreate => (canCreate ? booking._id : null))
+          .catch(() => null),
       );
-      
+
       const results = await Promise.all(promises);
       const allowed = new Set(results.filter(Boolean) as string[]);
       console.log('[OrderHistory] QR allowed bookings:', Array.from(allowed));
@@ -80,7 +95,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
       console.error('Error loading bookings:', error);
       Alert.alert(
         isRTL ? 'خطأ' : 'Error',
-        isRTL ? 'فشل تحميل الحجوزات' : 'Failed to load bookings'
+        isRTL ? 'فشل تحميل الحجوزات' : 'Failed to load bookings',
       );
     } finally {
       setLoading(false);
@@ -92,7 +107,9 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
     if (filter === 'all') {
       setFilteredBookings(bookings);
     } else {
-      const filtered = bookings.filter(booking => booking.status.toLowerCase() === filter.toLowerCase());
+      const filtered = bookings.filter(
+        booking => booking.status.toLowerCase() === filter.toLowerCase(),
+      );
       setFilteredBookings(filtered);
     }
   };
@@ -101,16 +118,19 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
     // Check if this is a package booking by looking for [PKG:...] in specialRequests
     const specialRequests = booking.specialRequests || '';
     const pkgMatch = specialRequests.match(/\[PKG:([^\]]+)\]/);
-    
+
     if (pkgMatch && pkgMatch[1]) {
       // Extract package name from the marker
       return pkgMatch[1];
     }
-    
+
     // Fallback to service name
     const service = booking.services[0]?.service;
-    if (!service || typeof service === 'string') return isRTL ? 'خدمة' : 'Service';
-    return isRTL ? (service as any)?.nameAr || (service as any)?.name || 'خدمة' : (service as any)?.name || 'Service';
+    if (!service || typeof service === 'string')
+      return isRTL ? 'خدمة' : 'Service';
+    return isRTL
+      ? (service as any)?.nameAr || (service as any)?.name || 'خدمة'
+      : (service as any)?.name || 'Service';
   };
 
   const getServiceId = (booking: Booking) => {
@@ -120,21 +140,32 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
 
   const getVendorName = (booking: Booking) => {
     const vendor = booking.services[0]?.vendor;
-    if (!vendor || typeof vendor !== 'object') return isRTL ? 'مقدم الخدمة' : 'Vendor';
-    return isRTL 
-      ? (vendor as any)?.nameAr || (vendor as any)?.vendorProfile?.businessName_ar || (vendor as any)?.name || 'مقدم الخدمة'
-      : (vendor as any)?.name || (vendor as any)?.vendorProfile?.businessName || 'Vendor';
+    if (!vendor || typeof vendor !== 'object')
+      return isRTL ? 'مقدم الخدمة' : 'Vendor';
+    return isRTL
+      ? (vendor as any)?.nameAr ||
+          (vendor as any)?.vendorProfile?.businessName_ar ||
+          (vendor as any)?.name ||
+          'مقدم الخدمة'
+      : (vendor as any)?.name ||
+          (vendor as any)?.vendorProfile?.businessName ||
+          'Vendor';
   };
 
   const getDescription = (booking: Booking) => {
     const service = booking.services[0]?.service;
-    if (!service || typeof service === 'string') return isRTL ? 'لا يوجد وصف' : 'No description';
-    return isRTL ? (service as any)?.descriptionAr || (service as any)?.description || 'لا يوجد وصف' : (service as any)?.description || 'No description';
+    if (!service || typeof service === 'string')
+      return isRTL ? 'لا يوجد وصف' : 'No description';
+    return isRTL
+      ? (service as any)?.descriptionAr ||
+          (service as any)?.description ||
+          'لا يوجد وصف'
+      : (service as any)?.description || 'No description';
   };
 
   const formatLocation = (location: string) => {
     if (!location) return isRTL ? 'غير محدد' : 'Not specified';
-    
+
     // The location comes formatted from Cart like: "street, منزل X, طابق Y, city"
     // Just clean it up and return it properly formatted
     return location
@@ -149,7 +180,9 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
       const minutes = date.getMinutes();
       const ampm = hours >= 12 ? 'PM' : 'AM';
       const displayHours = hours % 12 || 12;
-      return `${displayHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+      return `${displayHours.toString().padStart(2, '0')}:${minutes
+        .toString()
+        .padStart(2, '0')} ${ampm}`;
     }
     return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
   };
@@ -157,20 +190,23 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
   const getStatusStyle = (status: string) => {
     const statusLower = status.toLowerCase();
     const colors: { [key: string]: string } = {
-      'confirmed': '#4CAF50',
-      'pending': '#FF9800',
-      'cancelled': '#F44336',
-      'completed': '#2196F3'
+      confirmed: '#4CAF50',
+      pending: '#FF9800',
+      cancelled: '#F44336',
+      completed: '#2196F3',
     };
     const labels: { [key: string]: { ar: string; en: string } } = {
-      'confirmed': { ar: 'مؤكد', en: 'Confirmed' },
-      'pending': { ar: 'قيد الانتظار', en: 'Pending' },
-      'cancelled': { ar: 'ملغي', en: 'Cancelled' },
-      'completed': { ar: 'مكتمل', en: 'Completed' }
+      confirmed: { ar: 'مؤكد', en: 'Confirmed' },
+      pending: { ar: 'قيد الانتظار', en: 'Pending' },
+      cancelled: { ar: 'ملغي', en: 'Cancelled' },
+      completed: { ar: 'مكتمل', en: 'Completed' },
     };
     return {
       color: colors[statusLower] || '#757575',
-      text: isRTL ? labels[statusLower]?.ar || status : labels[statusLower]?.en || status.charAt(0).toUpperCase() + status.slice(1)
+      text: isRTL
+        ? labels[statusLower]?.ar || status
+        : labels[statusLower]?.en ||
+          status.charAt(0).toUpperCase() + status.slice(1),
     };
   };
 
@@ -184,14 +220,14 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
   const getOptionsPrice = (booking: Booking): number => {
     const service = booking.services?.[0];
     if (!service || !service.customInputs) return 0;
-    
+
     let optionsTotal = 0;
     service.customInputs.forEach((input: any) => {
       if (input.price) {
         optionsTotal += input.price;
       }
     });
-    
+
     return optionsTotal;
   };
 
@@ -199,7 +235,10 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
     try {
       const token = await AsyncStorage.getItem('userToken');
       if (!token) {
-        Alert.alert(isRTL ? 'خطأ' : 'Error', isRTL ? 'لم يتم العثور على رمز التوثيق' : 'Authentication required');
+        Alert.alert(
+          isRTL ? 'خطأ' : 'Error',
+          isRTL ? 'لم يتم العثور على رمز التوثيق' : 'Authentication required',
+        );
         return;
       }
 
@@ -212,7 +251,10 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
       setQrModalVisible(true);
     } catch (error) {
       console.error('Error preparing QR code:', error);
-      Alert.alert(isRTL ? 'خطأ' : 'Error', isRTL ? 'حدث خطأ' : 'An error occurred');
+      Alert.alert(
+        isRTL ? 'خطأ' : 'Error',
+        isRTL ? 'حدث خطأ' : 'An error occurred',
+      );
     }
   };
 
@@ -222,11 +264,15 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
         {/* header background to fill notch */}
         <View style={[styles.headerBackground, { height: insets.top + 78 }]} />
 
-        <View style={[styles.header, { height: insets.top + 90 }, isRTL && { flexDirection: 'row-reverse' }]}>
+        <View
+          style={[
+            styles.header,
+            { height: insets.top + 90 },
+            isRTL && { flexDirection: 'row-reverse' },
+          ]}
+        >
           <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Text style={styles.backButtonText}>
-              {isRTL ? '›' : '‹'}
-            </Text>
+            <Text style={styles.backButtonText}>{isRTL ? '›' : '‹'}</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>
             {isRTL ? 'سجل الطلبات' : 'Order History'}
@@ -245,11 +291,15 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
       {/* header background to fill notch */}
       <View style={[styles.headerBackground, { height: insets.top + 78 }]} />
 
-      <View style={[styles.header, { height: insets.top + 90 }, isRTL && { flexDirection: 'row-reverse' }]}>
+      <View
+        style={[
+          styles.header,
+          { height: insets.top + 90 },
+          isRTL && { flexDirection: 'row-reverse' },
+        ]}
+      >
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>
-            {isRTL ? '›' : '‹'}
-          </Text>
+          <Text style={styles.backButtonText}>{isRTL ? '›' : '‹'}</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
           {isRTL ? 'سجل الطلبات' : 'Order History'}
@@ -259,63 +309,113 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
 
       {/* Filter Buttons */}
       <View style={styles.filterContainer}>
-        <ScrollView 
-          horizontal 
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterScrollContent}>
-          <TouchableOpacity 
-            style={[styles.filterButton, selectedFilter === 'all' && styles.filterButtonActive]}
-            onPress={() => applyFilter('all')}>
-            <Text style={[styles.filterButtonText, selectedFilter === 'all' && styles.filterButtonTextActive]}>
+          contentContainerStyle={styles.filterScrollContent}
+        >
+          <TouchableOpacity
+            style={[
+              styles.filterButton,
+              selectedFilter === 'all' && styles.filterButtonActive,
+            ]}
+            onPress={() => applyFilter('all')}
+          >
+            <Text
+              style={[
+                styles.filterButtonText,
+                selectedFilter === 'all' && styles.filterButtonTextActive,
+              ]}
+            >
               {isRTL ? 'الكل' : 'All'}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.filterButton, selectedFilter === 'confirmed' && styles.filterButtonActive]}
-            onPress={() => applyFilter('confirmed')}>
-            <Text style={[styles.filterButtonText, selectedFilter === 'confirmed' && styles.filterButtonTextActive]}>
+          <TouchableOpacity
+            style={[
+              styles.filterButton,
+              selectedFilter === 'confirmed' && styles.filterButtonActive,
+            ]}
+            onPress={() => applyFilter('confirmed')}
+          >
+            <Text
+              style={[
+                styles.filterButtonText,
+                selectedFilter === 'confirmed' && styles.filterButtonTextActive,
+              ]}
+            >
               {isRTL ? 'مؤكد' : 'Confirmed'}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.filterButton, selectedFilter === 'pending' && styles.filterButtonActive]}
-            onPress={() => applyFilter('pending')}>
-            <Text style={[styles.filterButtonText, selectedFilter === 'pending' && styles.filterButtonTextActive]}>
+          <TouchableOpacity
+            style={[
+              styles.filterButton,
+              selectedFilter === 'pending' && styles.filterButtonActive,
+            ]}
+            onPress={() => applyFilter('pending')}
+          >
+            <Text
+              style={[
+                styles.filterButtonText,
+                selectedFilter === 'pending' && styles.filterButtonTextActive,
+              ]}
+            >
               {isRTL ? 'قيد الانتظار' : 'Pending'}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.filterButton, selectedFilter === 'completed' && styles.filterButtonActive]}
-            onPress={() => applyFilter('completed')}>
-            <Text style={[styles.filterButtonText, selectedFilter === 'completed' && styles.filterButtonTextActive]}>
+          <TouchableOpacity
+            style={[
+              styles.filterButton,
+              selectedFilter === 'completed' && styles.filterButtonActive,
+            ]}
+            onPress={() => applyFilter('completed')}
+          >
+            <Text
+              style={[
+                styles.filterButtonText,
+                selectedFilter === 'completed' && styles.filterButtonTextActive,
+              ]}
+            >
               {isRTL ? 'مكتمل' : 'Completed'}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.filterButton, selectedFilter === 'cancelled' && styles.filterButtonActive]}
-            onPress={() => applyFilter('cancelled')}>
-            <Text style={[styles.filterButtonText, selectedFilter === 'cancelled' && styles.filterButtonTextActive]}>
+          <TouchableOpacity
+            style={[
+              styles.filterButton,
+              selectedFilter === 'cancelled' && styles.filterButtonActive,
+            ]}
+            onPress={() => applyFilter('cancelled')}
+          >
+            <Text
+              style={[
+                styles.filterButtonText,
+                selectedFilter === 'cancelled' && styles.filterButtonTextActive,
+              ]}
+            >
               {isRTL ? 'ملغي' : 'Cancelled'}
             </Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
 
-      <ScrollView 
-        style={styles.scrollView} 
+      <ScrollView
+        style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+      >
         {filteredBookings.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>🧾</Text>
             <Text style={styles.emptyText}>
-              {selectedFilter === 'all' 
-                ? (isRTL ? 'لا توجد حجوزات بعد' : 'No bookings yet')
-                : (isRTL ? 'لا توجد حجوزات في هذه الفئة' : 'No bookings in this category')}
+              {selectedFilter === 'all'
+                ? isRTL
+                  ? 'لا توجد حجوزات بعد'
+                  : 'No bookings yet'
+                : isRTL
+                ? 'لا توجد حجوزات في هذه الفئة'
+                : 'No bookings in this category'}
             </Text>
           </View>
         ) : (
-          filteredBookings.map((booking) => (
+          filteredBookings.map(booking => (
             <View key={booking._id} style={styles.bookingCard}>
               {/* Service Name with Status Badge */}
               <View style={styles.cardHeader}>
@@ -324,8 +424,15 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
                     {getServiceName(booking)}
                   </Text>
                 </View>
-                <View style={[styles.statusBadge, { backgroundColor: getStatusStyle(booking.status).color }]}>
-                  <Text style={styles.statusText}>{getStatusStyle(booking.status).text}</Text>
+                <View
+                  style={[
+                    styles.statusBadge,
+                    { backgroundColor: getStatusStyle(booking.status).color },
+                  ]}
+                >
+                  <Text style={styles.statusText}>
+                    {getStatusStyle(booking.status).text}
+                  </Text>
                 </View>
               </View>
 
@@ -337,55 +444,66 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
               {/* Booking Info */}
               <View style={styles.infoRow}>
                 <Text style={styles.infoText}>
-                  {isRTL ? 'التاريخ: ' : 'Date: '}{formatDateTime(booking.eventDate)}
+                  {isRTL ? 'التاريخ: ' : 'Date: '}
+                  {formatDateTime(booking.eventDate)}
                 </Text>
               </View>
 
               <View style={styles.infoRow}>
                 <Text style={styles.infoText}>
-                  {isRTL ? 'الوقت: ' : 'Time: '}{formatDateTime(booking.eventTime.start, true)} - {formatDateTime(booking.eventTime.end, true)}
+                  {isRTL ? 'الوقت: ' : 'Time: '}
+                  {formatDateTime(booking.eventTime.start, true)} -{' '}
+                  {formatDateTime(booking.eventTime.end, true)}
                 </Text>
               </View>
 
               <View style={styles.infoRow}>
                 <Text style={styles.infoText} numberOfLines={2}>
-                  {isRTL ? 'الموقع: ' : 'Location: '}{formatLocation(booking.location)}
+                  {isRTL ? 'الموقع: ' : 'Location: '}
+                  {formatLocation(booking.location)}
                 </Text>
               </View>
 
               <View style={styles.infoRow}>
                 <Text style={styles.infoText}>
-                  {isRTL ? 'مقدم الخدمة: ' : 'Vendor: '}{getVendorName(booking)}
+                  {isRTL ? 'مقدم الخدمة: ' : 'Vendor: '}
+                  {getVendorName(booking)}
                 </Text>
               </View>
 
               {/* Custom Inputs / Add-ons */}
-              {booking.services[0]?.customInputs && booking.services[0].customInputs.length > 0 && (
-                <View style={styles.customInputsContainer}>
-                  <Text style={styles.customInputsTitle}>
-                    {isRTL ? 'الإضافات:' : 'Add-ons:'}
-                  </Text>
-                  {booking.services[0].customInputs.map((input: any, index: number) => (
-                    <View key={index} style={styles.customInputRow}>
-                      <Text style={styles.customInputLabel}>
-                        {input.label}
-                        {input.price && (
-                          <Text style={{ color: '#00695C', fontSize: 11 }}>
-                            {' '}(+{input.price.toFixed(3)} {isRTL ? 'د.ك' : 'KWD'})
+              {booking.services[0]?.customInputs &&
+                booking.services[0].customInputs.length > 0 && (
+                  <View style={styles.customInputsContainer}>
+                    <Text style={styles.customInputsTitle}>
+                      {isRTL ? 'الإضافات:' : 'Add-ons:'}
+                    </Text>
+                    {booking.services[0].customInputs.map(
+                      (input: any, index: number) => (
+                        <View key={index} style={styles.customInputRow}>
+                          <Text style={styles.customInputLabel}>
+                            {input.label}
+                            {input.price && (
+                              <Text style={{ color: '#00695C', fontSize: 11 }}>
+                                {' '}
+                                (+{input.price.toFixed(3)}{' '}
+                                {isRTL ? 'د.ك' : 'KWD'})
+                              </Text>
+                            )}
+                            :
                           </Text>
-                        )}:
-                      </Text>
-                      <Text style={styles.customInputValue}>
-                        {Array.isArray(input.value) 
-                          ? input.value.join(', ')
-                          : typeof input.value === 'number' 
-                          ? input.value 
-                          : String(input.value)}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              )}
+                          <Text style={styles.customInputValue}>
+                            {Array.isArray(input.value)
+                              ? input.value.join(', ')
+                              : typeof input.value === 'number'
+                              ? input.value
+                              : String(input.value)}
+                          </Text>
+                        </View>
+                      ),
+                    )}
+                  </View>
+                )}
 
               {/* Price */}
               <View style={styles.priceContainer}>
@@ -393,24 +511,48 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
                   <>
                     {/* Original Price with strikethrough */}
                     <View style={{ marginBottom: 4 }}>
-                      <Text style={[styles.priceLabel, { fontSize: 12, color: '#999' }]}>
+                      <Text
+                        style={[
+                          styles.priceLabel,
+                          { fontSize: 12, color: '#999' },
+                        ]}
+                      >
                         {isRTL ? 'المبلغ قبل الخصم:' : 'Original Amount:'}
                       </Text>
-                      <Text style={[styles.priceValue, { fontSize: 14, color: '#999', textDecorationLine: 'line-through' }]}>
+                      <Text
+                        style={[
+                          styles.priceValue,
+                          {
+                            fontSize: 14,
+                            color: '#999',
+                            textDecorationLine: 'line-through',
+                          },
+                        ]}
+                      >
                         KWD {booking.coupon.originalPrice.toFixed(3)}
                       </Text>
                     </View>
-                    
+
                     {/* Discount Amount */}
                     <View style={{ marginBottom: 4 }}>
-                      <Text style={[styles.priceLabel, { fontSize: 12, color: '#4CAF50' }]}>
+                      <Text
+                        style={[
+                          styles.priceLabel,
+                          { fontSize: 12, color: '#4CAF50' },
+                        ]}
+                      >
                         {isRTL ? 'الخصم' : 'Discount'} ({booking.coupon.code}):
                       </Text>
-                      <Text style={[styles.priceValue, { fontSize: 14, color: '#4CAF50' }]}>
+                      <Text
+                        style={[
+                          styles.priceValue,
+                          { fontSize: 14, color: '#4CAF50' },
+                        ]}
+                      >
                         - KWD {booking.coupon.discountAmount.toFixed(3)}
                       </Text>
                     </View>
-                    
+
                     {/* Final Price (after discount) */}
                     <View>
                       <Text style={styles.priceLabel}>
@@ -426,11 +568,25 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
                     <Text style={styles.priceLabel}>
                       {isRTL ? 'المبلغ الإجمالي:' : 'Total Amount:'}
                     </Text>
-                    <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 4 }}>
+                    <View
+                      style={{
+                        flexDirection: isRTL ? 'row-reverse' : 'row',
+                        alignItems: 'center',
+                        gap: 4,
+                      }}
+                    >
                       {booking.services?.[0]?.quantity > 1 && (
-                        <Text style={[styles.priceValue, { fontSize: 12, color: '#666' }]}>
-                          ({booking.services[0].quantity} × {(booking.services[0].price + getOptionsPrice(booking)).toFixed(3)})
-                          {' = '}
+                        <Text
+                          style={[
+                            styles.priceValue,
+                            { fontSize: 12, color: '#666' },
+                          ]}
+                        >
+                          ({booking.services[0].quantity} ×{' '}
+                          {(
+                            booking.services[0].price + getOptionsPrice(booking)
+                          ).toFixed(3)}
+                          ){' = '}
                         </Text>
                       )}
                       <Text style={styles.priceValue}>
@@ -454,7 +610,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
               {/* Action Buttons */}
               <View style={styles.buttonContainer}>
                 {qrAllowedBookings.has(booking._id) && (
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.actionButton}
                     onPress={() => handleQRCode(booking)}
                   >
@@ -467,12 +623,16 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack, onViewDetails, onWr
                   </TouchableOpacity>
                 )}
 
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.actionButton}
                   onPress={() => {
                     const serviceId = getServiceId(booking);
                     if (serviceId && onWriteReview) {
-                      onWriteReview(booking._id, serviceId, getServiceName(booking));
+                      onWriteReview(
+                        booking._id,
+                        serviceId,
+                        getServiceName(booking),
+                      );
                     }
                   }}
                 >

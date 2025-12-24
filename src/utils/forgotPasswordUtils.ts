@@ -34,7 +34,7 @@ export const sendForgotPasswordCode = async (email: string) => {
 export const resetPasswordWithCode = async (
   userId: string,
   resetCode: string,
-  newPassword: string
+  newPassword: string,
 ) => {
   try {
     const response = await fetch(`${API_URL}/auth/reset-password`, {

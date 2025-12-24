@@ -26,18 +26,18 @@ export const getBaseUrl = (): string => {
   if (!USE_LOCAL_IN_DEV) {
     return PRODUCTION_URL;
   }
-  
+
   // In production/release mode, always use the production server
   if (!__DEV__) {
     return PRODUCTION_URL;
   }
-  
+
   // In development mode only (if USE_LOCAL_IN_DEV is true):
   // Android Emulator uses 10.0.2.2
   if (Platform.OS === 'android') {
     return 'http://10.0.2.2:3000';
   }
-  
+
   // iOS Simulator and real devices in dev mode use local IP
   return `http://${LOCAL_IP}:3000`;
 };
@@ -54,22 +54,22 @@ export const ADMIN_URL = `${API_BASE_URL}/admin`;
  */
 export const getImageUrl = (imagePath: string): string => {
   if (!imagePath) return '';
-  
+
   // If it's already a full URL, return as is
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
     return imagePath;
   }
-  
+
   // If it starts with /public/, use it as is
   if (imagePath.startsWith('/public/')) {
     return `${API_BASE_URL}${imagePath}`;
   }
-  
+
   // If it starts with public/ (without leading slash), add the slash
   if (imagePath.startsWith('public/')) {
     return `${API_BASE_URL}/${imagePath}`;
   }
-  
+
   // Otherwise, assume it's just a filename and add /public/ prefix
   return `${API_BASE_URL}/public/${imagePath}`;
 };

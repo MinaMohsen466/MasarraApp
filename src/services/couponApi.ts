@@ -48,7 +48,7 @@ export const validateCoupon = async (
   cartTotal: number,
   userId: string,
   cartItems: Array<{ serviceId: string; vendorId?: string }>,
-  token: string
+  token: string,
 ): Promise<ValidateCouponResponse> => {
   try {
     const requestBody = {
@@ -56,24 +56,24 @@ export const validateCoupon = async (
       totalPrice: cartTotal,
       userId,
       serviceIds: cartItems.map(item => item.serviceId),
-      vendorIds: cartItems.map(item => item.vendorId).filter(Boolean)
+      vendorIds: cartItems.map(item => item.vendorId).filter(Boolean),
     };
-    
+
     if (__DEV__) {
       console.log('API Request - Validate Coupon:', requestBody);
     }
-    
+
     const response = await fetch(`${API_BASE_URL}/api/coupons/validate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(requestBody)
+      body: JSON.stringify(requestBody),
     });
 
     const data = await response.json();
-    
+
     if (__DEV__) {
       console.log('API Response - Validate Coupon:', data);
     }
@@ -81,7 +81,7 @@ export const validateCoupon = async (
     if (!response.ok) {
       return {
         valid: false,
-        message: data.message || 'Failed to validate coupon'
+        message: data.message || 'Failed to validate coupon',
       };
     }
 
@@ -96,10 +96,10 @@ export const validateCoupon = async (
           discountType: data.data.discountType,
           discountValue: data.data.discountValue,
           isActive: true,
-          deductFrom: data.data.deductFrom
+          deductFrom: data.data.deductFrom,
         } as Coupon,
         discountAmount: data.data.discountAmount || 0,
-        finalAmount: cartTotal - (data.data.discountAmount || 0)
+        finalAmount: cartTotal - (data.data.discountAmount || 0),
       };
     }
 
@@ -110,7 +110,9 @@ export const validateCoupon = async (
     }
     return {
       valid: false,
-      message: error.message?.includes('Network') ? 'تعذر الاتصال بالسيرفر' : 'حدث خطأ. حاول مرة أخرى.'
+      message: error.message?.includes('Network')
+        ? 'تعذر الاتصال بالسيرفر'
+        : 'حدث خطأ. حاول مرة أخرى.',
     };
   }
 };
@@ -124,19 +126,19 @@ export const validateCoupon = async (
 export const applyCouponToBooking = async (
   bookingId: string,
   couponCode: string,
-  token: string
+  token: string,
 ): Promise<{ success: boolean; message: string }> => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/coupons/apply`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
         bookingId,
-        couponCode: couponCode.trim().toUpperCase()
-      })
+        couponCode: couponCode.trim().toUpperCase(),
+      }),
     });
 
     const data = await response.json();
@@ -144,19 +146,19 @@ export const applyCouponToBooking = async (
     if (!response.ok) {
       return {
         success: false,
-        message: data.message || 'Failed to apply coupon'
+        message: data.message || 'Failed to apply coupon',
       };
     }
 
     return {
       success: true,
-      message: data.message || 'Coupon applied successfully'
+      message: data.message || 'Coupon applied successfully',
     };
   } catch (error) {
     console.error('Error applying coupon:', error);
     return {
       success: false,
-      message: 'Network error. Please try again.'
+      message: 'Network error. Please try again.',
     };
   }
 };

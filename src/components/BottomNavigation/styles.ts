@@ -41,8 +41,7 @@ export const styles = StyleSheet.create({
     borderBottomWidth: 0,
     borderBottomColor: 'transparent',
   },
-  navItemActive: {
-  },
+  navItemActive: {},
   cartBadge: {
     position: 'absolute',
     top: -4,

@@ -26,17 +26,17 @@ interface UserProfileProps {
   profilePicture?: string;
 }
 
-const UserProfile: React.FC<UserProfileProps> = ({ 
-  onBack, 
+const UserProfile: React.FC<UserProfileProps> = ({
+  onBack,
   onShowAuth,
   onNavigate,
   onSelectService,
   onShowChat,
   onHideChat,
-  userName = 'User', 
+  userName = 'User',
   userPhone,
   userEmail: _userEmail,
-  profilePicture 
+  profilePicture,
 }) => {
   const { isRTL } = useLanguage();
   const { user, logout } = useAuth();
@@ -47,8 +47,14 @@ const UserProfile: React.FC<UserProfileProps> = ({
   const [showMyEvents, setShowMyEvents] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [showWriteReview, setShowWriteReview] = useState(false);
-  const [reviewData, setReviewData] = useState<{bookingId: string; serviceId: string; serviceName: string} | null>(null);
-  const [currentProfilePicture, setCurrentProfilePicture] = useState<string | null>(user?.profilePicture || null);
+  const [reviewData, setReviewData] = useState<{
+    bookingId: string;
+    serviceId: string;
+    serviceName: string;
+  } | null>(null);
+  const [currentProfilePicture, setCurrentProfilePicture] = useState<
+    string | null
+  >(user?.profilePicture || null);
 
   // Fetch fresh user data from server on mount
   useEffect(() => {
@@ -59,8 +65,8 @@ const UserProfile: React.FC<UserProfileProps> = ({
 
         const response = await fetch(`${API_URL}/auth/me`, {
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
+            Authorization: `Bearer ${token}`,
+          },
         });
 
         if (response.ok) {
@@ -78,7 +84,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
     if (user) {
       fetchUserData();
     }
-    
+
     // Check if drawer requested opening edit profile
     const checkOpenEdit = async () => {
       try {
@@ -141,17 +147,22 @@ const UserProfile: React.FC<UserProfileProps> = ({
   // Helper to convert /public/ paths to full URLs
   const getImageUri = (uri: string | null | undefined) => {
     if (!uri) return null;
-    
+
     // If it's already a full URI, return as is
-    if (uri.startsWith('http://') || uri.startsWith('https://') || uri.startsWith('file://') || uri.startsWith('content://')) {
+    if (
+      uri.startsWith('http://') ||
+      uri.startsWith('https://') ||
+      uri.startsWith('file://') ||
+      uri.startsWith('content://')
+    ) {
       return uri;
     }
-    
+
     // If it's a server path (starts with /public), prepend the base URL
     if (uri.startsWith('/public')) {
       return `${API_URL.replace('/api', '')}${uri}`;
     }
-    
+
     return uri;
   };
 
@@ -161,13 +172,21 @@ const UserProfile: React.FC<UserProfileProps> = ({
   }
 
   if (showWishlist) {
-    return <Wishlist onBack={() => setShowWishlist(false)} onSelectService={(id) => { setShowWishlist(false); if (onSelectService) onSelectService(id); }} />;
+    return (
+      <Wishlist
+        onBack={() => setShowWishlist(false)}
+        onSelectService={id => {
+          setShowWishlist(false);
+          if (onSelectService) onSelectService(id);
+        }}
+      />
+    );
   }
 
   if (showOrderHistory) {
     return (
-      <OrderHistory 
-        onBack={() => setShowOrderHistory(false)} 
+      <OrderHistory
+        onBack={() => setShowOrderHistory(false)}
         onWriteReview={(bookingId, serviceId, serviceName) => {
           setReviewData({ bookingId, serviceId, serviceName });
           setShowOrderHistory(false);
@@ -198,10 +217,14 @@ const UserProfile: React.FC<UserProfileProps> = ({
   }
 
   if (showChat) {
-    return <Chat onBack={() => {
-      setShowChat(false);
-      onHideChat?.();
-    }} />;
+    return (
+      <Chat
+        onBack={() => {
+          setShowChat(false);
+          onHideChat?.();
+        }}
+      />
+    );
   }
 
   // Show My Events screen
@@ -217,13 +240,24 @@ const UserProfile: React.FC<UserProfileProps> = ({
         <View style={[styles.headerBackground, { height: insets.top + 77 }]} />
 
         {/* Header with Back Button */}
-        <View style={[styles.headerBar, { paddingTop: insets.top + 22, paddingBottom: 22 }]}>
+        <View
+          style={[
+            styles.headerBar,
+            { paddingTop: insets.top + 22, paddingBottom: 22 },
+          ]}
+        >
           {onBack && (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.headerBackButton, styles.headerBackInline]}
               onPress={onBack}
-              activeOpacity={0.8}>
-              <Text style={[styles.headerBackIcon, isRTL && styles.headerBackTextRTL]}>
+              activeOpacity={0.8}
+            >
+              <Text
+                style={[
+                  styles.headerBackIcon,
+                  isRTL && styles.headerBackTextRTL,
+                ]}
+              >
                 {'‹'}
               </Text>
             </TouchableOpacity>
@@ -237,24 +271,34 @@ const UserProfile: React.FC<UserProfileProps> = ({
         {/* Login Prompt */}
         <View style={styles.loginPromptContainer}>
           <View style={styles.profilePlaceholder}>
-            <Image 
-              source={require('../../imgs/user.png')} 
+            <Image
+              source={require('../../imgs/user.png')}
               style={styles.profileIcon}
             />
           </View>
-          
-          <Text style={[styles.loginPromptTitle, isRTL && styles.loginPromptTitleRTL]}>
+
+          <Text
+            style={[
+              styles.loginPromptTitle,
+              isRTL && styles.loginPromptTitleRTL,
+            ]}
+          >
             {isRTL ? 'مرحباً بك!' : 'Welcome!'}
           </Text>
-          
-          <Text style={[styles.loginPromptText, isRTL && styles.loginPromptTextRTL]}>
-            {isRTL ? 'الرجاء تسجيل الدخول للوصول إلى لوحة التحكم الخاصة بك' : 'Please log in to access your dashboard'}
+
+          <Text
+            style={[styles.loginPromptText, isRTL && styles.loginPromptTextRTL]}
+          >
+            {isRTL
+              ? 'الرجاء تسجيل الدخول للوصول إلى لوحة التحكم الخاصة بك'
+              : 'Please log in to access your dashboard'}
           </Text>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.loginButton}
             onPress={handleLogin}
-            activeOpacity={0.8}>
+            activeOpacity={0.8}
+          >
             <Text style={styles.loginButtonText}>
               {isRTL ? 'تسجيل الدخول' : 'Sign In'}
             </Text>
@@ -270,13 +314,21 @@ const UserProfile: React.FC<UserProfileProps> = ({
       <View style={[styles.headerBackground, { height: insets.top + 78 }]} />
 
       {/* Header with Back Button */}
-      <View style={[styles.headerBar, { paddingTop: insets.top + 22, paddingBottom: 22 }]}>
+      <View
+        style={[
+          styles.headerBar,
+          { paddingTop: insets.top + 22, paddingBottom: 22 },
+        ]}
+      >
         {onBack && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.headerBackButton, styles.headerBackInline]}
             onPress={onBack}
-            activeOpacity={0.8}>
-            <Text style={[styles.headerBackIcon, isRTL && styles.headerBackTextRTL]}>
+            activeOpacity={0.8}
+          >
+            <Text
+              style={[styles.headerBackIcon, isRTL && styles.headerBackTextRTL]}
+            >
               {'‹'}
             </Text>
           </TouchableOpacity>
@@ -288,123 +340,142 @@ const UserProfile: React.FC<UserProfileProps> = ({
       </View>
 
       {/* Scrollable Content */}
-      <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.contentContainer}>
-
-      {/* User Info Section (horizontal: icon + data) */}
-      <View style={styles.userInfoSection}>
-        <View style={styles.userInfoRow}>
-          <View style={styles.profileImageContainer}>
-            {currentProfilePicture || user.profilePicture || profilePicture ? (
-              <Image 
-                source={{ uri: getImageUri(currentProfilePicture || user.profilePicture || profilePicture) || undefined }} 
-                style={styles.profileImage}
-                onLoad={() => {}}
-                onError={(e) => {
-                  // Error loading image
-                }}
-              />
-            ) : (
-              <View style={styles.profilePlaceholder}>
-                <Image 
-                  source={require('../../imgs/user.png')} 
-                  style={styles.profileIcon}
+      <ScrollView
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.contentContainer}
+      >
+        {/* User Info Section (horizontal: icon + data) */}
+        <View style={styles.userInfoSection}>
+          <View style={styles.userInfoRow}>
+            <View style={styles.profileImageContainer}>
+              {currentProfilePicture ||
+              user.profilePicture ||
+              profilePicture ? (
+                <Image
+                  source={{
+                    uri:
+                      getImageUri(
+                        currentProfilePicture ||
+                          user.profilePicture ||
+                          profilePicture,
+                      ) || undefined,
+                  }}
+                  style={styles.profileImage}
+                  onLoad={() => {}}
+                  onError={e => {
+                    // Error loading image
+                  }}
                 />
-              </View>
-            )}
-          </View>
+              ) : (
+                <View style={styles.profilePlaceholder}>
+                  <Image
+                    source={require('../../imgs/user.png')}
+                    style={styles.profileIcon}
+                  />
+                </View>
+              )}
+            </View>
 
-          <View style={styles.userDataContainer}>
-            <Text style={[styles.userName, isRTL && styles.userNameRTL]}>
-              {user.name || userName}
-            </Text>
+            <View style={styles.userDataContainer}>
+              <Text style={[styles.userName, isRTL && styles.userNameRTL]}>
+                {user.name || userName}
+              </Text>
 
-            {user.phone || userPhone ? (
-              <Text style={[styles.userPhone, isRTL && styles.userPhoneRTL]}>
-                {user.phone || userPhone}
-              </Text>
-            ) : (
-              <Text style={[styles.noPhone, isRTL && styles.noPhoneRTL]}>
-                {isRTL ? 'لا يوجد رقم هاتف' : 'No phone number'}
-              </Text>
-            )}
+              {user.phone || userPhone ? (
+                <Text style={[styles.userPhone, isRTL && styles.userPhoneRTL]}>
+                  {user.phone || userPhone}
+                </Text>
+              ) : (
+                <Text style={[styles.noPhone, isRTL && styles.noPhoneRTL]}>
+                  {isRTL ? 'لا يوجد رقم هاتف' : 'No phone number'}
+                </Text>
+              )}
+            </View>
           </View>
         </View>
-      </View>
 
-      {/* Menu Options */}
-      <View style={styles.menuSection}>
-        {/* Edit Profile */}
-        <TouchableOpacity 
-          style={styles.menuItem}
-          onPress={handleEditProfile}
-          activeOpacity={0.7}>
-          <Text style={[styles.menuText, isRTL && styles.menuTextRTL]}>
-            {isRTL ? 'تعديل الملف الشخصي' : 'Edit Profile'}
-          </Text>
-        </TouchableOpacity>
+        {/* Menu Options */}
+        <View style={styles.menuSection}>
+          {/* Edit Profile */}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={handleEditProfile}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.menuText, isRTL && styles.menuTextRTL]}>
+              {isRTL ? 'تعديل الملف الشخصي' : 'Edit Profile'}
+            </Text>
+          </TouchableOpacity>
 
-        {/* Address */}
-        <TouchableOpacity 
-          style={styles.menuItem}
-          onPress={handleAddress}
-          activeOpacity={0.7}>
-          <Text style={[styles.menuText, isRTL && styles.menuTextRTL]}>
-            {isRTL ? 'العنوان' : 'Address'}
-          </Text>
-        </TouchableOpacity>
+          {/* Address */}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={handleAddress}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.menuText, isRTL && styles.menuTextRTL]}>
+              {isRTL ? 'العنوان' : 'Address'}
+            </Text>
+          </TouchableOpacity>
 
-        {/* Order History */}
-        <TouchableOpacity 
-          style={[styles.menuItem, styles.menuItemPrimary]}
-          onPress={handleOrderHistory}
-          activeOpacity={0.7}>
-          <Text style={[styles.menuTextWhite, isRTL && styles.menuTextWhiteRTL]}>
-            {isRTL ? 'سجل الطلبات' : 'Order History'}
-          </Text>
-        </TouchableOpacity>
+          {/* Order History */}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={handleOrderHistory}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.menuText, isRTL && styles.menuTextRTL]}>
+              {isRTL ? 'سجل الطلبات' : 'Order History'}
+            </Text>
+          </TouchableOpacity>
 
-        {/* My Events */}
-        <TouchableOpacity 
-          style={styles.menuItem}
-          onPress={handleMyEvents}
-          activeOpacity={0.7}>
-          <Text style={[styles.menuText, isRTL && styles.menuTextRTL]}>
-            {isRTL ? 'فعالياتي' : 'My Events'}
-          </Text>
-        </TouchableOpacity>
+          {/* My Events */}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={handleMyEvents}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.menuText, isRTL && styles.menuTextRTL]}>
+              {isRTL ? 'فعالياتي' : 'My Events'}
+            </Text>
+          </TouchableOpacity>
 
-        {/* Chat */}
-        <TouchableOpacity 
-          style={styles.menuItem}
-          onPress={handleChat}
-          activeOpacity={0.7}>
-          <Text style={[styles.menuText, isRTL && styles.menuTextRTL]}>
-            {isRTL ? 'المحادثة' : 'Chat'}
-          </Text>
-        </TouchableOpacity>
+          {/* Chat */}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={handleChat}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.menuText, isRTL && styles.menuTextRTL]}>
+              {isRTL ? 'المحادثة' : 'Chat'}
+            </Text>
+          </TouchableOpacity>
 
-        {/* Wishlist */}
-        <TouchableOpacity 
-          style={styles.menuItem}
-          onPress={handleWishlist}
-          activeOpacity={0.7}>
-          <Text style={[styles.menuText, isRTL && styles.menuTextRTL]}>
-            {isRTL ? 'قائمة الأمنيات' : 'Wishlist'}
-          </Text>
-        </TouchableOpacity>
+          {/* Wishlist */}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={handleWishlist}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.menuText, isRTL && styles.menuTextRTL]}>
+              {isRTL ? 'قائمة الأمنيات' : 'Wishlist'}
+            </Text>
+          </TouchableOpacity>
 
-        {/* Logout */}
-        <TouchableOpacity 
-          style={styles.menuItem}
-          onPress={handleLogout}
-          activeOpacity={0.7}>
-          <Text style={[styles.menuTextLogout, isRTL && styles.menuTextLogoutRTL]}>
-            {isRTL ? 'تسجيل الخروج' : 'Logout'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
-
+          {/* Logout */}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={handleLogout}
+            activeOpacity={0.7}
+          >
+            <Text
+              style={[styles.menuTextLogout, isRTL && styles.menuTextLogoutRTL]}
+            >
+              {isRTL ? 'تسجيل الخروج' : 'Logout'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </View>
   );
 };

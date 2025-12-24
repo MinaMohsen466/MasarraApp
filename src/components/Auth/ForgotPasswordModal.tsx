@@ -1,8 +1,19 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, Modal, Alert, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  Modal,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
 import { modalStyles } from '../EditProfile/modalStyles';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { sendForgotPasswordCode, resetPasswordWithCode } from '../../utils/forgotPasswordUtils';
+import {
+  sendForgotPasswordCode,
+  resetPasswordWithCode,
+} from '../../utils/forgotPasswordUtils';
 
 interface ForgotPasswordModalProps {
   visible: boolean;
@@ -28,7 +39,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
     if (!email) {
       Alert.alert(
         isRTL ? 'خطأ' : 'Error',
-        isRTL ? 'يرجى إدخال البريد الإلكتروني' : 'Please enter your email'
+        isRTL ? 'يرجى إدخال البريد الإلكتروني' : 'Please enter your email',
       );
       return;
     }
@@ -37,7 +48,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
     if (!emailRegex.test(email)) {
       Alert.alert(
         isRTL ? 'خطأ' : 'Error',
-        isRTL ? 'يرجى إدخال بريد إلكتروني صحيح' : 'Please enter a valid email'
+        isRTL ? 'يرجى إدخال بريد إلكتروني صحيح' : 'Please enter a valid email',
       );
       return;
     }
@@ -53,12 +64,12 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
           isRTL ? 'تم الإرسال' : 'Code Sent',
           isRTL
             ? 'تم إرسال كود إعادة التعيين إلى بريدك الإلكتروني'
-            : 'Reset code has been sent to your email'
+            : 'Reset code has been sent to your email',
         );
       } else {
         Alert.alert(
           isRTL ? 'خطأ' : 'Error',
-          result.error || (isRTL ? 'فشل إرسال الكود' : 'Failed to send code')
+          result.error || (isRTL ? 'فشل إرسال الكود' : 'Failed to send code'),
         );
       }
     } finally {
@@ -70,7 +81,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
     if (!resetCode || !newPassword || !confirmPassword) {
       Alert.alert(
         isRTL ? 'خطأ' : 'Error',
-        isRTL ? 'الرجاء ملء جميع الحقول' : 'Please fill all fields'
+        isRTL ? 'الرجاء ملء جميع الحقول' : 'Please fill all fields',
       );
       return;
     }
@@ -78,7 +89,9 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
     if (newPassword.length < 6) {
       Alert.alert(
         isRTL ? 'خطأ' : 'Error',
-        isRTL ? 'يجب أن تكون كلمة المرور 6 أحرف على الأقل' : 'Password must be at least 6 characters'
+        isRTL
+          ? 'يجب أن تكون كلمة المرور 6 أحرف على الأقل'
+          : 'Password must be at least 6 characters',
       );
       return;
     }
@@ -86,25 +99,34 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
     if (newPassword !== confirmPassword) {
       Alert.alert(
         isRTL ? 'خطأ' : 'Error',
-        isRTL ? 'كلمات المرور غير متطابقة' : 'Passwords do not match'
+        isRTL ? 'كلمات المرور غير متطابقة' : 'Passwords do not match',
       );
       return;
     }
 
     setIsLoading(true);
     try {
-      const result = await resetPasswordWithCode(userId, resetCode, newPassword);
+      const result = await resetPasswordWithCode(
+        userId,
+        resetCode,
+        newPassword,
+      );
 
       if (result.success) {
         Alert.alert(
           isRTL ? 'نجح' : 'Success',
-          isRTL ? 'تم إعادة تعيين كلمة المرور بنجاح' : 'Password reset successfully'
+          isRTL
+            ? 'تم إعادة تعيين كلمة المرور بنجاح'
+            : 'Password reset successfully',
         );
         handleClose();
       } else {
         Alert.alert(
           isRTL ? 'خطأ' : 'Error',
-          result.error || (isRTL ? 'فشل إعادة تعيين كلمة المرور' : 'Failed to reset password')
+          result.error ||
+            (isRTL
+              ? 'فشل إعادة تعيين كلمة المرور'
+              : 'Failed to reset password'),
         );
       }
     } finally {
@@ -129,7 +151,8 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
       visible={visible}
       transparent={true}
       animationType="fade"
-      onRequestClose={handleClose}>
+      onRequestClose={handleClose}
+    >
       <View style={modalStyles.overlay}>
         <View style={modalStyles.modal}>
           {/* Header */}
@@ -140,10 +163,16 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
             <Text style={[modalStyles.title, isRTL && modalStyles.titleRTL]}>
               {isRTL ? 'إعادة تعيين كلمة المرور' : 'Reset Password'}
             </Text>
-            <Text style={[modalStyles.subtitle, isRTL && modalStyles.subtitleRTL]}>
+            <Text
+              style={[modalStyles.subtitle, isRTL && modalStyles.subtitleRTL]}
+            >
               {step === 'email'
-                ? (isRTL ? 'أدخل بريدك الإلكتروني لتلقي الكود' : 'Enter your email to receive reset code')
-                : (isRTL ? 'أدخل الكود وكلمة المرور الجديدة' : 'Enter code and new password')}
+                ? isRTL
+                  ? 'أدخل بريدك الإلكتروني لتلقي الكود'
+                  : 'Enter your email to receive reset code'
+                : isRTL
+                ? 'أدخل الكود وكلمة المرور الجديدة'
+                : 'Enter code and new password'}
             </Text>
           </View>
 
@@ -152,47 +181,67 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
             {step === 'email' ? (
               <>
                 <View style={modalStyles.inputContainer}>
-                  <Text style={[modalStyles.label, isRTL && modalStyles.labelRTL]}>
+                  <Text
+                    style={[modalStyles.label, isRTL && modalStyles.labelRTL]}
+                  >
                     {isRTL ? 'البريد الإلكتروني' : 'Email'}
                   </Text>
                   <TextInput
                     style={[modalStyles.input, isRTL && modalStyles.inputRTL]}
                     value={email}
                     onChangeText={setEmail}
-                    placeholder={isRTL ? 'أدخل بريدك الإلكتروني' : 'Enter your email'}
+                    placeholder={
+                      isRTL ? 'أدخل بريدك الإلكتروني' : 'Enter your email'
+                    }
                     placeholderTextColor="#999"
                     keyboardType="email-address"
                     editable={!isLoading}
                     autoCapitalize="none"
                   />
-                  <Text style={[modalStyles.hint, isRTL && modalStyles.hintRTL]}>
-                    {isRTL ? 'استخدم البريد المسجل بحسابك' : 'Use your registered email address'}
+                  <Text
+                    style={[modalStyles.hint, isRTL && modalStyles.hintRTL]}
+                  >
+                    {isRTL
+                      ? 'استخدم البريد المسجل بحسابك'
+                      : 'Use your registered email address'}
                   </Text>
                 </View>
               </>
             ) : (
               <>
                 <View style={modalStyles.inputContainer}>
-                  <Text style={[modalStyles.label, isRTL && modalStyles.labelRTL]}>
+                  <Text
+                    style={[modalStyles.label, isRTL && modalStyles.labelRTL]}
+                  >
                     {isRTL ? 'رمز إعادة التعيين' : 'Reset Code'}
                   </Text>
                   <TextInput
                     style={[modalStyles.input, isRTL && modalStyles.inputRTL]}
                     value={resetCode}
                     onChangeText={setResetCode}
-                    placeholder={isRTL ? 'أدخل الرمز المرسل للإيميل' : 'Enter code sent to email'}
+                    placeholder={
+                      isRTL
+                        ? 'أدخل الرمز المرسل للإيميل'
+                        : 'Enter code sent to email'
+                    }
                     placeholderTextColor="#999"
                     keyboardType="number-pad"
                     maxLength={6}
                     editable={!isLoading}
                   />
-                  <Text style={[modalStyles.hint, isRTL && modalStyles.hintRTL]}>
-                    {isRTL ? 'تحقق من بريدك الإلكتروني للحصول على رمز مكون من 6 أرقام' : 'Check your email for 6-digit code'}
+                  <Text
+                    style={[modalStyles.hint, isRTL && modalStyles.hintRTL]}
+                  >
+                    {isRTL
+                      ? 'تحقق من بريدك الإلكتروني للحصول على رمز مكون من 6 أرقام'
+                      : 'Check your email for 6-digit code'}
                   </Text>
                 </View>
 
                 <View style={modalStyles.inputContainer}>
-                  <Text style={[modalStyles.label, isRTL && modalStyles.labelRTL]}>
+                  <Text
+                    style={[modalStyles.label, isRTL && modalStyles.labelRTL]}
+                  >
                     {isRTL ? 'كلمة المرور الجديدة' : 'New Password'}
                   </Text>
                   <View style={modalStyles.passwordInputWrapper}>
@@ -200,7 +249,11 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
                       style={[modalStyles.input, isRTL && modalStyles.inputRTL]}
                       value={newPassword}
                       onChangeText={setNewPassword}
-                      placeholder={isRTL ? 'أدخل كلمة المرور الجديدة' : 'Enter new password'}
+                      placeholder={
+                        isRTL
+                          ? 'أدخل كلمة المرور الجديدة'
+                          : 'Enter new password'
+                      }
                       placeholderTextColor="#999"
                       secureTextEntry={!showNewPassword}
                       editable={!isLoading}
@@ -209,17 +262,26 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
                     <TouchableOpacity
                       style={modalStyles.eyeButton}
                       onPress={() => setShowNewPassword(!showNewPassword)}
-                      disabled={isLoading}>
-                      <Text style={modalStyles.eyeIcon}>{showNewPassword ? '👁' : '👁‍🗨'}</Text>
+                      disabled={isLoading}
+                    >
+                      <Text style={modalStyles.eyeIcon}>
+                        {showNewPassword ? '👁' : '👁‍🗨'}
+                      </Text>
                     </TouchableOpacity>
                   </View>
-                  <Text style={[modalStyles.hint, isRTL && modalStyles.hintRTL]}>
-                    {isRTL ? 'يجب أن تكون 6 أحرف على الأقل' : 'Must be at least 6 characters'}
+                  <Text
+                    style={[modalStyles.hint, isRTL && modalStyles.hintRTL]}
+                  >
+                    {isRTL
+                      ? 'يجب أن تكون 6 أحرف على الأقل'
+                      : 'Must be at least 6 characters'}
                   </Text>
                 </View>
 
                 <View style={modalStyles.inputContainer}>
-                  <Text style={[modalStyles.label, isRTL && modalStyles.labelRTL]}>
+                  <Text
+                    style={[modalStyles.label, isRTL && modalStyles.labelRTL]}
+                  >
                     {isRTL ? 'تأكيد كلمة المرور' : 'Confirm Password'}
                   </Text>
                   <View style={modalStyles.passwordInputWrapper}>
@@ -227,7 +289,11 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
                       style={[modalStyles.input, isRTL && modalStyles.inputRTL]}
                       value={confirmPassword}
                       onChangeText={setConfirmPassword}
-                      placeholder={isRTL ? 'أعد إدخال كلمة المرور الجديدة' : 'Re-enter new password'}
+                      placeholder={
+                        isRTL
+                          ? 'أعد إدخال كلمة المرور الجديدة'
+                          : 'Re-enter new password'
+                      }
                       placeholderTextColor="#999"
                       secureTextEntry={!showConfirmPassword}
                       editable={!isLoading}
@@ -235,9 +301,14 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
                     />
                     <TouchableOpacity
                       style={modalStyles.eyeButton}
-                      onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                      disabled={isLoading}>
-                      <Text style={modalStyles.eyeIcon}>{showConfirmPassword ? '👁' : '👁‍🗨'}</Text>
+                      onPress={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
+                      disabled={isLoading}
+                    >
+                      <Text style={modalStyles.eyeIcon}>
+                        {showConfirmPassword ? '👁' : '👁‍🗨'}
+                      </Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -251,8 +322,14 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
               style={[modalStyles.button, modalStyles.cancelButton]}
               onPress={handleClose}
               disabled={isLoading}
-              activeOpacity={0.7}>
-              <Text style={[modalStyles.cancelButtonText, isRTL && modalStyles.cancelButtonTextRTL]}>
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  modalStyles.cancelButtonText,
+                  isRTL && modalStyles.cancelButtonTextRTL,
+                ]}
+              >
                 {isRTL ? 'إلغاء' : 'Cancel'}
               </Text>
             </TouchableOpacity>
@@ -260,14 +337,24 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
               style={[modalStyles.button, modalStyles.submitButton]}
               onPress={step === 'email' ? handleSendCode : handleResetPassword}
               disabled={isLoading}
-              activeOpacity={0.7}>
+              activeOpacity={0.7}
+            >
               {isLoading ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <Text style={[modalStyles.submitButtonText, isRTL && modalStyles.submitButtonTextRTL]}>
+                <Text
+                  style={[
+                    modalStyles.submitButtonText,
+                    isRTL && modalStyles.submitButtonTextRTL,
+                  ]}
+                >
                   {step === 'email'
-                    ? (isRTL ? 'إرسال الكود' : 'Send Code')
-                    : (isRTL ? 'إعادة تعيين كلمة المرور' : 'Reset Password')}
+                    ? isRTL
+                      ? 'إرسال الكود'
+                      : 'Send Code'
+                    : isRTL
+                    ? 'إعادة تعيين كلمة المرور'
+                    : 'Reset Password'}
                 </Text>
               )}
             </TouchableOpacity>

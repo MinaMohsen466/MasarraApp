@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, FlatList, Animated } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  FlatList,
+  Animated,
+} from 'react-native';
 import { SvgUri } from 'react-native-svg';
 import { colors } from '../constants/colors';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -24,17 +32,29 @@ interface HomeProps {
   onHideChat?: () => void;
 }
 
-const Home: React.FC<HomeProps> = ({ onNavigate, currentRoute, onSelectService, onSelectOccasion, onShowChat, onHideChat }) => {
+const Home: React.FC<HomeProps> = ({
+  onNavigate,
+  currentRoute,
+  onSelectService,
+  onSelectOccasion,
+  onShowChat,
+  onHideChat,
+}) => {
   const { isRTL, t } = useLanguage();
   const { user } = useAuth();
-  const { data: occasions, isLoading: occasionsLoading, error } = useOccasions();
+  const {
+    data: occasions,
+    isLoading: occasionsLoading,
+    error,
+  } = useOccasions();
   const { data: services, isLoading: servicesLoading } = useServices();
   const [showAuth, setShowAuth] = useState(false);
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const fadeAnim = useRef(new Animated.Value(0.3)).current;
 
-  const hasFeaturedServices = services?.some(service => service.isFeatured) || false;
+  const hasFeaturedServices =
+    services?.some(service => service.isFeatured) || false;
   const isLoading = occasionsLoading || servicesLoading;
 
   // Pulsing animation for logo
@@ -52,7 +72,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate, currentRoute, onSelectService, 
             duration: 1000,
             useNativeDriver: true,
           }),
-        ])
+        ]),
       );
       pulse.start();
       return () => pulse.stop();
@@ -114,7 +134,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate, currentRoute, onSelectService, 
           setShowUserProfile(false);
           setShowAuth(true);
         }}
-        onNavigate={(route) => {
+        onNavigate={route => {
           setShowUserProfile(false);
           if (onNavigate) onNavigate(route);
         }}
@@ -132,25 +152,28 @@ const Home: React.FC<HomeProps> = ({ onNavigate, currentRoute, onSelectService, 
   // If showing auth screen
   if (showAuth) {
     return (
-      <Auth onBack={() => {
-        setShowAuth(false);
-        if (onNavigate) {
-          onNavigate('home');
-        }
-      }} />
+      <Auth
+        onBack={() => {
+          setShowAuth(false);
+          if (onNavigate) {
+            onNavigate('home');
+          }
+        }}
+      />
     );
   }
 
   const renderOccasionCard = ({ item }: { item: Occasion }) => {
     const displayName = isRTL ? item.nameAr : item.name;
-    
+
     return (
       <TouchableOpacity
         style={styles.occasionCard}
         activeOpacity={0.8}
         onPress={() => {
           if (onSelectOccasion) onSelectOccasion(item);
-        }}>
+        }}
+      >
         <View style={styles.iconContainer}>
           {item.image ? (
             item.image.toLowerCase().endsWith('.svg') ? (
@@ -170,7 +193,10 @@ const Home: React.FC<HomeProps> = ({ onNavigate, currentRoute, onSelectService, 
             <View style={styles.placeholderIcon} />
           )}
         </View>
-        <Text style={[styles.occasionText, isRTL && styles.occasionTextRTL]} numberOfLines={2}>
+        <Text
+          style={[styles.occasionText, isRTL && styles.occasionTextRTL]}
+          numberOfLines={2}
+        >
           {displayName}
         </Text>
       </TouchableOpacity>
@@ -183,14 +209,14 @@ const Home: React.FC<HomeProps> = ({ onNavigate, currentRoute, onSelectService, 
       {hasFeaturedServices ? (
         <>
           <FeaturedServicesCarousel
-            onSelectService={(service) => {
+            onSelectService={service => {
               if (onSelectService) {
                 onSelectService(service._id);
               }
             }}
           />
           <SearchSection
-            onSelectOccasion={(occasion) => {
+            onSelectOccasion={occasion => {
               if (onSelectOccasion) onSelectOccasion(occasion);
             }}
           />
@@ -207,8 +233,8 @@ const Home: React.FC<HomeProps> = ({ onNavigate, currentRoute, onSelectService, 
         />
       )}
 
-      <Services 
-        onSelectService={(service) => {
+      <Services
+        onSelectService={service => {
           if (onSelectService) {
             onSelectService(service._id);
           }
@@ -226,8 +252,12 @@ const Home: React.FC<HomeProps> = ({ onNavigate, currentRoute, onSelectService, 
           <Text style={[styles.sectionTitle, isRTL && styles.sectionTitleRTL]}>
             {t('occasions').toUpperCase()}
           </Text>
-          <TouchableOpacity onPress={() => onNavigate && onNavigate('occasions')}>
-            <Text style={[styles.viewAllButton, isRTL && styles.viewAllButtonRTL]}>
+          <TouchableOpacity
+            onPress={() => onNavigate && onNavigate('occasions')}
+          >
+            <Text
+              style={[styles.viewAllButton, isRTL && styles.viewAllButtonRTL]}
+            >
               {isRTL ? 'عرض الكل' : 'View All'}
             </Text>
           </TouchableOpacity>
@@ -241,10 +271,13 @@ const Home: React.FC<HomeProps> = ({ onNavigate, currentRoute, onSelectService, 
           <FlatList
             data={occasions}
             renderItem={renderOccasionCard}
-            keyExtractor={(item) => item._id}
+            keyExtractor={item => item._id}
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={[styles.horizontalList, isRTL && styles.horizontalListRTL]}
+            contentContainerStyle={[
+              styles.horizontalList,
+              isRTL && styles.horizontalListRTL,
+            ]}
             inverted={isRTL}
           />
         )}
@@ -252,6 +285,5 @@ const Home: React.FC<HomeProps> = ({ onNavigate, currentRoute, onSelectService, 
     </ScrollView>
   );
 };
-
 
 export default Home;

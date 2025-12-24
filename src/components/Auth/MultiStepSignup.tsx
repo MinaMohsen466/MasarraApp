@@ -5,12 +5,12 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
   StyleSheet,
   Platform,
   KeyboardAvoidingView,
 } from 'react-native';
 import { styles } from './styles';
+import { CustomAlert } from '../CustomAlert/CustomAlert';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { colors } from '../../constants/colors';
 import { signup } from '../../services/api';
@@ -21,19 +21,28 @@ interface MultiStepSignupProps {
   onSignupSuccess: (token: string, user?: any) => void;
 }
 
-const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSuccess }) => {
+const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
+  onBack,
+  onSignupSuccess,
+}) => {
   const { isRTL } = useLanguage();
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertCallback, setAlertCallback] = useState<(() => void) | null>(null);
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
   // Step 1: Basic Info
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [countryCode, setCountryCode] = useState('965');
   const [phone, setPhone] = useState('');
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Step 2: Email Verification
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -49,36 +58,73 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
 
   const otpInputRefs = useRef<(TextInput | null)[]>([]);
 
+  // Helper function to show custom alert
+  const showAlert = (title: string, message: string, callback?: () => void) => {
+    setAlertTitle(title);
+    setAlertMessage(message);
+    setAlertCallback(() => callback);
+    setAlertVisible(true);
+  };
+
+  // Format phone number with space after country code
+  const formatPhoneNumber = (value: string) => {
+    // Remove any spaces
+    const cleanValue = value.replace(/\s/g, '');
+    // Add space after first 8 characters (country code 965 + 5 digits)
+    if (cleanValue.length > 0) {
+      return cleanValue;
+    }
+    return '';
+  };
+
+  const handlePhoneChange = (value: string) => {
+    const formattedPhone = formatPhoneNumber(value);
+    setPhone(formattedPhone);
+  };
+
+  // Password validation helpers
+  const isPasswordLengthValid = password.length >= 8;
+  const hasUppercase = /[A-Z]/.test(password);
+  const hasLowercase = /[a-z]/.test(password);
+  const isPasswordValid = isPasswordLengthValid && hasUppercase && hasLowercase;
+
   // Step 1 validation
   const validateStep1 = () => {
     if (!name.trim()) {
-      Alert.alert(isRTL ? 'خطأ' : 'Error', isRTL ? 'يرجى إدخال الاسم الكامل' : 'Please enter your full name');
+      showAlert(
+        isRTL ? 'خطأ' : 'Error',
+        isRTL ? 'يرجى إدخال الاسم الكامل' : 'Please enter your full name',
+      );
       return false;
     }
 
     if (!email.trim()) {
-      Alert.alert(isRTL ? 'خطأ' : 'Error', isRTL ? 'يرجى إدخال البريد الإلكتروني' : 'Please enter your email');
+      showAlert(
+        isRTL ? 'خطأ' : 'Error',
+        isRTL ? 'يرجى إدخال البريد الإلكتروني' : 'Please enter your email',
+      );
       return false;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      Alert.alert(isRTL ? 'خطأ' : 'Error', isRTL ? 'البريد الإلكتروني غير صحيح' : 'Invalid email address');
+      showAlert(
+        isRTL ? 'خطأ' : 'Error',
+        isRTL ? 'البريد الإلكتروني غير صحيح' : 'Invalid email address',
+      );
       return false;
     }
 
-    if (!password.trim()) {
-      Alert.alert(isRTL ? 'خطأ' : 'Error', isRTL ? 'يرجى إدخال كلمة المرور' : 'Please enter a password');
-      return false;
-    }
-
-    if (password.length < 6) {
-      Alert.alert(isRTL ? 'خطأ' : 'Error', isRTL ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : 'Password must be at least 6 characters');
+    // Check all password requirements without alerts
+    if (!password.trim() || !isPasswordValid || !confirmPassword.trim() || password !== confirmPassword) {
       return false;
     }
 
     if (!phone.trim()) {
-      Alert.alert(isRTL ? 'خطأ' : 'Error', isRTL ? 'يرجى إدخال رقم الهاتف' : 'Please enter your phone number');
+      showAlert(
+        isRTL ? 'خطأ' : 'Error',
+        isRTL ? 'يرجى إدخال رقم الهاتف' : 'Please enter your phone number',
+      );
       return false;
     }
 
@@ -92,11 +138,14 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
 
     setIsLoading(true);
     try {
+      // Format phone with space: +965 12345678
+      const formattedPhone = `+${countryCode} ${phone}`;
+      
       const response = await signup({
         name,
         email,
         password,
-        phone: `+${countryCode}${phone}`,
+        phone: formattedPhone,
         role: 'customer',
       });
 
@@ -105,9 +154,13 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
         setStep(2);
       }
     } catch (error) {
-      Alert.alert(
+      showAlert(
         isRTL ? 'خطأ' : 'Error',
-        error instanceof Error ? error.message : isRTL ? 'حدث خطأ ما' : 'Something went wrong'
+        error instanceof Error
+          ? error.message
+          : isRTL
+          ? 'حدث خطأ ما'
+          : 'Something went wrong',
       );
     } finally {
       setIsLoading(false);
@@ -138,9 +191,9 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
     const otpCode = otp.join('');
 
     if (otpCode.length !== 6) {
-      Alert.alert(
+      showAlert(
         isRTL ? 'خطأ' : 'Error',
-        isRTL ? 'يرجى إدخال رمز 6 أرقام' : 'Please enter the 6-digit code'
+        isRTL ? 'يرجى إدخال رمز 6 أرقام' : 'Please enter the 6-digit code',
       );
       return;
     }
@@ -166,9 +219,13 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
 
       setStep(3);
     } catch (error) {
-      Alert.alert(
+      showAlert(
         isRTL ? 'خطأ' : 'Error',
-        error instanceof Error ? error.message : isRTL ? 'فشل التحقق من الرمز' : 'Failed to verify code'
+        error instanceof Error
+          ? error.message
+          : isRTL
+          ? 'فشل التحقق من الرمز'
+          : 'Failed to verify code',
       );
     } finally {
       setIsLoading(false);
@@ -177,17 +234,26 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
 
   const validateStep3 = () => {
     if (!addressName.trim()) {
-      Alert.alert(isRTL ? 'خطأ' : 'Error', isRTL ? 'يرجى إدخال اسم العنوان' : 'Please enter address name');
+      showAlert(
+        isRTL ? 'خطأ' : 'Error',
+        isRTL ? 'يرجى إدخال اسم العنوان' : 'Please enter address name',
+      );
       return false;
     }
 
     if (!street.trim()) {
-      Alert.alert(isRTL ? 'خطأ' : 'Error', isRTL ? 'يرجى إدخال الشارع' : 'Please enter street');
+      showAlert(
+        isRTL ? 'خطأ' : 'Error',
+        isRTL ? 'يرجى إدخال الشارع' : 'Please enter street',
+      );
       return false;
     }
 
     if (!city.trim()) {
-      Alert.alert(isRTL ? 'خطأ' : 'Error', isRTL ? 'يرجى إدخال المدينة' : 'Please enter city');
+      showAlert(
+        isRTL ? 'خطأ' : 'Error',
+        isRTL ? 'يرجى إدخال المدينة' : 'Please enter city',
+      );
       return false;
     }
 
@@ -204,9 +270,9 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
       // Save address for the newly created user
       const response = await fetch(`${API_URL}/addresses`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          ...(userToken && { 'Authorization': `Bearer ${userToken}` })
+          ...(userToken && { Authorization: `Bearer ${userToken}` }),
         },
         body: JSON.stringify({
           name: addressName,
@@ -223,16 +289,20 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
       }
 
       // Success - no alert here, just call onSignupSuccess with token
-      onSignupSuccess(userToken, { 
-        email, 
-        name, 
+      onSignupSuccess(userToken, {
+        email,
+        name,
         phone: `+${countryCode}${phone}`,
-        role: 'customer' 
+        role: 'customer',
       });
     } catch (error) {
-      Alert.alert(
+      showAlert(
         isRTL ? 'خطأ' : 'Error',
-        error instanceof Error ? error.message : isRTL ? 'حدث خطأ ما' : 'Something went wrong'
+        error instanceof Error
+          ? error.message
+          : isRTL
+          ? 'حدث خطأ ما'
+          : 'Something went wrong',
       );
     } finally {
       setIsLoading(false);
@@ -240,52 +310,43 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
   };
 
   const handleSkipAddress = () => {
-    Alert.alert(
-      isRTL ? 'تخطي العنوان' : 'Skip Address',
-      isRTL ? 'هل تريد تخطي إضافة العنوان الآن؟ يمكنك إضافته لاحقاً من صفحة العناوين' : 'Would you like to skip adding address now? You can add it later from the Addresses page',
-      [
-        {
-          text: isRTL ? 'الغاء' : 'Cancel',
-          onPress: () => {},
-          style: 'cancel'
-        },
-        {
-          text: isRTL ? 'نعم، تخطي' : 'Yes, Skip',
-          onPress: () => {
-            // Complete signup without address
-            onSignupSuccess(userToken, { 
-              email, 
-              name, 
-              phone: `+${countryCode}${phone}`,
-              role: 'customer' 
-            });
-          },
-          style: 'destructive'
-        }
-      ]
+    setAlertTitle(isRTL ? 'تخطي العنوان' : 'Skip Address');
+    setAlertMessage(
+      isRTL
+        ? 'هل تريد تخطي إضافة العنوان الآن؟ يمكنك إضافته لاحقاً من صفحة العناوين'
+        : 'Would you like to skip adding address now? You can add it later from the Addresses page',
     );
+    setAlertCallback(() => () => {
+      // Complete signup without address
+      onSignupSuccess(userToken, {
+        email,
+        name,
+        phone: `+${countryCode}${phone}`,
+        role: 'customer',
+      });
+    });
+    setAlertVisible(true);
   };
 
   const renderStep1 = () => (
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
-      showsVerticalScrollIndicator={false}>
-      {/* Progress Indicator */}
-      <View style={multiStepStyles.progressContainer}>
-        <View style={[multiStepStyles.progressDot, multiStepStyles.progressDotActive]} />
-        <View style={multiStepStyles.progressLine} />
-        <View style={multiStepStyles.progressDot} />
-        <View style={multiStepStyles.progressLine} />
-        <View style={multiStepStyles.progressDot} />
-      </View>
-
+      showsVerticalScrollIndicator={false}
+    >
       <Text style={[styles.title, isRTL && styles.titleRTL]}>
         {isRTL ? 'إنشاء حساب' : 'Create Account'}
       </Text>
 
-      <Text style={[multiStepStyles.stepNumber, isRTL && multiStepStyles.stepNumberRTL]}>
-        {isRTL ? 'الخطوة 1 من 3: المعلومات الأساسية' : 'Step 1 of 3: Basic Information'}
+      <Text
+        style={[
+          multiStepStyles.stepNumber,
+          isRTL && multiStepStyles.stepNumberRTL,
+        ]}
+      >
+        {isRTL
+          ? 'الخطوة 1 من 3: المعلومات الأساسية'
+          : 'Step 1 of 3: Basic Information'}
       </Text>
 
       <View style={styles.formContainer}>
@@ -295,7 +356,9 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
             {isRTL ? 'الاسم الكامل' : 'Full Name'}
           </Text>
           <TextInput
-            ref={(ref) => { if (inputRefs.current) inputRefs.current[0] = ref; }}
+            ref={ref => {
+              if (inputRefs.current) inputRefs.current[0] = ref;
+            }}
             style={[styles.input, isRTL && styles.inputRTL]}
             value={name}
             onChangeText={setName}
@@ -312,7 +375,9 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
             {isRTL ? 'البريد الإلكتروني' : 'Email'}
           </Text>
           <TextInput
-            ref={(ref) => { if (inputRefs.current) inputRefs.current[1] = ref; }}
+            ref={ref => {
+              if (inputRefs.current) inputRefs.current[1] = ref;
+            }}
             style={[styles.input, isRTL && styles.inputRTL]}
             value={email}
             onChangeText={setEmail}
@@ -332,7 +397,9 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
           </Text>
           <View style={styles.passwordInputWrapper}>
             <TextInput
-              ref={(ref) => { if (inputRefs.current) inputRefs.current[2] = ref; }}
+              ref={ref => {
+                if (inputRefs.current) inputRefs.current[2] = ref;
+              }}
               style={[styles.input, isRTL && styles.inputRTL]}
               value={password}
               onChangeText={setPassword}
@@ -343,11 +410,92 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
               editable={!isLoading}
             />
             <TouchableOpacity
-              style={styles.eyeButton}
-              onPress={() => setShowPassword(!showPassword)}>
-              <Text style={styles.eyeIcon}>{showPassword ? '👁' : '👁‍🗨'}</Text>
+              style={[styles.eyeButton, isRTL && styles.eyeButtonRTL]}
+              onPress={() => setShowPassword(!showPassword)}
+            >
+              <Text style={styles.eyeIcon}>{showPassword ? '○' : '●'}</Text>
             </TouchableOpacity>
           </View>
+          {password.length > 0 && (
+            <View style={multiStepStyles.passwordRequirements}>
+              <Text
+                style={[
+                  multiStepStyles.requirementText,
+                  isRTL && multiStepStyles.requirementTextRTL,
+                  isPasswordLengthValid
+                    ? multiStepStyles.requirementValid
+                    : multiStepStyles.requirementInvalid,
+                ]}
+              >
+                {isRTL ? '• الحد الأدنى 8 أحرف' : '• Minimum 8 characters'}
+              </Text>
+              <Text
+                style={[
+                  multiStepStyles.requirementText,
+                  isRTL && multiStepStyles.requirementTextRTL,
+                  hasUppercase
+                    ? multiStepStyles.requirementValid
+                    : multiStepStyles.requirementInvalid,
+                ]}
+              >
+                {isRTL ? '• حرف كبير واحد على الأقل' : '• At least one uppercase letter'}
+              </Text>
+              <Text
+                style={[
+                  multiStepStyles.requirementText,
+                  isRTL && multiStepStyles.requirementTextRTL,
+                  hasLowercase
+                    ? multiStepStyles.requirementValid
+                    : multiStepStyles.requirementInvalid,
+                ]}
+              >
+                {isRTL ? '• حرف صغير واحد على الأقل' : '• At least one lowercase letter'}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Confirm Password */}
+        <View style={styles.inputContainer}>
+          <Text style={[styles.label, isRTL && styles.labelRTL]}>
+            {isRTL ? 'تأكيد كلمة المرور' : 'Confirm Password'}
+          </Text>
+          <View style={styles.passwordInputWrapper}>
+            <TextInput
+              ref={ref => {
+                if (inputRefs.current) inputRefs.current[3] = ref;
+              }}
+              style={[styles.input, isRTL && styles.inputRTL]}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              placeholder={isRTL ? 'أعد إدخال كلمة المرور' : 'Re-enter your password'}
+              placeholderTextColor="#999"
+              secureTextEntry={!showConfirmPassword}
+              textAlign={isRTL ? 'right' : 'left'}
+              editable={!isLoading}
+            />
+            <TouchableOpacity
+              style={[styles.eyeButton, isRTL && styles.eyeButtonRTL]}
+              onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+            >
+              <Text style={styles.eyeIcon}>{showConfirmPassword ? '○' : '●'}</Text>
+            </TouchableOpacity>
+          </View>
+          {confirmPassword.length > 0 && (
+            <View style={multiStepStyles.passwordRequirements}>
+              <Text
+                style={[
+                  multiStepStyles.requirementText,
+                  isRTL && multiStepStyles.requirementTextRTL,
+                  password === confirmPassword && confirmPassword.length > 0
+                    ? multiStepStyles.requirementValid
+                    : multiStepStyles.requirementInvalid,
+                ]}
+              >
+                {isRTL ? '• كلمات المرور متطابقة' : '• Passwords match'}
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Phone Number with Country Code */}
@@ -370,11 +518,13 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
               />
             </View>
             <TextInput
-              ref={(ref) => { if (inputRefs.current) inputRefs.current[3] = ref; }}
+              ref={ref => {
+                if (inputRefs.current) inputRefs.current[4] = ref;
+              }}
               style={[multiStepStyles.phoneInput, isRTL && styles.inputRTL]}
               value={phone}
-              onChangeText={setPhone}
-              placeholder={isRTL ? 'أدخل رقم الهاتف' : 'Enter phone number'}
+              onChangeText={handlePhoneChange}
+              placeholder={isRTL ? '12345678' : '12345678'}
               placeholderTextColor="#999"
               keyboardType="phone-pad"
               textAlign={isRTL ? 'right' : 'left'}
@@ -385,11 +535,21 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
 
         {/* Next Button */}
         <TouchableOpacity
-          style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
+          style={[
+            styles.submitButton,
+            isLoading && styles.submitButtonDisabled,
+          ]}
           onPress={handleStep1Submit}
-          disabled={isLoading}>
+          disabled={isLoading}
+        >
           <Text style={styles.submitButtonText}>
-            {isLoading ? (isRTL ? 'جاري...' : 'Loading...') : isRTL ? 'التالي' : 'Next'}
+            {isLoading
+              ? isRTL
+                ? 'جاري...'
+                : 'Loading...'
+              : isRTL
+              ? 'التالي'
+              : 'Next'}
           </Text>
         </TouchableOpacity>
 
@@ -397,8 +557,11 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
         <TouchableOpacity
           style={styles.backButton}
           onPress={onBack}
-          disabled={isLoading}>
-          <Text style={[styles.backButtonText, isRTL && styles.backButtonTextRTL]}>
+          disabled={isLoading}
+        >
+          <Text
+            style={[styles.backButtonText, isRTL && styles.backButtonTextRTL]}
+          >
             {isRTL ? 'العودة' : 'Back'}
           </Text>
         </TouchableOpacity>
@@ -410,12 +573,23 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
-      showsVerticalScrollIndicator={false}>
+      showsVerticalScrollIndicator={false}
+    >
       {/* Progress Indicator */}
       <View style={multiStepStyles.progressContainer}>
-        <View style={[multiStepStyles.progressDot, multiStepStyles.progressDotActive]} />
+        <View
+          style={[
+            multiStepStyles.progressDot,
+            multiStepStyles.progressDotActive,
+          ]}
+        />
         <View style={multiStepStyles.progressLine} />
-        <View style={[multiStepStyles.progressDot, multiStepStyles.progressDotActive]} />
+        <View
+          style={[
+            multiStepStyles.progressDot,
+            multiStepStyles.progressDotActive,
+          ]}
+        />
         <View style={multiStepStyles.progressLine} />
         <View style={multiStepStyles.progressDot} />
       </View>
@@ -424,26 +598,43 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
         {isRTL ? 'التحقق من البريد الإلكتروني' : 'Verify Email'}
       </Text>
 
-      <Text style={[multiStepStyles.stepNumber, isRTL && multiStepStyles.stepNumberRTL]}>
+      <Text
+        style={[
+          multiStepStyles.stepNumber,
+          isRTL && multiStepStyles.stepNumberRTL,
+        ]}
+      >
         {isRTL ? 'الخطوة 2 من 3' : 'Step 2 of 3'}
       </Text>
 
       <View style={styles.formContainer}>
-        <Text style={[multiStepStyles.description, isRTL && multiStepStyles.descriptionRTL]}>
+        <Text
+          style={[
+            multiStepStyles.description,
+            isRTL && multiStepStyles.descriptionRTL,
+          ]}
+        >
           {isRTL
             ? `تم إرسال رمز مكون من 6 أرقام إلى\n${email}`
             : `A 6-digit code has been sent to\n${email}`}
         </Text>
 
-        <View style={[multiStepStyles.otpContainer, isRTL && multiStepStyles.otpContainerRTL]}>
+        <View
+          style={[
+            multiStepStyles.otpContainer,
+            isRTL && multiStepStyles.otpContainerRTL,
+          ]}
+        >
           {otp.map((digit, index) => (
             <TextInput
               key={index}
-              ref={(ref) => { if (otpInputRefs.current) otpInputRefs.current[index] = ref; }}
+              ref={ref => {
+                if (otpInputRefs.current) otpInputRefs.current[index] = ref;
+              }}
               style={multiStepStyles.otpInput}
               value={digit}
-              onChangeText={(value) => handleOtpChange(value, index)}
-              onKeyPress={(e) => handleOtpKeyPress(e, index)}
+              onChangeText={value => handleOtpChange(value, index)}
+              onKeyPress={e => handleOtpKeyPress(e, index)}
               keyboardType="number-pad"
               maxLength={1}
               selectTextOnFocus
@@ -454,11 +645,21 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
 
         {/* Verify Button */}
         <TouchableOpacity
-          style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
+          style={[
+            styles.submitButton,
+            isLoading && styles.submitButtonDisabled,
+          ]}
           onPress={handleVerifyEmail}
-          disabled={isLoading}>
+          disabled={isLoading}
+        >
           <Text style={styles.submitButtonText}>
-            {isLoading ? (isRTL ? 'جاري...' : 'Loading...') : isRTL ? 'التحقق' : 'Verify'}
+            {isLoading
+              ? isRTL
+                ? 'جاري...'
+                : 'Loading...'
+              : isRTL
+              ? 'التحقق'
+              : 'Verify'}
           </Text>
         </TouchableOpacity>
 
@@ -469,8 +670,11 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
             setStep(1);
             setOtp(['', '', '', '', '', '']);
           }}
-          disabled={isLoading}>
-          <Text style={[styles.backButtonText, isRTL && styles.backButtonTextRTL]}>
+          disabled={isLoading}
+        >
+          <Text
+            style={[styles.backButtonText, isRTL && styles.backButtonTextRTL]}
+          >
             {isRTL ? 'رجوع' : 'Back'}
           </Text>
         </TouchableOpacity>
@@ -482,22 +686,45 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
-      showsVerticalScrollIndicator={false}>
+      showsVerticalScrollIndicator={false}
+    >
       {/* Progress Indicator */}
       <View style={multiStepStyles.progressContainer}>
-        <View style={[multiStepStyles.progressDot, multiStepStyles.progressDotActive]} />
+        <View
+          style={[
+            multiStepStyles.progressDot,
+            multiStepStyles.progressDotActive,
+          ]}
+        />
         <View style={multiStepStyles.progressLine} />
-        <View style={[multiStepStyles.progressDot, multiStepStyles.progressDotActive]} />
+        <View
+          style={[
+            multiStepStyles.progressDot,
+            multiStepStyles.progressDotActive,
+          ]}
+        />
         <View style={multiStepStyles.progressLine} />
-        <View style={[multiStepStyles.progressDot, multiStepStyles.progressDotActive]} />
+        <View
+          style={[
+            multiStepStyles.progressDot,
+            multiStepStyles.progressDotActive,
+          ]}
+        />
       </View>
 
       <Text style={[styles.title, isRTL && styles.titleRTL]}>
         {isRTL ? 'إضافة عنوان' : 'Add Address'}
       </Text>
 
-      <Text style={[multiStepStyles.stepNumber, isRTL && multiStepStyles.stepNumberRTL]}>
-        {isRTL ? 'الخطوة 3 من 3: بيانات العنوان' : 'Step 3 of 3: Address Details'}
+      <Text
+        style={[
+          multiStepStyles.stepNumber,
+          isRTL && multiStepStyles.stepNumberRTL,
+        ]}
+      >
+        {isRTL
+          ? 'الخطوة 3 من 3: بيانات العنوان'
+          : 'Step 3 of 3: Address Details'}
       </Text>
 
       <View style={styles.formContainer}>
@@ -586,11 +813,21 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
 
         {/* Submit Button */}
         <TouchableOpacity
-          style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
+          style={[
+            styles.submitButton,
+            isLoading && styles.submitButtonDisabled,
+          ]}
           onPress={handleCompleteSignup}
-          disabled={isLoading}>
+          disabled={isLoading}
+        >
           <Text style={styles.submitButtonText}>
-            {isLoading ? (isRTL ? 'جاري...' : 'Loading...') : isRTL ? 'اكمل' : 'Complete Signup'}
+            {isLoading
+              ? isRTL
+                ? 'جاري...'
+                : 'Loading...'
+              : isRTL
+              ? 'اكمل'
+              : 'Complete Signup'}
           </Text>
         </TouchableOpacity>
 
@@ -598,8 +835,11 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
         <TouchableOpacity
           style={[styles.backButton]}
           onPress={handleSkipAddress}
-          disabled={isLoading}>
-          <Text style={[styles.backButtonText, isRTL && styles.backButtonTextRTL]}>
+          disabled={isLoading}
+        >
+          <Text
+            style={[styles.backButtonText, isRTL && styles.backButtonTextRTL]}
+          >
             {isRTL ? 'تخطي الآن' : 'Skip for Now'}
           </Text>
         </TouchableOpacity>
@@ -608,8 +848,11 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
         <TouchableOpacity
           style={[styles.backButton, { marginTop: 8 }]}
           onPress={() => setStep(2)}
-          disabled={isLoading}>
-          <Text style={[styles.backButtonText, isRTL && styles.backButtonTextRTL]}>
+          disabled={isLoading}
+        >
+          <Text
+            style={[styles.backButtonText, isRTL && styles.backButtonTextRTL]}
+          >
             {isRTL ? 'رجوع' : 'Back'}
           </Text>
         </TouchableOpacity>
@@ -618,13 +861,28 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({ onBack, onSignupSucce
   );
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1 }}>
-      {step === 1 && renderStep1()}
-      {step === 2 && renderStep2()}
-      {step === 3 && renderStep3()}
-    </KeyboardAvoidingView>
+    <>
+      <CustomAlert
+        visible={alertVisible}
+        title={alertTitle}
+        message={alertMessage}
+        buttons={[
+          {
+            text: isRTL ? 'حسناً' : 'OK',
+            onPress: alertCallback || undefined,
+          },
+        ]}
+        onClose={() => setAlertVisible(false)}
+      />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        {step === 1 && renderStep1()}
+        {step === 2 && renderStep2()}
+        {step === 3 && renderStep3()}
+      </KeyboardAvoidingView>
+    </>
   );
 };
 
@@ -674,18 +932,18 @@ const multiStepStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#E0E0E0',
     borderRadius: 8,
-    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
   },
   phonePrefix: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    paddingHorizontal: 12,
-    paddingVertical: 14,
+    backgroundColor: '#F9FAFB',
+    paddingHorizontal: 14,
+    paddingVertical: 16,
     borderRightWidth: 1,
-    borderRightColor: '#ddd',
+    borderRightColor: '#E5E7EB',
   },
   plusSign: {
     fontSize: 16,
@@ -698,16 +956,17 @@ const multiStepStyles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textDark,
     padding: 0,
-    width: 40,
+    minWidth: 42,
     textAlign: 'center',
   },
   phoneInput: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
     fontSize: 16,
     color: colors.textDark,
-    borderWidth: 0,
+    minWidth: 0,
+    marginLeft: 8,
   },
   otpContainer: {
     flexDirection: 'row',
@@ -735,6 +994,26 @@ const multiStepStyles = StyleSheet.create({
   },
   halfInput: {
     flex: 1,
+  },
+  passwordRequirements: {
+    marginTop: 8,
+    paddingLeft: 8,
+  },
+  requirementText: {
+    fontSize: 12,
+    marginBottom: 4,
+    lineHeight: 18,
+  },
+  requirementTextRTL: {
+    textAlign: 'right',
+    paddingLeft: 0,
+    paddingRight: 8,
+  },
+  requirementValid: {
+    color: '#10B981',
+  },
+  requirementInvalid: {
+    color: '#EF4444',
   },
 });
 

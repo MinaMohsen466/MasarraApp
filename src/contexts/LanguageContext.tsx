@@ -1,4 +1,10 @@
-import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
+import React, {
+  createContext,
+  useState,
+  useContext,
+  ReactNode,
+  useEffect,
+} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 // import { I18nManager } from 'react-native';
 
@@ -15,7 +21,7 @@ const translations = {
   en: {
     // Header
     appName: 'Masarra',
-    
+
     // Drawer Menu Items
     home: 'Home',
     occasions: 'Occasions',
@@ -30,15 +36,15 @@ const translations = {
     switchToEnglish: 'English',
     logIn: 'Log In',
     logOut: 'Log Out',
-    
+
     // Tagline
     tagline: 'Your occasion on us',
-    
+
     // Occasions Page
     loadingOccasions: 'Loading occasions...',
     failedToLoad: 'Failed to load occasions',
     noOccasionsAvailable: 'No occasions available',
-    
+
     // Cart Page
     myCart: 'MY CART',
     loading: 'Loading...',
@@ -58,7 +64,7 @@ const translations = {
     payableAfterConfirmation: 'Payable After Confirmation',
     checkout: 'Checkout',
     continueShopping: 'Continue Shopping',
-    
+
     // Coupon
     couponCode: 'Coupon Code',
     enterCouponCode: 'Enter coupon code',
@@ -71,15 +77,17 @@ const translations = {
     couponError: 'Error applying coupon',
     enterCoupon: 'Please enter coupon code',
     pleaseLogin: 'Please login first',
-    
+
     pastTimeWarning: '⚠ Past Time',
     oldBookingsAlert: '⚠ Alert: Old Bookings',
-    oldBookingsMessage: 'You have {count} booking(s) with past date/time in your cart:\n\n{items}\n\nPlease update or remove these bookings.',
+    oldBookingsMessage:
+      'You have {count} booking(s) with past date/time in your cart:\n\n{items}\n\nPlease update or remove these bookings.',
     ok: 'OK',
     error: 'Error',
     errorProcessingOrder: 'Error processing your order',
     someItemsUnavailable: 'Some Items Unavailable',
-    unavailableItemsMessage: 'Some items in your cart are no longer available:\n\n{items}\n\nPlease remove them before proceeding.',
+    unavailableItemsMessage:
+      'Some items in your cart are no longer available:\n\n{items}\n\nPlease remove them before proceeding.',
     bookingError: 'Booking Error',
     failedToCreateBookings: 'Failed to create some bookings:\n\n{items}',
     errorCreatingBookings: 'Error creating bookings',
@@ -89,7 +97,7 @@ const translations = {
   ar: {
     // Header
     appName: 'Masarra',
-    
+
     // Drawer Menu Items
     home: 'الرئيسية',
     occasions: 'المناسبات',
@@ -104,15 +112,15 @@ const translations = {
     switchToEnglish: 'English',
     logIn: 'تسجيل الدخول',
     logOut: 'تسجيل الخروج',
-    
+
     // Tagline
     tagline: 'مناسبتك علينا',
-    
+
     // Occasions Page
     loadingOccasions: 'جاري تحميل المناسبات...',
     failedToLoad: 'فشل في تحميل المناسبات',
     noOccasionsAvailable: 'لا توجد مناسبات متاحة',
-    
+
     // Cart Page
     myCart: 'سلتي',
     loading: 'جاري التحميل...',
@@ -132,7 +140,7 @@ const translations = {
     payableAfterConfirmation: 'الدفع بعد التأكيد',
     checkout: 'إتمام الطلب',
     continueShopping: 'متابعة التسوق',
-    
+
     // Coupon
     couponCode: 'رمز الكوبون',
     enterCouponCode: 'أدخل رمز الكوبون',
@@ -145,15 +153,17 @@ const translations = {
     couponError: 'حدث خطأ أثناء تطبيق الكوبون',
     enterCoupon: 'الرجاء إدخال رمز الكوبون',
     pleaseLogin: 'الرجاء تسجيل الدخول أولاً',
-    
+
     pastTimeWarning: '⚠ وقت قديم',
     oldBookingsAlert: '⚠ تنبيه: حجوزات قديمة',
-    oldBookingsMessage: 'لديك {count} حجز(حجوزات) بتاريخ قديم في السلة:\n\n{items}\n\nالرجاء تحديث أو إزالة هذه الحجوزات.',
+    oldBookingsMessage:
+      'لديك {count} حجز(حجوزات) بتاريخ قديم في السلة:\n\n{items}\n\nالرجاء تحديث أو إزالة هذه الحجوزات.',
     ok: 'حسناً',
     error: 'خطأ',
     errorProcessingOrder: 'حدث خطأ أثناء معالجة الطلب',
     someItemsUnavailable: 'بعض العناصر غير متاحة',
-    unavailableItemsMessage: 'بعض العناصر في سلتك لم تعد متاحة:\n\n{items}\n\nالرجاء إزالتها قبل المتابعة.',
+    unavailableItemsMessage:
+      'بعض العناصر في سلتك لم تعد متاحة:\n\n{items}\n\nالرجاء إزالتها قبل المتابعة.',
     bookingError: 'خطأ في إنشاء الحجوزات',
     failedToCreateBookings: 'فشل إنشاء بعض الحجوزات:\n\n{items}',
     errorCreatingBookings: 'حدث خطأ أثناء إنشاء الحجوزات',
@@ -162,13 +172,17 @@ const translations = {
   },
 };
 
-const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+const LanguageContext = createContext<LanguageContextType | undefined>(
+  undefined,
+);
 
 interface LanguageProviderProps {
   children: ReactNode;
 }
 
-export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) => {
+export const LanguageProvider: React.FC<LanguageProviderProps> = ({
+  children,
+}) => {
   const [language, setLanguageState] = useState<Language>('en');
   const [isInitialized, setIsInitialized] = useState(false);
   const isRTL = language === 'ar';
@@ -178,7 +192,10 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
     const loadLanguage = async () => {
       try {
         const savedLanguage = await AsyncStorage.getItem('appLanguage');
-        if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'ar')) {
+        if (
+          savedLanguage &&
+          (savedLanguage === 'en' || savedLanguage === 'ar')
+        ) {
           setLanguageState(savedLanguage);
         }
       } catch (error) {
@@ -187,7 +204,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
         setIsInitialized(true);
       }
     };
-    
+
     loadLanguage();
   }, []);
 

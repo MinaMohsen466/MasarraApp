@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, FlatList, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Modal,
+  FlatList,
+  ActivityIndicator,
+} from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { styles } from './OccasionSelectorStyles';
 import { colors } from '../../constants/colors';
@@ -29,17 +36,20 @@ const OccasionSelector: React.FC<OccasionSelectorProps> = ({
 
     return (
       <TouchableOpacity
-        style={[
-          styles.occasionItem,
-          isSelected && styles.occasionItemSelected,
-        ]}
+        style={[styles.occasionItem, isSelected && styles.occasionItemSelected]}
         onPress={() => {
           onSelect(item);
           onClose();
         }}
-        activeOpacity={0.7}>
+        activeOpacity={0.7}
+      >
         <View style={styles.occasionItemContent}>
-          <Text style={[styles.occasionItemText, isRTL && styles.occasionItemTextRTL]}>
+          <Text
+            style={[
+              styles.occasionItemText,
+              isRTL && styles.occasionItemTextRTL,
+            ]}
+          >
             {displayName}
           </Text>
           {isSelected && (
@@ -63,7 +73,8 @@ const OccasionSelector: React.FC<OccasionSelectorProps> = ({
       visible={visible}
       transparent
       animationType="fade"
-      onRequestClose={onClose}>
+      onRequestClose={onClose}
+    >
       <View style={styles.modalOverlay}>
         <View style={[styles.modalContent, isRTL && styles.modalContentRTL]}>
           {/* Header */}
@@ -93,7 +104,7 @@ const OccasionSelector: React.FC<OccasionSelectorProps> = ({
             <FlatList
               data={occasions}
               renderItem={renderOccasionItem}
-              keyExtractor={(item) => item._id}
+              keyExtractor={item => item._id}
               scrollEnabled={true}
               nestedScrollEnabled={true}
               contentContainerStyle={styles.occasionsList}

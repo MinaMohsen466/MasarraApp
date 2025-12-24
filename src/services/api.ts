@@ -1,5 +1,9 @@
 import { Platform } from 'react-native';
-import { API_BASE_URL as BASE_URL, API_URL, getImageUrl as getImageUrlFromConfig } from '../config/api.config';
+import {
+  API_BASE_URL as BASE_URL,
+  API_URL,
+  getImageUrl as getImageUrlFromConfig,
+} from '../config/api.config';
 
 export const API_BASE_URL = API_URL;
 
@@ -84,11 +88,11 @@ export interface LoginData {
 export const fetchSiteSettings = async (): Promise<SiteSettings> => {
   try {
     const response = await fetch(`${API_BASE_URL}/settings/site`);
-    
+
     if (!response.ok) {
       throw new Error(`Failed to fetch site settings: ${response.statusText}`);
     }
-    
+
     const data: SiteSettings = await response.json();
     return data;
   } catch (error) {
@@ -102,11 +106,11 @@ export const fetchSiteSettings = async (): Promise<SiteSettings> => {
 export const fetchOccasions = async (): Promise<Occasion[]> => {
   try {
     const response = await fetch(`${API_BASE_URL}/occasions`);
-    
+
     if (!response.ok) {
       throw new Error(`Failed to fetch occasions: ${response.statusText}`);
     }
-    
+
     const data: Occasion[] = await response.json();
     return data.filter(occasion => occasion.isActive); // Only return active occasions
   } catch (error) {
@@ -133,15 +137,15 @@ export const login = async (data: LoginData): Promise<LoginResponse> => {
     });
 
     if (!response.ok) {
-        const errorData = await response.json();
-        // If server indicates verification required, throw an Error with extra properties
-        if (response.status === 403 && errorData?.requiresVerification) {
-          const e: any = new Error(errorData.error || 'Email not verified');
-          e.requiresVerification = true;
-          e.userId = errorData.userId;
-          throw e;
-        }
-        throw new Error(errorData.error || 'Login failed');
+      const errorData = await response.json();
+      // If server indicates verification required, throw an Error with extra properties
+      if (response.status === 403 && errorData?.requiresVerification) {
+        const e: any = new Error(errorData.error || 'Email not verified');
+        e.requiresVerification = true;
+        e.userId = errorData.userId;
+        throw e;
+      }
+      throw new Error(errorData.error || 'Login failed');
     }
 
     const responseData: LoginResponse = await response.json();
@@ -183,13 +187,16 @@ export const signup = async (data: SignupData): Promise<SignupResponse> => {
 /**
  * Update user profile
  */
-export const updateUserProfile = async (token: string, updates: Partial<User>): Promise<{ user: User; message: string }> => {
+export const updateUserProfile = async (
+  token: string,
+  updates: Partial<User>,
+): Promise<{ user: User; message: string }> => {
   try {
     const response = await fetch(`${API_BASE_URL}/auth/profile`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(updates),
     });
@@ -210,10 +217,10 @@ export const updateUserProfile = async (token: string, updates: Partial<User>): 
  * Update user profile with image
  */
 export const updateUserProfileWithImage = async (
-  token: string, 
-  name: string, 
-  phone: string, 
-  imageUri?: string
+  token: string,
+  name: string,
+  phone: string,
+  imageUri?: string,
 ): Promise<{ user: User; message: string }> => {
   try {
     const formData = new FormData();
@@ -235,7 +242,7 @@ export const updateUserProfileWithImage = async (
     const response = await fetch(`${API_BASE_URL}/auth/profile`, {
       method: 'PUT',
       headers: {
-        'Authorization': `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'multipart/form-data',
       },
       body: formData,
@@ -259,14 +266,14 @@ export const updateUserProfileWithImage = async (
 export const changePassword = async (
   token: string,
   currentPassword: string,
-  newPassword: string
+  newPassword: string,
 ): Promise<{ message: string }> => {
   try {
     const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ currentPassword, newPassword }),
     });
@@ -291,7 +298,7 @@ export const fetchAddresses = async (token: string): Promise<any[]> => {
     const response = await fetch(`${API_BASE_URL}/addresses`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     });
@@ -312,12 +319,22 @@ export const fetchAddresses = async (token: string): Promise<any[]> => {
 /**
  * Create a new address for the authenticated user
  */
-export const createAddress = async (token: string, address: { name: string; street: string; houseNumber?: string; floorNumber?: string; city: string; isDefault?: boolean }) => {
+export const createAddress = async (
+  token: string,
+  address: {
+    name: string;
+    street: string;
+    houseNumber?: string;
+    floorNumber?: string;
+    city: string;
+    isDefault?: boolean;
+  },
+) => {
   try {
     const response = await fetch(`${API_BASE_URL}/addresses`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(address),
@@ -341,13 +358,20 @@ export const createAddress = async (token: string, address: { name: string; stre
 export const updateAddress = async (
   token: string,
   addressId: string,
-  address: { name: string; street: string; houseNumber?: string; floorNumber?: string; city: string; isDefault?: boolean }
+  address: {
+    name: string;
+    street: string;
+    houseNumber?: string;
+    floorNumber?: string;
+    city: string;
+    isDefault?: boolean;
+  },
 ) => {
   try {
     const response = await fetch(`${API_BASE_URL}/addresses/${addressId}`, {
       method: 'PUT',
       headers: {
-        'Authorization': `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(address),
@@ -373,7 +397,7 @@ export const deleteAddress = async (token: string, addressId: string) => {
     const response = await fetch(`${API_BASE_URL}/addresses/${addressId}`, {
       method: 'DELETE',
       headers: {
-        'Authorization': `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     });
@@ -395,13 +419,16 @@ export const deleteAddress = async (token: string, addressId: string) => {
  */
 export const setDefaultAddress = async (token: string, addressId: string) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/addresses/${addressId}/default`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
+    const response = await fetch(
+      `${API_BASE_URL}/addresses/${addressId}/default`,
+      {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       },
-    });
+    );
 
     if (!response.ok) {
       const errorData = await response.json();
@@ -494,7 +521,7 @@ export const fetchBookings = async (token?: string): Promise<Booking[]> => {
     const headers: any = {
       'Content-Type': 'application/json',
     };
-    
+
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
@@ -524,7 +551,7 @@ export const getUserBookings = async (token: string): Promise<Booking[]> => {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
       },
     });
 
@@ -540,68 +567,134 @@ export const getUserBookings = async (token: string): Promise<Booking[]> => {
 };
 
 /**
+ * Check availability for multiple dates at once (batch request)
+ * Much faster than individual requests
+ */
+export const checkBatchDateAvailability = async (
+  serviceId: string,
+  vendorId: string,
+  dates: Date[],
+  token?: string,
+): Promise<
+  Map<string, { available: boolean; bookingsCount: number; slots: number }>
+> => {
+  try {
+    // استخدم Promise.all لإرسال جميع الطلبات بشكل متوازٍ
+    const results = await Promise.all(
+      dates.map(async date => {
+        try {
+          const result = await checkDateAvailability(
+            serviceId,
+            vendorId,
+            date,
+            token,
+          );
+          const dateKey = `${date.getUTCFullYear()}-${(date.getUTCMonth() + 1)
+            .toString()
+            .padStart(2, '0')}-${date
+            .getUTCDate()
+            .toString()
+            .padStart(2, '0')}`;
+          return { dateKey, ...result };
+        } catch (error) {
+          const dateKey = `${date.getUTCFullYear()}-${(date.getUTCMonth() + 1)
+            .toString()
+            .padStart(2, '0')}-${date
+            .getUTCDate()
+            .toString()
+            .padStart(2, '0')}`;
+          return { dateKey, available: false, bookingsCount: 0, slots: 0 };
+        }
+      }),
+    );
+
+    // حوّل النتائج إلى Map
+    const availabilityMap = new Map<
+      string,
+      { available: boolean; bookingsCount: number; slots: number }
+    >();
+    results.forEach(({ dateKey, available, bookingsCount, slots }) => {
+      availabilityMap.set(dateKey, { available, bookingsCount, slots });
+    });
+
+    return availabilityMap;
+  } catch (error) {
+    // في حالة الخطأ، أرجع Map فارغ
+    return new Map();
+  }
+};
+
+/**
  * Check availability for a specific service/vendor on a date
  */
 export const checkDateAvailability = async (
   serviceId: string,
   vendorId: string,
   date: Date,
-  token?: string
+  token?: string,
 ): Promise<{ available: boolean; bookingsCount: number; slots: number }> => {
   try {
     // Cache service details لتجنب طلبات متكررة
     const cacheKey = `service-${serviceId}`;
     let service: any;
-    
+
     // تحقق من الـ cache أولاً
     const cachedService = serviceCache.get(cacheKey);
-    if (cachedService && Date.now() - cachedService.timestamp < 5 * 60 * 1000) { // 5 minutes cache
+    if (cachedService && Date.now() - cachedService.timestamp < 5 * 60 * 1000) {
+      // 5 minutes cache
       service = cachedService.data;
     } else {
       // Fetch service details مع timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-      
+
       try {
-        const serviceResponse = await fetch(`${BASE_URL}/api/services/${serviceId}`, {
-          signal: controller.signal
-        });
+        const serviceResponse = await fetch(
+          `${BASE_URL}/api/services/${serviceId}`,
+          {
+            signal: controller.signal,
+          },
+        );
         clearTimeout(timeoutId);
-        
+
         if (!serviceResponse.ok) {
           throw new Error('Failed to fetch service details');
         }
         service = await serviceResponse.json();
-        
+
         // حفظ في الـ cache
         serviceCache.set(cacheKey, {
           data: service,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
       } catch (error) {
         clearTimeout(timeoutId);
         throw error;
       }
     }
-    
+
     // Extract configuration from service
-    const workingHours = service.workingHours || { start: '09:00', end: '17:00' };
+    const workingHours = service.workingHours || {
+      start: '09:00',
+      end: '17:00',
+    };
     const timeSlotDuration = service.timeSlotDuration || 60; // in minutes
     const maxBookingsPerSlot = service.maxBookingsPerSlot || 1;
     const workingDays = service.workingDays || [1, 2, 3, 4, 5]; // Mon-Fri by default
-    
+
     // Check if the selected date is a working day
     const dayOfWeek = date.getUTCDay();
     if (!workingDays.includes(dayOfWeek)) {
       // Not a working day
       return { available: false, bookingsCount: 0, slots: 0 };
     }
-    
+
     // Calculate total slots based on working hours and time slot duration
     const [startHour, startMinute] = workingHours.start.split(':').map(Number);
     const [endHour, endMinute] = workingHours.end.split(':').map(Number);
-    
-    const totalMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
+
+    const totalMinutes =
+      endHour * 60 + endMinute - (startHour * 60 + startMinute);
     const totalSlotsPerDay = Math.floor(totalMinutes / timeSlotDuration);
     // Fetch bookings from backend API for this specific date and service
     // Format date as YYYY-MM-DD using UTC to ensure consistency
@@ -609,23 +702,25 @@ export const checkDateAvailability = async (
     const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
     const day = date.getUTCDate().toString().padStart(2, '0');
     const dateStr = `${year}-${month}-${day}`;
-    
+
     // مع timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
-    
+
     try {
       const response = await fetch(
         `${BASE_URL}/api/bookings/available-timeslots?serviceId=${serviceId}&date=${dateStr}`,
         {
           signal: controller.signal,
-          headers: token ? {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          } : {
-            'Content-Type': 'application/json'
-          }
-        }
+          headers: token
+            ? {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              }
+            : {
+                'Content-Type': 'application/json',
+              },
+        },
       );
 
       clearTimeout(timeoutId);
@@ -635,17 +730,20 @@ export const checkDateAvailability = async (
         return {
           available: true,
           bookingsCount: 0,
-          slots: totalSlotsPerDay
+          slots: totalSlotsPerDay,
         };
       }
 
       const availabilityData = await response.json();
 
       // Use allSlots array from the API response
-      const allSlots = availabilityData.allSlots || availabilityData.availableSlots || [];
-      
+      const allSlots =
+        availabilityData.allSlots || availabilityData.availableSlots || [];
+
       // Count available slots
-      const availableSlots = allSlots.filter((slot: any) => slot.isAvailable !== false).length;
+      const availableSlots = allSlots.filter(
+        (slot: any) => slot.isAvailable !== false,
+      ).length;
       const bookedSlots = allSlots.length - availableSlots;
 
       return {
@@ -672,15 +770,17 @@ export const checkTimeSlotAvailability = async (
   serviceId: string,
   vendorId: string,
   date: Date,
-  token?: string
-): Promise<{ 
-  timeSlot: string; 
-  available: boolean; 
-  bookingsCount: number;
-  isAvailable?: boolean;
-  availableSpots?: number;
-  totalSpots?: number;
-}[]> => {
+  token?: string,
+): Promise<
+  {
+    timeSlot: string;
+    available: boolean;
+    bookingsCount: number;
+    isAvailable?: boolean;
+    availableSpots?: number;
+    totalSpots?: number;
+  }[]
+> => {
   try {
     // Use the backend API to get available time slots
     // Format date as YYYY-MM-DD using UTC date values to ensure consistency
@@ -688,17 +788,19 @@ export const checkTimeSlotAvailability = async (
     const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
     const day = date.getUTCDate().toString().padStart(2, '0');
     const dateStr = `${year}-${month}-${day}`;
-    
+
     const response = await fetch(
       `${BASE_URL}/api/bookings/available-timeslots?serviceId=${serviceId}&date=${dateStr}`,
       {
-        headers: token ? {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        } : {
-          'Content-Type': 'application/json'
-        }
-      }
+        headers: token
+          ? {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            }
+          : {
+              'Content-Type': 'application/json',
+            },
+      },
     );
 
     if (!response.ok) {
@@ -707,37 +809,39 @@ export const checkTimeSlotAvailability = async (
     }
 
     const data = await response.json();
-    
+
     // Transform the backend response to match the expected format
     // Use allSlots to get both available and unavailable slots
-    const slots = (data.allSlots || data.availableSlots || []).map((slot: any) => {
-      // Format time from UTC Date objects to Kuwait time (UTC+3)
-      const startTime = new Date(slot.start);
-      const endTime = new Date(slot.end);
-      
-      // Format as "HH:MM - HH:MM" in Kuwait time
-      // We get UTC hours and add 3 to convert to Kuwait time (UTC+3)
-      const formatTime = (date: Date) => {
-        const utcHours = date.getUTCHours();
-        const kuwaitHours = (utcHours + 3) % 24; // Add 3 hours for Kuwait timezone
-        const hours = kuwaitHours.toString().padStart(2, '0');
-        const minutes = date.getUTCMinutes().toString().padStart(2, '0');
-        return `${hours}:${minutes}`;
-      };
-      
-      const timeSlotStr = `${formatTime(startTime)} - ${formatTime(endTime)}`;
-      
-      const slotData = {
-        timeSlot: timeSlotStr,
-        available: slot.isAvailable === true,
-        bookingsCount: slot.totalSpots - (slot.availableSpots || 0),
-        isAvailable: slot.isAvailable,
-        availableSpots: slot.availableSpots,
-        totalSpots: slot.totalSpots
-      };
-      
-      return slotData;
-    });
+    const slots = (data.allSlots || data.availableSlots || []).map(
+      (slot: any) => {
+        // Format time from UTC Date objects to Kuwait time (UTC+3)
+        const startTime = new Date(slot.start);
+        const endTime = new Date(slot.end);
+
+        // Format as "HH:MM - HH:MM" in Kuwait time
+        // We get UTC hours and add 3 to convert to Kuwait time (UTC+3)
+        const formatTime = (date: Date) => {
+          const utcHours = date.getUTCHours();
+          const kuwaitHours = (utcHours + 3) % 24; // Add 3 hours for Kuwait timezone
+          const hours = kuwaitHours.toString().padStart(2, '0');
+          const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+          return `${hours}:${minutes}`;
+        };
+
+        const timeSlotStr = `${formatTime(startTime)} - ${formatTime(endTime)}`;
+
+        const slotData = {
+          timeSlot: timeSlotStr,
+          available: slot.isAvailable === true,
+          bookingsCount: slot.totalSpots - (slot.availableSpots || 0),
+          isAvailable: slot.isAvailable,
+          availableSpots: slot.availableSpots,
+          totalSpots: slot.totalSpots,
+        };
+
+        return slotData;
+      },
+    );
 
     return slots;
   } catch (error) {
@@ -756,7 +860,10 @@ export interface ContactRequestData {
   message: string;
 }
 
-export const submitContactRequest = async (data: ContactRequestData, token?: string): Promise<{ success: boolean; message?: string }> => {
+export const submitContactRequest = async (
+  data: ContactRequestData,
+  token?: string,
+): Promise<{ success: boolean; message?: string }> => {
   try {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',

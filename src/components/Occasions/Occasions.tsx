@@ -1,5 +1,13 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, FlatList, Image, ActivityIndicator, Dimensions } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  FlatList,
+  Image,
+  ActivityIndicator,
+  Dimensions,
+} from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { SvgUri } from 'react-native-svg';
 import { styles } from './styles';
@@ -14,10 +22,7 @@ interface OccasionsProps {
   onBack?: () => void;
 }
 
-const Occasions: React.FC<OccasionsProps> = ({
-  onSelectOccasion,
-  onBack,
-}) => {
+const Occasions: React.FC<OccasionsProps> = ({ onSelectOccasion, onBack }) => {
   const { isRTL, t } = useLanguage();
   const { data: occasions, isLoading, error } = useOccasions();
   const screenWidth = Dimensions.get('window').width;
@@ -25,12 +30,13 @@ const Occasions: React.FC<OccasionsProps> = ({
 
   const renderOccasionCard = ({ item }: { item: Occasion }) => {
     const displayName = isRTL ? item.nameAr : item.name;
-    
+
     return (
       <TouchableOpacity
         style={styles.occasionCard}
         onPress={() => onSelectOccasion?.(item)}
-        activeOpacity={0.8}>
+        activeOpacity={0.8}
+      >
         <View style={styles.iconContainer}>
           {item.image ? (
             item.image.toLowerCase().endsWith('.svg') ? (
@@ -41,7 +47,7 @@ const Occasions: React.FC<OccasionsProps> = ({
                 fill="#d2ded6"
               />
             ) : (
-              <Image 
+              <Image
                 source={{ uri: getImageUrl(item.image) }}
                 style={styles.occasionImage}
                 resizeMode="cover"
@@ -51,7 +57,10 @@ const Occasions: React.FC<OccasionsProps> = ({
             <View style={styles.placeholderIcon} />
           )}
         </View>
-        <Text style={[styles.occasionText, isRTL && styles.occasionTextRTL]} numberOfLines={2}>
+        <Text
+          style={[styles.occasionText, isRTL && styles.occasionTextRTL]}
+          numberOfLines={2}
+        >
           {displayName}
         </Text>
       </TouchableOpacity>
@@ -99,15 +108,12 @@ const Occasions: React.FC<OccasionsProps> = ({
     <View style={styles.container}>
       {/* Custom Header with Back Button */}
       <View style={[styles.header, isRTL && styles.headerRTL]}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.backButton, isRTL && styles.backButtonRTL]}
           onPress={onBack}
-          activeOpacity={0.7}>
-          <Svg
-            width={24}
-            height={24}
-            viewBox="0 0 24 24"
-            fill="none">
+          activeOpacity={0.7}
+        >
+          <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
             <Path
               d="M15 18L9 12L15 6"
               stroke={colors.primary}
@@ -117,11 +123,11 @@ const Occasions: React.FC<OccasionsProps> = ({
             />
           </Svg>
         </TouchableOpacity>
-        
+
         <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
           {t('occasions').toUpperCase()}
         </Text>
-        
+
         <View style={styles.headerSpacer} />
       </View>
 
@@ -130,7 +136,7 @@ const Occasions: React.FC<OccasionsProps> = ({
         key={numColumns}
         data={occasions}
         renderItem={renderOccasionCard}
-        keyExtractor={(item) => item._id}
+        keyExtractor={item => item._id}
         numColumns={numColumns}
         columnWrapperStyle={[styles.row, isRTL && styles.rowRTL]}
         contentContainerStyle={styles.listContent}

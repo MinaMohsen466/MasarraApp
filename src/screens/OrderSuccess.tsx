@@ -1,5 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Dimensions,
+} from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { colors } from '../constants/colors';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -42,9 +48,7 @@ const OrderSuccess: React.FC<OrderSuccessProps> = ({ onDone }) => {
         <Text style={styles.title}>
           {isRTL ? 'تم استلام طلبك' : 'YOUR ORDER HAS'}
         </Text>
-        <Text style={styles.title}>
-          {isRTL ? '' : 'BEEN RECEIVED'}
-        </Text>
+        <Text style={styles.title}>{isRTL ? '' : 'BEEN RECEIVED'}</Text>
 
         <Text style={styles.subtitle}>
           {isRTL ? 'شكراً لك على الشراء!' : 'Thank you for your Purchase!'}
@@ -57,15 +61,15 @@ const OrderSuccess: React.FC<OrderSuccessProps> = ({ onDone }) => {
         </Text>
 
         <Text style={styles.thankYou}>
-          {isRTL ? 'شكراً لك على اختيار MASARRA!' : 'Thank you for Choosing MASARRA!'}
+          {isRTL
+            ? 'شكراً لك على اختيار MASARRA!'
+            : 'Thank you for Choosing MASARRA!'}
         </Text>
 
         {/* Done Button */}
         {onDone && (
           <TouchableOpacity style={styles.doneButton} onPress={onDone}>
-            <Text style={styles.doneButtonText}>
-              {isRTL ? 'تم' : 'DONE'}
-            </Text>
+            <Text style={styles.doneButtonText}>{isRTL ? 'تم' : 'DONE'}</Text>
           </TouchableOpacity>
         )}
       </View>

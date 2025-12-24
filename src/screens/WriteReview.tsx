@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
   ActivityIndicator,
   StyleSheet,
   Dimensions,
@@ -15,6 +14,7 @@ import Svg, { Path } from 'react-native-svg';
 import { useLanguage } from '../contexts/LanguageContext';
 import { createReview } from '../services/reviewsApi';
 import { colors } from '../constants/colors';
+import { CustomAlert } from '../components/CustomAlert/CustomAlert';
 
 interface WriteReviewProps {
   bookingId: string;
@@ -35,30 +35,50 @@ const WriteReview: React.FC<WriteReviewProps> = ({
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    buttons: Array<{
+      text: string;
+      onPress?: () => void;
+      style?: 'default' | 'cancel' | 'destructive';
+    }>;
+  }>({ visible: false, title: '', message: '', buttons: [] });
 
   const handleSubmit = async () => {
     // Validation
     if (rating === 0) {
-      Alert.alert(
-        isRTL ? 'خطأ' : 'Error',
-        isRTL ? 'الرجاء اختيار التقييم' : 'Please select a rating'
-      );
+      setAlertConfig({
+        visible: true,
+        title: isRTL ? 'خطأ' : 'Error',
+        message: isRTL ? 'الرجاء اختيار التقييم' : 'Please select a rating',
+        buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
+      });
       return;
     }
 
     if (comment.trim().length < 10) {
-      Alert.alert(
-        isRTL ? 'خطأ' : 'Error',
-        isRTL ? 'الرجاء كتابة تعليق لا يقل عن 10 أحرف' : 'Please write a comment with at least 10 characters'
-      );
+      setAlertConfig({
+        visible: true,
+        title: isRTL ? 'خطأ' : 'Error',
+        message: isRTL
+          ? 'الرجاء كتابة تعليق لا يقل عن 10 أحرف'
+          : 'Please write a comment with at least 10 characters',
+        buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
+      });
       return;
     }
 
     if (comment.length > 1000) {
-      Alert.alert(
-        isRTL ? 'خطأ' : 'Error',
-        isRTL ? 'التعليق طويل جداً (الحد الأقصى 1000 حرف)' : 'Comment is too long (max 1000 characters)'
-      );
+      setAlertConfig({
+        visible: true,
+        title: isRTL ? 'خطأ' : 'Error',
+        message: isRTL
+          ? 'التعليق طويل جداً (الحد الأقصى 1000 حرف)'
+          : 'Comment is too long (max 1000 characters)',
+        buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
+      });
       return;
     }
 
@@ -66,20 +86,24 @@ const WriteReview: React.FC<WriteReviewProps> = ({
       bookingId,
       serviceId,
       rating,
-      commentLength: comment.length
+      commentLength: comment.length,
     });
 
     setIsSubmitting(true);
 
     try {
       await createReview(serviceId, rating, comment, bookingId);
-      
-      Alert.alert(
-        isRTL ? 'نجح!' : 'Success!',
-        isRTL ? 'تم إرسال التقييم بنجاح' : 'Review submitted successfully',
-        [
+
+      setAlertConfig({
+        visible: true,
+        title: isRTL ? 'نجح!' : 'Success!',
+        message: isRTL
+          ? 'تم إرسال التقييم بنجاح'
+          : 'Review submitted successfully',
+        buttons: [
           {
             text: isRTL ? 'حسناً' : 'OK',
+            style: 'default',
             onPress: () => {
               if (onSuccess) {
                 onSuccess();
@@ -88,13 +112,17 @@ const WriteReview: React.FC<WriteReviewProps> = ({
               }
             },
           },
-        ]
-      );
+        ],
+      });
     } catch (error: any) {
-      Alert.alert(
-        isRTL ? 'خطأ' : 'Error',
-        error.message || (isRTL ? 'فشل في إرسال التقييم' : 'Failed to submit review')
-      );
+      setAlertConfig({
+        visible: true,
+        title: isRTL ? 'خطأ' : 'Error',
+        message:
+          error.message ||
+          (isRTL ? 'فشل في إرسال التقييم' : 'Failed to submit review'),
+        buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -103,12 +131,13 @@ const WriteReview: React.FC<WriteReviewProps> = ({
   const renderStars = () => {
     return (
       <View style={styles.starsContainer}>
-        {[1, 2, 3, 4, 5].map((star) => (
+        {[1, 2, 3, 4, 5].map(star => (
           <TouchableOpacity
             key={star}
             onPress={() => setRating(star)}
             style={styles.starButton}
-            disabled={isSubmitting}>
+            disabled={isSubmitting}
+          >
             <Svg width={40} height={40} viewBox="0 0 24 24" fill="none">
               <Path
                 d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
@@ -128,9 +157,15 @@ const WriteReview: React.FC<WriteReviewProps> = ({
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" style={!isRTL && { transform: [{ rotate: '180deg' }] }}>
+          <Svg
+            width={24}
+            height={24}
+            viewBox="0 0 24 24"
+            fill="none"
+            style={!isRTL && { transform: [{ rotate: '180deg' }] }}
+          >
             <Path
-              d={isRTL ? "M15 18l-6-6 6-6" : "M9 18l6-6-6-6"}
+              d={isRTL ? 'M15 18l-6-6 6-6' : 'M9 18l6-6-6-6'}
               stroke={colors.primary}
               strokeWidth={2}
               strokeLinecap="round"
@@ -178,10 +213,7 @@ const WriteReview: React.FC<WriteReviewProps> = ({
             {isRTL ? 'التعليق' : 'Comment'}
           </Text>
           <TextInput
-            style={[
-              styles.commentInput,
-              isRTL && styles.commentInputRTL,
-            ]}
+            style={[styles.commentInput, isRTL && styles.commentInputRTL]}
             value={comment}
             onChangeText={setComment}
             placeholder={
@@ -208,7 +240,8 @@ const WriteReview: React.FC<WriteReviewProps> = ({
             (isSubmitting || rating === 0) && styles.submitButtonDisabled,
           ]}
           onPress={handleSubmit}
-          disabled={isSubmitting || rating === 0}>
+          disabled={isSubmitting || rating === 0}
+        >
           {isSubmitting ? (
             <ActivityIndicator color="#FFF" />
           ) : (
@@ -218,6 +251,15 @@ const WriteReview: React.FC<WriteReviewProps> = ({
           )}
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Custom Alert */}
+      <CustomAlert
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttons={alertConfig.buttons}
+        onClose={() => setAlertConfig({ ...alertConfig, visible: false })}
+      />
     </SafeAreaView>
   );
 };

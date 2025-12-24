@@ -5,7 +5,7 @@ export const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-    paddingBottom: 50,
+    paddingBottom: 58,
   },
   headerBar: {
     width: '100%',

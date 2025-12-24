@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, TouchableOpacity, Text, Dimensions } from 'react-native';
-import Svg, { Path, Circle, G, Rect, Ellipse, Line } from 'react-native-svg';
+import Svg, { Path, Circle, G, Rect } from 'react-native-svg';
 import { styles } from './styles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -21,26 +21,26 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
   const isTablet = screenWidth >= 600;
   const iconSize = isTablet ? 36 : 28;
   const [cartCount, setCartCount] = React.useState(0);
-  
+
   // Load cart count and subscribe to changes
   React.useEffect(() => {
     const loadCartCount = async () => {
       const count = await getCartCount();
       setCartCount(count);
     };
-    
+
     // Load initial count
     loadCartCount();
-    
+
     // Subscribe to cart changes - update only when cart actually changes
     const unsubscribe = subscribeToCartChanges(() => {
       loadCartCount();
     });
-    
+
     // Cleanup subscription on unmount
     return unsubscribe;
   }, []);
-  
+
   const handlePress = (route: string) => {
     if (onNavigate) {
       onNavigate(route);
@@ -51,12 +51,12 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
 
   return (
     <View style={[styles.container, isRTL && styles.containerRTL]}>
-      
       {/* Home Icon */}
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.navItem}
         onPress={() => handlePress('home')}
-        activeOpacity={0.7}>
+        activeOpacity={0.7}
+      >
         <Svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none">
           <Path
             d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z"
@@ -77,10 +77,11 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
       </TouchableOpacity>
 
       {/* Search Icon */}
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.navItem}
         onPress={() => handlePress('search')}
-        activeOpacity={0.7}>
+        activeOpacity={0.7}
+      >
         <Svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none">
           <Circle
             cx="11"
@@ -102,29 +103,66 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
       </TouchableOpacity>
 
       {/* Categories/Grid Icon */}
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.navItem}
         onPress={() => handlePress('categories')}
-        activeOpacity={0.7}>
-        <Svg width={iconSize} height={iconSize} viewBox="0 0 120 120" fill="none">
+        activeOpacity={0.7}
+      >
+        <Svg
+          width={iconSize}
+          height={iconSize}
+          viewBox="0 0 120 120"
+          fill="none"
+        >
           <G>
             {/* Top Left */}
-            <Rect x="6" y="6" width="48" height="48" rx="12" fill={isActive('categories') ? colors.primary : colors.primary} />
+            <Rect
+              x="6"
+              y="6"
+              width="48"
+              height="48"
+              rx="12"
+              fill={isActive('categories') ? colors.primary : colors.primary}
+            />
             {/* Top Right */}
-            <Rect x="66" y="6" width="48" height="48" rx="12" fill={isActive('categories') ? colors.primary : "#A0E7E5"} opacity={isActive('categories') ? 1 : 0.6} />
+            <Rect
+              x="66"
+              y="6"
+              width="48"
+              height="48"
+              rx="12"
+              fill={isActive('categories') ? colors.primary : '#A0E7E5'}
+              opacity={isActive('categories') ? 1 : 0.6}
+            />
             {/* Bottom Left */}
-            <Rect x="6" y="66" width="48" height="48" rx="12" fill={isActive('categories') ? colors.primary : "#A0E7E5"} opacity={isActive('categories') ? 1 : 0.6} />
+            <Rect
+              x="6"
+              y="66"
+              width="48"
+              height="48"
+              rx="12"
+              fill={isActive('categories') ? colors.primary : '#A0E7E5'}
+              opacity={isActive('categories') ? 1 : 0.6}
+            />
             {/* Bottom Right */}
-            <Rect x="66" y="66" width="48" height="48" rx="12" fill={isActive('categories') ? colors.primary : colors.primary} />
+            <Rect
+              x="66"
+              y="66"
+              width="48"
+              height="48"
+              rx="12"
+              fill={isActive('categories') ? colors.primary : colors.primary}
+            />
           </G>
         </Svg>
       </TouchableOpacity>
 
       {/* Vendors/Store Icon */}
-      <TouchableOpacity 
+      <TouchableOpacity
         style={[styles.navItem, isActive('vendors') && styles.navItemActive]}
         onPress={() => handlePress('vendors')}
-        activeOpacity={0.7}>
+        activeOpacity={0.7}
+      >
         <Svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none">
           <Path
             d="M3 9L4 4H20L21 9"
@@ -180,12 +218,18 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
       </TouchableOpacity>
 
       {/* Cart Icon */}
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.navItem}
         onPress={() => handlePress('cart')}
-        activeOpacity={0.7}>
+        activeOpacity={0.7}
+      >
         <View>
-          <Svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none">
+          <Svg
+            width={iconSize}
+            height={iconSize}
+            viewBox="0 0 24 24"
+            fill="none"
+          >
             <Path
               d="M9 2L7 6"
               stroke={colors.primary}
@@ -228,7 +272,6 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
           )}
         </View>
       </TouchableOpacity>
-
     </View>
   );
 };

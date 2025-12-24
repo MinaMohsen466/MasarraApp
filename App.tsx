@@ -105,6 +105,8 @@ function App() {
       setCurrentRoute('vendors');
       setSelectedVendorId(undefined);
       setSelectedVendorName(undefined);
+    } else if (currentRoute === 'addresses') {
+      setCurrentRoute('profile');
     } else {
       setCurrentRoute('home');
     }

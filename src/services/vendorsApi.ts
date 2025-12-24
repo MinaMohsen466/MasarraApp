@@ -32,11 +32,11 @@ export interface Vendor {
 export const fetchVendors = async (): Promise<Vendor[]> => {
   try {
     const response = await fetch(`${baseUrl}/api/vendors`);
-    
+
     if (!response.ok) {
       throw new Error(`Failed to fetch vendors: ${response.statusText}`);
     }
-    
+
     const data = await response.json();
     // API may return a wrapper object { vendors, total, pages, currentPage }
     // Normalize to return an array of vendors as expected by the hook.

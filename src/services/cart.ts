@@ -17,7 +17,10 @@ export type CartItem = {
   quantity: number;
   selectedDate: Date | string;
   selectedTime: string;
-  customInputs?: Array<{ label: string; value: string | number; price?: number } | Array<{ label: string; value: string | number; price?: number }>>;
+  customInputs?: Array<
+    | { label: string; value: string | number; price?: number }
+    | Array<{ label: string; value: string | number; price?: number }>
+  >;
   moreInfo?: string;
   timeSlot: { start: string | Date; end: string | Date };
   availabilityStatus?: 'available_now' | 'pending_confirmation';
@@ -36,7 +39,9 @@ let cacheUserId: string | null = null;
 type CartChangeListener = () => void;
 const cartChangeListeners: Set<CartChangeListener> = new Set();
 
-export function subscribeToCartChanges(listener: CartChangeListener): () => void {
+export function subscribeToCartChanges(
+  listener: CartChangeListener,
+): () => void {
   cartChangeListeners.add(listener);
   // Return unsubscribe function
   return () => {
@@ -70,7 +75,7 @@ async function getUserId(): Promise<string> {
     if (userId) {
       return userId;
     }
-    
+
     // Try to get from userData as fallback
     const userData = await AsyncStorage.getItem('userData');
     if (userData) {
@@ -86,14 +91,14 @@ async function getUserId(): Promise<string> {
         // Failed to parse userData
       }
     }
-    
+
     // If no userId found and user is not logged in, use 'guest' as fallback
     const token = await AsyncStorage.getItem('userToken');
     if (!token) {
       // User is not logged in - this is expected, use guest silently
       return 'guest';
     }
-    
+
     // User appears to be logged in but no userId found - this is unexpected
     return 'guest';
   } catch (e) {
@@ -115,15 +120,15 @@ export async function getCart(): Promise<CartItem[]> {
     if (!token) {
       return [];
     }
-    
+
     const userId = await getUserId();
-    
+
     // If cache exists and is for the same user, return it
     if (cartCache !== null && cacheUserId === userId) {
       // Silently return cached cart - no need to log every time
       return cartCache;
     }
-    
+
     // Otherwise, load from storage
     const storageKey = await getCartStorageKey();
     const cartData = await AsyncStorage.getItem(storageKey);
@@ -133,11 +138,11 @@ export async function getCart(): Promise<CartItem[]> {
       return [];
     }
     const items: CartItem[] = JSON.parse(cartData);
-    
+
     // Update cache
     cartCache = items;
     cacheUserId = userId;
-    
+
     return items;
   } catch (e) {
     return [];
@@ -150,11 +155,11 @@ async function saveCart(items: CartItem[]): Promise<void> {
     const userId = await getUserId();
     const storageKey = await getCartStorageKey();
     await AsyncStorage.setItem(storageKey, JSON.stringify(items));
-    
+
     // Update cache
     cartCache = items;
     cacheUserId = userId;
-    
+
     // Notify all listeners that cart has changed
     notifyCartChange();
   } catch (e) {
@@ -170,7 +175,7 @@ export async function addToCart(item: CartItem): Promise<CartItem[]> {
     if (!token) {
       throw new Error('User must be logged in to add items to cart');
     }
-    
+
     // Ensure required fields are present
     if (!item.serviceId || !item.selectedDate || !item.selectedTime) {
       throw new Error('Service ID, date, and time are required');
@@ -181,23 +186,25 @@ export async function addToCart(item: CartItem): Promise<CartItem[]> {
     }
 
     // Generate unique ID for the cart item
-    const cartId = `cart_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+    const cartId = `cart_${Date.now()}_${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
+
     const cartItem: CartItem = {
       ...item,
       _id: cartId,
-      quantity: item.quantity || 1
+      quantity: item.quantity || 1,
     };
 
     // Get existing cart
     const currentCart = await getCart();
-    
+
     // Check if same service, date, and time already exists
     const existingItemIndex = currentCart.findIndex(
       existingItem =>
         existingItem.serviceId === item.serviceId &&
         existingItem.selectedDate === item.selectedDate &&
-        existingItem.selectedTime === item.selectedTime
+        existingItem.selectedTime === item.selectedTime,
     );
 
     if (existingItemIndex !== -1) {
@@ -228,7 +235,10 @@ export async function removeFromCart(cartItemId: string): Promise<CartItem[]> {
 }
 
 // Update cart item quantity
-export async function updateCartItemQuantity(cartItemId: string, quantity: number): Promise<CartItem[]> {
+export async function updateCartItemQuantity(
+  cartItemId: string,
+  quantity: number,
+): Promise<CartItem[]> {
   try {
     if (quantity <= 0) {
       return removeFromCart(cartItemId);
@@ -236,11 +246,11 @@ export async function updateCartItemQuantity(cartItemId: string, quantity: numbe
 
     const currentCart = await getCart();
     const itemIndex = currentCart.findIndex(item => item._id === cartItemId);
-    
+
     if (itemIndex !== -1) {
       const item = currentCart[itemIndex];
       item.quantity = quantity;
-      
+
       // Recalculate totalPrice: (quantity × basePrice) + (quantity × optionsTotal)
       let optionsTotal = 0;
       if (item.customInputs && Array.isArray(item.customInputs)) {
@@ -256,13 +266,13 @@ export async function updateCartItemQuantity(cartItemId: string, quantity: numbe
           }
         });
       }
-      
+
       // Formula: quantity × (basePrice + options)
       item.totalPrice = (item.price + optionsTotal) * quantity;
-      
+
       await saveCart(currentCart);
     }
-    
+
     return currentCart;
   } catch (e) {
     throw e;
@@ -274,13 +284,13 @@ export async function clearCart(): Promise<CartItem[]> {
   try {
     const storageKey = await getCartStorageKey();
     await AsyncStorage.removeItem(storageKey);
-    
+
     // Clear cache
     cartCache = [];
-    
+
     // Notify listeners
     notifyCartChange();
-    
+
     return [];
   } catch (e) {
     throw e;
@@ -333,35 +343,43 @@ export async function checkCartAvailability(): Promise<{
       try {
         // Parse selected date
         const selectedDate = new Date(item.selectedDate);
-        
+
         // Check if date is in the past
         const now = new Date();
-        if (selectedDate < new Date(now.getFullYear(), now.getMonth(), now.getDate())) {
+        if (
+          selectedDate <
+          new Date(now.getFullYear(), now.getMonth(), now.getDate())
+        ) {
           unavailableItems.push({
             item,
-            reason: 'Date is in the past'
+            reason: 'Date is in the past',
           });
           continue;
         }
 
         // For packages, check the main service availability, for regular services check the service itself
-        const serviceIdToCheck = item.isPackage && item.mainServiceId ? item.mainServiceId : item.serviceId;
+        const serviceIdToCheck =
+          item.isPackage && item.mainServiceId
+            ? item.mainServiceId
+            : item.serviceId;
 
         // Get available time slots from backend
         const slots = await checkTimeSlotAvailability(
           serviceIdToCheck,
           item.vendorId,
           selectedDate,
-          token
+          token,
         );
 
         // Find the slot that matches the selected time
-        const matchingSlot = slots.find(slot => slot.timeSlot === item.selectedTime);
+        const matchingSlot = slots.find(
+          slot => slot.timeSlot === item.selectedTime,
+        );
 
         if (!matchingSlot) {
           unavailableItems.push({
             item,
-            reason: 'Time slot no longer available'
+            reason: 'Time slot no longer available',
           });
           continue;
         }
@@ -369,15 +387,14 @@ export async function checkCartAvailability(): Promise<{
         if (!matchingSlot.available) {
           unavailableItems.push({
             item,
-            reason: `Time slot fully booked (${matchingSlot.bookingsCount} bookings)`
+            reason: `Time slot fully booked (${matchingSlot.bookingsCount} bookings)`,
           });
           continue;
         }
-
       } catch (error) {
         unavailableItems.push({
           item,
-          reason: 'Error checking availability'
+          reason: 'Error checking availability',
         });
       }
     }
@@ -386,7 +403,7 @@ export async function checkCartAvailability(): Promise<{
 
     return {
       available: allAvailable,
-      unavailableItems
+      unavailableItems,
     };
   } catch (e) {
     throw e;
@@ -396,7 +413,12 @@ export async function checkCartAvailability(): Promise<{
 // Create bookings from cart items in the backend
 export async function createBookingsFromCart(
   address?: string,
-  couponData?: { code: string; discountAmount: number; originalPrice: number; deductFrom: string }
+  couponData?: {
+    code: string;
+    discountAmount: number;
+    originalPrice: number;
+    deductFrom: string;
+  },
 ): Promise<{
   success: boolean;
   bookings: any[];
@@ -416,8 +438,12 @@ export async function createBookingsFromCart(
       try {
         // Convert customInputs from array to object format, keeping price information
         const customInputsObject: { [key: string]: string | number | any } = {};
-        const customInputsWithPrices: Array<{ label: string; value: string | number; price?: number }> = [];
-        
+        const customInputsWithPrices: Array<{
+          label: string;
+          value: string | number;
+          price?: number;
+        }> = [];
+
         if (item.customInputs && Array.isArray(item.customInputs)) {
           item.customInputs.forEach(input => {
             // Handle radio-multiple selections (array of values) and other types
@@ -429,7 +455,7 @@ export async function createBookingsFromCart(
                 customInputsWithPrices.push({
                   label: option.label,
                   value: option.value,
-                  price: option.price
+                  price: option.price,
                 });
               });
               // Store as array for radio-multiple
@@ -442,25 +468,27 @@ export async function createBookingsFromCart(
               customInputsWithPrices.push({
                 label: input.label,
                 value: input.value,
-                price: input.price
+                price: input.price,
               });
             }
           });
         }
-        
+
         // For packages, send in packages array format. For regular services, send as serviceId
         // Store package name in specialRequests for display purposes
         let specialRequestsText = item.moreInfo || '';
         if (item.isPackage && item.packageName) {
-          specialRequestsText = `[PKG:${item.packageName}]${specialRequestsText ? ' ' + specialRequestsText : ''}`;
+          specialRequestsText = `[PKG:${item.packageName}]${
+            specialRequestsText ? ' ' + specialRequestsText : ''
+          }`;
         }
-        
+
         const bookingData: any = {
           eventDate: item.selectedDate,
           eventTime: item.selectedTime, // Add eventTime for packages
           timeSlot: {
             start: item.timeSlot.start, // Use parsed Date objects from timeSlot
-            end: item.timeSlot.end
+            end: item.timeSlot.end,
           },
           quantity: item.quantity,
           address: address || '',
@@ -468,72 +496,76 @@ export async function createBookingsFromCart(
           customInputs: customInputsObject,
           customInputsWithPrices: customInputsWithPrices, // Send full data including prices
           specialRequests: specialRequestsText,
-          totalPrice: item.totalPrice || item.price // Send total price including custom options
+          totalPrice: item.totalPrice || item.price, // Send total price including custom options
         };
 
         // Add coupon data if provided and calculate discounted price
         if (couponData) {
           // Calculate this item's share of the discount
           const itemOriginalPrice = item.totalPrice || item.price;
-          const itemDiscountShare = (itemOriginalPrice / couponData.originalPrice) * couponData.discountAmount;
+          const itemDiscountShare =
+            (itemOriginalPrice / couponData.originalPrice) *
+            couponData.discountAmount;
           const itemFinalPrice = itemOriginalPrice - itemDiscountShare;
-          
+
           bookingData.coupon = {
             code: couponData.code,
             discountAmount: itemDiscountShare,
             originalPrice: itemOriginalPrice,
-            deductFrom: couponData.deductFrom
+            deductFrom: couponData.deductFrom,
           };
-          
+
           // Update totalPrice to reflect the discounted price
           bookingData.totalPrice = itemFinalPrice;
         }
 
         // Add serviceId for regular services or packages array for packages
         if (item.isPackage) {
-          bookingData.packages = [{
-            package: item.serviceId,
-            price: item.totalPrice || item.price
-          }];
+          bookingData.packages = [
+            {
+              package: item.serviceId,
+              price: item.totalPrice || item.price,
+            },
+          ];
         } else {
           bookingData.serviceId = item.serviceId;
         }
-        
+
         const response = await fetch(`${API_BASE_URL}/bookings`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
           },
-          body: JSON.stringify(bookingData)
+          body: JSON.stringify(bookingData),
         });
 
         if (!response.ok) {
           const contentType = response.headers.get('content-type');
           let error;
-          
+
           if (contentType && contentType.includes('application/json')) {
             error = await response.json();
           } else {
             const text = await response.text();
             error = { message: 'Server error - received HTML instead of JSON' };
           }
-          
+
           errors.push({
             item,
-            error: error.message || 'Failed to create booking'
+            error: error.message || 'Failed to create booking',
           });
         } else {
           const booking = await response.json();
           bookings.push(booking);
-          
+
           // حذف الـ cache للخدمة بعد نجاح الحجز
           clearDatePickerCacheForService(item.serviceId, item.vendorId);
         }
       } catch (error: any) {
         errors.push({
           item,
-          error: error.message || 'Network error'
+          error: error.message || 'Network error',
         });
       }
     }
@@ -541,7 +573,7 @@ export async function createBookingsFromCart(
     return {
       success: errors.length === 0,
       bookings,
-      errors
+      errors,
     };
   } catch (e) {
     throw e;

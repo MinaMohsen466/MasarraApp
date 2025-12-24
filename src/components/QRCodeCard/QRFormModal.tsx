@@ -18,9 +18,18 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { colors } from '../../constants/colors';
-import { getQRCodeSettings, generateQRCode, getDefaultBackgroundImage, getBackgroundImageUrl } from '../../services/qrCodeApi';
+import {
+  getQRCodeSettings,
+  generateQRCode,
+  getDefaultBackgroundImage,
+  getBackgroundImageUrl,
+} from '../../services/qrCodeApi';
 import { QRCodeResultModal } from './QRCodeResultModal';
-import type { QRCodeCustomDetails, QRCodeSettings, QRCodeData } from '../../services/qrCodeApi';
+import type {
+  QRCodeCustomDetails,
+  QRCodeSettings,
+  QRCodeData,
+} from '../../services/qrCodeApi';
 
 interface QRFormModalProps {
   visible: boolean;
@@ -43,15 +52,22 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const [selectedBackgroundId, setSelectedBackgroundId] = useState<string | null>(null);
+  const [selectedBackgroundId, setSelectedBackgroundId] = useState<
+    string | null
+  >(null);
   const [guestCount, setGuestCount] = useState('1');
   const [showResultModal, setShowResultModal] = useState(false);
-  const [generatedQRCode, setGeneratedQRCode] = useState<QRCodeData | null>(null);
+  const [generatedQRCode, setGeneratedQRCode] = useState<QRCodeData | null>(
+    null,
+  );
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [isUpdated, setIsUpdated] = useState(false);
-  const [originalFormData, setOriginalFormData] = useState<QRCodeCustomDetails | null>(null);
-  const [originalBackgroundId, setOriginalBackgroundId] = useState<string | null>(null);
+  const [originalFormData, setOriginalFormData] =
+    useState<QRCodeCustomDetails | null>(null);
+  const [originalBackgroundId, setOriginalBackgroundId] = useState<
+    string | null
+  >(null);
 
   const [formData, setFormData] = useState<QRCodeCustomDetails>({
     name1: '',
@@ -66,31 +82,33 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
     if (visible) {
       loadSettings();
       setIsUpdated(false); // Reset updated flag when modal opens
-      
+
       if (existingQRCode?.customDetails) {
         // If QR code already exists, show it directly instead of edit form
         // Store existing QR code data
         setGeneratedQRCode(existingQRCode);
         setFormData(existingQRCode.customDetails);
-        
+
         // Handle selectedBackgroundImage - could be object or string ID
         let backgroundId = null;
         if (existingQRCode.selectedBackgroundImage) {
           if (typeof existingQRCode.selectedBackgroundImage === 'object') {
             // Server returns it as {id, name, url}
-            backgroundId = existingQRCode.selectedBackgroundImage.id || existingQRCode.selectedBackgroundImage._id;
+            backgroundId =
+              existingQRCode.selectedBackgroundImage.id ||
+              existingQRCode.selectedBackgroundImage._id;
           } else {
             // It's already a string ID
             backgroundId = existingQRCode.selectedBackgroundImage;
           }
         }
         setSelectedBackgroundId(backgroundId);
-        
+
         // Store original data for change detection
         setOriginalFormData(existingQRCode.customDetails);
         setOriginalBackgroundId(backgroundId);
         setHasChanges(false);
-        
+
         // Show result modal directly
         setShowResultModal(true);
         setIsPreviewMode(false);
@@ -107,13 +125,15 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
           const day = String(startDate.getDate()).padStart(2, '0');
           eventDate = `${year}-${month}-${day}`;
         }
-        
+
         let eventTime = '12:00';
         if (booking.eventTime?.start) {
           const start = new Date(booking.eventTime.start);
           const hours = start.getHours();
           const minutes = start.getMinutes();
-          eventTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+          eventTime = `${String(hours).padStart(2, '0')}:${String(
+            minutes,
+          ).padStart(2, '0')}`;
         }
 
         const locationText = booking.location || '';
@@ -156,13 +176,18 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
       }
 
       const fetchedSettings = await getQRCodeSettings(token);
-      
+
       if (fetchedSettings) {
         setSettings(fetchedSettings);
         // Set default background if available
-        if (!selectedBackgroundId && fetchedSettings.backgroundImages?.length > 0) {
-          const defaultBg = fetchedSettings.backgroundImages.find(img => img.isDefault && img.isActive) 
-            || fetchedSettings.backgroundImages[0];
+        if (
+          !selectedBackgroundId &&
+          fetchedSettings.backgroundImages?.length > 0
+        ) {
+          const defaultBg =
+            fetchedSettings.backgroundImages.find(
+              img => img.isDefault && img.isActive,
+            ) || fetchedSettings.backgroundImages[0];
           setSelectedBackgroundId(defaultBg._id);
         }
       }
@@ -175,36 +200,58 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
   // Track changes in form data
   useEffect(() => {
     if (existingQRCode && originalFormData && originalBackgroundId) {
-      const formDataChanged = JSON.stringify(formData) !== JSON.stringify(originalFormData);
+      const formDataChanged =
+        JSON.stringify(formData) !== JSON.stringify(originalFormData);
       const backgroundChanged = selectedBackgroundId !== originalBackgroundId;
       setHasChanges(formDataChanged || backgroundChanged);
     }
-  }, [formData, selectedBackgroundId, existingQRCode, originalFormData, originalBackgroundId]);
+  }, [
+    formData,
+    selectedBackgroundId,
+    existingQRCode,
+    originalFormData,
+    originalBackgroundId,
+  ]);
 
   const handleSubmit = async () => {
     if (!settings) return;
 
     const display = settings.displaySettings;
-    
+
     // Validate required fields based on display settings
     if (display.showEventDate && !formData.eventDate) {
-      Alert.alert(isRTL ? 'خطأ' : 'Error', isRTL ? 'الرجاء اختيار التاريخ' : 'Please select event date');
+      Alert.alert(
+        isRTL ? 'خطأ' : 'Error',
+        isRTL ? 'الرجاء اختيار التاريخ' : 'Please select event date',
+      );
       return;
     }
     if (display.showEventTime && !formData.eventTime) {
-      Alert.alert(isRTL ? 'خطأ' : 'Error', isRTL ? 'الرجاء اختيار الوقت' : 'Please select event time');
+      Alert.alert(
+        isRTL ? 'خطأ' : 'Error',
+        isRTL ? 'الرجاء اختيار الوقت' : 'Please select event time',
+      );
       return;
     }
     if (display.showLocation && !formData.location?.trim()) {
-      Alert.alert(isRTL ? 'خطأ' : 'Error', isRTL ? 'الرجاء إدخال الموقع' : 'Please enter location');
+      Alert.alert(
+        isRTL ? 'خطأ' : 'Error',
+        isRTL ? 'الرجاء إدخال الموقع' : 'Please enter location',
+      );
       return;
     }
     if (display.showContactInfo && !formData.contact?.trim()) {
-      Alert.alert(isRTL ? 'خطأ' : 'Error', isRTL ? 'الرجاء إدخال رقم الاتصال' : 'Please enter contact');
+      Alert.alert(
+        isRTL ? 'خطأ' : 'Error',
+        isRTL ? 'الرجاء إدخال رقم الاتصال' : 'Please enter contact',
+      );
       return;
     }
     if (!selectedBackgroundId) {
-      Alert.alert(isRTL ? 'خطأ' : 'Error', isRTL ? 'الرجاء اختيار تصميم البطاقة' : 'Please select a card design');
+      Alert.alert(
+        isRTL ? 'خطأ' : 'Error',
+        isRTL ? 'الرجاء اختيار تصميم البطاقة' : 'Please select a card design',
+      );
       return;
     }
 
@@ -214,15 +261,22 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
       if (!token) return;
 
       // Get first service ID if available
-      const serviceId = booking?.services?.[0]?.service?._id || booking?.services?.[0]?.service;
+      const serviceId =
+        booking?.services?.[0]?.service?._id || booking?.services?.[0]?.service;
 
-      const result = await generateQRCode(token, booking._id, formData, selectedBackgroundId, serviceId);
-      
+      const result = await generateQRCode(
+        token,
+        booking._id,
+        formData,
+        selectedBackgroundId,
+        serviceId,
+      );
+
       // Store the generated QR code data
       setGeneratedQRCode(result);
       setShowResultModal(true);
       setIsPreviewMode(false);
-      
+
       // If this is an update, mark as updated and reset changes
       if (existingQRCode) {
         setIsUpdated(true);
@@ -230,11 +284,11 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
         setOriginalFormData(formData);
         setOriginalBackgroundId(selectedBackgroundId);
       }
-      
     } catch (error: any) {
       Alert.alert(
-        isRTL ? 'خطأ' : 'Error', 
-        error.message || (isRTL ? 'فشل إنشاء QR Code' : 'Failed to generate QR code')
+        isRTL ? 'خطأ' : 'Error',
+        error.message ||
+          (isRTL ? 'فشل إنشاء QR Code' : 'Failed to generate QR code'),
       );
     } finally {
       setSubmitting(false);
@@ -243,10 +297,13 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
 
   const handlePreview = () => {
     if (!selectedBackgroundId) {
-      Alert.alert(isRTL ? 'خطأ' : 'Error', isRTL ? 'الرجاء اختيار تصميم البطاقة' : 'Please select a card design');
+      Alert.alert(
+        isRTL ? 'خطأ' : 'Error',
+        isRTL ? 'الرجاء اختيار تصميم البطاقة' : 'Please select a card design',
+      );
       return;
     }
-    
+
     // Create a preview QR code object
     const previewQR: QRCodeData = {
       _id: 'preview',
@@ -262,7 +319,7 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
       qrCodeImage: undefined, // Will show placeholder in preview
       qrUrl: undefined,
     };
-    
+
     setGeneratedQRCode(previewQR);
     setShowResultModal(true);
     setIsPreviewMode(true);
@@ -270,7 +327,9 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
 
   if (!visible) return null;
 
-  const selectedImage = settings?.backgroundImages?.find(img => img._id === selectedBackgroundId);
+  const selectedImage = settings?.backgroundImages?.find(
+    img => img._id === selectedBackgroundId,
+  );
 
   return (
     <Modal visible={visible} transparent animationType="fade">
@@ -281,11 +340,16 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
               <ActivityIndicator size="large" color={colors.primary} />
             </View>
           ) : (
-            <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              style={styles.scrollContent}
+              showsVerticalScrollIndicator={false}
+            >
               {/* Select Card Design Section */}
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>{isRTL ? 'اختر تصميم البطاقة' : 'Select Card Design'}</Text>
-                
+                <Text style={styles.sectionTitle}>
+                  {isRTL ? 'اختر تصميم البطاقة' : 'Select Card Design'}
+                </Text>
+
                 {/* Main Card Preview */}
                 <View style={styles.cardPreviewContainer}>
                   {selectedImage ? (
@@ -293,18 +357,23 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
                       source={{ uri: selectedImage.url || selectedImage.path }}
                       style={styles.cardPreview}
                       resizeMode="cover"
-                      onError={(error) => {
-                        console.log('[QRFormModal] Preview image load error:', error.nativeEvent);
+                      onError={error => {
+                        console.log(
+                          '[QRFormModal] Preview image load error:',
+                          error.nativeEvent,
+                        );
                       }}
                       onLoad={() => {
-                        console.log('[QRFormModal] Preview image loaded:', selectedImage._id);
+                        console.log(
+                          '[QRFormModal] Preview image loaded:',
+                          selectedImage._id,
+                        );
                       }}
                     >
-                        <View style={styles.qrPlaceholder}>
-                          <Text style={styles.qrPlaceholderText}>QR</Text>
-                        </View>
-                      </ImageBackground>
-
+                      <View style={styles.qrPlaceholder}>
+                        <Text style={styles.qrPlaceholderText}>QR</Text>
+                      </View>
+                    </ImageBackground>
                   ) : (
                     <View style={[styles.cardPreview, styles.emptyCard]}>
                       <View style={styles.qrPlaceholder}>
@@ -315,21 +384,27 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
                 </View>
 
                 {/* Background Images Selector */}
-                {settings?.backgroundImages && settings.backgroundImages.length > 0 && (
-                  <View style={styles.imagesSelector}>
-                    <FlatList
-                      data={settings.backgroundImages}
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      keyExtractor={item => item._id}
-                      renderItem={({ item }) => (
-                        <TouchableOpacity
+                {settings?.backgroundImages &&
+                  settings.backgroundImages.length > 0 && (
+                    <View style={styles.imagesSelector}>
+                      <FlatList
+                        data={settings.backgroundImages}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        keyExtractor={item => item._id}
+                        renderItem={({ item }) => (
+                          <TouchableOpacity
                             style={[
                               styles.imageThumbnail,
-                              selectedBackgroundId === item._id && styles.imageThumbnailActive
+                              selectedBackgroundId === item._id &&
+                                styles.imageThumbnailActive,
                             ]}
                             onPress={() => {
-                              console.log('[QRFormModal] Selected background image:', item._id, item.name);
+                              console.log(
+                                '[QRFormModal] Selected background image:',
+                                item._id,
+                                item.name,
+                              );
                               setSelectedBackgroundId(item._id);
                             }}
                           >
@@ -337,45 +412,66 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
                               source={{ uri: item.url || item.path }}
                               style={styles.imageThumbnailImage}
                               resizeMode="cover"
-                              onError={(error) => {
-                                console.log('[QRFormModal] Thumbnail load error:', item._id, error.nativeEvent);
+                              onError={error => {
+                                console.log(
+                                  '[QRFormModal] Thumbnail load error:',
+                                  item._id,
+                                  error.nativeEvent,
+                                );
                               }}
-                          />
-                        </TouchableOpacity>
-                      )}
-                    />
-                  </View>
-                )}
+                            />
+                          </TouchableOpacity>
+                        )}
+                      />
+                    </View>
+                  )}
               </View>
 
               {/* Enter Name Section */}
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>{isRTL ? 'اسم المنظمين' : 'Enter Name'}</Text>
-                <Text style={styles.sectionSubtitle}>{isRTL ? 'أدخل اسم العريس' : 'Enter Grooms Name'}</Text>
+                <Text style={styles.sectionTitle}>
+                  {isRTL ? 'اسم المنظمين' : 'Enter Name'}
+                </Text>
+                <Text style={styles.sectionSubtitle}>
+                  {isRTL ? 'أدخل اسم العريس' : 'Enter Grooms Name'}
+                </Text>
                 <TextInput
                   style={styles.input}
                   placeholder={isRTL ? 'اسم العريس' : 'Groom Name'}
                   value={formData.name1}
-                  onChangeText={(text) => setFormData(prev => ({ ...prev, name1: text }))}
+                  onChangeText={text =>
+                    setFormData(prev => ({ ...prev, name1: text }))
+                  }
                   placeholderTextColor="#999"
                 />
-                
-                <Text style={styles.sectionSubtitle}>{isRTL ? 'أدخل اسم العروس' : 'Enter Brides Name'}</Text>
+
+                <Text style={styles.sectionSubtitle}>
+                  {isRTL ? 'أدخل اسم العروس' : 'Enter Brides Name'}
+                </Text>
                 <TextInput
                   style={styles.input}
                   placeholder={isRTL ? 'اسم العروس' : 'Bride Name'}
                   value={formData.name2}
-                  onChangeText={(text) => setFormData(prev => ({ ...prev, name2: text }))}
+                  onChangeText={text =>
+                    setFormData(prev => ({ ...prev, name2: text }))
+                  }
                   placeholderTextColor="#999"
                 />
               </View>
 
               {/* Enter Event Info Section */}
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>{isRTL ? 'بيانات الحدث' : 'Enter Event Info'}</Text>
-                
-                <Text style={styles.label}>{isRTL ? 'تاريخ الحدث' : 'Event Date'} *</Text>
-                <TouchableOpacity style={styles.dateInput} onPress={() => setShowDatePicker(true)}>
+                <Text style={styles.sectionTitle}>
+                  {isRTL ? 'بيانات الحدث' : 'Enter Event Info'}
+                </Text>
+
+                <Text style={styles.label}>
+                  {isRTL ? 'تاريخ الحدث' : 'Event Date'} *
+                </Text>
+                <TouchableOpacity
+                  style={styles.dateInput}
+                  onPress={() => setShowDatePicker(true)}
+                >
                   <Text style={styles.dateInputText}>{formData.eventDate}</Text>
                 </TouchableOpacity>
                 {showDatePicker && (
@@ -385,13 +481,22 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
                     display="default"
                     onChange={(e, date) => {
                       setShowDatePicker(false);
-                      if (date) setFormData(prev => ({ ...prev, eventDate: date.toISOString().split('T')[0] }));
+                      if (date)
+                        setFormData(prev => ({
+                          ...prev,
+                          eventDate: date.toISOString().split('T')[0],
+                        }));
                     }}
                   />
                 )}
 
-                <Text style={styles.label}>{isRTL ? 'وقت الحدث' : 'Event Time'} *</Text>
-                <TouchableOpacity style={styles.dateInput} onPress={() => setShowTimePicker(true)}>
+                <Text style={styles.label}>
+                  {isRTL ? 'وقت الحدث' : 'Event Time'} *
+                </Text>
+                <TouchableOpacity
+                  style={styles.dateInput}
+                  onPress={() => setShowTimePicker(true)}
+                >
                   <Text style={styles.dateInputText}>{formData.eventTime}</Text>
                 </TouchableOpacity>
                 {showTimePicker && (
@@ -401,26 +506,40 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
                     display="default"
                     onChange={(e, time) => {
                       setShowTimePicker(false);
-                      if (time) setFormData(prev => ({ ...prev, eventTime: time.toTimeString().slice(0, 5) }));
+                      if (time)
+                        setFormData(prev => ({
+                          ...prev,
+                          eventTime: time.toTimeString().slice(0, 5),
+                        }));
                     }}
                   />
                 )}
 
-                <Text style={styles.label}>{isRTL ? 'الموقع' : 'Location'} *</Text>
+                <Text style={styles.label}>
+                  {isRTL ? 'الموقع' : 'Location'} *
+                </Text>
                 <TextInput
                   style={styles.input}
                   placeholder={isRTL ? 'أدخل الموقع' : 'Enter location'}
                   value={formData.location}
-                  onChangeText={(text) => setFormData(prev => ({ ...prev, location: text }))}
+                  onChangeText={text =>
+                    setFormData(prev => ({ ...prev, location: text }))
+                  }
                   placeholderTextColor="#999"
                 />
 
-                <Text style={styles.label}>{isRTL ? 'رقم الاتصال' : 'Contact'}</Text>
+                <Text style={styles.label}>
+                  {isRTL ? 'رقم الاتصال' : 'Contact'}
+                </Text>
                 <TextInput
                   style={styles.input}
-                  placeholder={isRTL ? 'أدخل رقم الاتصال أو البريد' : 'Phone or email'}
+                  placeholder={
+                    isRTL ? 'أدخل رقم الاتصال أو البريد' : 'Phone or email'
+                  }
                   value={formData.contact}
-                  onChangeText={(text) => setFormData(prev => ({ ...prev, contact: text }))}
+                  onChangeText={text =>
+                    setFormData(prev => ({ ...prev, contact: text }))
+                  }
                   keyboardType="phone-pad"
                   placeholderTextColor="#999"
                 />
@@ -428,8 +547,12 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
 
               {/* Guest List Section */}
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>{isRTL ? 'قائمة الضيوف' : 'Guest List'}</Text>
-                <Text style={styles.label}>{isRTL ? 'عدد الضيوف' : 'Enter Number of guests'}</Text>
+                <Text style={styles.sectionTitle}>
+                  {isRTL ? 'قائمة الضيوف' : 'Guest List'}
+                </Text>
+                <Text style={styles.label}>
+                  {isRTL ? 'عدد الضيوف' : 'Enter Number of guests'}
+                </Text>
                 <TextInput
                   style={styles.input}
                   placeholder="100"
@@ -443,9 +566,11 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
               {/* Action Button - Update and Review */}
               <TouchableOpacity
                 style={[
-                  styles.button, 
-                  styles.generateButton, 
-                  (submitting || (existingQRCode && (!hasChanges || isUpdated))) && styles.disabledButton
+                  styles.button,
+                  styles.generateButton,
+                  (submitting ||
+                    (existingQRCode && (!hasChanges || isUpdated))) &&
+                    styles.disabledButton,
                 ]}
                 onPress={() => {
                   handleSubmit().then(() => {
@@ -454,7 +579,9 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
                     }, 500);
                   });
                 }}
-                disabled={submitting || (existingQRCode && (!hasChanges || isUpdated))}
+                disabled={
+                  submitting || (existingQRCode && (!hasChanges || isUpdated))
+                }
               >
                 {submitting ? (
                   <ActivityIndicator size="small" color="#fff" />
@@ -477,12 +604,14 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
                 )}
               </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={styles.cancelButtonBottom} 
+              <TouchableOpacity
+                style={styles.cancelButtonBottom}
                 onPress={onClose}
                 disabled={submitting}
               >
-                <Text style={styles.cancelButtonBottomText}>{isRTL ? 'إلغاء' : 'Cancel'}</Text>
+                <Text style={styles.cancelButtonBottomText}>
+                  {isRTL ? 'إلغاء' : 'Cancel'}
+                </Text>
               </TouchableOpacity>
 
               <Text style={styles.footnote}>
@@ -497,7 +626,9 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
       <QRCodeResultModal
         visible={showResultModal}
         qrCode={generatedQRCode}
-        backgroundImage={settings?.backgroundImages?.find(img => img._id === selectedBackgroundId)}
+        backgroundImage={settings?.backgroundImages?.find(
+          img => img._id === selectedBackgroundId,
+        )}
         onClose={() => {
           setShowResultModal(false);
           if (!isPreviewMode) {

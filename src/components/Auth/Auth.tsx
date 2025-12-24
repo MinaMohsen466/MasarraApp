@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Linking } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  Alert,
+  Linking,
+} from 'react-native';
 import { styles } from './styles';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -30,10 +38,10 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
     if (role === 'admin') {
       try {
         await Linking.openURL('http://localhost:5173/admin');
-      } catch (error) {
+      } catch {
         Alert.alert(
           isRTL ? 'خطأ' : 'Error',
-          isRTL ? 'فشل فتح لوحة الإدارة' : 'Failed to open admin panel'
+          isRTL ? 'فشل فتح لوحة الإدارة' : 'Failed to open admin panel',
         );
       }
     } else if (onBack) {
@@ -46,13 +54,15 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
     if (!email || !password) {
       Alert.alert(
         isRTL ? 'خطأ' : 'Error',
-        isRTL ? 'يرجى إدخال البريد الإلكتروني وكلمة المرور' : 'Please enter email and password'
+        isRTL
+          ? 'يرجى إدخال البريد الإلكتروني وكلمة المرور'
+          : 'Please enter email and password',
       );
       return;
     }
 
     setIsLoading(true);
-    
+
     try {
       // Login
       try {
@@ -66,13 +76,13 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
         if (err?.requiresVerification) {
           const userId = err.userId || '';
           setPendingUserId(userId);
-          
+
           // Resend verification code automatically
           try {
             await fetch(`${API_URL}/auth/resend-verification`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ userId })
+              body: JSON.stringify({ userId }),
             });
           } catch (resendError) {
             console.error('Failed to resend code:', resendError);
@@ -86,7 +96,11 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
     } catch (error) {
       Alert.alert(
         isRTL ? 'خطأ' : 'Error',
-        error instanceof Error ? error.message : (isRTL ? 'حدث خطأ ما' : 'Something went wrong')
+        error instanceof Error
+          ? error.message
+          : isRTL
+          ? 'حدث خطأ ما'
+          : 'Something went wrong',
       );
     } finally {
       setIsLoading(false);
@@ -105,7 +119,7 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
       setShowMultiStepSignup(false);
       setEmail('');
       setPassword('');
-      
+
       if (token && user) {
         await saveLogin(user, token);
         handleRoleBasedNavigation(user.role || 'customer');
@@ -113,7 +127,11 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
     } catch (error) {
       Alert.alert(
         isRTL ? 'خطأ' : 'Error',
-        error instanceof Error ? error.message : (isRTL ? 'حدث خطأ ما' : 'Something went wrong')
+        error instanceof Error
+          ? error.message
+          : isRTL
+          ? 'حدث خطأ ما'
+          : 'Something went wrong',
       );
     }
   };
@@ -153,102 +171,127 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
         visible={showForgotPasswordModal}
         onClose={() => setShowForgotPasswordModal(false)}
       />
-      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.contentContainer}
+      >
+        {/* Title */}
+        <Text style={[styles.title, isRTL && styles.titleRTL]}>
+          {isRTL ? 'تسجيل الدخول' : 'Sign In'}
+        </Text>
 
-      {/* Title */}
-      <Text style={[styles.title, isRTL && styles.titleRTL]}>
-        {isRTL ? 'تسجيل الدخول' : 'Sign In'}
-      </Text>
-
-      {/* Form */}
-      <View style={styles.formContainer}>
-        <View style={styles.inputContainer}>
-          <Text style={[styles.label, isRTL && styles.labelRTL]}>
-            {isRTL ? 'البريد الإلكتروني' : 'Email'}
-          </Text>
-          <TextInput
-            style={[styles.input, isRTL && styles.inputRTL]}
-            value={email}
-            onChangeText={setEmail}
-            placeholder={isRTL ? 'أدخل بريدك الإلكتروني' : 'Enter your email'}
-            placeholderTextColor="#999"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            textAlign={isRTL ? 'right' : 'left'}
-          />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Text style={[styles.label, isRTL && styles.labelRTL]}>
-            {isRTL ? 'كلمة المرور' : 'Password'}
-          </Text>
-          <View style={styles.passwordInputWrapper}>
+        {/* Form */}
+        <View style={styles.formContainer}>
+          <View style={styles.inputContainer}>
+            <Text style={[styles.label, isRTL && styles.labelRTL]}>
+              {isRTL ? 'البريد الإلكتروني' : 'Email'}
+            </Text>
             <TextInput
               style={[styles.input, isRTL && styles.inputRTL]}
-              value={password}
-              onChangeText={setPassword}
-              placeholder={isRTL ? 'أدخل كلمة المرور' : 'Enter your password'}
+              value={email}
+              onChangeText={setEmail}
+              placeholder={isRTL ? 'أدخل بريدك الإلكتروني' : 'Enter your email'}
               placeholderTextColor="#999"
-              secureTextEntry={!showPassword}
+              keyboardType="email-address"
+              autoCapitalize="none"
               textAlign={isRTL ? 'right' : 'left'}
             />
-            <TouchableOpacity
-              style={styles.eyeButton}
-              onPress={() => setShowPassword(!showPassword)}
-              activeOpacity={0.7}>
-              <Text style={styles.eyeIcon}>{showPassword ? '👁' : '👁‍🗨'}</Text>
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={[styles.label, isRTL && styles.labelRTL]}>
+              {isRTL ? 'كلمة المرور' : 'Password'}
+            </Text>
+            <View style={styles.passwordInputWrapper}>
+              <TextInput
+                style={[styles.input, isRTL && styles.inputRTL]}
+                value={password}
+                onChangeText={setPassword}
+                placeholder={isRTL ? 'أدخل كلمة المرور' : 'Enter your password'}
+                placeholderTextColor="#999"
+                secureTextEntry={!showPassword}
+                textAlign={isRTL ? 'right' : 'left'}
+              />
+              <TouchableOpacity
+                style={[styles.eyeButton, isRTL && styles.eyeButtonRTL]}
+                onPress={() => setShowPassword(!showPassword)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.eyeIcon}>{showPassword ? '○' : '●'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Forgot Password Link */}
+          <TouchableOpacity
+            style={styles.forgotPassword}
+            onPress={() => setShowForgotPasswordModal(true)}
+            activeOpacity={0.7}
+          >
+            <Text
+              style={[
+                styles.forgotPasswordText,
+                isRTL && styles.forgotPasswordTextRTL,
+              ]}
+            >
+              {isRTL ? 'نسيت كلمة المرور؟' : 'Forgot Password?'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Submit Button */}
+          <TouchableOpacity
+            style={[
+              styles.submitButton,
+              isLoading && styles.submitButtonDisabled,
+            ]}
+            onPress={handleSubmit}
+            disabled={isLoading}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.submitButtonText}>
+              {isLoading
+                ? isRTL
+                  ? 'جاري التحميل...'
+                  : 'Loading...'
+                : isRTL
+                ? 'تسجيل الدخول'
+                : 'Sign In'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Toggle to Register */}
+          <View
+            style={[styles.toggleContainer, isRTL && styles.toggleContainerRTL]}
+          >
+            <Text style={[styles.toggleText, isRTL && styles.toggleTextRTL]}>
+              {isRTL ? 'ليس لديك حساب؟' : "Don't have an account?"}
+            </Text>
+            <TouchableOpacity onPress={() => setShowMultiStepSignup(true)}>
+              <Text style={[styles.toggleLink, isRTL && styles.toggleLinkRTL]}>
+                {isRTL ? 'سجل الآن' : 'Register'}
+              </Text>
             </TouchableOpacity>
           </View>
+
+          {/* Back to Browse */}
+          {onBack && (
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={onBack}
+              activeOpacity={0.8}
+            >
+              <Text
+                style={[
+                  styles.backButtonText,
+                  isRTL && styles.backButtonTextRTL,
+                ]}
+              >
+                {isRTL ? 'العودة إلى التصفح' : 'Back to Browse'}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
-
-        {/* Forgot Password Link */}
-        <TouchableOpacity
-          style={styles.forgotPassword}
-          onPress={() => setShowForgotPasswordModal(true)}
-          activeOpacity={0.7}>
-          <Text style={[styles.forgotPasswordText, isRTL && styles.forgotPasswordTextRTL]}>
-            {isRTL ? 'نسيت كلمة المرور؟' : 'Forgot Password?'}
-          </Text>
-        </TouchableOpacity>
-
-        {/* Submit Button */}
-        <TouchableOpacity 
-          style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
-          onPress={handleSubmit}
-          disabled={isLoading}
-          activeOpacity={0.8}>
-          <Text style={styles.submitButtonText}>
-            {isLoading 
-              ? (isRTL ? 'جاري التحميل...' : 'Loading...')
-              : (isRTL ? 'تسجيل الدخول' : 'Sign In')}
-          </Text>
-        </TouchableOpacity>
-
-        {/* Toggle to Register */}
-        <View style={[styles.toggleContainer, isRTL && styles.toggleContainerRTL]}>
-          <Text style={[styles.toggleText, isRTL && styles.toggleTextRTL]}>
-            {isRTL ? 'ليس لديك حساب؟' : "Don't have an account?"}
-          </Text>
-          <TouchableOpacity onPress={() => setShowMultiStepSignup(true)}>
-            <Text style={[styles.toggleLink, isRTL && styles.toggleLinkRTL]}>
-              {isRTL ? 'سجل الآن' : 'Register'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Back to Browse */}
-        {onBack && (
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={onBack}
-            activeOpacity={0.8}>
-            <Text style={[styles.backButtonText, isRTL && styles.backButtonTextRTL]}>
-              {isRTL ? 'العودة إلى التصفح' : 'Back to Browse'}
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    </ScrollView>
+      </ScrollView>
     </>
   );
 };

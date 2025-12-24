@@ -21,12 +21,17 @@ interface VerifyEmailProps {
   onBack: () => void;
 }
 
-const VerifyEmail: React.FC<VerifyEmailProps> = ({ email, userId, onVerified, onBack }) => {
+const VerifyEmail: React.FC<VerifyEmailProps> = ({
+  email,
+  userId,
+  onVerified,
+  onBack,
+}) => {
   const { isRTL } = useLanguage();
-  
+
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
-  
+
   const inputRefs = useRef<Array<TextInput | null>>([]);
 
   const handleOtpChange = (value: string, index: number) => {
@@ -53,11 +58,13 @@ const VerifyEmail: React.FC<VerifyEmailProps> = ({ email, userId, onVerified, on
 
   const handleVerify = async () => {
     const otpCode = otp.join('');
-    
+
     if (otpCode.length !== 6) {
       Alert.alert(
         isRTL ? 'خطأ' : 'Error',
-        isRTL ? 'يرجى إدخال رمز OTP المكون من 6 أرقام' : 'Please enter the 6-digit OTP code'
+        isRTL
+          ? 'يرجى إدخال رمز OTP المكون من 6 أرقام'
+          : 'Please enter the 6-digit OTP code',
       );
       return;
     }
@@ -84,7 +91,11 @@ const VerifyEmail: React.FC<VerifyEmailProps> = ({ email, userId, onVerified, on
       console.error('Error verifying OTP:', error);
       Alert.alert(
         isRTL ? 'خطأ' : 'Error',
-        error instanceof Error ? error.message : isRTL ? 'فشل التحقق من الرمز' : 'Failed to verify OTP'
+        error instanceof Error
+          ? error.message
+          : isRTL
+          ? 'فشل التحقق من الرمز'
+          : 'Failed to verify OTP',
       );
     } finally {
       setLoading(false);
@@ -98,13 +109,15 @@ const VerifyEmail: React.FC<VerifyEmailProps> = ({ email, userId, onVerified, on
     >
       <View style={styles.content}>
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Text style={styles.backButtonText}>{isRTL ? '→ رجوع' : '← Back'}</Text>
+          <Text style={styles.backButtonText}>
+            {isRTL ? '→ رجوع' : '← Back'}
+          </Text>
         </TouchableOpacity>
 
         <Text style={styles.title}>
           {isRTL ? 'التحقق من البريد الإلكتروني' : 'Verify Email'}
         </Text>
-        
+
         <Text style={styles.description}>
           {isRTL
             ? `تم إرسال رمز مكون من 6 أرقام إلى\n${email}`
@@ -115,13 +128,13 @@ const VerifyEmail: React.FC<VerifyEmailProps> = ({ email, userId, onVerified, on
           {otp.map((digit, index) => (
             <TextInput
               key={index}
-              ref={(ref) => {
+              ref={ref => {
                 inputRefs.current[index] = ref;
               }}
               style={styles.otpInput}
               value={digit}
-              onChangeText={(value) => handleOtpChange(value, index)}
-              onKeyPress={(e) => handleKeyPress(e, index)}
+              onChangeText={value => handleOtpChange(value, index)}
+              onKeyPress={e => handleKeyPress(e, index)}
               keyboardType="number-pad"
               maxLength={1}
               selectTextOnFocus

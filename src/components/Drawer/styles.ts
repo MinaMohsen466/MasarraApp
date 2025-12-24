@@ -10,7 +10,7 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: colors.overlay,
   },
-  
+
   // Main drawer panel
   drawerPanel: {
     width: screenWidth * 0.75, // 75% of screen width
@@ -25,7 +25,7 @@ export const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4,
   },
-  
+
   // Safe area container
   safeAreaContainer: {
     flex: 1,
@@ -36,20 +36,20 @@ export const styles = StyleSheet.create({
   drawerContent: {
     flex: 1,
   },
-  
+
   // Close button container
   closeButtonContainer: {
     alignSelf: 'flex-end',
     padding: 15,
     marginLeft: 10,
   },
-  
+
   // Menu items container
   menuItemsContainer: {
     flex: 1,
     paddingTop: 10,
   },
-  
+
   // Individual menu item
   menuItem: {
     paddingVertical: 16,
@@ -57,7 +57,7 @@ export const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
     borderBottomColor: colors.border,
   },
-  
+
   // Menu item text
   menuItemText: {
     fontSize: 16,
@@ -65,7 +65,7 @@ export const styles = StyleSheet.create({
     fontWeight: '500',
     letterSpacing: 0.3,
   },
-  
+
   // Arabic text styling
   arabicText: {
     fontFamily: 'System',
@@ -73,7 +73,7 @@ export const styles = StyleSheet.create({
     textAlign: 'right',
     fontWeight: '600',
   },
-  
+
   // Logo section at bottom
   logoSection: {
     alignItems: 'center',
@@ -82,20 +82,20 @@ export const styles = StyleSheet.create({
     borderTopWidth: 0,
     marginTop: 10,
   },
-  
+
   // Logo container
   logoContainer: {
     marginBottom: 12,
     alignItems: 'center',
   },
-  
+
   // Logo image
   logoImage: {
     width: 100,
     height: 100,
     tintColor: colors.primary,
   },
-  
+
   // Logo text (MASARRA)
   logoText: {
     fontSize: 20,
@@ -104,7 +104,7 @@ export const styles = StyleSheet.create({
     letterSpacing: 1.5,
     marginBottom: 5,
   },
-  
+
   // Tagline text
   taglineText: {
     fontSize: 11,
@@ -113,7 +113,7 @@ export const styles = StyleSheet.create({
     opacity: 0.75,
     textAlign: 'center',
   },
-  
+
   // Overlay touchable area (for closing drawer)
   overlayTouchable: {
     flex: 1,

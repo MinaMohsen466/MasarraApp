@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { styles } from './styles';
@@ -34,11 +40,11 @@ const About: React.FC<AboutProps> = ({ onBack }) => {
     try {
       setIsLoading(true);
       const response = await fetch(`${BASE_URL}/settings/about`);
-      
+
       if (!response.ok) {
         throw new Error(`Failed to fetch: ${response.status}`);
       }
-      
+
       const data = await response.json();
       setAboutData(data);
       setError(null);
@@ -76,29 +82,32 @@ const About: React.FC<AboutProps> = ({ onBack }) => {
   }
 
   // Get content based on language
-  const content = language === 'ar' ? aboutData?.contentAr : aboutData?.contentEn;
+  const content =
+    language === 'ar' ? aboutData?.contentAr : aboutData?.contentEn;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.container}>
-        <ScrollView 
+        <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.contentContainer}
-          showsVerticalScrollIndicator={false}>
-          
+          showsVerticalScrollIndicator={false}
+        >
           {/* Hero Section with Title */}
           <View style={styles.heroSection}>
             {/* Back Button Container */}
-            <View style={[styles.backButtonContainer, isRTL && styles.backButtonContainerRTL]}>
-              <TouchableOpacity 
+            <View
+              style={[
+                styles.backButtonContainer,
+                isRTL && styles.backButtonContainerRTL,
+              ]}
+            >
+              <TouchableOpacity
                 style={[styles.backButton, isRTL && styles.backButtonRTL]}
                 onPress={onBack}
-                activeOpacity={0.7}>
-                <Svg
-                  width={24}
-                  height={24}
-                  viewBox="0 0 24 24"
-                  fill="none">
+                activeOpacity={0.7}
+              >
+                <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
                   <Path
                     d="M15 18L9 12L15 6"
                     stroke={colors.textWhite}
@@ -114,20 +123,20 @@ const About: React.FC<AboutProps> = ({ onBack }) => {
             <Text style={[styles.heroTitle, isRTL && styles.heroTitleRTL]}>
               {isRTL ? 'عن التطبيق' : 'ABOUT'}
             </Text>
-            
+
             {/* Subtitle */}
             <Text style={styles.heroSubtitle}>
               {isRTL ? 'تعرف على المزيد عنا' : 'LEARN MORE ABOUT US'}
             </Text>
           </View>
 
-        {/* Content Card */}
-        <View style={styles.contentCard}>
-          <Text style={[styles.contentText, isRTL && styles.contentTextRTL]}>
-            {content}
-          </Text>
-        </View>
-      </ScrollView>
+          {/* Content Card */}
+          <View style={styles.contentCard}>
+            <Text style={[styles.contentText, isRTL && styles.contentTextRTL]}>
+              {content}
+            </Text>
+          </View>
+        </ScrollView>
       </View>
     </SafeAreaView>
   );
