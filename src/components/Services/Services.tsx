@@ -6,8 +6,9 @@ import {
   FlatList,
   Image,
   ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
-import { styles } from './styles';
+import { createStyles } from './styles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useServices } from '../../hooks/useServices';
@@ -20,6 +21,8 @@ interface ServicesProps {
 }
 
 const Services: React.FC<ServicesProps> = ({ onSelectService, onViewAll }) => {
+  const { width: SCREEN_WIDTH } = useWindowDimensions();
+  const styles = createStyles(SCREEN_WIDTH);
   const { isRTL } = useLanguage();
   const { data: services, isLoading, error } = useServices();
   const [serviceRatings, setServiceRatings] = useState<{

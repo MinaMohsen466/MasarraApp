@@ -1,9 +1,19 @@
-import { StyleSheet, Dimensions } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { colors } from '../../constants/colors';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-
-export const styles = StyleSheet.create({
+export const createStyles = (screenWidth: number, screenHeight: number) => {
+  const isTablet = screenWidth >= 600;
+  const isTallScreen = screenHeight > 800;
+  const drawerWidth = screenWidth * 0.75;
+  
+  // حساب حجم اللوجو حسب حجم الشاشة
+  const logoSize = Math.min(
+    drawerWidth * 0.35, // 35% من عرض الدرور
+    isTallScreen ? 100 : 80, // حد أقصى
+    90 // حد أقصى عام
+  );
+  
+  return StyleSheet.create({
   // Overlay covering the entire screen
   overlay: {
     flex: 1,
@@ -77,23 +87,28 @@ export const styles = StyleSheet.create({
   // Logo section at bottom
   logoSection: {
     alignItems: 'center',
-    paddingBottom: 30,
-    paddingTop: 25,
+    paddingBottom: isTallScreen ? 30 : 20,
+    paddingTop: isTallScreen ? 25 : 15,
+    paddingHorizontal: 10,
     borderTopWidth: 0,
-    marginTop: 10,
+    marginTop: isTallScreen ? 10 : 5,
   },
 
   // Logo container
   logoContainer: {
-    marginBottom: 12,
+    marginBottom: isTallScreen ? 12 : 8,
     alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
   },
 
   // Logo image
   logoImage: {
-    width: 100,
-    height: 100,
+    width: logoSize,
+    height: logoSize,
     tintColor: colors.primary,
+    maxWidth: drawerWidth * 0.4,
+    maxHeight: 100,
   },
 
   // Logo text (MASARRA)
@@ -146,4 +161,5 @@ export const styles = StyleSheet.create({
     textAlign: 'right',
     fontFamily: 'System',
   },
-});
+  });
+};

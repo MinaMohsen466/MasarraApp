@@ -1,7 +1,14 @@
 import { StyleSheet } from 'react-native';
 import { colors } from '../../constants/colors';
 
-export const styles = StyleSheet.create({
+export const createStyles = (screenWidth: number) => {
+  const isTablet = screenWidth >= 600;
+  const numColumns = isTablet ? 3 : 2;
+  const horizontalPadding = 16;
+  const totalGap = (numColumns - 1) * 16;
+  const cardWidth = (screenWidth - (horizontalPadding * 2) - totalGap) / numColumns;
+  
+  return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.backgroundLight,
@@ -58,19 +65,15 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   packageCard: {
-    flex: 1,
-    maxWidth: '48%',
-    backgroundColor: colors.background,
+    width: cardWidth,
+    backgroundColor: colors.backgroundLight,
     borderRadius: 12,
     marginBottom: 16,
     marginHorizontal: 4,
     overflow: 'hidden',
-    elevation: 2,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
+    borderWidth: 1,
+    borderColor: colors.border,
+  },  
   packageImageContainer: {
     width: '100%',
     height: 150,
@@ -100,7 +103,7 @@ export const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   packageInfo: {
-    padding: 12,
+    padding: 8,
   },
   packageName: {
     fontSize: 16,
@@ -161,13 +164,14 @@ export const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
   },
   rating: {
-    fontSize: 13,
+    fontSize: 12,
     color: colors.primary,
     fontWeight: 'bold',
   },
   reviews: {
-    fontSize: 11,
+    fontSize: 10,
     color: colors.primary,
     fontWeight: '600',
   },
-});
+})
+};

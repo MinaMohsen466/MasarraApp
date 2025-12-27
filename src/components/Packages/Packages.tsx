@@ -6,9 +6,10 @@ import {
   FlatList,
   Image,
   ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { styles } from './styles';
+import { createStyles } from './styles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { usePackages } from '../../hooks/usePackages';
@@ -45,6 +46,10 @@ interface PackagesProps {
 }
 
 const Packages: React.FC<PackagesProps> = ({ onSelectPackage, onBack }) => {
+  const { width: screenWidth } = useWindowDimensions();
+  const isTablet = screenWidth >= 600;
+  const numColumns = isTablet ? 3 : 2;
+  const styles = createStyles(screenWidth);
   const { isRTL, t } = useLanguage();
   const { data: packages, isLoading, error } = usePackages();
   const [packageRatings, setPackageRatings] = useState<{
@@ -254,7 +259,8 @@ const Packages: React.FC<PackagesProps> = ({ onSelectPackage, onBack }) => {
         renderItem={renderPackageCard}
         keyExtractor={item => item._id}
         contentContainerStyle={styles.listContainer}
-        numColumns={2}
+        key={numColumns}
+        numColumns={numColumns}
         columnWrapperStyle={styles.row}
         showsVerticalScrollIndicator={false}
       />

@@ -1,16 +1,16 @@
-import { StyleSheet, Dimensions } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { colors } from '../../constants/colors';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const isTablet = SCREEN_WIDTH >= 600;
-
-export const styles = StyleSheet.create({
-  carouselContainer: {
-    width: SCREEN_WIDTH,
-    height: isTablet ? 340 : 260,
-    position: 'relative',
-    paddingVertical: isTablet ? 20 : 16,
-  },
+export const createStyles = (SCREEN_WIDTH: number) => {
+  const isTablet = SCREEN_WIDTH >= 600;
+  
+  return StyleSheet.create({
+    carouselContainer: {
+      width: SCREEN_WIDTH,
+      height: isTablet ? 360 : 260,
+      position: 'relative',
+      paddingVertical: isTablet ? 20 : 16,
+    },
   loadingContainer: {
     width: SCREEN_WIDTH,
     height: isTablet ? 300 : 240,
@@ -54,11 +54,11 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 8,
-    paddingBottom: isTablet ? 20 : 8,
+    paddingBottom: isTablet ? 18 : 16,
   },
   paginationDot: {
-    height: isTablet ? 12 : 8,
-    borderRadius: isTablet ? 6 : 4,
+    height: isTablet ? 8 : 8,
+    borderRadius: isTablet ? 4 : 4,
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
@@ -86,4 +86,5 @@ export const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-});
+  });
+};

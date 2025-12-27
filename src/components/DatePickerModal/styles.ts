@@ -1,22 +1,26 @@
-import { StyleSheet, Dimensions } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { colors } from '../../constants/colors';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-export const styles = StyleSheet.create({
+export const createStyles = (SCREEN_WIDTH: number, SCREEN_HEIGHT: number) => {
+  const isTablet = SCREEN_WIDTH >= 600;
+  const modalWidth = isTablet ? Math.min(SCREEN_WIDTH * 0.7, 500) : Math.min(SCREEN_WIDTH - 40, 400);
+  const maxModalHeight = isTablet ? SCREEN_HEIGHT * 0.75 : SCREEN_HEIGHT * 0.7;
+  
+  return StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   modalContent: {
-    width: SCREEN_WIDTH - 40,
-    maxHeight: SCREEN_HEIGHT * 0.8,
+    width: modalWidth,
+    maxWidth: isTablet ? 500 : 400,
+    maxHeight: maxModalHeight,
     backgroundColor: colors.background,
     borderRadius: 16,
-    padding: 20,
+    padding: isTablet ? 24 : 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -74,7 +78,7 @@ export const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   calendarScroll: {
-    maxHeight: 380,
+    maxHeight: isTablet ? 350 : 280,
   },
   calendarGrid: {
     flexDirection: 'row',
@@ -149,4 +153,5 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.primary,
   },
-});
+  });
+};

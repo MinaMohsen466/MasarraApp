@@ -6,11 +6,11 @@ import {
   FlatList,
   Image,
   ActivityIndicator,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { SvgUri } from 'react-native-svg';
-import { styles } from './styles';
+import { createStyles } from './styles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useOccasions } from '../../hooks/useOccasions';
@@ -23,10 +23,13 @@ interface OccasionsProps {
 }
 
 const Occasions: React.FC<OccasionsProps> = ({ onSelectOccasion, onBack }) => {
+  const { width: screenWidth } = useWindowDimensions();
   const { isRTL, t } = useLanguage();
   const { data: occasions, isLoading, error } = useOccasions();
-  const screenWidth = Dimensions.get('window').width;
-  const numColumns = screenWidth >= 600 ? 4 : 3;
+  
+  // تحديد عدد الأعمدة حسب حجم الشاشة
+  const numColumns = screenWidth >= 600 ? 5 : 3; // 5 للأجهزة اللوحية، 3 للهواتف
+  const styles = createStyles(screenWidth, numColumns);
 
   const renderOccasionCard = ({ item }: { item: Occasion }) => {
     const displayName = isRTL ? item.nameAr : item.name;

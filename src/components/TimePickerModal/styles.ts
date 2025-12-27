@@ -6,7 +6,7 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 export const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -74,8 +74,8 @@ export const styles = StyleSheet.create({
   },
   timeSlotCardDisabled: {
     opacity: 1,
-    backgroundColor: '#FFEBEE',
-    borderColor: '#FFCDD2',
+    backgroundColor: colors.background,
+    borderColor: colors.error,
   },
   timeSlotLeft: {
     flex: 1,
@@ -89,7 +89,7 @@ export const styles = StyleSheet.create({
     color: colors.textWhite,
   },
   timeSlotTextDisabled: {
-    color: '#D32F2F',
+    color: colors.textSecondary,
     textDecorationLine: 'line-through',
   },
   timeSlotRight: {
@@ -105,7 +105,7 @@ export const styles = StyleSheet.create({
   },
   unavailableText: {
     fontSize: 12,
-    color: '#D32F2F',
+    color: colors.error,
     fontWeight: '600',
   },
   loadingContainer: {

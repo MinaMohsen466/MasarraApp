@@ -6,20 +6,18 @@ import {
   Modal,
   Image,
   Animated,
-  Dimensions,
+  useWindowDimensions,
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
-import { styles } from './styles';
+import { createStyles } from './styles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { colors } from '../../constants/colors';
 import { useSiteSettings } from '../../hooks/useSiteSettings';
 import { getImageUrl } from '../../services/api';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Drawer Props Interface
 interface DrawerProps {
@@ -30,6 +28,8 @@ interface DrawerProps {
 
 // Drawer Component
 const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
+  const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
+  const styles = createStyles(SCREEN_WIDTH, SCREEN_HEIGHT);
   const { language, isRTL, setLanguage, t } = useLanguage();
   const { isLoggedIn, logout } = useAuth();
   const { data: siteSettings, isLoading } = useSiteSettings();

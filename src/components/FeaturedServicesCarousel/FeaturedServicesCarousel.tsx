@@ -3,19 +3,17 @@ import {
   View,
   Text,
   Image,
-  Dimensions,
+  useWindowDimensions,
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
   Animated,
 } from 'react-native';
-import { styles } from './styles';
+import { createStyles } from './styles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useServices } from '../../hooks/useServices';
 import { Service, getServiceImageUrl } from '../../services/servicesApi';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface FeaturedServicesCarouselProps {
   onSelectService?: (service: Service) => void;
@@ -24,6 +22,8 @@ interface FeaturedServicesCarouselProps {
 const FeaturedServicesCarousel: React.FC<FeaturedServicesCarouselProps> = ({
   onSelectService,
 }) => {
+  const { width: SCREEN_WIDTH } = useWindowDimensions();
+  const styles = createStyles(SCREEN_WIDTH);
   useLanguage();
   const { data: services, isLoading } = useServices();
   const flatListRef = useRef<FlatList>(null);

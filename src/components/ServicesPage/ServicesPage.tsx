@@ -6,9 +6,10 @@ import {
   FlatList,
   Image,
   ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { styles } from './styles';
+import { createStyles } from './styles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useServices } from '../../hooks/useServices';
@@ -41,6 +42,10 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
   occasionId,
   occasionName,
 }) => {
+  const { width: screenWidth } = useWindowDimensions();
+  const isTablet = screenWidth >= 600;
+  const numColumns = isTablet ? 3 : 2;
+  const styles = createStyles(screenWidth);
   const { isRTL } = useLanguage();
   const { data: services, isLoading, error } = useServices();
   const { data: packages } = useVendorPackages(vendorId || '');
@@ -696,7 +701,8 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
         data={sortedAndFilteredServices}
         renderItem={renderServiceCard}
         keyExtractor={item => item._id}
-        numColumns={2}
+        key={numColumns}
+        numColumns={numColumns}
         columnWrapperStyle={[styles.row, isRTL && styles.rowRTL]}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}

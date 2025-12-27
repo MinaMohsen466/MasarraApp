@@ -6,7 +6,7 @@ import {
   Image,
   TouchableOpacity,
   ActivityIndicator,
-  Dimensions,
+  useWindowDimensions,
   Alert,
   Modal,
   Animated,
@@ -24,6 +24,7 @@ import {
   WishlistItem,
 } from '../../services/wishlist';
 import { colors } from '../../constants/colors';
+import { createStyles } from './styles';
 import DatePickerModal from '../DatePickerModal/DatePickerModal';
 import TimePickerModal from '../TimePickerModal/TimePickerModal';
 import { addToCart } from '../../services/cart';
@@ -35,8 +36,6 @@ import {
   ReviewStats,
 } from '../../services/reviewsApi';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
 interface PackageDetailsProps {
   packageId: string;
   onBack?: () => void;
@@ -46,6 +45,8 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
   packageId,
   onBack,
 }) => {
+  const { width: SCREEN_WIDTH } = useWindowDimensions();
+  const styles = createStyles(SCREEN_WIDTH);
   const { isRTL } = useLanguage();
   const insets = useSafeAreaInsets();
   const { data: packageData, isLoading, error } = usePackageDetails(packageId);
@@ -263,14 +264,14 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
   const triggerAddToCartAnimation = () => {
     if (addToCartButtonRef.current) {
       addToCartButtonRef.current.measure(
-        (x, y, width, height, pageX, pageY) => {
+        (_x, _y, width, height, pageX, pageY) => {
           // Calculate start position (center of button)
           const startX = pageX + width / 2;
           const startY = pageY + height / 2;
 
           // Calculate target position (bottom navigation cart icon)
-          const screenHeight = Dimensions.get('window').height;
-          const screenWidth = Dimensions.get('window').width;
+          const screenHeight = SCREEN_WIDTH * 2; // Approximate
+          const screenWidth = SCREEN_WIDTH;
 
           // Cart icon position changes based on text direction
           // In RTL (Arabic): cart is on the LEFT side of screen
@@ -328,14 +329,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 
   if (isLoading) {
     return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: 'center',
-          alignItems: 'center',
-          backgroundColor: '#fff',
-        }}
-      >
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
@@ -343,15 +337,8 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 
   if (error || !packageData) {
     return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: 'center',
-          alignItems: 'center',
-          backgroundColor: '#fff',
-        }}
-      >
-        <Text style={{ fontSize: 16, color: '#999' }}>
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>
           {isRTL
             ? 'فشل في تحميل تفاصيل الباقة'
             : 'Failed to load package details'}
@@ -359,15 +346,9 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
         {onBack && (
           <TouchableOpacity
             onPress={onBack}
-            style={{
-              marginTop: 20,
-              paddingHorizontal: 24,
-              paddingVertical: 12,
-              backgroundColor: colors.primary,
-              borderRadius: 8,
-            }}
+            style={styles.errorButton}
           >
-            <Text style={{ color: '#fff', fontSize: 16 }}>
+            <Text style={styles.errorButtonText}>
               {isRTL ? 'رجوع' : 'Go Back'}
             </Text>
           </TouchableOpacity>
@@ -385,157 +366,51 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
       ? packageData.discountPrice
       : packageData.totalPrice;
 
+  const handleShare = async () => {
+    if (!packageData) return;
+    try {
+      const price = displayPrice.toFixed(3);
+      const vendorName = packageData.vendor?.name || '';
+      const message = isRTL
+        ? `${displayName}\n${vendorName}\n${price} د.ك\n\nشاهد هذه الباقة الرائعة!`
+        : `${displayName}\n${vendorName}\nKD ${price}\n\nCheck out this amazing package!`;
+
+      await Share.share({ message, title: displayName });
+    } catch (error: any) {
+      Alert.alert(
+        isRTL ? 'خطأ' : 'Error',
+        error.message || (isRTL ? 'فشلت المشاركة' : 'Failed to share'),
+      );
+    }
+  };
+
+  const handleToggleWishlist = async () => {
+    if (!packageData) return;
+    const img =
+      packageData.images && packageData.images.length > 0
+        ? getImageUrl(packageData.images[0])
+        : undefined;
+    const item: WishlistItem = {
+      _id: packageData._id,
+      name: displayName,
+      image: img,
+      price: displayPrice,
+    };
+    await toggleWishlist(item);
+    const now = await isWishlisted(packageData._id);
+    setIsSaved(now);
+  };
+
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <View style={styles.container}>
       {/* Header */}
-      <View
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingHorizontal: 10,
-          paddingVertical: 0,
-          backgroundColor: colors.background,
-          zIndex: 50,
-        }}
-      >
-        {/* Left side - Back button and Share/Wishlist buttons for RTL */}
-        <View
-          style={{
-            flex: 1,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: isRTL ? 'flex-start' : 'flex-end',
-            gap: 14,
-          }}
-        >
-          {isRTL && (
-            <>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={async () => {
-                  if (!packageData) return;
-                  try {
-                    const price = displayPrice.toFixed(3);
-                    const vendorName = packageData.vendor?.name || '';
-
-                    const message = isRTL
-                      ? `${displayName}\n${vendorName}\n${price} د.ك\n\nشاهد هذه الباقة الرائعة!`
-                      : `${displayName}\n${vendorName}\nKD ${price}\n\nCheck out this amazing package!`;
-
-                    const result = await Share.share({
-                      message: message,
-                      title: displayName,
-                    });
-
-                    if (result.action === Share.sharedAction) {
-                      // Share was successful
-                    } else if (result.action === Share.dismissedAction) {
-                      // Share was dismissed
-                    }
-                  } catch (shareErr: any) {
-                    Alert.alert(
-                      isRTL ? 'خطأ' : 'Error',
-                      shareErr.message ||
-                        (isRTL ? 'فشلت المشاركة' : 'Failed to share'),
-                    );
-                  }
-                }}
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 0,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-                  <Path
-                    d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"
-                    stroke={colors.primary}
-                    strokeWidth={1.8}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <Path
-                    d="M16 6l-4-4-4 4"
-                    stroke={colors.primary}
-                    strokeWidth={1.8}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <Path
-                    d="M12 2v14"
-                    stroke={colors.primary}
-                    strokeWidth={1.8}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </Svg>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={async () => {
-                  if (!packageData) return;
-                  const img =
-                    packageData.images && packageData.images.length > 0
-                      ? getImageUrl(packageData.images[0])
-                      : undefined;
-                  const item: WishlistItem = {
-                    _id: packageData._id,
-                    name: displayName,
-                    image: img,
-                    price: displayPrice,
-                  };
-                  await toggleWishlist(item);
-                  const now = await isWishlisted(packageData._id);
-                  setIsSaved(now);
-                }}
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 0,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-                  <Path
-                    d="M20.8 7.6a4.8 4.8 0 0 0-6.8 0L12 9.6l-2-2a4.8 4.8 0 1 0-6.8 6.8L12 22l8.8-7.6a4.8 4.8 0 0 0 0-6.8z"
-                    stroke={isSaved ? colors.primary : '#7FBFB6'}
-                    strokeWidth={1.8}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    fill={isSaved ? colors.primary : 'none'}
-                  />
-                </Svg>
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
-
-        {/* Center - Back button */}
-        <View
-          style={{
-            position: 'absolute',
-            left: isRTL ? 'auto' : 10,
-            right: isRTL ? 10 : 'auto',
-          }}
-        >
+      <View style={styles.header}>
+        {/* Left Side */}
+        <View style={styles.headerLeft}>
           <TouchableOpacity
             onPress={onBack}
             activeOpacity={0.7}
-            style={{
-              width: 52,
-              height: 52,
-              borderRadius: 0,
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
+            style={styles.headerButton}
           >
             <Svg width={26} height={26} viewBox="0 0 24 24" fill="none">
               <Path
@@ -549,156 +424,84 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
           </TouchableOpacity>
         </View>
 
-        {/* Right side - Share/Wishlist buttons for LTR */}
-        <View
-          style={{
-            flex: 1,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-            gap: 14,
-          }}
-        >
-          {!isRTL && (
-            <>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={async () => {
-                  if (!packageData) return;
-                  const img =
-                    packageData.images && packageData.images.length > 0
-                      ? getImageUrl(packageData.images[0])
-                      : undefined;
-                  const item: WishlistItem = {
-                    _id: packageData._id,
-                    name: displayName,
-                    image: img,
-                    price: displayPrice,
-                  };
-                  await toggleWishlist(item);
-                  const now = await isWishlisted(packageData._id);
-                  setIsSaved(now);
-                }}
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 0,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-                  <Path
-                    d="M20.8 7.6a4.8 4.8 0 0 0-6.8 0L12 9.6l-2-2a4.8 4.8 0 1 0-6.8 6.8L12 22l8.8-7.6a4.8 4.8 0 0 0 0-6.8z"
-                    stroke={isSaved ? colors.primary : '#7FBFB6'}
-                    strokeWidth={1.8}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    fill={isSaved ? colors.primary : 'none'}
-                  />
-                </Svg>
-              </TouchableOpacity>
+        {/* Right Side */}
+        <View style={styles.headerRight}>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={handleToggleWishlist}
+            style={styles.headerButton}
+          >
+            <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="M20.8 7.6a4.8 4.8 0 0 0-6.8 0L12 9.6l-2-2a4.8 4.8 0 1 0-6.8 6.8L12 22l8.8-7.6a4.8 4.8 0 0 0 0-6.8z"
+                stroke={isSaved ? colors.primary : colors.textSecondary}
+                strokeWidth={1.8}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill={isSaved ? colors.primary : 'none'}
+              />
+            </Svg>
+          </TouchableOpacity>
 
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={async () => {
-                  if (!packageData) return;
-                  try {
-                    const price = displayPrice.toFixed(3);
-                    const vendorName = packageData.vendor?.name || '';
-
-                    const message = isRTL
-                      ? `${displayName}\n${vendorName}\n${price} د.ك\n\nشاهد هذه الباقة الرائعة!`
-                      : `${displayName}\n${vendorName}\nKD ${price}\n\nCheck out this amazing package!`;
-
-                    const result = await Share.share({
-                      message: message,
-                      title: displayName,
-                    });
-
-                    if (result.action === Share.sharedAction) {
-                      // Share was successful
-                    } else if (result.action === Share.dismissedAction) {
-                      // Share was dismissed
-                    }
-                  } catch (shareErr: any) {
-                    Alert.alert(
-                      isRTL ? 'خطأ' : 'Error',
-                      shareErr.message ||
-                        (isRTL ? 'فشلت المشاركة' : 'Failed to share'),
-                    );
-                  }
-                }}
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 0,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-                  <Path
-                    d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"
-                    stroke={colors.primary}
-                    strokeWidth={1.8}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <Path
-                    d="M16 6l-4-4-4 4"
-                    stroke={colors.primary}
-                    strokeWidth={1.8}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <Path
-                    d="M12 2v14"
-                    stroke={colors.primary}
-                    strokeWidth={1.8}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </Svg>
-              </TouchableOpacity>
-            </>
-          )}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={handleShare}
+            style={styles.headerButton}
+          >
+            <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"
+                stroke={colors.primary}
+                strokeWidth={1.8}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <Path
+                d="M16 6l-4-4-4 4"
+                stroke={colors.primary}
+                strokeWidth={1.8}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <Path
+                d="M12 2v14"
+                stroke={colors.primary}
+                strokeWidth={1.8}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
+          </TouchableOpacity>
         </View>
       </View>
 
       <ScrollView
-        style={{ flex: 1 }}
+        style={styles.scrollView}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          paddingTop: 56,
-          paddingBottom:
-            SCREEN_WIDTH >= 600 ? insets.bottom + 280 : insets.bottom + 180,
-        }}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingBottom:
+              SCREEN_WIDTH >= 600 ? insets.bottom + 280 : insets.bottom + 180,
+          },
+        ]}
       >
         {/* Image Gallery */}
         {packageData.images && packageData.images.length > 0 && (
-          <View>
+          <View style={styles.imageGalleryContainer}>
             <Image
               source={{
                 uri: getImageUrl(packageData.images[currentImageIndex]),
               }}
-              style={{ width: SCREEN_WIDTH, height: SCREEN_WIDTH * 0.75 }}
+              style={styles.galleryImage}
               resizeMode="cover"
             />
             {packageData.discountPrice > 0 && (
               <View
-                style={{
-                  position: 'absolute',
-                  top: 16,
-                  right: 16,
-                  backgroundColor: colors.primary,
-                  paddingHorizontal: 12,
-                  paddingVertical: 6,
-                  borderRadius: 8,
-                }}
+                style={styles.discountBadge}
               >
                 <Text
-                  style={{ color: 'white', fontSize: 14, fontWeight: 'bold' }}
+                  style={styles.discountText}
                 >
                   {Math.round(
                     ((packageData.totalPrice - packageData.discountPrice) /
@@ -711,29 +514,18 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
             )}
             {packageData.images.length > 1 && (
               <View
-                style={{
-                  position: 'absolute',
-                  bottom: 16,
-                  left: 0,
-                  right: 0,
-                  flexDirection: 'row',
-                  justifyContent: 'center',
-                  gap: 8,
-                }}
+                style={styles.paginationContainer}
               >
                 {packageData.images.map((_: any, index: number) => (
                   <TouchableOpacity
                     key={index}
                     onPress={() => setCurrentImageIndex(index)}
-                    style={{
-                      width: index === currentImageIndex ? 24 : 8,
-                      height: 8,
-                      borderRadius: 4,
-                      backgroundColor:
-                        index === currentImageIndex
-                          ? colors.primary
-                          : 'rgba(255,255,255,0.5)',
-                    }}
+                    style={[
+                      styles.paginationDot,
+                      index === currentImageIndex
+                        ? styles.paginationDotActive
+                        : styles.paginationDotInactive,
+                    ]}
                   />
                 ))}
               </View>
@@ -742,24 +534,16 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
         )}
 
         {/* Package Info */}
-        <View style={{ padding: 20 }}>
+        <View style={styles.infoSection}>
           {/* Package Badge */}
           <View
-            style={{
-              alignSelf: isRTL ? 'flex-end' : 'flex-start',
-              backgroundColor: colors.primary + '15',
-              paddingHorizontal: 12,
-              paddingVertical: 6,
-              borderRadius: 6,
-              marginBottom: 12,
-            }}
+            style={[
+              styles.packageBadgeContainer,
+              isRTL && { alignSelf: 'flex-end' },
+            ]}
           >
             <Text
-              style={{
-                color: colors.primary,
-                fontWeight: 'bold',
-                fontSize: 12,
-              }}
+              style={styles.packageBadgeText}
             >
               {isRTL ? 'باقة' : 'PACKAGE'}
             </Text>
@@ -767,13 +551,10 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 
           {/* Package Name */}
           <Text
-            style={{
-              fontSize: 24,
-              fontWeight: 'bold',
-              color: '#333',
-              textAlign: isRTL ? 'right' : 'left',
-              marginBottom: 8,
-            }}
+            style={[
+              styles.packageName,
+              { textAlign: isRTL ? 'right' : 'left' },
+            ]}
           >
             {displayName}
           </Text>
@@ -781,13 +562,10 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
           {/* Package Description */}
           {(packageData.description || packageData.descriptionAr) && (
             <Text
-              style={{
-                fontSize: 14,
-                color: '#666',
-                textAlign: isRTL ? 'right' : 'left',
-                lineHeight: 20,
-                marginBottom: 16,
-              }}
+              style={[
+                styles.packageDescription,
+                { textAlign: isRTL ? 'right' : 'left' },
+              ]}
             >
               {isRTL ? packageData.descriptionAr : packageData.description}
             </Text>
@@ -796,11 +574,10 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
           {/* Vendor Name */}
           {packageData.vendor && (
             <View
-              style={{
-                flexDirection: isRTL ? 'row-reverse' : 'row',
-                alignItems: 'center',
-                marginBottom: 16,
-              }}
+              style={[
+                styles.vendorContainer,
+                isRTL && { flexDirection: 'row-reverse' },
+              ]}
             >
               <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
                 <Path
@@ -819,12 +596,10 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                 />
               </Svg>
               <Text
-                style={{
-                  fontSize: 14,
-                  color: '#666',
-                  marginLeft: isRTL ? 0 : 8,
-                  marginRight: isRTL ? 8 : 0,
-                }}
+                style={[
+                  styles.vendorText,
+                  isRTL && { marginLeft: 0, marginRight: 8 },
+                ]}
               >
                 {packageData.vendor.name}
               </Text>
@@ -833,68 +608,44 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 
           {/* Price & Rating */}
           <View
-            style={{
-              flexDirection: isRTL ? 'row-reverse' : 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: 20,
-            }}
+            style={[
+              styles.priceRatingContainer,
+              isRTL && { flexDirection: 'row-reverse' },
+            ]}
           >
             <View
-              style={{
-                flexDirection: isRTL ? 'row-reverse' : 'row',
-                alignItems: 'center',
-                gap: 12,
-              }}
+              style={[
+                styles.priceContainer,
+                isRTL && { flexDirection: 'row-reverse' },
+              ]}
             >
               {packageData.discountPrice > 0 && (
                 <Text
-                  style={{
-                    fontSize: 14,
-                    color: '#999',
-                    textDecorationLine: 'line-through',
-                  }}
+                  style={styles.originalPrice}
                 >
                   {packageData.totalPrice.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
                 </Text>
               )}
               <Text
-                style={{
-                  fontSize: 20,
-                  fontWeight: 'bold',
-                  color: colors.primary,
-                }}
+                style={styles.currentPrice}
               >
                 {displayPrice.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
               </Text>
             </View>
             <View
-              style={{
-                flexDirection: isRTL ? 'row-reverse' : 'row',
-                alignItems: 'center',
-                backgroundColor: colors.primaryLight,
-                paddingHorizontal: 10,
-                paddingVertical: 6,
-                borderRadius: 8,
-                gap: 4,
-              }}
+              style={[
+                styles.ratingContainer,
+                isRTL && { flexDirection: 'row-reverse' },
+              ]}
             >
               <Text
-                style={{
-                  fontSize: 16,
-                  color: colors.primary,
-                  fontWeight: 'bold',
-                }}
+                style={styles.ratingValue}
               >
                 {reviewStats ? reviewStats.averageRating.toFixed(1) : '0.0'}
               </Text>
-              <Text style={{ fontSize: 14, color: colors.primary }}>★</Text>
+              <Text style={styles.ratingStar}>★</Text>
               <Text
-                style={{
-                  fontSize: 12,
-                  color: colors.primary,
-                  fontWeight: '500',
-                }}
+                style={styles.ratingCount}
               >
                 ({reviewStats ? reviewStats.totalRatings : 0})
               </Text>
@@ -903,69 +654,33 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 
           {/* Date & Time Selection */}
           <View
-            style={{
-              backgroundColor: '#F9F9F9',
-              borderRadius: 8,
-              paddingHorizontal: 20,
-              paddingVertical: 14,
-              marginTop: 0,
-              marginBottom: 20,
-            }}
+            style={styles.dateTimeSection}
           >
             <Text
-              style={{
-                alignSelf: 'center',
-                backgroundColor: colors.background,
-                color: colors.primary,
-                fontSize: 12,
-                fontWeight: '700',
-                paddingHorizontal: 14,
-                paddingVertical: 6,
-                borderRadius: 12,
-                marginBottom: 12,
-                letterSpacing: 0.6,
-              }}
+              style={styles.dateTimeTitle}
             >
               {isRTL ? 'اختر اليوم والوقت' : 'SELECT EVENT DAY & TIME'}
             </Text>
 
             <View
-              style={{
-                width: '100%',
-                backgroundColor: 'transparent',
-                borderRadius: 8,
-                paddingBottom: 6,
-              }}
+              style={styles.dateTimeInputsContainer}
             >
               <TouchableOpacity
                 onPress={() => setShowDatePicker(true)}
                 activeOpacity={0.8}
-                style={{
-                  flexDirection: isRTL ? 'row-reverse' : 'row',
-                  alignItems: 'center',
-                  backgroundColor: colors.background,
-                  borderRadius: 12,
-                  paddingVertical: 12,
-                  paddingHorizontal: 14,
-                  marginBottom: 10,
-                }}
+                style={[
+                  styles.dateTimeButton,
+                  isRTL && { flexDirection: 'row-reverse' },
+                ]}
               >
                 <View
-                  style={{
-                    marginRight: isRTL ? 0 : 14,
-                    marginLeft: isRTL ? 14 : 0,
-                  }}
+                  style={[
+                    styles.dateTimeIconContainer,
+                    isRTL && { marginRight: 0, marginLeft: 14 },
+                  ]}
                 >
                   <View
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 8,
-                      borderWidth: 1.4,
-                      borderColor: colors.primary,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
+                    style={styles.dateTimeIcon}
                   >
                     <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
                       <Path
@@ -986,13 +701,10 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                   </View>
                 </View>
                 <Text
-                  style={{
-                    flex: 1,
-                    fontSize: 15,
-                    color: colors.textDark,
-                    fontWeight: '500',
-                    textAlign: isRTL ? 'right' : 'left',
-                  }}
+                  style={[
+                    styles.dateTimeText,
+                    { textAlign: isRTL ? 'right' : 'left' },
+                  ]}
                 >
                   {selectedDate
                     ? selectedDate.toLocaleDateString(
@@ -1013,33 +725,20 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                 onPress={() => selectedDate && setShowTimePicker(true)}
                 disabled={!selectedDate}
                 activeOpacity={0.8}
-                style={{
-                  flexDirection: isRTL ? 'row-reverse' : 'row',
-                  alignItems: 'center',
-                  backgroundColor: colors.background,
-                  borderRadius: 12,
-                  paddingVertical: 12,
-                  paddingHorizontal: 14,
-                  marginBottom: 10,
-                  opacity: selectedDate ? 1 : 0.5,
-                }}
+                style={[
+                  styles.dateTimeButton,
+                  isRTL && { flexDirection: 'row-reverse' },
+                  !selectedDate && { opacity: 0.5 },
+                ]}
               >
                 <View
-                  style={{
-                    marginRight: isRTL ? 0 : 14,
-                    marginLeft: isRTL ? 14 : 0,
-                  }}
+                  style={[
+                    styles.dateTimeIconContainer,
+                    isRTL && { marginRight: 0, marginLeft: 14 },
+                  ]}
                 >
                   <View
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 8,
-                      borderWidth: 1.4,
-                      borderColor: colors.primary,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
+                    style={styles.dateTimeIcon}
                   >
                     <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
                       <Path
@@ -1060,13 +759,10 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                   </View>
                 </View>
                 <Text
-                  style={{
-                    flex: 1,
-                    fontSize: 15,
-                    color: colors.textDark,
-                    fontWeight: '500',
-                    textAlign: isRTL ? 'right' : 'left',
-                  }}
+                  style={[
+                    styles.dateTimeText,
+                    { textAlign: isRTL ? 'right' : 'left' },
+                  ]}
                 >
                   {selectedTime || (isRTL ? 'اختر الوقت' : 'Select Time')}
                 </Text>
@@ -1076,29 +772,19 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={{
-                  alignSelf: 'center',
-                  backgroundColor: colors.primaryDark,
-                  borderRadius: 20,
-                  paddingVertical: 10,
-                  paddingHorizontal: 22,
-                  marginTop: 4,
-                  opacity:
-                    !selectedDate || !selectedTime || !isTimeSlotAvailable
-                      ? 0.5
-                      : 1,
-                }}
+                style={[
+                  styles.availabilityButton,
+                  (!selectedDate || !selectedTime || !isTimeSlotAvailable) && {
+                    opacity: 0.5,
+                  },
+                ]}
                 activeOpacity={0.85}
                 disabled={
                   !selectedDate || !selectedTime || !isTimeSlotAvailable
                 }
               >
                 <Text
-                  style={{
-                    color: colors.textWhite,
-                    fontSize: 14,
-                    fontWeight: '700',
-                  }}
+                  style={styles.availabilityText}
                 >
                   {checkingAvailability
                     ? isRTL
@@ -1122,12 +808,10 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 
           {selectedTime && !isTimeSlotAvailable && (
             <Text
-              style={{
-                color: '#ff3b30',
-                fontSize: 14,
-                marginTop: 8,
-                textAlign: isRTL ? 'right' : 'left',
-              }}
+              style={[
+                styles.unavailableText,
+                { textAlign: isRTL ? 'right' : 'left' },
+              ]}
             >
               {isRTL
                 ? 'هذا الوقت محجوز بالفعل'
@@ -1137,35 +821,25 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 
           {/* Divider */}
           <View
-            style={{
-              height: 1,
-              backgroundColor: '#e0e0e0',
-              marginVertical: 20,
-            }}
+            style={styles.divider}
           />
 
           {/* Description */}
           {displayDescription && (
             <>
               <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: 'bold',
-                  color: '#333',
-                  textAlign: isRTL ? 'right' : 'left',
-                  marginBottom: 8,
-                }}
+                style={[
+                  styles.sectionTitle,
+                  { textAlign: isRTL ? 'right' : 'left' },
+                ]}
               >
                 {isRTL ? 'الوصف' : 'Description'}
               </Text>
               <Text
-                style={{
-                  fontSize: 14,
-                  color: '#666',
-                  lineHeight: 22,
-                  textAlign: isRTL ? 'right' : 'left',
-                  marginBottom: 20,
-                }}
+                style={[
+                  styles.descriptionText,
+                  { textAlign: isRTL ? 'right' : 'left' },
+                ]}
               >
                 {displayDescription}
               </Text>
@@ -1176,50 +850,37 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
           {packageData.service && (
             <>
               <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: 'bold',
-                  color: '#333',
-                  textAlign: isRTL ? 'right' : 'left',
-                  marginBottom: 12,
-                }}
+                style={[
+                  styles.sectionTitle,
+                  { textAlign: isRTL ? 'right' : 'left' },
+                ]}
               >
                 {isRTL ? 'الخدمة الرئيسية' : 'Main Service'}
               </Text>
               <TouchableOpacity
                 onPress={() => setExpandedMainService(!expandedMainService)}
-                style={{
-                  backgroundColor: '#f5f5f5',
-                  padding: 16,
-                  borderRadius: 12,
-                  marginBottom: 20,
-                }}
+                style={styles.mainServiceCard}
               >
                 <View
-                  style={{
-                    flexDirection: isRTL ? 'row-reverse' : 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
+                  style={[
+                    styles.serviceCardHeader,
+                    isRTL && { flexDirection: 'row-reverse' },
+                  ]}
                 >
-                  <View style={{ flex: 1 }}>
+                  <View style={styles.serviceCardContent}>
                     <Text
-                      style={{
-                        fontSize: 16,
-                        fontWeight: '600',
-                        color: '#333',
-                        textAlign: isRTL ? 'right' : 'left',
-                        marginBottom: 4,
-                      }}
+                      style={[
+                        styles.serviceCardTitle,
+                        { textAlign: isRTL ? 'right' : 'left' },
+                      ]}
                     >
                       {packageData.service.name}
                     </Text>
                     <Text
-                      style={{
-                        fontSize: 14,
-                        color: colors.primary,
-                        textAlign: isRTL ? 'right' : 'left',
-                      }}
+                      style={[
+                        styles.serviceCardPrice,
+                        { textAlign: isRTL ? 'right' : 'left' },
+                      ]}
                     >
                       {packageData.customPrice.toFixed(3)}{' '}
                       {isRTL ? 'د.ك' : 'KD'}
@@ -1240,22 +901,14 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 
                 {expandedMainService && (
                   <View
-                    style={{
-                      marginTop: 16,
-                      paddingTop: 16,
-                      borderTopWidth: 1,
-                      borderTopColor: '#e0e0e0',
-                    }}
+                    style={styles.serviceCardExpanded}
                   >
                     {packageData.service.description && (
                       <Text
-                        style={{
-                          fontSize: 14,
-                          color: '#666',
-                          lineHeight: 20,
-                          textAlign: isRTL ? 'right' : 'left',
-                          marginBottom: 12,
-                        }}
+                        style={[
+                          styles.serviceCardDescription,
+                          { textAlign: isRTL ? 'right' : 'left' },
+                        ]}
                       >
                         {packageData.service.description}
                       </Text>
@@ -1271,12 +924,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                               <Image
                                 key={idx}
                                 source={{ uri: getImageUrl(img) }}
-                                style={{
-                                  width: 100,
-                                  height: 100,
-                                  borderRadius: 8,
-                                  marginRight: 8,
-                                }}
+                                style={styles.serviceImage}
                                 resizeMode="cover"
                               />
                             ),
@@ -1294,13 +942,10 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
             packageData.additionalServices.length > 0 && (
               <>
                 <Text
-                  style={{
-                    fontSize: 16,
-                    fontWeight: 'bold',
-                    color: '#333',
-                    textAlign: isRTL ? 'right' : 'left',
-                    marginBottom: 12,
-                  }}
+                  style={[
+                    styles.sectionTitle,
+                    { textAlign: isRTL ? 'right' : 'left' },
+                  ]}
                 >
                   {isRTL ? 'خدمات إضافية' : 'Additional Services'}
                 </Text>
@@ -1314,38 +959,28 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                           [index]: !prev[index],
                         }))
                       }
-                      style={{
-                        backgroundColor: '#f5f5f5',
-                        padding: 16,
-                        borderRadius: 12,
-                        marginBottom: 12,
-                      }}
+                      style={styles.serviceCard}
                     >
                       <View
-                        style={{
-                          flexDirection: isRTL ? 'row-reverse' : 'row',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                        }}
+                        style={[
+                          styles.serviceCardHeader,
+                          isRTL && { flexDirection: 'row-reverse' },
+                        ]}
                       >
-                        <View style={{ flex: 1 }}>
+                        <View style={styles.serviceCardContent}>
                           <Text
-                            style={{
-                              fontSize: 16,
-                              fontWeight: '600',
-                              color: '#333',
-                              textAlign: isRTL ? 'right' : 'left',
-                              marginBottom: 4,
-                            }}
+                            style={[
+                              styles.serviceCardTitle,
+                              { textAlign: isRTL ? 'right' : 'left' },
+                            ]}
                           >
                             {item.service?.name || 'Service'}
                           </Text>
                           <Text
-                            style={{
-                              fontSize: 14,
-                              color: colors.primary,
-                              textAlign: isRTL ? 'right' : 'left',
-                            }}
+                            style={[
+                              styles.serviceCardPrice,
+                              { textAlign: isRTL ? 'right' : 'left' },
+                            ]}
                           >
                             {item.customPrice.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
                           </Text>
@@ -1372,22 +1007,14 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 
                       {expandedAdditionalServices[index] && (
                         <View
-                          style={{
-                            marginTop: 16,
-                            paddingTop: 16,
-                            borderTopWidth: 1,
-                            borderTopColor: '#e0e0e0',
-                          }}
+                          style={styles.serviceCardExpanded}
                         >
                           {item.service?.description && (
                             <Text
-                              style={{
-                                fontSize: 14,
-                                color: '#666',
-                                lineHeight: 20,
-                                textAlign: isRTL ? 'right' : 'left',
-                                marginBottom: 12,
-                              }}
+                              style={[
+                                styles.serviceCardDescription,
+                                { textAlign: isRTL ? 'right' : 'left' },
+                              ]}
                             >
                               {item.service.description}
                             </Text>
@@ -1403,12 +1030,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                                     <Image
                                       key={idx}
                                       source={{ uri: getImageUrl(img) }}
-                                      style={{
-                                        width: 100,
-                                        height: 100,
-                                        borderRadius: 8,
-                                        marginRight: 8,
-                                      }}
+                                      style={styles.serviceImage}
                                       resizeMode="cover"
                                     />
                                   ),
@@ -1425,70 +1047,56 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 
           {/* Reviews Section */}
           {reviewStats && reviewStats.totalRatings > 0 && (
-            <View style={{ marginTop: 20 }}>
+            <View style={styles.reviewsContainer}>
               <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: 'bold',
-                  color: '#333',
-                  textAlign: isRTL ? 'right' : 'left',
-                  marginBottom: 16,
-                }}
+                style={[
+                  styles.sectionTitle,
+                  { textAlign: isRTL ? 'right' : 'left', marginBottom: 16 },
+                ]}
               >
                 {isRTL ? 'التقييمات' : 'Reviews'} ({reviewStats.totalRatings})
               </Text>
 
               {/* Review Stats */}
               <View
-                style={{
-                  backgroundColor: '#f9f9f9',
-                  borderRadius: 12,
-                  padding: 16,
-                  marginBottom: 16,
-                  flexDirection: isRTL ? 'row-reverse' : 'row',
-                }}
+                style={[
+                  styles.reviewStatsContainer,
+                  isRTL && { flexDirection: 'row-reverse' },
+                ]}
               >
                 <View
-                  style={{
-                    alignItems: 'center',
-                    paddingRight: isRTL ? 0 : 20,
-                    paddingLeft: isRTL ? 20 : 0,
-                    borderRightWidth: isRTL ? 0 : 1,
-                    borderLeftWidth: isRTL ? 1 : 0,
-                    borderColor: '#e0e0e0',
-                  }}
+                  style={[
+                    styles.reviewStatsLeft,
+                    isRTL && {
+                      paddingRight: 0,
+                      paddingLeft: 20,
+                      borderRightWidth: 0,
+                      borderLeftWidth: 1,
+                    },
+                  ]}
                 >
                   <Text
-                    style={{
-                      fontSize: 36,
-                      fontWeight: 'bold',
-                      color: colors.primary,
-                    }}
+                    style={styles.reviewStatsAverageRating}
                   >
                     {reviewStats.averageRating.toFixed(1)}
                   </Text>
                   <Text
-                    style={{
-                      fontSize: 18,
-                      color: colors.primary,
-                      marginVertical: 4,
-                    }}
+                    style={styles.reviewStatsStars}
                   >
                     {'★'.repeat(Math.round(reviewStats.averageRating))}
                     {'☆'.repeat(5 - Math.round(reviewStats.averageRating))}
                   </Text>
-                  <Text style={{ fontSize: 12, color: '#666' }}>
+                  <Text style={styles.reviewStatsTotalText}>
                     {reviewStats.totalRatings} {isRTL ? 'تقييم' : 'reviews'}
                   </Text>
                 </View>
 
                 {/* Rating Distribution */}
                 <View
-                  style={{
-                    flex: 1,
-                    paddingLeft: isRTL ? 0 : 20,
-                    paddingRight: isRTL ? 20 : 0,
-                  }}
+                  style={[
+                    styles.reviewStatsRight,
+                    isRTL && { paddingLeft: 0, paddingRight: 20 },
+                  ]}
                 >
                   {[5, 4, 3, 2, 1].map(star => {
                     const count =
@@ -1502,42 +1110,31 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                     return (
                       <View
                         key={star}
-                        style={{
-                          flexDirection: isRTL ? 'row-reverse' : 'row',
-                          alignItems: 'center',
-                          marginBottom: 4,
-                        }}
+                        style={[
+                          styles.reviewRatingRow,
+                          isRTL && { flexDirection: 'row-reverse' },
+                        ]}
                       >
                         <Text
-                          style={{
-                            fontSize: 12,
-                            color: '#666',
-                            width: 30,
-                            textAlign: isRTL ? 'left' : 'right',
-                          }}
+                          style={[
+                            styles.reviewRatingLabel,
+                            { width: 30, textAlign: isRTL ? 'left' : 'right' },
+                          ]}
                         >
                           {star}★
                         </Text>
                         <View
-                          style={{
-                            flex: 1,
-                            height: 6,
-                            backgroundColor: '#e0e0e0',
-                            borderRadius: 3,
-                            marginHorizontal: 8,
-                            overflow: 'hidden',
-                          }}
+                          style={styles.reviewRatingBar}
                         >
                           <View
-                            style={{
-                              width: `${percentage}%`,
-                              height: '100%',
-                              backgroundColor: colors.primary,
-                            }}
+                            style={[
+                              styles.reviewRatingFill,
+                              { width: `${percentage}%` },
+                            ]}
                           />
                         </View>
                         <Text
-                          style={{ fontSize: 12, color: '#666', width: 25 }}
+                          style={styles.reviewRatingLabel}
                         >
                           {count}
                         </Text>
@@ -1553,96 +1150,60 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                   {reviews.slice(0, 2).map(review => (
                     <View
                       key={review._id}
-                      style={{
-                        backgroundColor: '#fff',
-                        borderRadius: 12,
-                        padding: 16,
-                        marginBottom: 12,
-                        borderWidth: 1,
-                        borderColor: '#e8e8e8',
-                      }}
+                      style={styles.reviewCard}
                     >
                       <View
-                        style={{
-                          flexDirection: isRTL ? 'row-reverse' : 'row',
-                          justifyContent: 'space-between',
-                          alignItems: 'flex-start',
-                          marginBottom: 12,
-                        }}
+                        style={[
+                          styles.reviewHeader,
+                          isRTL && { flexDirection: 'row-reverse' },
+                        ]}
                       >
                         <View
-                          style={{
-                            flexDirection: isRTL ? 'row-reverse' : 'row',
-                            alignItems: 'center',
-                            flex: 1,
-                          }}
+                          style={[
+                            styles.reviewerInfo,
+                            isRTL && { flexDirection: 'row-reverse' },
+                          ]}
                         >
                           {review.user.profilePicture ? (
                             <Image
                               source={{
                                 uri: getImageUrl(review.user.profilePicture),
                               }}
-                              style={{
-                                width: 40,
-                                height: 40,
-                                borderRadius: 20,
-                                marginRight: isRTL ? 0 : 12,
-                                marginLeft: isRTL ? 12 : 0,
-                              }}
+                              style={[
+                                styles.userAvatar,
+                                isRTL && { marginRight: 0, marginLeft: 12 },
+                              ]}
                             />
                           ) : (
                             <View
-                              style={{
-                                width: 40,
-                                height: 40,
-                                borderRadius: 20,
-                                backgroundColor: colors.primary,
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                marginRight: isRTL ? 0 : 12,
-                                marginLeft: isRTL ? 12 : 0,
-                              }}
+                              style={[
+                                styles.userAvatarPlaceholder,
+                                isRTL && { marginRight: 0, marginLeft: 12 },
+                              ]}
                             >
                               <Text
-                                style={{
-                                  color: '#fff',
-                                  fontSize: 18,
-                                  fontWeight: 'bold',
-                                }}
+                                style={styles.userAvatarText}
                               >
                                 {review.user.name.charAt(0).toUpperCase()}
                               </Text>
                             </View>
                           )}
-                          <View style={{ flex: 1 }}>
+                          <View style={styles.serviceCardContent}>
                             <View
-                              style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                flexWrap: 'wrap',
-                              }}
+                              style={styles.userInfoRow}
                             >
                               <Text
-                                style={{
-                                  fontSize: 14,
-                                  fontWeight: '600',
-                                  color: '#333',
-                                  maxWidth: '50%',
-                                }}
+                                style={styles.userName}
                                 numberOfLines={1}
                               >
                                 {review.user.name}
                               </Text>
                               <Text
-                                style={{
-                                  fontSize: 12,
-                                  color: '#999',
-                                  marginHorizontal: 6,
-                                }}
+                                style={styles.dateSeparator}
                               >
                                 •
                               </Text>
-                              <Text style={{ fontSize: 12, color: '#999' }}>
+                              <Text style={styles.reviewDateText}>
                                 {new Date(review.createdAt).toLocaleDateString(
                                   isRTL ? 'ar-EG' : 'en-US',
                                   { month: 'short', day: 'numeric' },
@@ -1651,11 +1212,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                             </View>
                             {review.isVerifiedPurchase && (
                               <Text
-                                style={{
-                                  fontSize: 11,
-                                  color: colors.primary,
-                                  marginTop: 2,
-                                }}
+                                style={styles.verifiedBadge}
                               >
                                 ✓ {isRTL ? 'مشترٍ موثق' : 'Verified'}
                               </Text>
@@ -1663,61 +1220,43 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                           </View>
                         </View>
                         <View
-                          style={{
-                            backgroundColor: colors.primaryLight,
-                            paddingHorizontal: 8,
-                            paddingVertical: 4,
-                            borderRadius: 6,
-                          }}
+                          style={styles.ratingContainer}
                         >
                           <Text
-                            style={{
-                              fontSize: 13,
-                              color: colors.primary,
-                              fontWeight: '600',
-                            }}
+                            style={[
+                              styles.reviewRatingValue,
+                              { fontSize: 13 },
+                            ]}
                           >
                             {review.rating.toFixed(1)} ★
                           </Text>
                         </View>
                       </View>
                       <Text
-                        style={{
-                          fontSize: 14,
-                          color: '#666',
-                          lineHeight: 20,
-                          textAlign: isRTL ? 'right' : 'left',
-                        }}
+                        style={[
+                          styles.reviewComment,
+                          { textAlign: isRTL ? 'right' : 'left' },
+                        ]}
                       >
                         {review.comment}
                       </Text>
                       {review.vendorReply && (
                         <View
-                          style={{
-                            marginTop: 12,
-                            paddingTop: 12,
-                            borderTopWidth: 1,
-                            borderTopColor: '#f0f0f0',
-                          }}
+                          style={styles.vendorReplyContainer}
                         >
                           <Text
-                            style={{
-                              fontSize: 12,
-                              fontWeight: '600',
-                              color: colors.primary,
-                              marginBottom: 4,
-                              textAlign: isRTL ? 'right' : 'left',
-                            }}
+                            style={[
+                              styles.vendorReplyTitle,
+                              { textAlign: isRTL ? 'right' : 'left' },
+                            ]}
                           >
                             {isRTL ? 'رد البائع:' : 'Vendor Reply:'}
                           </Text>
                           <Text
-                            style={{
-                              fontSize: 13,
-                              color: '#666',
-                              lineHeight: 18,
-                              textAlign: isRTL ? 'right' : 'left',
-                            }}
+                            style={[
+                              styles.vendorReplyText,
+                              { textAlign: isRTL ? 'right' : 'left' },
+                            ]}
                           >
                             {review.vendorReply.text}
                           </Text>
@@ -1729,24 +1268,15 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                   {/* Show More Reviews Button */}
                   {reviews.length > 2 && (
                     <TouchableOpacity
-                      style={{
-                        flexDirection: isRTL ? 'row-reverse' : 'row',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        paddingVertical: 12,
-                        backgroundColor: '#f9f9f9',
-                        borderRadius: 8,
-                        marginTop: 8,
-                      }}
+                      style={[
+                        styles.showMoreButton,
+                        isRTL && { flexDirection: 'row-reverse' },
+                      ]}
                       activeOpacity={0.7}
                       onPress={() => setShowAllReviewsModal(true)}
                     >
                       <Text
-                        style={{
-                          fontSize: 14,
-                          color: colors.primary,
-                          fontWeight: '600',
-                        }}
+                        style={styles.showMoreText}
                       >
                         {isRTL
                           ? `عرض جميع التقييمات (${reviews.length})`
@@ -1757,11 +1287,14 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                         height={20}
                         viewBox="0 0 24 24"
                         fill="none"
-                        style={{
-                          marginLeft: isRTL ? 0 : 8,
-                          marginRight: isRTL ? 8 : 0,
-                          transform: [{ rotate: isRTL ? '180deg' : '0deg' }],
-                        }}
+                        style={[
+                          styles.showMoreIcon,
+                          isRTL && {
+                            marginLeft: 0,
+                            marginRight: 8,
+                            transform: [{ rotate: '180deg' }],
+                          },
+                        ]}
                       >
                         <Path
                           d="M9 18l6-6-6-6"
@@ -1799,17 +1332,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 
       {/* Add to Cart Button */}
       <View
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          backgroundColor: '#F8F8F8',
-          paddingHorizontal: 20,
-          paddingTop: 16,
-          borderTopWidth: 1,
-          borderTopColor: '#E8E8E8',
-        }}
+        style={styles.bottomActions}
       >
         <TouchableOpacity
           ref={addToCartButtonRef}
@@ -1820,18 +1343,11 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
             !selectedTime ||
             !isTimeSlotAvailable
           }
-          style={{
-            backgroundColor:
-              !selectedDate || !selectedTime || !isTimeSlotAvailable
-                ? '#ccc'
-                : '#2D6A5F',
-            borderRadius: 12,
-            paddingVertical: 14,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: 10,
-          }}
+          style={[
+            styles.addToCartButton,
+            (!selectedDate || !selectedTime || !isTimeSlotAvailable) &&
+              styles.addToCartButtonDisabled,
+          ]}
           activeOpacity={0.8}
         >
           {isAddingToCart ? (
@@ -1843,7 +1359,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                 height={22}
                 viewBox="0 0 24 24"
                 fill="none"
-                style={{ marginRight: 8 }}
+                style={styles.addToCartIcon}
               >
                 <Path
                   d="M9 2L7 6M17 6L15 2M2 6h20l-2 14H4L2 6z"
@@ -1854,12 +1370,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                 />
               </Svg>
               <Text
-                style={{
-                  color: '#fff',
-                  fontSize: 16,
-                  fontWeight: '700',
-                  letterSpacing: 0.5,
-                }}
+                style={styles.addToCartButtonText}
               >
                 {isAddingToCart
                   ? isRTL
@@ -1874,26 +1385,15 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={{
-            backgroundColor: 'transparent',
-            borderRadius: 12,
-            paddingVertical: 14,
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderWidth: 1.5,
-            borderColor: colors.primary,
-            marginBottom: Math.max(insets.bottom + 34, 10),
-          }}
+          style={[
+            styles.backButton,
+            { marginBottom: Math.max(insets.bottom + 34, 10) },
+          ]}
           activeOpacity={0.85}
           onPress={onBack}
         >
           <Text
-            style={{
-              color: colors.primary,
-              fontSize: 16,
-              fontWeight: '700',
-              letterSpacing: 0.5,
-            }}
+            style={styles.backButtonText}
           >
             {isRTL ? 'رجوع' : 'BACK'}
           </Text>
@@ -1935,17 +1435,18 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
       {/* Flying Cart Icon Animation */}
       {showFlyingIcon && (
         <Animated.View
-          style={{
-            position: 'absolute',
-            left: iconStartPosition.x,
-            top: iconStartPosition.y,
-            zIndex: 9999,
-            transform: [
-              { translateX: flyingIconTranslate.x },
-              { translateY: flyingIconTranslate.y },
-              { scale: flyingIconScale },
-            ],
-          }}
+          style={[
+            styles.flyingIconContainer,
+            {
+              left: iconStartPosition.x,
+              top: iconStartPosition.y,
+              transform: [
+                { translateX: flyingIconTranslate.x },
+                { translateY: flyingIconTranslate.y },
+                { scale: flyingIconScale },
+              ],
+            },
+          ]}
         >
           <Svg width={30} height={30} viewBox="0 0 24 24" fill="none">
             <Path

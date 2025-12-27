@@ -6,9 +6,10 @@ import {
   Modal,
   ScrollView,
   ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { styles } from './styles';
+import { createStyles } from './styles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { checkBatchDateAvailability } from '../../services/api';
@@ -67,6 +68,8 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
   selectedDate,
   token,
 }) => {
+  const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
+  const styles = createStyles(SCREEN_WIDTH, SCREEN_HEIGHT);
   const { isRTL } = useLanguage();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [availability, setAvailability] = useState<

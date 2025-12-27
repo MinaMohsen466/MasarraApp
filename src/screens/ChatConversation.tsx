@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,18 +6,17 @@ import {
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
-  Image,
-  Platform,
   StyleSheet,
   KeyboardAvoidingView,
   Alert,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Svg, { Path } from 'react-native-svg';
 import { useLanguage } from '../contexts/LanguageContext';
-import { getImageUrl } from '../services/api';
+import { useSocket } from '../contexts/SocketContext';
 import { API_BASE_URL } from '../config/api.config';
 
 interface Message {
@@ -33,47 +32,26 @@ interface Message {
 
 interface ChatConversationProps {
   onBack?: () => void;
-  vendorId: string;
-  vendorName?: string;
-  vendorImage?: string;
 }
 
-const ChatConversation: React.FC<ChatConversationProps> = ({
-  onBack,
-  vendorId,
-  vendorName = 'Vendor',
-  vendorImage,
-}) => {
+const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
   const { isRTL } = useLanguage();
+  const { socket, isConnected, joinChat, leaveChat, sendTyping } = useSocket();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [messageText, setMessageText] = useState('');
   const [sending, setSending] = useState(false);
-  const [imageError, setImageError] = useState(false);
   const [chatId, setChatId] = useState<string>('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
   const flatListRef = useRef<FlatList>(null);
-  const refreshIntervalRef = useRef<any>(null);
-  const lastMessagesCountRef = useRef<number>(0);
+  const typingTimeoutRef = useRef<any>(null);
   const screenWidth = Dimensions.get('window').width;
   const isTablet = screenWidth >= 600;
 
-  useEffect(() => {
-    loadMessages();
-
-    // Auto-refresh messages every 10 seconds (reduced from 3 for better performance)
-    refreshIntervalRef.current = setInterval(() => {
-      loadMessages(true); // Silent refresh (no loading state)
-    }, 10000);
-
-    // Cleanup on unmount
-    return () => {
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-      }
-    };
-  }, [vendorId]);
-
-  const loadMessages = async (silent = false) => {
+  // Define loadMessages first with useCallback
+  const loadMessages = useCallback(async (silent = false) => {
     try {
       if (!silent) setLoading(true);
       const token = await AsyncStorage.getItem('userToken');
@@ -83,7 +61,18 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
         return;
       }
 
-      console.log('[ChatConversation] Loading chat with admin...');
+      // Get current user ID first if not set
+      let userId = currentUserId;
+      if (!userId) {
+        const userResponse = await fetch(`${API_BASE_URL}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          userId = userData._id;
+          setCurrentUserId(userId);
+        }
+      }
 
       // Only admin chat is supported - get all chats and find admin chat
       const chatResponse = await fetch(`${API_BASE_URL}/api/chats`, {
@@ -95,81 +84,134 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
       });
 
       if (!chatResponse.ok) {
-        console.log(
-          '[ChatConversation] Failed to fetch chats:',
-          chatResponse.status,
-        );
         if (!silent) setLoading(false);
         return;
       }
 
       const chatsData = await chatResponse.json();
-      console.log('[ChatConversation] All chats response:', chatsData);
-
       const chats = Array.isArray(chatsData) ? chatsData : chatsData.data || [];
-      console.log('[ChatConversation] Processing', chats.length, 'chats');
 
       // Find admin chat - admin chat has vendor: null
-      const adminChat = chats.find((chat: any) => {
-        console.log('[ChatConversation] Checking chat:', {
-          id: chat._id,
-          vendor: chat.vendor,
-          vendorIsNull: chat.vendor === null,
-        });
-        return chat.vendor === null;
-      });
+      const adminChat = chats.find((chat: any) => chat.vendor === null);
 
       if (!adminChat) {
-        console.log('[ChatConversation] No admin chat found in user chats');
         if (!silent) setLoading(false);
         return;
       }
-
-      console.log('[ChatConversation] Found admin chat:', adminChat._id);
       setChatId(adminChat._id);
       markMessagesAsRead(token, adminChat._id);
 
       // Load messages from chat
       const messages = adminChat.messages || [];
-      console.log('[ChatConversation] Found', messages.length, 'messages');
 
-      // Get current user ID
-      const userResponse = await fetch(`${API_BASE_URL}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
+      // Format messages with correct isMe flag
+      const messagesWithFlag = messages.map((msg: any, index: number) => {
+        const senderId = msg.sender?._id || msg.sender;
+        const messageIsMe = userId ? senderId === userId : false;
+        return {
+          _id: msg._id || `${String(Math.random())}-${index}-${Date.now()}`,
+          sender: msg.sender || { _id: '', name: 'Unknown' },
+          message: msg.content || msg.message || '',
+          createdAt: msg.timestamp || msg.createdAt || new Date().toISOString(),
+          isMe: messageIsMe,
+        };
       });
 
-      let currentUserId: string | null = null;
-      if (userResponse.ok) {
-        const userData = await userResponse.json();
-        currentUserId = userData._id;
-        console.log('[ChatConversation] Current user ID:', currentUserId);
-      }
-
-      // Format messages
-      const messagesWithFlag = messages.map((msg: any, index: number) => ({
-        _id: msg._id || `${String(Math.random())}-${index}-${Date.now()}`,
-        sender: msg.sender || { _id: '', name: 'Unknown' },
-        message: msg.content || msg.message || '',
-        createdAt: msg.timestamp || msg.createdAt || new Date().toISOString(),
-        isMe: currentUserId
-          ? (msg.sender?._id || msg.sender) === currentUserId
-          : false,
-      }));
-
-      if (messagesWithFlag.length !== lastMessagesCountRef.current) {
-        setMessages(messagesWithFlag);
-        lastMessagesCountRef.current = messagesWithFlag.length;
-      }
-
-      console.log('[ChatConversation] Messages loaded successfully');
+      setMessages(messagesWithFlag);
+      
+      // Scroll to bottom after messages load
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: false });
+      }, 100);
     } catch (error) {
-      console.error('[ChatConversation] Error loading messages:', error);
+      // Silent error - avoid console spam
     } finally {
       if (!silent) {
         setLoading(false);
       }
     }
-  };
+  }, [currentUserId]);
+
+  // Load messages on mount
+  useEffect(() => {
+    loadMessages();
+  }, [loadMessages]);
+
+  // Socket.IO event listeners
+  useEffect(() => {
+    if (!socket || !isConnected || !chatId) return;
+
+    // Listen for new messages
+    const handleNewMessage = (data: any) => {
+      const { chatId: messageChatId, message } = data;
+      
+      // Don't add our own messages (they're added optimistically)
+      if (message?.sender === currentUserId) return;
+
+      // If this is the active conversation, add the message directly
+      if (messageChatId === chatId && message) {
+        const newMessage: Message = {
+          _id: message._id || `received-${Date.now()}`,
+          sender: message.sender || { _id: '', name: 'Admin' },
+          message: message.content || message.message || '',
+          createdAt: message.timestamp || message.createdAt || new Date().toISOString(),
+          isMe: false,
+        };
+        setMessages(prev => [...prev, newMessage]);
+        
+        // Scroll to bottom if already at bottom
+        if (isAtBottom) {
+          setTimeout(() => {
+            flatListRef.current?.scrollToEnd({ animated: true });
+          }, 100);
+        }
+      }
+    };
+
+    // Listen for typing indicators
+    const handleUserTyping = ({ userId, isTyping: typing }: any) => {
+      if (userId === currentUserId) return; // Ignore our own typing
+      setIsTyping(typing);
+      
+      // Clear typing indicator after 3 seconds
+      if (typing) {
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
+        }
+        typingTimeoutRef.current = setTimeout(() => {
+          setIsTyping(false);
+        }, 3000);
+      }
+    };
+
+    // Listen for messages read
+    const handleMessagesRead = ({ chatId: readChatId }: any) => {
+      if (readChatId === chatId) {
+        loadMessages(true);
+      }
+    };
+
+    socket.on('new_message', handleNewMessage);
+    socket.on('user_typing', handleUserTyping);
+    socket.on('messages_read', handleMessagesRead);
+
+    return () => {
+      socket.off('new_message', handleNewMessage);
+      socket.off('user_typing', handleUserTyping);
+      socket.off('messages_read', handleMessagesRead);
+    };
+  }, [socket, isConnected, chatId, currentUserId, isAtBottom]);
+
+  // Join/leave chat room
+  useEffect(() => {
+    if (!socket || !isConnected || !chatId) return;
+
+    joinChat(chatId);
+
+    return () => {
+      leaveChat(chatId);
+    };
+  }, [socket, isConnected, chatId, joinChat, leaveChat]);
 
   const markMessagesAsRead = async (token: string, chatId: string) => {
     try {
@@ -181,6 +223,25 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
         },
       });
     } catch {}
+  };
+
+  const handleTyping = (text: string) => {
+    setMessageText(text);
+    
+    // Send typing indicator
+    if (socket && isConnected && chatId) {
+      sendTyping(chatId, true);
+      
+      // Clear previous timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      
+      // Stop typing indicator after 2 seconds of no typing
+      typingTimeoutRef.current = setTimeout(() => {
+        sendTyping(chatId, false);
+      }, 2000);
+    }
   };
 
   const sendMessage = async () => {
@@ -203,7 +264,7 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
       // Add message optimistically to UI
       const newMessage: Message = {
         _id: `temp-${Date.now()}`,
-        sender: { _id: 'me', name: 'You' },
+        sender: { _id: currentUserId || 'me', name: 'You' },
         message: messageToSend,
         createdAt: new Date().toISOString(),
         isMe: true,
@@ -256,15 +317,20 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
     return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
   };
 
+  const handleScroll = (event: any) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    const paddingToBottom = 20;
+    const isBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+    setIsAtBottom(isBottom);
+  };
+
+  const scrollToBottom = () => {
+    flatListRef.current?.scrollToEnd({ animated: true });
+    setIsAtBottom(true);
+  };
+
   const renderMessage = ({ item }: { item: Message }) => (
     <View style={[styles.messageRow, item.isMe && styles.messageRowMe]}>
-      {!item.isMe && vendorImage && !imageError && (
-        <Image
-          source={{ uri: getImageUrl(vendorImage) }}
-          style={styles.messageAvatar}
-          onError={() => setImageError(true)}
-        />
-      )}
       <View
         style={[
           styles.messageBubble,
@@ -295,20 +361,12 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
         </Svg>
       </TouchableOpacity>
       <View style={styles.headerContent}>
-        {vendorImage && !imageError ? (
-          <Image
-            source={{ uri: getImageUrl(vendorImage) }}
-            style={styles.headerAvatar}
-            onError={() => setImageError(true)}
-          />
-        ) : (
-          <View style={styles.headerAvatarPlaceholder}>
-            <Text style={styles.headerAvatarText}>
-              {vendorName.charAt(0).toUpperCase()}
-            </Text>
-          </View>
-        )}
-        <Text style={styles.headerTitle}>{vendorName}</Text>
+        <View style={styles.headerAvatarPlaceholder}>
+          <Text style={styles.headerAvatarText}>S</Text>
+        </View>
+        <Text style={styles.headerTitle}>
+          {isRTL ? 'الدعم الفني' : 'Support'}
+        </Text>
       </View>
       <View style={styles.placeholder} />
     </View>
@@ -355,15 +413,49 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
               keyExtractor={item => item._id}
               contentContainerStyle={[
                 styles.messagesContent,
-                { paddingBottom: isTablet ? 100 : 50 },
+                { paddingBottom: 16 },
               ]}
+              showsVerticalScrollIndicator={false}
+              onScroll={handleScroll}
+              scrollEventThrottle={400}
               onContentSizeChange={() =>
                 flatListRef.current?.scrollToEnd({ animated: false })
+              }
+              ListFooterComponent={
+                isTyping ? (
+                  <View style={styles.typingIndicator}>
+                    <View style={styles.typingDot} />
+                    <View style={[styles.typingDot, { marginHorizontal: 4 }]} />
+                    <View style={styles.typingDot} />
+                    <Text style={styles.typingText}>
+                      {isRTL ? 'يكتب...' : 'Typing...'}
+                    </Text>
+                  </View>
+                ) : null
               }
             />
           )}
         </View>
       </SafeAreaView>
+
+      {/* Scroll to Bottom Button */}
+      {!isAtBottom && messages.length > 0 && (
+        <TouchableOpacity
+          style={styles.scrollToBottomButton}
+          onPress={scrollToBottom}
+          activeOpacity={0.8}
+        >
+          <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+            <Path
+              d="M7 10l5 5 5-5"
+              stroke="#fff"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </Svg>
+        </TouchableOpacity>
+      )}
 
       {/* Input Area - Fixed at bottom above navigation */}
       <KeyboardAvoidingView
@@ -377,7 +469,7 @@ const ChatConversation: React.FC<ChatConversationProps> = ({
             placeholder={isRTL ? 'اكتب رسالة...' : 'Type a message...'}
             placeholderTextColor="#9E9E9E"
             value={messageText}
-            onChangeText={setMessageText}
+            onChangeText={handleTyping}
             multiline
             maxLength={500}
           />
@@ -515,12 +607,6 @@ const styles = StyleSheet.create({
   messageRowMe: {
     justifyContent: 'flex-end',
   },
-  messageAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    marginRight: 8,
-  },
   messageBubble: {
     maxWidth: '75%',
     paddingVertical: 10,
@@ -550,6 +636,25 @@ const styles = StyleSheet.create({
   },
   messageTimeMe: {
     color: '#E0F2F1',
+  },
+  typingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginTop: 8,
+  },
+  typingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#00695C',
+  },
+  typingText: {
+    marginLeft: 8,
+    fontSize: 13,
+    color: '#9E9E9E',
+    fontStyle: 'italic',
   },
   inputContainer: {
     flexDirection: 'row',
@@ -586,6 +691,25 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     opacity: 0.5,
+  },
+  scrollToBottomButton: {
+    position: 'absolute',
+    right: 20,
+    bottom: Dimensions.get('window').width >= 600 ? 180 : 150,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#00695C',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
 });
 

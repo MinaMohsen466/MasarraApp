@@ -6,7 +6,7 @@ import {
   Image,
   TouchableOpacity,
   FlatList,
-  Dimensions,
+  useWindowDimensions,
   ActivityIndicator,
   Alert,
   Modal,
@@ -18,7 +18,7 @@ import Svg, { Path } from 'react-native-svg';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { styles } from './styles';
+import { createStyles } from './styles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getServiceImageUrl, fetchServices } from '../../services/servicesApi';
@@ -40,8 +40,6 @@ import {
   ReviewStats,
 } from '../../services/reviewsApi';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
 interface ServiceDetailsProps {
   serviceId: string;
   onBack?: () => void;
@@ -51,6 +49,8 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
   serviceId,
   onBack,
 }) => {
+  const { width: SCREEN_WIDTH } = useWindowDimensions();
+  const styles = createStyles(SCREEN_WIDTH);
   const { isRTL } = useLanguage();
   const insets = useSafeAreaInsets();
   const fixedHeight = insets.top + 46; // 22 (ACTIONS_BAR_HEIGHT) + 24 (EXTRA_HEIGHT)
@@ -135,13 +135,13 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
           const startY = pageY + height / 2;
 
           // Calculate target position (bottom navigation cart icon - more accurate)
-          const screenHeight = Dimensions.get('window').height;
-          const screenWidth = Dimensions.get('window').width;
+          const screenHeight = SCREEN_WIDTH * 2; // Approximate screen height
+          const screenWidthVal = SCREEN_WIDTH;
 
           // Cart icon position changes based on text direction
           // In RTL (Arabic): cart is on the LEFT side of screen
           // In LTR (English): cart is on the RIGHT side of screen
-          const targetX = isRTL ? 50 : screenWidth - 50; // Left in RTL, Right in LTR
+          const targetX = isRTL ? 50 : screenWidthVal - 50; // Left in RTL, Right in LTR
           const targetY = screenHeight - 65; // Bottom tab bar height ~65px
 
           // Calculate icon size (60x60)

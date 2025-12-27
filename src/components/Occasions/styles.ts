@@ -1,11 +1,13 @@
-import { StyleSheet, Dimensions } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { colors } from '../../constants/colors';
 
-const { width } = Dimensions.get('window');
-const isTablet = width >= 600;
-const cardWidth = isTablet ? (width - 120) / 4 : (width - 64) / 3; // 4 columns on tablet, 3 on mobile
-
-export const styles = StyleSheet.create({
+export const createStyles = (screenWidth: number, numColumns: number) => {
+  const isTablet = screenWidth >= 600;
+  const horizontalPadding = isTablet ? 40 : 16;
+  const totalGaps = (numColumns - 1) * 4;
+  const cardWidth = (screenWidth - (horizontalPadding * 2) - totalGaps) / numColumns;
+  
+  return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.backgroundLight,
@@ -126,4 +128,5 @@ export const styles = StyleSheet.create({
     textAlign: 'right',
     writingDirection: 'rtl',
   },
-});
+  });
+};

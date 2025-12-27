@@ -1,12 +1,14 @@
-import { StyleSheet, Dimensions } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { colors } from '../../constants/colors';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-export const styles = StyleSheet.create({
+export const createStyles = (SCREEN_WIDTH: number) => {
+  const isTablet = SCREEN_WIDTH >= 600;
+  const carouselHeight = isTablet ? 500 : 380;
+  
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8F8',
+    backgroundColor: colors.background,
     height: '100%',
   },
   actionsRow: {
@@ -16,7 +18,7 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#EAF6F2',
+    backgroundColor: colors.backgroundLight,
   },
   fixedActionsRow: {
     position: 'absolute',
@@ -29,7 +31,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 10,
     paddingVertical: 6,
-    backgroundColor: '#EAF6F2',
+    backgroundColor: colors.backgroundLight,
     zIndex: 50,
     borderRadius: 0,
   },
@@ -71,7 +73,7 @@ export const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: colors.backgroundLight,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -93,7 +95,7 @@ export const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: colors.backgroundLight,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -114,7 +116,7 @@ export const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: colors.backgroundLight,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -129,12 +131,12 @@ export const styles = StyleSheet.create({
   },
   carouselContainer: {
     width: SCREEN_WIDTH,
-    height: 380,
+    height: carouselHeight,
     position: 'relative',
   },
   imageSlide: {
     width: SCREEN_WIDTH,
-    height: 380,
+    height: carouselHeight,
     position: 'relative',
   },
   carouselImage: {
@@ -174,7 +176,7 @@ export const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: colors.primaryLight,
   },
   paginationDotActive: {
     backgroundColor: colors.primary,
@@ -371,7 +373,7 @@ export const styles = StyleSheet.create({
   bookingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background,
+    backgroundColor: colors.backgroundLight,
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 14,
@@ -428,7 +430,7 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.background,
+    backgroundColor: colors.backgroundLight,
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 14,
@@ -491,13 +493,13 @@ export const styles = StyleSheet.create({
   /* Custom Inputs Section */
   textInputField: {
     borderWidth: 1,
-    borderColor: '#D0D0D0',
+    borderColor: colors.borderMedium,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 14,
     color: colors.textDark,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: colors.backgroundLight,
     marginBottom: 8,
   },
 
@@ -512,11 +514,11 @@ export const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderRadius: 8,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: colors.backgroundLight,
     marginBottom: 8,
   },
   optionRowSelected: {
-    backgroundColor: '#E8F5F0',
+    backgroundColor: colors.primaryLight,
     borderWidth: 1,
     borderColor: colors.primary,
   },
@@ -530,7 +532,7 @@ export const styles = StyleSheet.create({
     height: 20,
     borderRadius: 4,
     borderWidth: 2,
-    borderColor: '#C4C4C4',
+    borderColor: colors.borderMedium,
     backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
@@ -569,7 +571,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#E8E8E8',
+    borderTopColor: colors.border,
   },
   addToCartButton: {
     backgroundColor: colors.primaryDark,
@@ -622,18 +624,13 @@ export const styles = StyleSheet.create({
     padding: 16,
     flexDirection: 'row',
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   averageRatingContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     borderRightWidth: 1,
-    borderRightColor: '#E0E0E0',
+    borderRightColor: colors.border,
     paddingRight: 16,
   },
   averageRatingNumber: {
@@ -667,7 +664,7 @@ export const styles = StyleSheet.create({
   distributionBar: {
     flex: 1,
     height: 8,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: colors.border,
     borderRadius: 4,
     marginHorizontal: 8,
     overflow: 'hidden',
@@ -689,11 +686,6 @@ export const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
   },
   reviewHeader: {
     flexDirection: 'row',
@@ -802,4 +794,5 @@ export const styles = StyleSheet.create({
     color: colors.primary,
     letterSpacing: 0.3,
   },
-});
+  });
+};

@@ -1,13 +1,17 @@
-import { StyleSheet, Dimensions } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { colors } from '../../constants/colors';
 
-const { width } = Dimensions.get('window');
-const cardWidth = (width - 48) / 2; // 2 columns with padding
-
-export const styles = StyleSheet.create({
+export const createStyles = (screenWidth: number) => {
+  const isTablet = screenWidth >= 600;
+  const numColumns = isTablet ? 3 : 2;
+  const horizontalPadding = 16;
+  const totalGap = (numColumns - 1) * 16;
+  const cardWidth = (screenWidth - (horizontalPadding * 2) - totalGap) / numColumns;
+  
+  return StyleSheet.create({
   pageContainer: {
     flex: 1,
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: colors.backgroundHome,
   },
   header: {
     flexDirection: 'row',
@@ -15,7 +19,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 16,
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: colors.backgroundHome,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
@@ -51,7 +55,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: colors.backgroundHome,
   },
   filterSortContainerRTL: {
     flexDirection: 'row-reverse',
@@ -73,9 +77,6 @@ export const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.primary,
     fontWeight: '600',
-  },
-  textRTL: {
-    textAlign: 'right',
   },
   listContent: {
     paddingHorizontal: 16,
@@ -101,7 +102,7 @@ export const styles = StyleSheet.create({
   imageContainer: {
     width: '100%',
     height: 150,
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: colors.backgroundCard,
     overflow: 'hidden',
     position: 'relative',
   },
@@ -276,6 +277,6 @@ export const styles = StyleSheet.create({
   },
   textRTL: {
     textAlign: 'right',
-    writingDirection: 'rtl',
   },
-});
+  });
+};

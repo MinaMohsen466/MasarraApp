@@ -1,11 +1,12 @@
-import { StyleSheet, Dimensions } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { colors } from '../../constants/colors';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-// Show 2 full cards + small piece of 3rd card (2.3 cards visible)
-const CARD_WIDTH = (SCREEN_WIDTH - 0) / 2.3;
-
-export const styles = StyleSheet.create({
+export const createStyles = (SCREEN_WIDTH: number) => {
+  const isTablet = SCREEN_WIDTH >= 600;
+  const cardsVisible = isTablet ? 3.2 : 2.3;
+  const CARD_WIDTH = (SCREEN_WIDTH - 0) / cardsVisible;
+  
+  return StyleSheet.create({
   container: {
     paddingVertical: 20,
     backgroundColor: colors.backgroundHome,
@@ -15,7 +16,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
   },
   sectionHeaderRTL: {
     flexDirection: 'row-reverse',
@@ -135,7 +136,7 @@ export const styles = StyleSheet.create({
     fontSize: 14,
   },
   infoContainer: {
-    padding: 16,
+    padding: 8,
     minHeight: 160,
   },
   serviceName: {
@@ -254,4 +255,5 @@ export const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.textSecondary,
   },
-});
+  });
+};
