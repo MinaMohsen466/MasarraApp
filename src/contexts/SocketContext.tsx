@@ -53,14 +53,12 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         const token = await AsyncStorage.getItem('userToken');
 
         if (!token) {
-          console.warn('No token found for socket connection');
           return;
         }
 
         // Use the API base URL for socket connection
         const serverUrl = API_BASE_URL.replace('/api', '');
 
-        console.log('Connecting to socket server:', serverUrl);
 
         const newSocket = io(serverUrl, {
           auth: {
@@ -76,31 +74,25 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         });
 
         newSocket.on('connect', () => {
-          console.log('Socket connected:', newSocket.id);
           setIsConnected(true);
         });
 
         newSocket.on('disconnect', (reason) => {
-          console.log('Socket disconnected:', reason);
           setIsConnected(false);
         });
 
         newSocket.on('connect_error', (error) => {
-          console.error('Socket connection error:', error.message);
           setIsConnected(false);
         });
 
         newSocket.on('reconnect_failed', () => {
-          console.error('Socket reconnection failed after all attempts');
         });
 
         newSocket.on('error', (error) => {
-          console.error('Socket error:', error);
         });
 
         setSocket(newSocket);
       } catch (error) {
-        console.error('Error initializing socket:', error);
       }
     };
 
@@ -109,7 +101,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     // Cleanup on unmount or when user changes
     return () => {
       if (socket) {
-        console.log('Disconnecting socket...');
         socket.disconnect();
       }
     };
@@ -120,7 +111,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
   const joinChat = useCallback(
     (chatId: string) => {
       if (socket && isConnected) {
-        console.log('Joining chat:', chatId);
         socket.emit('join_chat', chatId);
       }
     },
@@ -131,7 +121,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
   const leaveChat = useCallback(
     (chatId: string) => {
       if (socket && isConnected) {
-        console.log('Leaving chat:', chatId);
         socket.emit('leave_chat', chatId);
       }
     },

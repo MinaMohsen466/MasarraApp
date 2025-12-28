@@ -81,12 +81,6 @@ export const fetchServices = async (): Promise<Service[]> => {
       (s: any) => s.name === 'Birthday Party Catering',
     );
     if (birthdayCatering) {
-      console.log('Birthday Party Catering from API:', {
-        price: birthdayCatering.price,
-        salePrice: birthdayCatering.salePrice,
-        discountPercentage: birthdayCatering.discountPercentage,
-        isOnSale: birthdayCatering.isOnSale,
-      });
     }
 
     return data;

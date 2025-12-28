@@ -88,7 +88,6 @@ const VerifyEmail: React.FC<VerifyEmailProps> = ({
       // Call onVerified directly without alert
       onVerified(data.token, data.user);
     } catch (error) {
-      console.error('Error verifying OTP:', error);
       Alert.alert(
         isRTL ? 'خطأ' : 'Error',
         error instanceof Error

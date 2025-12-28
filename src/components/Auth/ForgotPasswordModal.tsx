@@ -5,9 +5,10 @@ import {
   TouchableOpacity,
   TextInput,
   Modal,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
+import { CustomAlert } from '../CustomAlert/CustomAlert';
 import { modalStyles } from '../EditProfile/modalStyles';
 import { useLanguage } from '../../contexts/LanguageContext';
 import {
@@ -34,10 +35,36 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    visible: false,
+    title: '',
+    message: '',
+    buttons: [] as Array<{
+      text: string;
+      onPress?: () => void;
+      style?: 'default' | 'cancel' | 'destructive';
+    }>,
+  });
+
+  const showAlert = (
+    title: string,
+    message: string,
+    buttons: Array<{
+      text: string;
+      onPress?: () => void;
+      style?: 'default' | 'cancel' | 'destructive';
+    }> = [{text: isRTL ? 'حسناً' : 'OK'}],
+  ) => {
+    setAlertConfig({visible: true, title, message, buttons});
+  };
+
+  const hideAlert = () => {
+    setAlertConfig(prev => ({...prev, visible: false}));
+  };
 
   const handleSendCode = async () => {
     if (!email) {
-      Alert.alert(
+      showAlert(
         isRTL ? 'خطأ' : 'Error',
         isRTL ? 'يرجى إدخال البريد الإلكتروني' : 'Please enter your email',
       );
@@ -46,7 +73,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      Alert.alert(
+      showAlert(
         isRTL ? 'خطأ' : 'Error',
         isRTL ? 'يرجى إدخال بريد إلكتروني صحيح' : 'Please enter a valid email',
       );
@@ -60,14 +87,14 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
       if (result.success && result.userId) {
         setUserId(result.userId);
         setStep('reset');
-        Alert.alert(
+        showAlert(
           isRTL ? 'تم الإرسال' : 'Code Sent',
           isRTL
             ? 'تم إرسال كود إعادة التعيين إلى بريدك الإلكتروني'
             : 'Reset code has been sent to your email',
         );
       } else {
-        Alert.alert(
+        showAlert(
           isRTL ? 'خطأ' : 'Error',
           result.error || (isRTL ? 'فشل إرسال الكود' : 'Failed to send code'),
         );
@@ -77,27 +104,62 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
     }
   };
 
+  const validatePassword = (password: string): { valid: boolean; message: string } => {
+    if (password.length < 8) {
+      return {
+        valid: false,
+        message: isRTL
+          ? 'يجب أن تكون كلمة المرور 8 أحرف على الأقل'
+          : 'Password must be at least 8 characters',
+      };
+    }
+    if (!/[A-Z]/.test(password)) {
+      return {
+        valid: false,
+        message: isRTL
+          ? 'يجب أن تحتوي كلمة المرور على حرف كبير واحد على الأقل'
+          : 'Password must contain at least one uppercase letter',
+      };
+    }
+    if (!/[a-z]/.test(password)) {
+      return {
+        valid: false,
+        message: isRTL
+          ? 'يجب أن تحتوي كلمة المرور على حرف صغير واحد على الأقل'
+          : 'Password must contain at least one lowercase letter',
+      };
+    }
+    if (!/[0-9]/.test(password)) {
+      return {
+        valid: false,
+        message: isRTL
+          ? 'يجب أن تحتوي كلمة المرور على رقم واحد على الأقل'
+          : 'Password must contain at least one number',
+      };
+    }
+    return { valid: true, message: '' };
+  };
+
   const handleResetPassword = async () => {
     if (!resetCode || !newPassword || !confirmPassword) {
-      Alert.alert(
+      showAlert(
         isRTL ? 'خطأ' : 'Error',
         isRTL ? 'الرجاء ملء جميع الحقول' : 'Please fill all fields',
       );
       return;
     }
 
-    if (newPassword.length < 6) {
-      Alert.alert(
+    const passwordValidation = validatePassword(newPassword);
+    if (!passwordValidation.valid) {
+      showAlert(
         isRTL ? 'خطأ' : 'Error',
-        isRTL
-          ? 'يجب أن تكون كلمة المرور 6 أحرف على الأقل'
-          : 'Password must be at least 6 characters',
+        passwordValidation.message,
       );
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      Alert.alert(
+      showAlert(
         isRTL ? 'خطأ' : 'Error',
         isRTL ? 'كلمات المرور غير متطابقة' : 'Passwords do not match',
       );
@@ -113,15 +175,18 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
       );
 
       if (result.success) {
-        Alert.alert(
+        showAlert(
           isRTL ? 'نجح' : 'Success',
           isRTL
             ? 'تم إعادة تعيين كلمة المرور بنجاح'
             : 'Password reset successfully',
+          [{
+            text: isRTL ? 'حسناً' : 'OK',
+            onPress: handleClose,
+          }],
         );
-        handleClose();
       } else {
-        Alert.alert(
+        showAlert(
           isRTL ? 'خطأ' : 'Error',
           result.error ||
             (isRTL
@@ -157,9 +222,6 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
         <View style={modalStyles.modal}>
           {/* Header */}
           <View style={modalStyles.header}>
-            <View style={modalStyles.headerIcon}>
-              <Text style={modalStyles.headerIconText}>🔓</Text>
-            </View>
             <Text style={[modalStyles.title, isRTL && modalStyles.titleRTL]}>
               {isRTL ? 'إعادة تعيين كلمة المرور' : 'Reset Password'}
             </Text>
@@ -264,18 +326,58 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
                       onPress={() => setShowNewPassword(!showNewPassword)}
                       disabled={isLoading}
                     >
-                      <Text style={modalStyles.eyeIcon}>
-                        {showNewPassword ? '👁' : '👁‍🗨'}
-                      </Text>
+                      <Icon
+                        name={showNewPassword ? 'eye-outline' : 'eye-off-outline'}
+                        size={22}
+                        color="#666"
+                      />
                     </TouchableOpacity>
                   </View>
-                  <Text
-                    style={[modalStyles.hint, isRTL && modalStyles.hintRTL]}
-                  >
-                    {isRTL
-                      ? 'يجب أن تكون 6 أحرف على الأقل'
-                      : 'Must be at least 6 characters'}
-                  </Text>
+                  <View style={modalStyles.passwordRequirements}>
+                    <Text style={[modalStyles.requirementsTitle, isRTL && modalStyles.requirementsTitleRTL]}>
+                      {isRTL ? 'شروط كلمة المرور:' : 'Password Requirements:'}
+                    </Text>
+                    <View style={modalStyles.requirement}>
+                      <Icon
+                        name={newPassword.length >= 8 ? 'checkmark-circle' : 'ellipse-outline'}
+                        size={16}
+                        color={newPassword.length >= 8 ? '#10b981' : '#999'}
+                      />
+                      <Text style={[modalStyles.requirementText, isRTL && modalStyles.requirementTextRTL]}>
+                        {isRTL ? '8 أحرف على الأقل' : 'At least 8 characters'}
+                      </Text>
+                    </View>
+                    <View style={modalStyles.requirement}>
+                      <Icon
+                        name={/[A-Z]/.test(newPassword) ? 'checkmark-circle' : 'ellipse-outline'}
+                        size={16}
+                        color={/[A-Z]/.test(newPassword) ? '#10b981' : '#999'}
+                      />
+                      <Text style={[modalStyles.requirementText, isRTL && modalStyles.requirementTextRTL]}>
+                        {isRTL ? 'حرف كبير واحد على الأقل' : 'One uppercase letter'}
+                      </Text>
+                    </View>
+                    <View style={modalStyles.requirement}>
+                      <Icon
+                        name={/[a-z]/.test(newPassword) ? 'checkmark-circle' : 'ellipse-outline'}
+                        size={16}
+                        color={/[a-z]/.test(newPassword) ? '#10b981' : '#999'}
+                      />
+                      <Text style={[modalStyles.requirementText, isRTL && modalStyles.requirementTextRTL]}>
+                        {isRTL ? 'حرف صغير واحد على الأقل' : 'One lowercase letter'}
+                      </Text>
+                    </View>
+                    <View style={modalStyles.requirement}>
+                      <Icon
+                        name={/[0-9]/.test(newPassword) ? 'checkmark-circle' : 'ellipse-outline'}
+                        size={16}
+                        color={/[0-9]/.test(newPassword) ? '#10b981' : '#999'}
+                      />
+                      <Text style={[modalStyles.requirementText, isRTL && modalStyles.requirementTextRTL]}>
+                        {isRTL ? 'رقم واحد على الأقل' : 'One number'}
+                      </Text>
+                    </View>
+                  </View>
                 </View>
 
                 <View style={modalStyles.inputContainer}>
@@ -306,9 +408,11 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
                       }
                       disabled={isLoading}
                     >
-                      <Text style={modalStyles.eyeIcon}>
-                        {showConfirmPassword ? '👁' : '👁‍🗨'}
-                      </Text>
+                      <Icon
+                        name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'}
+                        size={22}
+                        color="#666"
+                      />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -361,6 +465,13 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
           </View>
         </View>
       </View>
+      <CustomAlert
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttons={alertConfig.buttons}
+        onClose={hideAlert}
+      />
     </Modal>
   );
 };

@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -206,7 +206,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
         const errorItems = unavailableItems
           .map(({ item, reason }) => {
             const itemName = isRTL ? item.nameAr || item.name : item.name;
-            return `• ${itemName} (${item.selectedTime})\n  ${reason}`;
+            return `� ${itemName} (${item.selectedTime})\n  ${reason}`;
           })
           .join('\n\n');
 
@@ -225,7 +225,6 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
       setShowAddressSelection(true);
     } catch (error) {
       setIsProcessingCheckout(false);
-      console.error('Error during checkout:', error);
       setAlertTitle(t('error'));
       setAlertMessage(t('errorProcessingOrder'));
       setAlertButtons([{ text: t('ok'), style: 'default' }]);
@@ -244,14 +243,14 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
       if (address.houseNumber) {
         addressParts.push(
           isRTL
-            ? `منزل ${address.houseNumber}`
+            ? `???? ${address.houseNumber}`
             : `House ${address.houseNumber}`,
         );
       }
       if (address.floorNumber) {
         addressParts.push(
           isRTL
-            ? `طابق ${address.floorNumber}`
+            ? `???? ${address.floorNumber}`
             : `Floor ${address.floorNumber}`,
         );
       }
@@ -282,7 +281,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
         const errorItems = errors
           .map(({ item, error }) => {
             const itemName = isRTL ? item.nameAr || item.name : item.name;
-            return `• ${itemName}\n  ${error}`;
+            return `� ${itemName}\n  ${error}`;
           })
           .join('\n\n');
 
@@ -304,7 +303,6 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
       setShowSuccessScreen(true);
     } catch (error) {
       setIsProcessingCheckout(false);
-      console.error('Error creating bookings:', error);
       setAlertTitle(t('error'));
       setAlertMessage(t('errorCreatingBookings'));
       setAlertButtons([{ text: t('ok'), style: 'default' }]);
@@ -351,7 +349,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
       setCouponError(
-        isRTL ? 'الرجاء إدخال رمز الكوبون' : 'Please enter coupon code',
+        isRTL ? '?????? ????? ??? ???????' : 'Please enter coupon code',
       );
       return;
     }
@@ -364,7 +362,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
       const token = await AsyncStorage.getItem('userToken');
       if (!token || !user?._id) {
         setCouponError(
-          isRTL ? 'الرجاء تسجيل الدخول أولاً' : 'Please login first',
+          isRTL ? '?????? ????? ?????? ?????' : 'Please login first',
         );
         setIsApplyingCoupon(false);
         return;
@@ -383,13 +381,6 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
 
       const total = calculateTotalBeforeDiscount();
 
-      console.log('Sending coupon validation request:', {
-        couponCode: couponCode.trim(),
-        total,
-        userId: user._id,
-        cartItemsCount: cartItemsData.length,
-      });
-
       const result = await validateCoupon(
         couponCode.trim(),
         total,
@@ -398,7 +389,6 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
         token,
       );
 
-      console.log('Coupon validation result:', result);
 
       if (
         result.valid &&
@@ -409,10 +399,10 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
         setCouponDiscount(result.discountAmount);
         setCouponMessage(
           isRTL
-            ? `تم تطبيق الكوبون بنجاح! خصم ${
+            ? `?? ????? ??????? ?????! ??? ${
                 result.coupon.discountType === 'percentage'
                   ? result.coupon.discountValue + '%'
-                  : result.coupon.discountValue + ' د.ك'
+                  : result.coupon.discountValue + ' ?.?'
               }`
             : `Coupon applied successfully! Discount ${
                 result.coupon.discountType === 'percentage'
@@ -422,13 +412,12 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
         );
       } else {
         setCouponError(
-          result.message || (isRTL ? 'كوبون غير صالح' : 'Invalid coupon'),
+          result.message || (isRTL ? '????? ??? ????' : 'Invalid coupon'),
         );
       }
     } catch (error) {
-      console.error('Error applying coupon:', error);
       setCouponError(
-        isRTL ? 'حدث خطأ أثناء تطبيق الكوبون' : 'Error applying coupon',
+        isRTL ? '??? ??? ????? ????? ???????' : 'Error applying coupon',
       );
     } finally {
       setIsApplyingCoupon(false);
@@ -743,7 +732,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
                                 fontWeight: 'bold',
                               }}
                             >
-                              −
+                              -
                             </Text>
                           </TouchableOpacity>
 
@@ -905,7 +894,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
                             </Text>
                           ) : (
                             <Text style={styles.priceValue}>
-                              {isRTL ? 'د.ك' : 'KD'}{' '}
+                              {isRTL ? '?.?' : 'KD'}{' '}
                               {(
                                 (item.totalPrice ?? item.price) * item.quantity
                               ).toFixed(3)}
@@ -932,7 +921,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
                             </Text>
                           ) : (
                             <Text style={styles.priceValue}>
-                              {isRTL ? 'د.ك' : 'KD'}{' '}
+                              {isRTL ? '?.?' : 'KD'}{' '}
                               {(
                                 (item.totalPrice ?? item.price) * item.quantity
                               ).toFixed(3)}
@@ -956,11 +945,11 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
                             </Text>
                           ) : item.maxBookingsPerSlot === -1 ? (
                             <Text style={styles.deliveryChargeValue}>
-                              {isRTL ? 'د.ك' : 'KD'} {(5).toFixed(3)}
+                              {isRTL ? '?.?' : 'KD'} {(5).toFixed(3)}
                             </Text>
                           ) : (
                             <Text style={styles.deliveryChargeValue}>
-                              {isRTL ? 'د.ك' : 'KD'} {(0).toFixed(3)}
+                              {isRTL ? '?.?' : 'KD'} {(0).toFixed(3)}
                             </Text>
                           )}
                           <Text
@@ -986,11 +975,11 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
                             </Text>
                           ) : item.maxBookingsPerSlot === -1 ? (
                             <Text style={styles.deliveryChargeValue}>
-                              {isRTL ? 'د.ك' : 'KD'} {(5).toFixed(3)}
+                              {isRTL ? '?.?' : 'KD'} {(5).toFixed(3)}
                             </Text>
                           ) : (
                             <Text style={styles.deliveryChargeValue}>
-                              {isRTL ? 'د.ك' : 'KD'} {(0).toFixed(3)}
+                              {isRTL ? '?.?' : 'KD'} {(0).toFixed(3)}
                             </Text>
                           )}
                         </>
@@ -1053,7 +1042,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
               <View style={styles.couponInputRow}>
                 <TextInput
                   style={[styles.couponInput, isRTL && styles.couponInputRTL]}
-                  placeholder={isRTL ? 'أدخل رمز الكوبون' : 'Enter coupon code'}
+                  placeholder={isRTL ? '???? ??? ???????' : 'Enter coupon code'}
                   placeholderTextColor={colors.textSecondary}
                   value={couponCode}
                   onChangeText={text => {
@@ -1078,7 +1067,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
                         couponMessage ? styles.successIcon : styles.errorIcon
                       }
                     >
-                      {couponMessage ? '✓' : '✗'}
+                      {couponMessage ? '?' : '?'}
                     </Text>
                   </View>
                 )}
@@ -1089,7 +1078,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
                     onPress={handleRemoveCoupon}
                   >
                     <Text style={styles.removeButtonText}>
-                      {isRTL ? 'إزالة' : 'Remove'}
+                      {isRTL ? '?????' : 'Remove'}
                     </Text>
                   </TouchableOpacity>
                 ) : (
@@ -1109,7 +1098,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
                       />
                     ) : (
                       <Text style={styles.applyButtonText}>
-                        {isRTL ? 'تطبيق' : 'Apply'}
+                        {isRTL ? '?????' : 'Apply'}
                       </Text>
                     )}
                   </TouchableOpacity>
@@ -1121,7 +1110,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>{t('subTotal')}</Text>
               <Text style={styles.summaryValue}>
-                {isRTL ? 'د.ك' : 'KD'} {calculateSubTotal().toFixed(3)}
+                {isRTL ? '?.?' : 'KD'} {calculateSubTotal().toFixed(3)}
               </Text>
             </View>
 
@@ -1130,17 +1119,17 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
                 {t('totalDeliveryCharges')}
               </Text>
               <Text style={styles.summaryValueGreen}>
-                {isRTL ? 'د.ك' : 'KD'} {calculateDeliveryCharges().toFixed(3)}
+                {isRTL ? '?.?' : 'KD'} {calculateDeliveryCharges().toFixed(3)}
               </Text>
             </View>
 
             {appliedCoupon && couponDiscount > 0 && (
               <View style={styles.discountRow}>
                 <Text style={styles.discountLabel}>
-                  {isRTL ? 'الخصم' : 'Discount'} ({appliedCoupon.code})
+                  {isRTL ? '?????' : 'Discount'} ({appliedCoupon.code})
                 </Text>
                 <Text style={styles.discountValue}>
-                  - {isRTL ? 'د.ك' : 'KD'} {couponDiscount.toFixed(3)}
+                  - {isRTL ? '?.?' : 'KD'} {couponDiscount.toFixed(3)}
                 </Text>
               </View>
             )}
@@ -1148,7 +1137,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
             <View style={[styles.summaryRow, styles.summaryRowTotal]}>
               <Text style={styles.summaryLabelTotal}>{t('totalAmount')}</Text>
               <Text style={styles.summaryValueTotal}>
-                {isRTL ? 'د.ك' : 'KD'}{' '}
+                {isRTL ? '?.?' : 'KD'}{' '}
                 {calculateTotalAfterDiscount().toFixed(3)}
               </Text>
             </View>
@@ -1160,7 +1149,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
             <View style={styles.paymentRow}>
               <Text style={styles.paymentLabel}>{t('payNow')}</Text>
               <Text style={styles.paymentValue}>
-                {isRTL ? 'د.ك' : 'KD'} {calculatePayNowAmount().toFixed(3)}
+                {isRTL ? '?.?' : 'KD'} {calculatePayNowAmount().toFixed(3)}
               </Text>
             </View>
 
@@ -1169,7 +1158,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
                 {t('payableAfterConfirmation')}
               </Text>
               <Text style={styles.paymentValueOrange}>
-                {isRTL ? 'د.ك' : 'KD'}{' '}
+                {isRTL ? '?.?' : 'KD'}{' '}
                 {calculatePayableAfterConfirmation().toFixed(3)}
               </Text>
             </View>

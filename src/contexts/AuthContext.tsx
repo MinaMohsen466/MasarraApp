@@ -62,10 +62,8 @@ export const AuthProvider: React.FC<{
           await AsyncStorage.setItem('userId', userId);
         }
 
-        console.log('✅ User data loaded from storage');
       }
     } catch (error) {
-      console.error('Error loading user data:', error);
     } finally {
       setIsLoading(false);
     }
@@ -78,13 +76,10 @@ export const AuthProvider: React.FC<{
       // Save userId for user-specific cart
       if (userData._id) {
         await AsyncStorage.setItem('userId', userData._id);
-        console.log('✅ UserId saved for cart:', userData._id);
       }
       setToken(authToken);
       setUser(userData);
-      console.log('✅ User logged in and data saved');
     } catch (error) {
-      console.error('Error saving user data:', error);
       throw error;
     }
   };
@@ -108,15 +103,12 @@ export const AuthProvider: React.FC<{
       setToken(null);
       setUser(null);
 
-      console.log('✅ User logged out and data cleared');
       // call optional onLogout callback (e.g. to navigate to home)
       try {
         if (onLogout) onLogout();
       } catch (err) {
-        console.warn('onLogout callback threw:', err);
       }
     } catch (error) {
-      console.error('Error clearing user data:', error);
       throw error;
     }
   };
@@ -148,9 +140,7 @@ export const AuthProvider: React.FC<{
       // Update state
       setUser(updatedUser);
 
-      console.log('✅ User profile updated');
     } catch (error) {
-      console.error('Error updating user profile:', error);
       throw error;
     }
   };
@@ -167,7 +157,6 @@ export const AuthProvider: React.FC<{
       // Call the API to change password
       await apiChangePassword(token, currentPassword, newPassword);
 
-      console.log('✅ Password changed successfully');
 
       // After changing password, log out locally so user must re-authenticate
       try {
@@ -178,10 +167,7 @@ export const AuthProvider: React.FC<{
         });
       } catch (err: any) {
         // non-fatal: server logout may fail if running on a different host in dev
-        console.warn(
-          'Server logout call failed (non-fatal):',
-          err?.message || err,
-        );
+        // Silent error handling
       }
 
       // Clear client state
@@ -199,15 +185,12 @@ export const AuthProvider: React.FC<{
       // Clear wishlist
       await clearWishlist();
 
-      console.log('✅ Logged out after password change');
       // navigate to home if provided
       try {
         if (onLogout) onLogout();
       } catch (err) {
-        console.warn('onLogout callback threw:', err);
       }
     } catch (error) {
-      console.error('Error changing password:', error);
       throw error;
     }
   };

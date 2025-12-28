@@ -163,4 +163,34 @@ export const modalStyles = StyleSheet.create({
   submitButtonTextRTL: {
     fontFamily: 'System',
   },
+  passwordRequirements: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+    padding: 12,
+    gap: 8,
+    marginTop: 8,
+  },
+  requirementsTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textDark,
+    marginBottom: 4,
+  },
+  requirementsTitleRTL: {
+    fontFamily: 'System',
+    textAlign: 'right',
+  },
+  requirement: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  requirementText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  requirementTextRTL: {
+    fontFamily: 'System',
+    textAlign: 'right',
+  },
 });

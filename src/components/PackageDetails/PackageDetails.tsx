@@ -101,7 +101,6 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
         setReviews(reviewsData.reviews);
         setReviewStats(reviewsData.stats);
       } catch (err) {
-        console.error('Error loading reviews:', err);
       }
     };
 
@@ -148,7 +147,6 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
       );
       setIsTimeSlotAvailable(timeSlot ? timeSlot.available : false);
     } catch (err) {
-      console.error('Error checking availability:', err);
     } finally {
       setCheckingAvailability(false);
     }

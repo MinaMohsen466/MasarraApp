@@ -60,7 +60,6 @@ export const validateCoupon = async (
     };
 
     if (__DEV__) {
-      console.log('API Request - Validate Coupon:', requestBody);
     }
 
     const response = await fetch(`${API_BASE_URL}/api/coupons/validate`, {
@@ -75,7 +74,6 @@ export const validateCoupon = async (
     const data = await response.json();
 
     if (__DEV__) {
-      console.log('API Response - Validate Coupon:', data);
     }
 
     if (!response.ok) {
@@ -106,7 +104,6 @@ export const validateCoupon = async (
     return data;
   } catch (error: any) {
     if (__DEV__) {
-      console.error('Error validating coupon:', error);
     }
     return {
       valid: false,
@@ -155,7 +152,6 @@ export const applyCouponToBooking = async (
       message: data.message || 'Coupon applied successfully',
     };
   } catch (error) {
-    console.error('Error applying coupon:', error);
     return {
       success: false,
       message: 'Network error. Please try again.',

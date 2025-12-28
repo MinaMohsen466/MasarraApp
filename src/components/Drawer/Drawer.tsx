@@ -214,6 +214,7 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
                       style={[
                         styles.menuItemText,
                         isRTL && styles.menuItemTextRTL,
+                        item.id === 'logout' && styles.logoutText,
                       ]}
                     >
                       {t(item.titleKey)}

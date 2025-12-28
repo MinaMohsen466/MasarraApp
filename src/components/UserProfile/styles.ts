@@ -4,7 +4,7 @@ import { colors } from '../../constants/colors';
 export const styles = StyleSheet.create({
   fullPageContainer: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.backgroundCard,
     position: 'relative',
   },
   headerBar: {
@@ -23,7 +23,7 @@ export const styles = StyleSheet.create({
     right: 0,
     backgroundColor: colors.primary,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: colors.border,
     zIndex: 0,
   },
   headerBackButton: {
@@ -74,28 +74,20 @@ export const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.backgroundLight,
   },
   contentContainer: {
     paddingVertical: 20,
     paddingBottom: 80,
   },
   userInfoSection: {
-    backgroundColor: colors.backgroundHome,
+    backgroundColor: colors.backgroundLight,
     paddingVertical: 40,
     paddingHorizontal: 20,
     alignItems: 'center',
     marginBottom: 20,
     marginHorizontal: 16,
     borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
   },
   userInfoRow: {
     width: '100%',
@@ -161,14 +153,6 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: 12,
     borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
   },
   menuItemPrimary: {
     backgroundColor: colors.primary,

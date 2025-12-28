@@ -81,14 +81,6 @@ const WriteReview: React.FC<WriteReviewProps> = ({
       });
       return;
     }
-
-    console.log('📝 Submitting review:', {
-      bookingId,
-      serviceId,
-      rating,
-      commentLength: comment.length,
-    });
-
     setIsSubmitting(true);
 
     try {

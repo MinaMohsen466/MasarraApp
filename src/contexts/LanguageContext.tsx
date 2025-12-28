@@ -199,7 +199,6 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({
           setLanguageState(savedLanguage);
         }
       } catch (error) {
-        console.error('Error loading language from storage:', error);
       } finally {
         setIsInitialized(true);
       }
@@ -214,7 +213,6 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({
       await AsyncStorage.setItem('appLanguage', lang);
       // Note: For full RTL support, you may need to restart the app
     } catch (error) {
-      console.error('Error saving language to storage:', error);
     }
   };
 

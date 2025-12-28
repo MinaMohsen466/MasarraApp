@@ -2,7 +2,6 @@ import { StyleSheet } from 'react-native';
 import { colors } from '../../constants/colors';
 
 export const createStyles = (screenWidth: number, screenHeight: number) => {
-  const isTablet = screenWidth >= 600;
   const isTallScreen = screenHeight > 800;
   const drawerWidth = screenWidth * 0.75;
   
@@ -76,6 +75,12 @@ export const createStyles = (screenWidth: number, screenHeight: number) => {
     letterSpacing: 0.3,
   },
 
+  // Logout text style
+  logoutText: {
+    color: colors.error,
+    fontWeight: '600',
+  },
+
   // Arabic text styling
   arabicText: {
     fontFamily: 'System',
@@ -91,7 +96,9 @@ export const createStyles = (screenWidth: number, screenHeight: number) => {
     paddingTop: isTallScreen ? 25 : 15,
     paddingHorizontal: 10,
     borderTopWidth: 0,
-    marginTop: isTallScreen ? 10 : 5,
+    marginTop: 'auto',
+    flexShrink: 0,
+    minHeight: logoSize + 40,
   },
 
   // Logo container

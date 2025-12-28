@@ -56,7 +56,6 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
       if (!silent) setLoading(true);
       const token = await AsyncStorage.getItem('userToken');
       if (!token) {
-        console.log('[ChatConversation] No token found');
         if (!silent) setLoading(false);
         return;
       }

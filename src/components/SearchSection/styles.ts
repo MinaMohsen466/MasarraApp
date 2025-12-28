@@ -17,7 +17,7 @@ export const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background,
+    backgroundColor: colors.backgroundLight,
     borderRadius: isTablet ? 14 : 12,
     paddingHorizontal: isTablet ? 20 : 16,
     paddingVertical: isTablet ? 18 : 14,

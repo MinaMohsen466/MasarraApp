@@ -45,7 +45,6 @@ const Services: React.FC<ServicesProps> = ({ onSelectService, onViewAll }) => {
               totalReviews: reviewsData.stats.totalRatings || 0,
             };
           } catch (error) {
-            console.log(`Error loading rating for ${service.name}:`, error);
             return {
               serviceId: service._id,
               rating: 0,
@@ -69,7 +68,6 @@ const Services: React.FC<ServicesProps> = ({ onSelectService, onViewAll }) => {
 
         setServiceRatings(ratingsData);
       } catch (error) {
-        console.log('Error loading ratings:', error);
       }
     };
 

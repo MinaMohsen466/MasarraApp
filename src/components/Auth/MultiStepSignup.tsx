@@ -9,6 +9,7 @@ import {
   Platform,
   KeyboardAvoidingView,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { styles } from './styles';
 import { CustomAlert } from '../CustomAlert/CustomAlert';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -413,7 +414,11 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
               style={[styles.eyeButton, isRTL && styles.eyeButtonRTL]}
               onPress={() => setShowPassword(!showPassword)}
             >
-              <Text style={styles.eyeIcon}>{showPassword ? '○' : '●'}</Text>
+              <Icon
+                name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                size={22}
+                color="#666"
+              />
             </TouchableOpacity>
           </View>
           {password.length > 0 && (
@@ -478,7 +483,11 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
               style={[styles.eyeButton, isRTL && styles.eyeButtonRTL]}
               onPress={() => setShowConfirmPassword(!showConfirmPassword)}
             >
-              <Text style={styles.eyeIcon}>{showConfirmPassword ? '○' : '●'}</Text>
+              <Icon
+                name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'}
+                size={22}
+                color="#666"
+              />
             </TouchableOpacity>
           </View>
           {confirmPassword.length > 0 && (

@@ -89,10 +89,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
 
       const results = await Promise.all(promises);
       const allowed = new Set(results.filter(Boolean) as string[]);
-      console.log('[OrderHistory] QR allowed bookings:', Array.from(allowed));
       setQrAllowedBookings(allowed);
     } catch (error) {
-      console.error('Error loading bookings:', error);
       Alert.alert(
         isRTL ? 'خطأ' : 'Error',
         isRTL ? 'فشل تحميل الحجوزات' : 'Failed to load bookings',
@@ -242,15 +240,12 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
         return;
       }
 
-      console.log('[OrderHistory] Fetching QR code for booking:', booking._id);
       // No need to check canCreateQRCode here - button only shows for allowed bookings
       const existingQR = await getQRCodeByBooking(token, booking._id);
-      console.log('[OrderHistory] Existing QR code found:', existingQR);
       setSelectedBooking(booking);
       setSelectedQRCode(existingQR);
       setQrModalVisible(true);
     } catch (error) {
-      console.error('Error preparing QR code:', error);
       Alert.alert(
         isRTL ? 'خطأ' : 'Error',
         isRTL ? 'حدث خطأ' : 'An error occurred',

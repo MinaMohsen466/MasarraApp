@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { modalStyles } from './modalStyles';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -72,7 +73,6 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
           : 'A password reset code has been sent to your email',
       );
     } catch (error) {
-      console.error('Error sending reset code:', error);
       Alert.alert(
         isRTL ? 'خطأ' : 'Error',
         error instanceof Error
@@ -274,9 +274,11 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
                     ]}
                     onPress={() => setShowCurrentPassword(!showCurrentPassword)}
                   >
-                    <Text style={modalStyles.eyeIcon}>
-                      {showCurrentPassword ? '○' : '●'}
-                    </Text>
+                    <Icon
+                      name={showCurrentPassword ? 'eye-outline' : 'eye-off-outline'}
+                      size={22}
+                      color="#666"
+                    />
                   </TouchableOpacity>
                 </View>
                 {/* Forgot Password Link */}
@@ -350,9 +352,11 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
                   ]}
                   onPress={() => setShowNewPassword(!showNewPassword)}
                 >
-                  <Text style={modalStyles.eyeIcon}>
-                    {showNewPassword ? '○' : '●'}
-                  </Text>
+                  <Icon
+                    name={showNewPassword ? 'eye-outline' : 'eye-off-outline'}
+                    size={22}
+                    color="#666"
+                  />
                 </TouchableOpacity>
               </View>
               <Text style={[modalStyles.hint, isRTL && modalStyles.hintRTL]}>
@@ -388,9 +392,11 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
                   ]}
                   onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                 >
-                  <Text style={modalStyles.eyeIcon}>
-                    {showConfirmPassword ? '○' : '●'}
-                  </Text>
+                  <Icon
+                    name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'}
+                    size={22}
+                    color="#666"
+                  />
                 </TouchableOpacity>
               </View>
             </View>

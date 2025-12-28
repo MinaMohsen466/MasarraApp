@@ -188,6 +188,7 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
         maxHeight: 1000,
         selectionLimit: 1,
         includeBase64: false,
+        presentationStyle: 'fullScreen',
       });
 
       if (result.didCancel) {
@@ -195,6 +196,39 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
       }
 
       if (result.errorCode) {
+        // Handle specific error for missing photo picker
+        if (result.errorCode === 'others' || result.errorCode === 'camera_unavailable') {
+          // Try again with different options as fallback
+          try {
+            const fallbackResult = await launchImageLibrary({
+              mediaType: 'photo',
+              quality: 0.8,
+              maxWidth: 1000,
+              maxHeight: 1000,
+              selectionLimit: 1,
+              includeBase64: false,
+            });
+            
+            if (!fallbackResult.didCancel && fallbackResult.assets?.[0]?.uri) {
+              setProfileImage(fallbackResult.assets[0].uri);
+              return;
+            }
+          } catch (fallbackError) {
+            // Fallback also failed
+          }
+          
+          showAlert(
+            isRTL ? 'خطأ' : 'Error',
+            isRTL 
+              ? 'لا يوجد تطبيق لاختيار الصور. يرجى تثبيت Google Photos أو تطبيق معرض آخر.'
+              : 'No image picker app found. Please install Google Photos or another gallery app.',
+            [
+              { text: 'OK' },
+            ],
+          );
+          return;
+        }
+        
         showAlert(
           isRTL ? 'خطأ' : 'Error',
           result.errorMessage ||
@@ -494,11 +528,8 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
                             uri: getImageUri(profileImage) || undefined,
                           }}
                           style={styles.photoImage}
-                          onError={error => {
-                            console.error(
-                              'Profile image failed to load:',
-                              error.nativeEvent.error,
-                            );
+                          onError={() => {
+                            // Image load error
                           }}
                         />
                       ) : (

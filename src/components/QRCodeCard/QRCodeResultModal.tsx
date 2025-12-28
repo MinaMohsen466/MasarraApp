@@ -99,17 +99,6 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
   };
 
   useEffect(() => {
-    // Log data for debugging
-    console.log('[QRResultModal] QR Code Data:', {
-      hasQrCode: !!qrCode,
-      qrCodeId: qrCode?._id,
-      hasQrCodeImage: !!(qrCode?.qrCode || qrCode?.qrCodeImage),
-      qrCodeImageUri: getQRCodeImageUri(),
-      hasBackgroundImage: !!backgroundImage,
-      backgroundImageUri: getBackgroundImageUri(),
-      customDetails: qrCode?.customDetails,
-    });
-
     // Try to compute natural aspect ratio of the background image to avoid side gaps
     const bgUri = getBackgroundImageUri();
     if (!bgUri) return;
@@ -120,16 +109,10 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
         bgUri,
         (w, h) => {
           if (isActive && w && h) {
-            console.log('[QRResultModal] Background image dimensions:', {
-              w,
-              h,
-              ratio: w / h,
-            });
             setCardAspectRatio(w / h);
           }
         },
         error => {
-          console.log('[QRResultModal] Failed to get image size:', error);
         },
       );
     }
@@ -170,15 +153,8 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                   ]}
                   imageStyle={{ resizeMode: 'stretch' }}
                   onError={error => {
-                    console.log(
-                      '[QRResultModal] Background image load error:',
-                      error.nativeEvent,
-                    );
                   }}
                   onLoad={() => {
-                    console.log(
-                      '[QRResultModal] Background image loaded successfully',
-                    );
                   }}
                 >
                   {/* Semi-transparent overlay for better text visibility */}
@@ -363,15 +339,8 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                             style={{ width: 120, height: 120 }}
                             resizeMode="contain"
                             onError={error => {
-                              console.log(
-                                '[QRResultModal] QR code image load error:',
-                                error.nativeEvent,
-                              );
                             }}
                             onLoad={() => {
-                              console.log(
-                                '[QRResultModal] QR code image loaded successfully',
-                              );
                             }}
                           />
                         </View>

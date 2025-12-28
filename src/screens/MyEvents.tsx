@@ -108,7 +108,6 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
       const data = await fetchOccasions();
       setOccasions(data);
     } catch (error) {
-      console.error('Error loading occasions:', error);
     }
   };
 
@@ -152,7 +151,6 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
 
       setEvents(filteredBookings);
     } catch (error: any) {
-      console.error('Error loading events:', error);
       showAlert(
         isRTL ? 'خطأ' : 'Error',
         isRTL ? 'حدث خطأ أثناء تحميل الفعاليات' : 'Error loading events',
@@ -231,7 +229,6 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
         );
       }
     } catch (error: any) {
-      console.error('Error copying QR:', error);
       if (error?.response?.status === 404) {
         showAlert(
           isRTL ? 'تنبيه' : 'Info',
@@ -275,7 +272,6 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
         );
       }
     } catch (error) {
-      console.error('Error viewing QR:', error);
       showAlert(
         isRTL ? 'خطأ' : 'Error',
         isRTL ? 'فشل عرض QR' : 'Failed to view QR',
@@ -322,7 +318,6 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
         throw new Error('Failed to fetch guests');
       }
     } catch (error) {
-      console.error('Error fetching guests:', error);
       showAlert(
         isRTL ? 'خطأ' : 'Error',
         isRTL ? 'فشل تحميل قائمة الضيوف' : 'Failed to load guest list',
@@ -374,7 +369,6 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
         throw new Error('Failed to remove guest');
       }
     } catch (error) {
-      console.error('Error removing guest:', error);
       showAlert(
         isRTL ? 'خطأ' : 'Error',
         isRTL ? 'فشل حذف الضيف' : 'Failed to remove guest',

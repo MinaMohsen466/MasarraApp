@@ -107,7 +107,6 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
 
         setServiceRatings(ratingsData);
       } catch (error) {
-        console.log('Error loading ratings:', error);
       }
     };
 
@@ -153,7 +152,6 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
           totalReviews: totalReviewsCount,
         });
       } catch (error) {
-        console.log('Error fetching vendor reviews:', error);
       }
     };
 

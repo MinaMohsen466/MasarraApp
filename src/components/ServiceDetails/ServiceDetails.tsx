@@ -233,13 +233,6 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
   // Debug: Log service discount info
   React.useEffect(() => {
     if (service) {
-      console.log('Service Discount Info:', {
-        name: service.name,
-        price: service.price,
-        salePrice: service.salePrice,
-        discountPercentage: service.discountPercentage,
-        isOnSale: service.isOnSale,
-      });
     }
   }, [service]);
 

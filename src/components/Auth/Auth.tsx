@@ -8,6 +8,7 @@ import {
   Alert,
   Linking,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { styles } from './styles';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -85,7 +86,6 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
               body: JSON.stringify({ userId }),
             });
           } catch (resendError) {
-            console.error('Failed to resend code:', resendError);
           }
           // Show verification screen directly without alert
           setShowVerifyEmail(true);
@@ -217,7 +217,11 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
                 onPress={() => setShowPassword(!showPassword)}
                 activeOpacity={0.7}
               >
-                <Text style={styles.eyeIcon}>{showPassword ? '○' : '●'}</Text>
+                <Icon
+                  name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                  size={22}
+                  color="#666"
+                />
               </TouchableOpacity>
             </View>
           </View>
