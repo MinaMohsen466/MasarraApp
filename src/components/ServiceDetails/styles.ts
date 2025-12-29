@@ -619,9 +619,9 @@ export const createStyles = (SCREEN_WIDTH: number) => {
     fontFamily: 'Arial',
   },
   reviewStatsCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.backgroundCard,
     borderRadius: 12,
-    padding: 16,
+    padding: 14,
     flexDirection: 'row',
     marginBottom: 16,
   },
@@ -645,7 +645,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
   },
   averageRatingText: {
     fontSize: 12,
-    color: '#666',
+    color: colors.textSecondary,
   },
   ratingDistribution: {
     flex: 2,
@@ -659,7 +659,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
   distributionStar: {
     width: 30,
     fontSize: 12,
-    color: '#666',
+    color: colors.textSecondary,
   },
   distributionBar: {
     flex: 1,
@@ -676,14 +676,14 @@ export const createStyles = (SCREEN_WIDTH: number) => {
   distributionCount: {
     width: 30,
     fontSize: 12,
-    color: '#666',
+    color: colors.textSecondary,
     textAlign: 'right',
   },
   reviewsList: {
     gap: 12,
   },
   reviewCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.backgroundCard,
     borderRadius: 12,
     padding: 16,
   },

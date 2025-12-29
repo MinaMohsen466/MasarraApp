@@ -4,17 +4,17 @@ import { colors } from '../../constants/colors';
 export const modalStyles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   modal: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.textWhite,
     borderRadius: 16,
     width: '100%',
     maxWidth: 400,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: {
       width: 0,
       height: 4,
@@ -26,14 +26,14 @@ export const modalStyles = StyleSheet.create({
   header: {
     padding: 24,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: colors.border,
     alignItems: 'center',
   },
   headerIcon: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: colors.backgroundLight,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -52,7 +52,7 @@ export const modalStyles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   subtitleRTL: {
@@ -77,9 +77,9 @@ export const modalStyles = StyleSheet.create({
     position: 'relative',
   },
   input: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.backgroundLight,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border,
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 16,
@@ -109,11 +109,11 @@ export const modalStyles = StyleSheet.create({
   },
   eyeIcon: {
     fontSize: 20,
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
   hint: {
     fontSize: 12,
-    color: '#999',
+    color: colors.textSecondary,
   },
   hintRTL: {
     fontFamily: 'System',
@@ -142,7 +142,7 @@ export const modalStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   cancelButton: {
-    backgroundColor: '#F0F0F0',
+    backgroundColor: colors.backgroundLight,
   },
   cancelButtonText: {
     fontSize: 16,
@@ -158,13 +158,13 @@ export const modalStyles = StyleSheet.create({
   submitButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.textWhite,
   },
   submitButtonTextRTL: {
     fontFamily: 'System',
   },
   passwordRequirements: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.backgroundLight,
     borderRadius: 8,
     padding: 12,
     gap: 8,
@@ -187,7 +187,7 @@ export const modalStyles = StyleSheet.create({
   },
   requirementText: {
     fontSize: 12,
-    color: '#666',
+    color: colors.textSecondary,
   },
   requirementTextRTL: {
     fontFamily: 'System',

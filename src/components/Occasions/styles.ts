@@ -10,7 +10,7 @@ export const createStyles = (screenWidth: number, numColumns: number) => {
   return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -18,7 +18,7 @@ export const createStyles = (screenWidth: number, numColumns: number) => {
     justifyContent: 'space-between',
     paddingHorizontal: 12,
     paddingVertical: 0,
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: colors.background,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },

@@ -6,11 +6,10 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
-  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getUserBookings, Booking, getImageUrl } from '../services/api';
+import { getUserBookings, Booking} from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
 import { orderHistoryStyles as styles } from './orderHistoryStyles';
 import { QRFormModal } from '../components/QRCodeCard/QRFormModal';
@@ -32,7 +31,6 @@ interface OrderHistoryProps {
 
 const OrderHistory: React.FC<OrderHistoryProps> = ({
   onBack,
-  onViewDetails,
   onWriteReview,
 }) => {
   const { isRTL } = useLanguage();

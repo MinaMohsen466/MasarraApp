@@ -1,12 +1,12 @@
 import { StyleSheet, Dimensions } from 'react-native';
 import { colors } from '../constants/colors';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const {} = Dimensions.get('window');
 
 export const myEventsStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundHome,
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -14,16 +14,16 @@ export const myEventsStyles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 16,
-    backgroundColor: colors.backgroundHome,
+    backgroundColor: colors.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: colors.border,
   },
   backButton: {
     width: 36,
     height: 36,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.backgroundLight,
     borderRadius: 18,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -33,7 +33,7 @@ export const myEventsStyles = StyleSheet.create({
   },
   backIcon: {
     fontSize: 32,
-    color: '#00CED1',
+    color: colors.primary,
     fontWeight: '700',
     lineHeight: 36,
   },
@@ -66,7 +66,7 @@ export const myEventsStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.textWhite,
     borderWidth: 1,
     borderColor: colors.primary,
     borderRadius: 8,
@@ -85,7 +85,7 @@ export const myEventsStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.textWhite,
     borderWidth: 1,
     borderColor: colors.primary,
     borderRadius: 8,
@@ -113,7 +113,7 @@ export const myEventsStyles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: colors.backgroundLight,
     marginRight: 8,
     minWidth: 70,
     alignItems: 'center',
@@ -130,7 +130,7 @@ export const myEventsStyles = StyleSheet.create({
     textAlign: 'center',
   },
   filterButtonTextActive: {
-    color: '#ffffff',
+    color: colors.textWhite,
     fontWeight: '700',
   },
   tableHeader: {
@@ -143,7 +143,7 @@ export const myEventsStyles = StyleSheet.create({
   tableHeaderText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#ffffff',
+    color: colors.textWhite,
   },
   dateColumn: {
     flex: 0.3,
@@ -159,16 +159,11 @@ export const myEventsStyles = StyleSheet.create({
     paddingBottom: 20,
   },
   eventCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.backgroundLight,
     marginHorizontal: 16,
     marginVertical: 8,
     borderRadius: 8,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   eventHeader: {
     flexDirection: 'row',

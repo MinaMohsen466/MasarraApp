@@ -7,7 +7,7 @@ const isTablet = SCREEN_WIDTH >= 600;
 export const orderHistoryStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
   },
   headerBackground: {
     position: 'absolute',
@@ -58,7 +58,7 @@ export const orderHistoryStyles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
   },
   scrollContent: {
     paddingBottom: isTablet ? 120 : 50,
@@ -74,21 +74,16 @@ export const orderHistoryStyles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
-    color: '#999999',
+    color: colors.textSecondary,
     marginTop: 16,
     fontWeight: '500',
   },
   bookingCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.backgroundLight,
     marginHorizontal: 16,
     marginVertical: 14,
     borderRadius: 12,
     padding: 16,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -103,7 +98,7 @@ export const orderHistoryStyles = StyleSheet.create({
   serviceName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333333',
+    color: colors.textPrimary,
   },
   statusBadge: {
     paddingHorizontal: 12,
@@ -113,13 +108,13 @@ export const orderHistoryStyles = StyleSheet.create({
     alignItems: 'center',
   },
   statusText: {
-    color: '#FFFFFF',
+    color: colors.textWhite,
     fontSize: 12,
     fontWeight: 'bold',
   },
   description: {
     fontSize: 14,
-    color: '#666666',
+    color: colors.textSecondary,
     marginBottom: 12,
     lineHeight: 20,
   },
@@ -134,19 +129,19 @@ export const orderHistoryStyles = StyleSheet.create({
   },
   infoText: {
     fontSize: 14,
-    color: '#666666',
+    color: colors.textSecondary,
     flex: 1,
   },
   customInputsContainer: {
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
+    borderTopColor: colors.borderMedium,
   },
   customInputsTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333333',
+    color: colors.textPrimary,
     marginBottom: 8,
   },
   customInputRow: {
@@ -157,13 +152,13 @@ export const orderHistoryStyles = StyleSheet.create({
   },
   customInputLabel: {
     fontSize: 13,
-    color: '#666666',
+    color: colors.textSecondary,
     fontWeight: '500',
     flex: 1,
   },
   customInputValue: {
     fontSize: 13,
-    color: '#333333',
+    color: colors.textPrimary,
     fontWeight: '500',
     textAlign: 'right',
     marginLeft: 8,
@@ -175,17 +170,17 @@ export const orderHistoryStyles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
+    borderTopColor: colors.borderMedium,
   },
   priceLabel: {
     fontSize: 14,
-    color: '#666666',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   priceValue: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#00695C',
+    color: colors.textPrimary,
   },
   orderIdContainer: {
     flexDirection: 'row',
@@ -195,19 +190,19 @@ export const orderHistoryStyles = StyleSheet.create({
   },
   orderIdLabel: {
     fontSize: 12,
-    color: '#999999',
+    color: colors.textSecondary,
   },
   orderIdValue: {
     fontSize: 12,
-    color: '#666666',
+    color: colors.textSecondary,
     fontFamily: 'monospace',
   },
   filterContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: colors.borderMedium,
   },
   filterScrollContent: {
     gap: 8,
@@ -216,21 +211,21 @@ export const orderHistoryStyles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.textWhite,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: colors.borderMedium,
   },
   filterButtonActive: {
-    backgroundColor: '#00695C',
-    borderColor: '#00695C',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   filterButtonText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#666666',
+    color: colors.textSecondary,
   },
   filterButtonTextActive: {
-    color: '#FFFFFF',
+    color: colors.textWhite,
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -243,28 +238,28 @@ export const orderHistoryStyles = StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
     paddingVertical: 8,
     paddingHorizontal: 6,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: colors.border,
     gap: 2,
   },
   buttonIconContainer: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#E0F2F1',
+    backgroundColor: colors.primaryLight,
     justifyContent: 'center',
     alignItems: 'center',
   },
   buttonIcon: {
     fontSize: 16,
-    color: '#00695C',
+    color: colors.primary,
   },
   actionButtonText: {
-    color: '#00695C',
+    color: colors.primary,
     fontSize: 10,
     fontWeight: '600',
     textAlign: 'center',

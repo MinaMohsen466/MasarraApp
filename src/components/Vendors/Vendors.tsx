@@ -25,7 +25,7 @@ const Vendors: React.FC<VendorsProps> = ({ onSelectVendor, onBack }) => {
   const { isRTL } = useLanguage();
   const screenWidth = Dimensions.get('window').width;
   const numColumns = screenWidth >= 600 ? 4 : 3;
-  const { data: vendors, isLoading, error, refetch } = useVendors();
+  const { data: vendors, isLoading, error} = useVendors();
 
   const [imageErrors, setImageErrors] = React.useState<Set<string>>(new Set());
 
@@ -73,10 +73,10 @@ const Vendors: React.FC<VendorsProps> = ({ onSelectVendor, onBack }) => {
 
   return (
     <View
-      style={[styles.container, { backgroundColor: colors.backgroundLight }]}
+      style={[styles.container]}
     >
       <StatusBar
-        backgroundColor={colors.backgroundLight}
+        backgroundColor={colors.background}
         barStyle="dark-content"
         translucent={false}
       />

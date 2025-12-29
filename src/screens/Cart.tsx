@@ -5,7 +5,6 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
   Dimensions,
   TextInput,
@@ -31,7 +30,6 @@ import { styles } from './cartStyles';
 import Drawer from '../components/Drawer';
 import OrderSuccess from './OrderSuccess';
 import AddressSelection from '../components/AddressSelection/AddressSelection';
-import { API_BASE_URL } from '../config/api.config';
 import { CustomAlert } from '../components/CustomAlert';
 import { validateCoupon, Coupon } from '../services/couponApi';
 
@@ -41,7 +39,7 @@ interface CartProps {
   onNavigate?: (route: string) => void;
 }
 
-const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
+const Cart: React.FC<CartProps> = ({onViewDetails, onNavigate }) => {
   const { isRTL, t } = useLanguage();
   const { user, isLoggedIn, token } = useAuth();
   const insets = useSafeAreaInsets();
@@ -55,7 +53,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
   const [showSuccessScreen, setShowSuccessScreen] = useState(false);
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
   const [showAddressSelection, setShowAddressSelection] = useState(false);
-  const [selectedAddress, setSelectedAddress] = useState<any>(null);
+  const [setSelectedAddress] = useState<any>(null);
   const [userToken, setUserToken] = useState<string>('');
   // measured height of the bottom summary (used to reserve scroll space)
   const [summaryHeight, setSummaryHeight] = useState<number>(300);
@@ -269,7 +267,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
             }
           : undefined;
 
-      const { success, bookings, errors } = await createBookingsFromCart(
+      const { success, errors } = await createBookingsFromCart(
         fullAddress,
         couponData,
       );
@@ -432,38 +430,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
     setCouponError('');
   };
 
-  const calculatePayNowAmount = () => {
-    const total = calculateTotalAfterDiscount();
-    return total * 0.6;
-  };
 
-  const calculatePayableAfterConfirmation = () => {
-    const availableNowSubtotal = cartItems.reduce((total, item) => {
-      if (
-        !item.availabilityStatus ||
-        item.availabilityStatus === 'available_now'
-      ) {
-        const itemPrice = item.totalPrice ?? item.price;
-        return total + itemPrice * item.quantity;
-      }
-      return total;
-    }, 0);
-    const deliveryCharges = calculateDeliveryCharges();
-    const totalBeforeDiscount = availableNowSubtotal + deliveryCharges;
-    const totalAfterDiscount = Math.max(
-      0,
-      totalBeforeDiscount - couponDiscount,
-    );
-    const availableNowRemaining = totalAfterDiscount * 0.4;
-    const pendingTotal = cartItems.reduce((total, item) => {
-      if (item.availabilityStatus === 'pending_confirmation') {
-        const itemPrice = item.totalPrice ?? item.price;
-        return total + itemPrice * item.quantity;
-      }
-      return total;
-    }, 0);
-    return availableNowRemaining + pendingTotal;
-  };
 
   // If success screen should be shown
   if (showSuccessScreen) {
@@ -637,7 +604,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
             }}
             showsVerticalScrollIndicator={false}
           >
-            {cartItems.map((item, index) => {
+            {cartItems.map((item) => {
               const now = new Date();
               const isItemOld = item.timeSlot?.start
                 ? new Date(item.timeSlot.start) < now
@@ -1032,8 +999,8 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
                 bottom: (insets.bottom ?? 0) + 8,
                 paddingBottom:
                   Dimensions.get('window').width >= 600
-                    ? (insets.bottom ?? 0) + 120
-                    : (insets.bottom ?? 0) + 30,
+                    ? (insets.bottom ?? 0) + 105
+                    : (insets.bottom ?? 0) + 20,
               },
             ]}
           >
@@ -1142,26 +1109,7 @@ const Cart: React.FC<CartProps> = ({ onBack, onViewDetails, onNavigate }) => {
               </Text>
             </View>
 
-            {/* Divider */}
-            <View style={styles.divider} />
 
-            {/* Payment Options */}
-            <View style={styles.paymentRow}>
-              <Text style={styles.paymentLabel}>{t('payNow')}</Text>
-              <Text style={styles.paymentValue}>
-                {isRTL ? '?.?' : 'KD'} {calculatePayNowAmount().toFixed(3)}
-              </Text>
-            </View>
-
-            <View style={styles.paymentRow}>
-              <Text style={styles.paymentLabelOrange}>
-                {t('payableAfterConfirmation')}
-              </Text>
-              <Text style={styles.paymentValueOrange}>
-                {isRTL ? '?.?' : 'KD'}{' '}
-                {calculatePayableAfterConfirmation().toFixed(3)}
-              </Text>
-            </View>
 
             {/* Action Buttons */}
             <TouchableOpacity

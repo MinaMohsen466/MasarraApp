@@ -8,7 +8,7 @@ const cardWidth = isTablet ? (width - 120) / 4 : (width - 64) / 3; // 4 columns 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: colors.background,
     paddingTop: 0,
   },
   header: {
@@ -17,7 +17,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 0,
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: colors.background,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     marginTop: 0,

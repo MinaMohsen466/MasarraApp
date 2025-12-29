@@ -2,7 +2,7 @@ import { StyleSheet } from 'react-native';
 import { colors, colorUtils } from '../../constants/colors';
 
 export const styles = StyleSheet.create({
-  container: { flex: 1, padding: 12, backgroundColor: colors.backgroundHome },
+  container: { flex: 1, padding: 12, backgroundColor: colors.background},
   list: { flex: 1 },
   listContent: { paddingBottom: 96 },
   header: {
@@ -40,7 +40,7 @@ export const styles = StyleSheet.create({
     fontWeight: '700',
   },
   cardVertical: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.backgroundLight,
     borderRadius: 10,
     overflow: 'hidden',
     marginBottom: 12,
@@ -55,7 +55,7 @@ export const styles = StyleSheet.create({
   cardImageVertical: {
     width: '100%',
     height: 120,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.backgroundLight,
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
   },
@@ -83,7 +83,7 @@ export const styles = StyleSheet.create({
   removeBtn: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.backgroundLight,
     borderRadius: 6,
     borderWidth: 1,
     borderColor: colors.border,
@@ -101,7 +101,7 @@ export const styles = StyleSheet.create({
   footerNote: {
     marginTop: 16,
     padding: 12,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.backgroundLight,
     borderRadius: 8,
   },
   footerCount: { fontWeight: '700', marginBottom: 6, color: colors.textDark },

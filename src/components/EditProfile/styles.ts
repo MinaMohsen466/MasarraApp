@@ -64,7 +64,7 @@ export const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   section: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.backgroundLight,
     borderRadius: 16,
     padding: 24,
     marginBottom: 20,
@@ -126,7 +126,7 @@ export const styles = StyleSheet.create({
   },
   viewMode: {
     gap: 16,
-    backgroundColor: '#F0F9F8',
+    backgroundColor: colors.backgroundLight,
     padding: 20,
     borderRadius: 12,
     borderWidth: 1,
@@ -146,7 +146,7 @@ export const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#6B7280',
+    color: colors.textSecondary,
     marginBottom: 6,
   },
   fieldLabelRTL: {
@@ -156,7 +156,7 @@ export const styles = StyleSheet.create({
   fieldValue: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1F2937',
+    color: colors.textDark,
   },
   fieldValueRTL: {
     fontFamily: 'System',
@@ -166,7 +166,7 @@ export const styles = StyleSheet.create({
   },
   photoSection: {
     marginBottom: 8,
-    backgroundColor: '#fff',
+    backgroundColor: colors.backgroundLight,
     padding: 20,
     borderRadius: 16,
     borderColor: colors.border,
@@ -217,7 +217,7 @@ export const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#ff3b30',
+    backgroundColor: colors.error,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
@@ -226,7 +226,7 @@ export const styles = StyleSheet.create({
   removePhotoIconText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#fff',
+    color: colors.textWhite,
     lineHeight: 16,
   },
   choosePhotoButton: {
@@ -255,7 +255,7 @@ export const styles = StyleSheet.create({
   formRow: {
     flexDirection: 'row',
     gap: 16,
-    backgroundColor: '#fff',
+    backgroundColor: colors.backgroundLight,
     padding: 20,
     borderRadius: 16,
     borderColor: colors.border,
@@ -334,14 +334,14 @@ export const styles = StyleSheet.create({
   },
   passwordText: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     lineHeight: 20,
   },
   passwordTextRTL: {
     fontFamily: 'System',
   },
   passwordSection: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.backgroundLight,
     borderRadius: 16,
     padding: 20,
     marginBottom: 20,

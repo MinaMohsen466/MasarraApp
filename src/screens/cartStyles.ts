@@ -4,7 +4,7 @@ import { colors } from '../constants/colors';
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -13,9 +13,9 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     paddingBottom: 12,
-    backgroundColor: colors.backgroundHome,
+    backgroundColor: colors.background,
     borderBottomWidth: 0,
-    borderBottomColor: 'transparent',
+    borderBottomColor: colors.border,
   },
   menuButton: {
     justifyContent: 'center',
@@ -37,7 +37,7 @@ export const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 2,
     borderColor: colors.primary,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.backgroundLight,
   },
   profileIcon: {
     width: '100%',
@@ -70,16 +70,12 @@ export const styles = StyleSheet.create({
     paddingBottom: Dimensions.get('window').width >= 600 ? 320 : 16,
   },
   cartCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.backgroundLight,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
     position: 'relative',
+    borderColor: colors.border,
   },
   oldBookingBadge: {
     position: 'absolute',
@@ -295,7 +291,7 @@ export const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.backgroundLight,
     paddingHorizontal: 16,
     paddingVertical: 10,
     paddingBottom: Dimensions.get('window').width >= 600 ? 140 : 14,

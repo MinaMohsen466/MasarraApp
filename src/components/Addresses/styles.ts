@@ -2,14 +2,21 @@ import { StyleSheet } from 'react-native';
 import { colors, colorUtils } from '../../constants/colors';
 
 export const styles = StyleSheet.create({
-  addressesContainer: { flex: 1, padding: 16, backgroundColor: '#ffffff' },
+  addressesContainer: { 
+    flex: 1, 
+    padding: 16, 
+    backgroundColor: colors.background,
+  },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
   },
-  headerTitle: { fontSize: 24, fontWeight: '700' },
+  headerTitle: { 
+    fontSize: 24, 
+    fontWeight: '700' 
+  },
   // Prominent Add button - now matches back button color
   addButton: {
     backgroundColor: colors.primary,
@@ -88,17 +95,12 @@ export const styles = StyleSheet.create({
   primaryButtonTextSmall: { color: colors.textWhite, fontWeight: '700' },
 
   addressCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.backgroundLight,
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    borderColor: colors.border,
   },
   addressInfoContainer: { marginBottom: 12 },
   actionButton: {
@@ -140,7 +142,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: colors.border,
     gap: 8,
   },
   defaultBadge: {
@@ -151,13 +153,39 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colorUtils.addOpacity(colors.primary, 0.3),
   },
-  defaultBadgeText: { color: colors.primary, fontSize: 12, fontWeight: '600' },
-  setDefaultLink: { marginRight: 8 },
-  setDefaultLinkText: { color: colors.primary, fontWeight: '600', fontSize: 13 },
-  actionButtonText: { color: '#fff', fontWeight: '600', fontSize: 13 },
-  deleteButtonText: { color: colors.error },
-  addressName: { fontWeight: '700', marginBottom: 6, fontSize: 16, color: '#1F2937' },
-  addressLine: { color: '#6B7280', fontSize: 14, marginBottom: 3, lineHeight: 20 },
+  defaultBadgeText: { 
+    color: colors.primary, 
+    fontSize: 12, 
+    fontWeight: '600' 
+  },
+  setDefaultLink: { 
+    marginRight: 8 
+  },
+  setDefaultLinkText: { 
+    color: colors.primary, 
+    fontWeight: '600', 
+    fontSize: 13 
+  },
+  actionButtonText: { 
+    color: colors.textWhite, 
+    fontWeight: '600', 
+    fontSize: 13 
+  },
+  deleteButtonText: { 
+    color: colors.error 
+  },
+  addressName: { 
+    fontWeight: '700', 
+    marginBottom: 6, 
+    fontSize: 16, 
+    color: colors.textDark, 
+  },
+  addressLine: { 
+    color: colors.textSecondary, 
+    fontSize: 14, 
+    marginBottom: 3, 
+    lineHeight: 20 
+  },
 });
 
 export default styles;
