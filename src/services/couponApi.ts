@@ -62,7 +62,7 @@ export const validateCoupon = async (
     if (__DEV__) {
     }
 
-    const response = await fetch(`${API_BASE_URL}/api/coupons/validate`, {
+    const response = await fetch(`${API_BASE_URL}/coupons/validate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -126,7 +126,7 @@ export const applyCouponToBooking = async (
   token: string,
 ): Promise<{ success: boolean; message: string }> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/coupons/apply`, {
+    const response = await fetch(`${API_BASE_URL}/coupons/apply`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

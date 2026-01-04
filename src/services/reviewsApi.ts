@@ -59,7 +59,7 @@ export async function getServiceReviews(
 ): Promise<ReviewsResponse> {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/api/reviews/service/${serviceId}?page=${page}&limit=${limit}`,
+      `${API_BASE_URL}/reviews/service/${serviceId}?page=${page}&limit=${limit}`,
       {
         method: 'GET',
         headers: {
@@ -93,7 +93,7 @@ export async function createReview(
     }
 
     const response = await fetch(
-      `${API_BASE_URL}/api/reviews/service/${serviceId}`,
+      `${API_BASE_URL}/reviews/service/${serviceId}`,
       {
         method: 'POST',
         headers: {

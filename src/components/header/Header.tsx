@@ -1,21 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   TouchableOpacity,
   Image,
   ActivityIndicator,
-  Platform,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Svg, { Path } from 'react-native-svg';
-import { styles } from './Styles';
+import { styles, imageStyles } from './Styles';
 import Drawer from '../Drawer';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { colors } from '../../constants/colors';
 import { useSiteSettings } from '../../hooks/useSiteSettings';
 import { getImageUrl } from '../../services/api';
-import { API_URL } from '../../config/api.config';
 
 interface HeaderProps {
   onNavigate?: (route: string) => void;
@@ -23,42 +20,9 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
-  const [currentProfilePicture, setCurrentProfilePicture] = useState<
-    string | null
-  >(null);
   const { isRTL } = useLanguage();
   const { user, isLoggedIn } = useAuth();
   const { data: siteSettings, isLoading, error } = useSiteSettings();
-
-  // Fetch fresh user data from server
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const token = await AsyncStorage.getItem('userToken');
-        if (!token) return;
-
-        const response = await fetch(`${API_URL}/auth/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (response.ok) {
-          const userData = await response.json();
-
-          if (userData.profilePicture) {
-            setCurrentProfilePicture(userData.profilePicture);
-          }
-        }
-      } catch (error) {
-        // Handle error silently
-      }
-    };
-
-    if (isLoggedIn) {
-      fetchUserData();
-    }
-  }, [isLoggedIn]);
 
   const handleOpenDrawer = () => {
     setIsDrawerVisible(true);
@@ -68,7 +32,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
     setIsDrawerVisible(false);
   };
 
-  const handleNavigation = (route: string, title: string) => {
+  const handleNavigation = (route: string) => {
     if (onNavigate) {
       onNavigate(route.toLowerCase());
     }
@@ -117,20 +81,20 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
           ) : error ? (
             <Image
               source={require('../../imgs/MasarraLogo.png')}
-              style={styles.logoImage}
+              style={imageStyles.logoImage}
               resizeMode="contain"
             />
           ) : siteSettings?.headerLogo ? (
             <Image
               key={siteSettings.headerLogo}
               source={{ uri: getImageUrl(siteSettings.headerLogo) }}
-              style={styles.logoImage}
+              style={imageStyles.logoImage}
               resizeMode="contain"
             />
           ) : (
             <Image
               source={require('../../imgs/MasarraLogo.png')}
-              style={styles.logoImage}
+              style={imageStyles.logoImage}
               resizeMode="contain"
             />
           )}
@@ -143,22 +107,19 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
           activeOpacity={0.6}
           hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
         >
-          {isLoggedIn && (currentProfilePicture || user?.profilePicture) ? (
+          {isLoggedIn && user?.profilePicture ? (
             <Image
               source={{
-                uri: getImageUrl(
-                  currentProfilePicture || user?.profilePicture || '',
-                ),
+                uri: getImageUrl(user.profilePicture),
               }}
-              style={styles.profileIcon}
+              style={imageStyles.profileIcon}
               resizeMode="cover"
-              onLoad={() => {}}
-              onError={e => {}}
+              onError={() => {}}
             />
           ) : (
             <Image
               source={require('../../imgs/user.png')}
-              style={styles.profileIcon}
+              style={imageStyles.profileIcon}
               resizeMode="contain"
             />
           )}

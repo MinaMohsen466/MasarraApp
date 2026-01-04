@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   ActivityIndicator,
   Platform,
   KeyboardAvoidingView,
@@ -13,6 +12,7 @@ import {
 import { useLanguage } from '../contexts/LanguageContext';
 import { colors } from '../constants/colors';
 import { API_URL } from '../config/api.config';
+import { CustomAlert } from '../components/CustomAlert';
 
 interface VerifyEmailProps {
   email: string;
@@ -32,7 +32,19 @@ const VerifyEmail: React.FC<VerifyEmailProps> = ({
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
 
+  // CustomAlert state
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+
   const inputRefs = useRef<Array<TextInput | null>>([]);
+
+  // Helper function to show custom alert
+  const showAlert = (title: string, message: string) => {
+    setAlertTitle(title);
+    setAlertMessage(message);
+    setAlertVisible(true);
+  };
 
   const handleOtpChange = (value: string, index: number) => {
     // Only allow numbers
@@ -60,7 +72,7 @@ const VerifyEmail: React.FC<VerifyEmailProps> = ({
     const otpCode = otp.join('');
 
     if (otpCode.length !== 6) {
-      Alert.alert(
+      showAlert(
         isRTL ? 'خطأ' : 'Error',
         isRTL
           ? 'يرجى إدخال رمز OTP المكون من 6 أرقام'
@@ -88,7 +100,7 @@ const VerifyEmail: React.FC<VerifyEmailProps> = ({
       // Call onVerified directly without alert
       onVerified(data.token, data.user);
     } catch (error) {
-      Alert.alert(
+      showAlert(
         isRTL ? 'خطأ' : 'Error',
         error instanceof Error
           ? error.message
@@ -102,10 +114,18 @@ const VerifyEmail: React.FC<VerifyEmailProps> = ({
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
+    <>
+      <CustomAlert
+        visible={alertVisible}
+        title={alertTitle}
+        message={alertMessage}
+        buttons={[{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }]}
+        onClose={() => setAlertVisible(false)}
+      />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+      >
       <View style={styles.content}>
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
           <Text style={styles.backButtonText}>
@@ -162,6 +182,7 @@ const VerifyEmail: React.FC<VerifyEmailProps> = ({
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
+    </>
   );
 };
 

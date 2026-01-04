@@ -32,12 +32,16 @@ const AddressesWithAuth: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   return <Addresses onBack={onBack} token={token} />;
 };
 
-// Query client setup
+// Query client setup - Optimized for faster loading
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 2,
-      staleTime: 5 * 60 * 1000,
+      staleTime: 10 * 60 * 1000, // 10 minutes - longer stale time
+      cacheTime: 15 * 60 * 1000, // 15 minutes - keep cached data longer
+      refetchOnWindowFocus: false, // Don't refetch on focus in mobile
+      refetchOnMount: false, // Don't refetch on mount if data exists
+      refetchOnReconnect: true, // Only refetch on network reconnect
     },
   },
 });

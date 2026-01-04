@@ -29,7 +29,7 @@ interface EditProfileProps {
 
 const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
   const { isRTL } = useLanguage();
-  const { user, updateUserProfile, changeUserPassword, logout } = useAuth();
+  const { user, updateUserProfile, changeUserPassword, logout, refreshUser } = useAuth();
   const insets = useSafeAreaInsets();
   const [isEditing, setIsEditing] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
@@ -262,9 +262,12 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
 
     setIsLoading(true);
     try {
+      // Check if user wants to remove the profile picture
+      const shouldRemoveImage = profileImage === null;
+      
       // Only send profileImage if it's a new local file (not a server path)
       let imageToSend: string | undefined;
-      if (profileImage) {
+      if (profileImage && !shouldRemoveImage) {
         // Check if it's a local file URI (file://, content://, or no protocol for local picker)
         const isLocalFile =
           profileImage.startsWith('file://') ||
@@ -277,18 +280,20 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
         }
       }
 
-      await updateUserProfile(name.trim(), phone.trim(), imageToSend);
+      await updateUserProfile(name.trim(), phone.trim(), imageToSend, shouldRemoveImage);
+
+      // Refresh user data in AuthContext to sync across all pages
+      await refreshUser();
 
       showAlert(
         isRTL ? 'نجح' : 'Success',
         isRTL ? 'تم تحديث الملف الشخصي بنجاح' : 'Profile updated successfully',
-        [{ text: 'OK' }],
+        [{ text: 'OK', onPress: () => setIsEditing(false) }],
       );
-      setIsEditing(false);
-    } catch {
+    } catch (error: any) {
       showAlert(
         isRTL ? 'خطأ' : 'Error',
-        isRTL ? 'فشل تحديث الملف الشخصي' : 'Failed to update profile',
+        error?.message || (isRTL ? 'فشل تحديث الملف الشخصي' : 'Failed to update profile'),
         [{ text: 'OK' }],
       );
     } finally {
@@ -381,19 +386,19 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
       return null;
     }
 
-    // If it's already a full URI (starts with http, file, or content), return as is
-    if (
-      uri.startsWith('http') ||
-      uri.startsWith('file://') ||
-      uri.startsWith('content://')
-    ) {
+    // If it's already a full URL (like S3), return as is
+    if (uri.startsWith('http://') || uri.startsWith('https://')) {
+      return uri;
+    }
+
+    // If it's a local file URI, return as is
+    if (uri.startsWith('file://') || uri.startsWith('content://')) {
       return uri;
     }
 
     // If it's a server path (starts with /public), prepend the base URL
     if (uri.startsWith('/public')) {
-      const fullUrl = `${API_URL.replace('/api', '')}${uri}`;
-      return fullUrl;
+      return `${API_URL.replace('/api', '')}${uri}`;
     }
 
     return uri;
@@ -564,7 +569,7 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
                   </TouchableOpacity>
                 </View>
                 <Text style={[styles.photoHint, isRTL && styles.photoHintRTL]}>
-                  {isRTL ? 'JPG, PNG حتى 10 ميجابايت' : 'JPG, PNG up to 10MB'}
+                  {isRTL ? 'JPG, PNG حتى 1 ميجابايت' : 'JPG, PNG up to 10MB'}
                 </Text>
               </View>
 
@@ -656,8 +661,8 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
                 style={[styles.passwordHint, isRTL && styles.passwordHintRTL]}
               >
                 {isRTL
-                  ? 'كلمة المرور الخاصة بك آمنة ومشفرة. انقر على "تغيير كلمة المرور" لتحديثها.'
-                  : 'Your password is secure and encrypted. Click "Change Password" to update it.'}
+                  ? 'كلمة المرور الخاصة بك آمنة ومشفرة.'
+                  : 'Your password is secure and encrypted.'}
               </Text>
             </View>
             <TouchableOpacity
@@ -671,7 +676,7 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
                   isRTL && styles.changePasswordButtonTextRTL,
                 ]}
               >
-                {isRTL ? 'تغيير كلمة المرور' : 'Change Password'}
+                {isRTL ? 'تغيير' : 'Change Password'}
               </Text>
             </TouchableOpacity>
           </View>

@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
   Linking,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -17,6 +16,7 @@ import { API_URL } from '../../config/api.config';
 import VerifyEmail from '../../screens/VerifyEmail';
 import ForgotPasswordModal from './ForgotPasswordModal';
 import MultiStepSignup from './MultiStepSignup';
+import { CustomAlert } from '../CustomAlert';
 
 interface AuthProps {
   onBack?: () => void;
@@ -34,13 +34,43 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
+  // CustomAlert state
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertButtons, setAlertButtons] = useState<
+    Array<{
+      text: string;
+      onPress?: () => void;
+      style?: 'default' | 'cancel' | 'destructive';
+    }>
+  >([]);
+
+  // Helper function to show custom alert
+  const showAlert = (
+    title: string,
+    message: string,
+    buttons?: Array<{
+      text: string;
+      onPress?: () => void;
+      style?: 'default' | 'cancel' | 'destructive';
+    }>,
+  ) => {
+    setAlertTitle(title);
+    setAlertMessage(message);
+    setAlertButtons(
+      buttons || [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
+    );
+    setAlertVisible(true);
+  };
+
   // Handle navigation based on user role
   const handleRoleBasedNavigation = async (role: string) => {
     if (role === 'admin') {
       try {
         await Linking.openURL('http://localhost:5173/admin');
       } catch {
-        Alert.alert(
+        showAlert(
           isRTL ? 'خطأ' : 'Error',
           isRTL ? 'فشل فتح لوحة الإدارة' : 'Failed to open admin panel',
         );
@@ -53,7 +83,7 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
   const handleSubmit = async () => {
     // Basic validation
     if (!email || !password) {
-      Alert.alert(
+      showAlert(
         isRTL ? 'خطأ' : 'Error',
         isRTL
           ? 'يرجى إدخال البريد الإلكتروني وكلمة المرور'
@@ -94,7 +124,7 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
         throw err;
       }
     } catch (error) {
-      Alert.alert(
+      showAlert(
         isRTL ? 'خطأ' : 'Error',
         error instanceof Error
           ? error.message
@@ -125,7 +155,7 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
         handleRoleBasedNavigation(user.role || 'customer');
       }
     } catch (error) {
-      Alert.alert(
+      showAlert(
         isRTL ? 'خطأ' : 'Error',
         error instanceof Error
           ? error.message
@@ -167,6 +197,13 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
 
   return (
     <>
+      <CustomAlert
+        visible={alertVisible}
+        title={alertTitle}
+        message={alertMessage}
+        buttons={alertButtons}
+        onClose={() => setAlertVisible(false)}
+      />
       <ForgotPasswordModal
         visible={showForgotPasswordModal}
         onClose={() => setShowForgotPasswordModal(false)}

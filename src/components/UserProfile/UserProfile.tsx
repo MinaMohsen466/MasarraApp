@@ -52,39 +52,9 @@ const UserProfile: React.FC<UserProfileProps> = ({
     serviceId: string;
     serviceName: string;
   } | null>(null);
-  const [currentProfilePicture, setCurrentProfilePicture] = useState<
-    string | null
-  >(user?.profilePicture || null);
 
-  // Fetch fresh user data from server on mount
+  // Check for edit profile flag when component mounts
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const token = await AsyncStorage.getItem('userToken');
-        if (!token) return;
-
-        const response = await fetch(`${API_URL}/auth/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (response.ok) {
-          const userData = await response.json();
-
-          if (userData.profilePicture) {
-            setCurrentProfilePicture(userData.profilePicture);
-          }
-        }
-      } catch (error) {
-        // Error fetching user data
-      }
-    };
-
-    if (user) {
-      fetchUserData();
-    }
-
     // Check if drawer requested opening edit profile
     const checkOpenEdit = async () => {
       try {
@@ -100,7 +70,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
     };
 
     checkOpenEdit();
-  }, [user]);
+  }, []);
 
   const handleEditProfile = () => {
     setShowEditProfile(true);
@@ -148,13 +118,13 @@ const UserProfile: React.FC<UserProfileProps> = ({
   const getImageUri = (uri: string | null | undefined) => {
     if (!uri) return null;
 
-    // If it's already a full URI, return as is
-    if (
-      uri.startsWith('http://') ||
-      uri.startsWith('https://') ||
-      uri.startsWith('file://') ||
-      uri.startsWith('content://')
-    ) {
+    // If it's already a full URL (like S3), return as is
+    if (uri.startsWith('http://') || uri.startsWith('https://')) {
+      return uri;
+    }
+
+    // If it's a local file URI, return as is
+    if (uri.startsWith('file://') || uri.startsWith('content://')) {
       return uri;
     }
 
@@ -348,30 +318,25 @@ const UserProfile: React.FC<UserProfileProps> = ({
         <View style={styles.userInfoSection}>
           <View style={styles.userInfoRow}>
             <View style={styles.profileImageContainer}>
-              {currentProfilePicture ||
-              user.profilePicture ||
-              profilePicture ? (
+              {user.profilePicture || profilePicture ? (
                 <Image
                   source={{
                     uri:
                       getImageUri(
-                        currentProfilePicture ||
-                          user.profilePicture ||
-                          profilePicture,
+                        user.profilePicture || profilePicture,
                       ) || undefined,
                   }}
                   style={styles.profileImage}
-                  onLoad={() => {}}
+                  resizeMode="cover"
                   onError={e => {
-                    // Error loading image
+                    console.log('Image load error:', e.nativeEvent.error);
                   }}
                 />
               ) : (
-                <View style={styles.profilePlaceholder}>
-                  <Image
-                    source={require('../../imgs/user.png')}
-                    style={styles.profileIcon}
-                  />
+                <View style={styles.profileImagePlaceholder}>
+                  <Text style={styles.profileImagePlaceholderText}>
+                    {(user.name || userName || 'U').charAt(0).toUpperCase()}
+                  </Text>
                 </View>
               )}
             </View>

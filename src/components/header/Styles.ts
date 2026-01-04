@@ -1,5 +1,18 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, ImageStyle } from 'react-native';
 import { colors } from '../../constants/colors';
+
+// Image styles defined separately to avoid type issues
+export const imageStyles = {
+  logoImage: {
+    height: 84,
+    width: 84,
+    tintColor: colors.primary,
+  } as ImageStyle,
+  profileIcon: {
+    width: '100%',
+    height: '100%',
+  } as ImageStyle,
+};
 
 export const styles = StyleSheet.create({
   headerContainer: {
@@ -23,11 +36,6 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logoImage: {
-    height: 84,
-    width: 84,
-    tintColor: colors.primary, // Apply primary color to the logo
-  },
   profileButton: {
     justifyContent: 'center',
     alignItems: 'center',
@@ -38,10 +46,6 @@ export const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.primary,
     backgroundColor: colors.backgroundLight,
-  },
-  profileIcon: {
-    width: '100%',
-    height: '100%',
   },
   // RTL Styles
   headerContainerRTL: {

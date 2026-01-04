@@ -151,20 +151,16 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
   if (!addresses || addresses.length === 0) {
     return (
       <KeyboardAvoidingView
-        style={{ flex: 1, backgroundColor: '#ffffff' }}
+        style={styles.addressesContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 100}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <ScrollView
-            contentContainerStyle={{
-              flexGrow: 1,
-              paddingBottom: 140,
-              backgroundColor: '#ffffff',
-            }}
+            contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
           >
-            <View style={styles.addressesContainer}>
+            <View style={{ flex: 1 }}>
               {/* header: back icon (left) + add button (right) */}
               <View style={styles.headerRow}>
                 <View style={styles.headerLeftRow}>
@@ -287,20 +283,16 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: '#ffffff' }}
+      style={styles.addressesContainer}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 100}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView
-          contentContainerStyle={{
-            flexGrow: 1,
-            paddingBottom: 140,
-            backgroundColor: '#ffffff',
-          }}
+          contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.addressesContainer}>
+          <View style={{ flex: 1 }}>
             {/* header: back icon (left) + add button (right) */}
             <View style={styles.headerRow}>
               <View style={styles.headerLeftRow}>

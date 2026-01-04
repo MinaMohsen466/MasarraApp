@@ -107,6 +107,20 @@ export const styles = StyleSheet.create({
     height: 100,
     borderRadius: 50,
   },
+  profileImagePlaceholder: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  profileImagePlaceholderText: {
+    fontSize: 40,
+    fontWeight: '700',
+    color: colors.textWhite,
+    textAlign: 'center',
+  },
   profilePlaceholder: {
     width: 100,
     height: 100,

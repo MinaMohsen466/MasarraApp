@@ -194,36 +194,39 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
                 </Svg>
               </TouchableOpacity>
 
-              {/* Menu Items List */}
-              <View
-                style={[
-                  styles.menuItemsContainer,
-                  isRTL && styles.menuItemsContainerRTL,
-                ]}
-              >
-                {menuItems.map(item => (
-                  <TouchableOpacity
-                    key={item.id}
-                    style={[styles.menuItem, isRTL && styles.menuItemRTL]}
-                    onPress={() =>
-                      handleMenuItemPress(item.route, item.titleKey, item.id)
-                    }
-                    activeOpacity={0.6}
-                  >
-                    <Text
-                      style={[
-                        styles.menuItemText,
-                        isRTL && styles.menuItemTextRTL,
-                        item.id === 'logout' && styles.logoutText,
-                      ]}
+              {/* Scrollable Menu Items */}
+              <View style={{ flex: 1 }}>
+                {/* Menu Items List */}
+                <View
+                  style={[
+                    styles.menuItemsContainer,
+                    isRTL && styles.menuItemsContainerRTL,
+                  ]}
+                >
+                  {menuItems.map(item => (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={[styles.menuItem, isRTL && styles.menuItemRTL]}
+                      onPress={() =>
+                        handleMenuItemPress(item.route, item.titleKey, item.id)
+                      }
+                      activeOpacity={0.6}
                     >
-                      {t(item.titleKey)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                      <Text
+                        style={[
+                          styles.menuItemText,
+                          isRTL && styles.menuItemTextRTL,
+                          item.id === 'logout' && styles.logoutText,
+                        ]}
+                      >
+                        {t(item.titleKey)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
               </View>
 
-              {/* Logo Section at Bottom */}
+              {/* Logo Section at Bottom - Fixed at bottom */}
               <View style={styles.logoSection}>
                 <View style={styles.logoContainer}>
                   {isLoading ? (

@@ -13,6 +13,8 @@ import {
   Share,
   Animated,
   TextInput,
+  Dimensions,
+  Easing,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useQuery } from '@tanstack/react-query';
@@ -83,7 +85,6 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
   // Reviews state
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewStats, setReviewStats] = useState<ReviewStats | null>(null);
-  const [loadingReviews, setLoadingReviews] = useState(false);
   const [showAllReviewsModal, setShowAllReviewsModal] = useState(false);
 
   // Animation states
@@ -129,31 +130,39 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
     // Get button position
     if (addToCartButtonRef.current) {
       addToCartButtonRef.current.measure(
-        (x, y, width, height, pageX, pageY) => {
+        (_x, _y, width, height, pageX, pageY) => {
           // Calculate start position (center of button)
           const startX = pageX + width / 2;
           const startY = pageY + height / 2;
 
-          // Calculate target position (bottom navigation cart icon - more accurate)
-          const screenHeight = SCREEN_WIDTH * 2; // Approximate screen height
-          const screenWidthVal = SCREEN_WIDTH;
-
-          // Cart icon position changes based on text direction
-          // In RTL (Arabic): cart is on the LEFT side of screen
-          // In LTR (English): cart is on the RIGHT side of screen
-          const targetX = isRTL ? 50 : screenWidthVal - 50; // Left in RTL, Right in LTR
-          const targetY = screenHeight - 65; // Bottom tab bar height ~65px
+          // Get actual screen dimensions
+          const screenHeight = Dimensions.get('window').height;
+          const screenWidth = Dimensions.get('window').width;
+          
+          // Bottom tab bar height (more accurate for different devices)
+          const tabBarHeight = 65;
+          const safeAreaBottom = 20; // Account for safe area insets
+          
+          // Cart icon is the LAST item in bottom nav
+          // Bottom nav has 5 items evenly distributed
+          const navItemWidth = screenWidth / 5;
+          const cartIconIndex = 4; // 0-based index (5th item)
+          
+          // In RTL, cart moves to the beginning
+          const cartPosition = isRTL ? 0 : cartIconIndex;
+          
+          // Calculate X position: center of the nav item
+          const targetX = (cartPosition * navItemWidth) + (navItemWidth / 2);
+          
+          // Calculate Y position: screen height minus tab bar
+          const targetY = screenHeight - tabBarHeight - safeAreaBottom;
 
           // Calculate icon size (60x60)
           const iconSize = 60;
 
-          // Adjust target to be center of cart icon (not corner)
-          const targetCenterX = targetX - iconSize / 2;
-          const targetCenterY = targetY - iconSize / 2;
-
           // Calculate translation needed from start position
-          const translateX = targetCenterX - (startX - iconSize / 2);
-          const translateY = targetCenterY - (startY - iconSize / 2);
+          const translateX = targetX - startX;
+          const translateY = targetY - startY;
 
           // Set start position (center-based)
           setIconStartPosition({
@@ -171,6 +180,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
             Animated.timing(flyingIconTranslate, {
               toValue: { x: translateX, y: translateY },
               duration: 600,
+              easing: Easing.bezier(0.25, 0.1, 0.25, 1),
               useNativeDriver: true,
             }),
             Animated.sequence([
@@ -203,32 +213,39 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
     loadToken();
   }, []);
 
-  // Load reviews when service changes
-  useEffect(() => {
-    const loadReviews = async () => {
-      if (!serviceId) return;
-
-      try {
-        setLoadingReviews(true);
-        const reviewsData = await getServiceReviews(serviceId, 1, 10);
-        setReviews(reviewsData.reviews);
-        setReviewStats(reviewsData.stats);
-      } catch (error) {
-      } finally {
-        setLoadingReviews(false);
-      }
-    };
-
-    loadReviews();
-  }, [serviceId]);
-
-  // Fetch services and find the selected service
+  // Fetch services and find the selected service - Load first for faster UI
   const { data: services, isLoading } = useQuery({
     queryKey: ['services'],
     queryFn: fetchServices,
+    staleTime: 15 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 
-  const service = services?.find(s => s._id === serviceId);
+  // Load reviews in parallel using React Query for better caching
+  const { data: reviewsData } = useQuery<any>({
+    queryKey: ['service-reviews', serviceId],
+    queryFn: async () => {
+      if (!serviceId) return null;
+      return await getServiceReviews(serviceId, 1, 10);
+    },
+    enabled: !!serviceId,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 20 * 60 * 1000, // 20 minutes cache
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+
+  // Update local state when reviews data changes
+  useEffect(() => {
+    if (reviewsData) {
+      setReviews(reviewsData.reviews);
+      setReviewStats(reviewsData.stats);
+    }
+  }, [reviewsData]);
+
+  const service = (services as any)?.find((s: any) => s._id === serviceId);
 
   // Debug: Log service discount info
   React.useEffect(() => {
@@ -585,7 +602,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
               ref={flatListRef}
               data={service.images}
               renderItem={renderImageItem}
-              keyExtractor={(item, index) => index.toString()}
+              keyExtractor={(_item, index) => index.toString()}
               horizontal
               pagingEnabled
               showsHorizontalScrollIndicator={false}
@@ -939,7 +956,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
               </Text>
 
               {/* Each Custom Input as Separate Option */}
-              {service.customInputs.map((input: any, index: number) => {
+              {service.customInputs.map((input: any, _index: number) => {
                 const inputLabel = isRTL ? input.labelAr : input.label;
                 const inputType = input.type;
                 const inputOptions = isRTL ? input.optionsAr : input.options;

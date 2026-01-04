@@ -41,6 +41,9 @@ export const usePackageDetails = (packageId: string) => {
       return response.json();
     },
     enabled: !!packageId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 15 * 60 * 1000, // 15 minutes
+    cacheTime: 30 * 60 * 1000, // 30 minutes cache
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 };

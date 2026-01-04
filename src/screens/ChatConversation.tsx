@@ -63,7 +63,7 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
       // Get current user ID first if not set
       let userId = currentUserId;
       if (!userId) {
-        const userResponse = await fetch(`${API_BASE_URL}/api/auth/me`, {
+        const userResponse = await fetch(`${API_BASE_URL}/auth/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (userResponse.ok) {
@@ -74,7 +74,7 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
       }
 
       // Only admin chat is supported - get all chats and find admin chat
-      const chatResponse = await fetch(`${API_BASE_URL}/api/chats`, {
+      const chatResponse = await fetch(`${API_BASE_URL}/chats`, {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -214,7 +214,7 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
 
   const markMessagesAsRead = async (token: string, chatId: string) => {
     try {
-      await fetch(`${API_BASE_URL}/api/chats/${chatId}/read`, {
+      await fetch(`${API_BASE_URL}/chats/${chatId}/read`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -278,7 +278,7 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
 
       // Send message in background (non-blocking)
       const response = await fetch(
-        `${API_BASE_URL}/api/chats/${chatId}/messages`,
+        `${API_BASE_URL}/chats/${chatId}/messages`,
         {
           method: 'POST',
           headers: {

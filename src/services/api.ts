@@ -10,6 +10,25 @@ export const API_BASE_URL = API_URL;
 // Service cache for avoiding repeated requests
 const serviceCache = new Map<string, { data: any; timestamp: number }>();
 
+/**
+ * Helper function to safely parse JSON responses
+ * Handles cases where server returns non-JSON text
+ */
+const parseJsonResponse = async (response: Response): Promise<any> => {
+  const responseText = await response.text();
+  
+  if (!responseText || responseText.trim() === '') {
+    return null;
+  }
+  
+  try {
+    return JSON.parse(responseText);
+  } catch (parseError) {
+    // If parsing fails, return the text as error message
+    throw new Error(responseText || 'Invalid response from server');
+  }
+};
+
 export interface SiteSettings {
   _id: string;
   siteTitle: string;
@@ -136,25 +155,51 @@ export const login = async (data: LoginData): Promise<LoginResponse> => {
       body: JSON.stringify(data),
     });
 
+    const responseData = await parseJsonResponse(response);
+
     if (!response.ok) {
-      const errorData = await response.json();
       // If server indicates verification required, throw an Error with extra properties
-      if (response.status === 403 && errorData?.requiresVerification) {
-        const e: any = new Error(errorData.error || 'Email not verified');
+      if (response.status === 403 && responseData?.requiresVerification) {
+        const e: any = new Error(responseData.error || 'Email not verified');
         e.requiresVerification = true;
-        e.userId = errorData.userId;
+        e.userId = responseData.userId;
         throw e;
       }
-      throw new Error(errorData.error || 'Login failed');
+      throw new Error(responseData?.error || 'Login failed');
     }
 
-    const responseData: LoginResponse = await response.json();
-    return responseData;
+    return responseData as LoginResponse;
   } catch (error) {
     // If this is a verification-required error we avoid logging to console
     if ((error as any)?.requiresVerification) {
       throw error;
     }
+    throw error;
+  }
+};
+
+/**
+ * Fetch current user data from server
+ * Useful to refresh user data and bypass local cache
+ */
+export const fetchCurrentUser = async (token: string): Promise<User> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/me`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to fetch user data');
+    }
+
+    const responseData = await response.json();
+    return responseData.user;
+  } catch (error) {
     throw error;
   }
 };
@@ -172,13 +217,13 @@ export const signup = async (data: SignupData): Promise<SignupResponse> => {
       body: JSON.stringify(data),
     });
 
+    const responseData = await parseJsonResponse(response);
+
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Signup failed');
+      throw new Error(responseData?.error || 'Signup failed');
     }
 
-    const responseData: SignupResponse = await response.json();
-    return responseData;
+    return responseData as SignupResponse;
   } catch (error) {
     throw error;
   }
@@ -221,13 +266,16 @@ export const updateUserProfileWithImage = async (
   name: string,
   phone: string,
   imageUri?: string,
+  removeProfilePicture?: boolean,
 ): Promise<{ user: User; message: string }> => {
   try {
     const formData = new FormData();
     formData.append('name', name);
     formData.append('phone', phone);
 
-    if (imageUri) {
+    if (removeProfilePicture) {
+      formData.append('removeProfilePicture', 'true');
+    } else if (imageUri) {
       const filename = imageUri.split('/').pop() || 'profile.jpg';
       const match = /\.(\w+)$/.exec(filename);
       const type = match ? `image/${match[1]}` : 'image/jpeg';
@@ -248,12 +296,12 @@ export const updateUserProfileWithImage = async (
       body: formData,
     });
 
+    const responseData = await parseJsonResponse(response);
+
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Profile update failed');
+      throw new Error(responseData?.error || 'Profile update failed');
     }
 
-    const responseData = await response.json();
     return responseData;
   } catch (error) {
     throw error;

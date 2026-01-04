@@ -4,8 +4,12 @@ import { colors, colorUtils } from '../../constants/colors';
 export const styles = StyleSheet.create({
   addressesContainer: { 
     flex: 1, 
-    padding: 16, 
     backgroundColor: colors.background,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    padding: 16,
+    paddingBottom: 140,
   },
   headerRow: {
     flexDirection: 'row',

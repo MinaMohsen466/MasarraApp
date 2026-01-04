@@ -11,10 +11,13 @@ import {
   Modal,
   Animated,
   Share,
+  Dimensions,
+  Easing,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useQuery } from '@tanstack/react-query';
 import { usePackageDetails } from '../../hooks/usePackages';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getImageUrl } from '../../services/api';
@@ -34,7 +37,9 @@ import {
   getServiceReviews,
   Review,
   ReviewStats,
+  ReviewsResponse,
 } from '../../services/reviewsApi';
+import { Package } from '../Packages/Packages';
 
 interface PackageDetailsProps {
   packageId: string;
@@ -49,7 +54,11 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
   const styles = createStyles(SCREEN_WIDTH);
   const { isRTL } = useLanguage();
   const insets = useSafeAreaInsets();
-  const { data: packageData, isLoading, error } = usePackageDetails(packageId);
+  const { data: packageData, isLoading, error } = usePackageDetails(packageId) as {
+    data: Package | undefined;
+    isLoading: boolean;
+    error: any;
+  };
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
@@ -87,25 +96,27 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
     getToken();
   }, []);
 
-  // Load reviews when package's main service changes
+  // Load reviews using React Query for better caching
+  const { data: reviewsData } = useQuery<ReviewsResponse | null>({
+    queryKey: ['service-reviews', packageData?.service?._id],
+    queryFn: async () => {
+      if (!packageData?.service?._id) return null;
+      return await getServiceReviews(packageData.service._id, 1, 10);
+    },
+    enabled: !!packageData?.service?._id,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 20 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+
+  // Update local state when reviews data changes
   useEffect(() => {
-    const loadReviews = async () => {
-      if (!packageData?.service?._id) return;
-
-      try {
-        const reviewsData = await getServiceReviews(
-          packageData.service._id,
-          1,
-          10,
-        );
-        setReviews(reviewsData.reviews);
-        setReviewStats(reviewsData.stats);
-      } catch (err) {
-      }
-    };
-
-    loadReviews();
-  }, [packageData?.service?._id]);
+    if (reviewsData) {
+      setReviews(reviewsData.reviews);
+      setReviewStats(reviewsData.stats);
+    }
+  }, [reviewsData]);
 
   // Check wishlist state
   useEffect(() => {
@@ -267,22 +278,34 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
           const startX = pageX + width / 2;
           const startY = pageY + height / 2;
 
-          // Calculate target position (bottom navigation cart icon)
-          const screenHeight = SCREEN_WIDTH * 2; // Approximate
-          const screenWidth = SCREEN_WIDTH;
-
-          // Cart icon position changes based on text direction
-          // In RTL (Arabic): cart is on the LEFT side of screen
-          // In LTR (English): cart is on the RIGHT side of screen
-          const targetX = isRTL ? 50 : screenWidth - 50; // Left in RTL, Right in LTR
-          const targetY = screenHeight - 65; // Bottom tab bar height ~65px
+          // Get actual screen dimensions
+          const screenHeight = Dimensions.get('window').height;
+          const screenWidth = Dimensions.get('window').width;
+          
+          // Bottom tab bar height (more accurate for different devices)
+          const tabBarHeight = 65;
+          const safeAreaBottom = 20; // Account for safe area insets
+          
+          // Cart icon is the LAST item in bottom nav
+          // Bottom nav has 5 items evenly distributed
+          const navItemWidth = screenWidth / 5;
+          const cartIconIndex = 4; // 0-based index (5th item)
+          
+          // In RTL, cart moves to the beginning
+          const cartPosition = isRTL ? 0 : cartIconIndex;
+          
+          // Calculate X position: center of the nav item
+          const targetX = (cartPosition * navItemWidth) + (navItemWidth / 2);
+          
+          // Calculate Y position: screen height minus tab bar
+          const targetY = screenHeight - tabBarHeight - safeAreaBottom;
 
           // Calculate icon size (30x30)
           const iconSize = 30;
 
           // Calculate translation needed from start position
-          const translateX = targetX - iconSize / 2 - (startX - iconSize / 2);
-          const translateY = targetY - iconSize / 2 - (startY - iconSize / 2);
+          const translateX = targetX - startX;
+          const translateY = targetY - startY;
 
           // Set start position (center-based)
           setIconStartPosition({
@@ -301,6 +324,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
             Animated.timing(flyingIconTranslate, {
               toValue: { x: translateX, y: translateY },
               duration: 600,
+              easing: Easing.bezier(0.25, 0.1, 0.25, 1),
               useNativeDriver: true,
             }),
             Animated.sequence([
@@ -405,71 +429,146 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
       <View style={styles.header}>
         {/* Left Side */}
         <View style={styles.headerLeft}>
-          <TouchableOpacity
-            onPress={onBack}
-            activeOpacity={0.7}
-            style={styles.headerButton}
-          >
-            <Svg width={26} height={26} viewBox="0 0 24 24" fill="none">
-              <Path
-                d={isRTL ? 'M9 6l6 6-6 6' : 'M15 6l-6 6 6 6'}
-                stroke={colors.primary}
-                strokeWidth={2.4}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </Svg>
-          </TouchableOpacity>
+          {!isRTL ? (
+            // LTR: Back button on left
+            <TouchableOpacity
+              onPress={onBack}
+              activeOpacity={0.7}
+              style={styles.headerButton}
+            >
+              <Svg width={26} height={26} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M15 6l-6 6 6 6"
+                  stroke={colors.primary}
+                  strokeWidth={2.4}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
+            </TouchableOpacity>
+          ) : (
+            // RTL: Wishlist & Share on left
+            <>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={handleToggleWishlist}
+                style={styles.headerButton}
+              >
+                <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M20.8 7.6a4.8 4.8 0 0 0-6.8 0L12 9.6l-2-2a4.8 4.8 0 1 0-6.8 6.8L12 22l8.8-7.6a4.8 4.8 0 0 0 0-6.8z"
+                    stroke={isSaved ? colors.primary : colors.textSecondary}
+                    strokeWidth={1.8}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    fill={isSaved ? colors.primary : 'none'}
+                  />
+                </Svg>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={handleShare}
+                style={styles.headerButton}
+              >
+                <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"
+                    stroke={colors.primary}
+                    strokeWidth={1.8}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <Path
+                    d="M16 6l-4-4-4 4"
+                    stroke={colors.primary}
+                    strokeWidth={1.8}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <Path
+                    d="M12 2v14"
+                    stroke={colors.primary}
+                    strokeWidth={1.8}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
         {/* Right Side */}
         <View style={styles.headerRight}>
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={handleToggleWishlist}
-            style={styles.headerButton}
-          >
-            <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-              <Path
-                d="M20.8 7.6a4.8 4.8 0 0 0-6.8 0L12 9.6l-2-2a4.8 4.8 0 1 0-6.8 6.8L12 22l8.8-7.6a4.8 4.8 0 0 0 0-6.8z"
-                stroke={isSaved ? colors.primary : colors.textSecondary}
-                strokeWidth={1.8}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                fill={isSaved ? colors.primary : 'none'}
-              />
-            </Svg>
-          </TouchableOpacity>
+          {isRTL ? (
+            // RTL: Back button on right
+            <TouchableOpacity
+              onPress={onBack}
+              activeOpacity={0.7}
+              style={styles.headerButton}
+            >
+              <Svg width={26} height={26} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M9 6l6 6-6 6"
+                  stroke={colors.primary}
+                  strokeWidth={2.4}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
+            </TouchableOpacity>
+          ) : (
+            // LTR: Wishlist & Share on right
+            <>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={handleToggleWishlist}
+                style={styles.headerButton}
+              >
+                <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M20.8 7.6a4.8 4.8 0 0 0-6.8 0L12 9.6l-2-2a4.8 4.8 0 1 0-6.8 6.8L12 22l8.8-7.6a4.8 4.8 0 0 0 0-6.8z"
+                    stroke={isSaved ? colors.primary : colors.textSecondary}
+                    strokeWidth={1.8}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    fill={isSaved ? colors.primary : 'none'}
+                  />
+                </Svg>
+              </TouchableOpacity>
 
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={handleShare}
-            style={styles.headerButton}
-          >
-            <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-              <Path
-                d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"
-                stroke={colors.primary}
-                strokeWidth={1.8}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <Path
-                d="M16 6l-4-4-4 4"
-                stroke={colors.primary}
-                strokeWidth={1.8}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <Path
-                d="M12 2v14"
-                stroke={colors.primary}
-                strokeWidth={1.8}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </Svg>
-          </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={handleShare}
+                style={styles.headerButton}
+              >
+                <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"
+                    stroke={colors.primary}
+                    strokeWidth={1.8}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <Path
+                    d="M16 6l-4-4-4 4"
+                    stroke={colors.primary}
+                    strokeWidth={1.8}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <Path
+                    d="M12 2v14"
+                    stroke={colors.primary}
+                    strokeWidth={1.8}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </View>
 
@@ -480,7 +579,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
           styles.scrollContent,
           {
             paddingBottom:
-              SCREEN_WIDTH >= 600 ? insets.bottom + 280 : insets.bottom + 180,
+              SCREEN_WIDTH >= 600 ? insets.bottom + 150 : insets.bottom + 180,
           },
         ]}
       >
@@ -533,29 +632,32 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 
         {/* Package Info */}
         <View style={styles.infoSection}>
-          {/* Package Badge */}
+          {/* Package Name with Badge */}
           <View
             style={[
-              styles.packageBadgeContainer,
-              isRTL && { alignSelf: 'flex-end' },
+              styles.packageNameContainer,
+              { flexDirection: isRTL ? 'row-reverse' : 'row' },
             ]}
           >
             <Text
-              style={styles.packageBadgeText}
+              style={[
+                styles.packageName,
+                { textAlign: isRTL ? 'right' : 'left' },
+              ]}
             >
-              {isRTL ? 'باقة' : 'PACKAGE'}
+              {displayName}
             </Text>
+            
+            <View
+              style={styles.packageBadgeContainer}
+            >
+              <Text
+                style={styles.packageBadgeText}
+              >
+                {isRTL ? 'باقة' : 'PACKAGE'}
+              </Text>
+            </View>
           </View>
-
-          {/* Package Name */}
-          <Text
-            style={[
-              styles.packageName,
-              { textAlign: isRTL ? 'right' : 'left' },
-            ]}
-          >
-            {displayName}
-          </Text>
 
           {/* Package Description */}
           {(packageData.description || packageData.descriptionAr) && (
@@ -1330,7 +1432,10 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 
       {/* Add to Cart Button */}
       <View
-        style={styles.bottomActions}
+        style={[
+          styles.bottomActions,
+          { paddingBottom: Math.max(insets.bottom + 34, 10) },
+        ]}
       >
         <TouchableOpacity
           ref={addToCartButtonRef}
@@ -1383,10 +1488,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[
-            styles.backButton,
-            { marginBottom: Math.max(insets.bottom + 34, 10) },
-          ]}
+          style={styles.backButton}
           activeOpacity={0.85}
           onPress={onBack}
         >

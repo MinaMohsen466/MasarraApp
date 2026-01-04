@@ -352,7 +352,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                 selectedFilter === 'pending' && styles.filterButtonTextActive,
               ]}
             >
-              {isRTL ? 'قيد الانتظار' : 'Pending'}
+              {isRTL ? 'قيد' : 'Pending'}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity

@@ -23,11 +23,13 @@ interface AuthContextType {
     name: string,
     phone: string,
     profilePicture?: string,
+    removeProfilePicture?: boolean,
   ) => Promise<void>;
   changeUserPassword: (
     currentPassword: string,
     newPassword: string,
   ) => Promise<void>;
+  refreshUser: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -46,13 +48,44 @@ export const AuthProvider: React.FC<{
     loadUserData();
   }, []);
 
+  const refreshUser = async () => {
+    try {
+      const storedToken = await AsyncStorage.getItem('userToken');
+      if (!storedToken) {
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/auth/me`, {
+        headers: {
+          Authorization: `Bearer ${storedToken}`,
+        },
+      });
+      
+      if (response.ok) {
+        const freshUserData = await response.json();
+        await AsyncStorage.setItem('userData', JSON.stringify(freshUserData));
+        // Create a new object to ensure React detects the change
+        setUser({ ...freshUserData });
+      }
+    } catch (error) {
+      console.log('❌ Error refreshing user:', error);
+    }
+  };
+
   const loadUserData = async () => {
     try {
+      console.log('📱 Loading user data from AsyncStorage...');
       const storedToken = await AsyncStorage.getItem('userToken');
       const storedUser = await AsyncStorage.getItem('userData');
 
       if (storedToken && storedUser) {
         const userData = JSON.parse(storedUser);
+        console.log('📦 Cached user data loaded:', {
+          name: userData.name,
+          profilePicture: userData.profilePicture
+        });
+        
+        // First set cached data for quick load
         setToken(storedToken);
         setUser(userData);
 
@@ -61,7 +94,12 @@ export const AuthProvider: React.FC<{
           const userId = userData._id || userData.id;
           await AsyncStorage.setItem('userId', userId);
         }
-
+        
+        // Then fetch fresh user data from server to sync
+        console.log('🔄 Refreshing user data from server...');
+        await refreshUser();
+      } else {
+        console.log('❌ No cached user data found');
       }
     } catch (error) {
     } finally {
@@ -117,6 +155,7 @@ export const AuthProvider: React.FC<{
     name: string,
     phone: string,
     profilePicture?: string,
+    removeProfilePicture?: boolean,
   ) => {
     try {
       if (!user || !token) {
@@ -129,6 +168,7 @@ export const AuthProvider: React.FC<{
         name,
         phone,
         profilePicture,
+        removeProfilePicture,
       );
 
       // Update with the returned user data from server
@@ -137,8 +177,8 @@ export const AuthProvider: React.FC<{
       // Save to AsyncStorage
       await AsyncStorage.setItem('userData', JSON.stringify(updatedUser));
 
-      // Update state
-      setUser(updatedUser);
+      // Update state - create new object to ensure React detects the change
+      setUser({ ...updatedUser });
 
     } catch (error) {
       throw error;
@@ -203,6 +243,7 @@ export const AuthProvider: React.FC<{
     logout,
     updateUserProfile,
     changeUserPassword,
+    refreshUser,
     isLoading,
   };
 

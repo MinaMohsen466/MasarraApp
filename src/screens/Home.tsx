@@ -22,6 +22,7 @@ import Auth from '../components/Auth';
 import UserProfile from '../components/UserProfile';
 import { useAuth } from '../contexts/AuthContext';
 import { styles } from './styles';
+import { API_URL } from '../config/api.config';
 
 interface HomeProps {
   onNavigate?: (route: string) => void;
@@ -102,6 +103,28 @@ const Home: React.FC<HomeProps> = ({
       setShowUserProfile(false);
     }
   }, [currentRoute]);
+
+  // Helper to convert /public/ paths to full URLs (same as EditProfile and UserProfile)
+  const getImageUri = (uri: string | null | undefined) => {
+    if (!uri) return null;
+
+    // If it's already a full URL (like S3), return as is
+    if (uri.startsWith('http://') || uri.startsWith('https://')) {
+      return uri;
+    }
+
+    // If it's a local file URI, return as is
+    if (uri.startsWith('file://') || uri.startsWith('content://')) {
+      return uri;
+    }
+
+    // If it's a server path (starts with /public), prepend the base URL
+    if (uri.startsWith('/public')) {
+      return `${API_URL.replace('/api', '')}${uri}`;
+    }
+
+    return uri;
+  };
 
   // Show loading screen with logo while initial data is loading
   if (initialLoading && isLoading) {

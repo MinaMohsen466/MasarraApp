@@ -9,6 +9,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { useQueryClient } from '@tanstack/react-query';
 import { createStyles } from './styles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -47,6 +48,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
   const numColumns = isTablet ? 3 : 2;
   const styles = createStyles(screenWidth);
   const { isRTL } = useLanguage();
+  const queryClient = useQueryClient(); // For prefetching
   const { data: services, isLoading, error } = useServices();
   const { data: packages } = useVendorPackages(vendorId || '');
   const [vendor, setVendor] = useState<Vendor | null>(null);
@@ -67,6 +69,29 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
   const [serviceRatings, setServiceRatings] = useState<{
     [key: string]: { rating: number; totalReviews: number };
   }>({});
+
+  // Prefetch reviews for visible services - optimized approach
+  useEffect(() => {
+    const prefetchReviews = async () => {
+      if (!services || services.length === 0) return;
+
+      // Only prefetch first 10 services (visible ones)
+      const visibleServices = services.slice(0, 10);
+
+      visibleServices.forEach(service => {
+        // Prefetch using React Query cache
+        queryClient.prefetchQuery({
+          queryKey: ['service-reviews', service._id],
+          queryFn: () => getServiceReviews(service._id, 1, 10),
+          staleTime: 10 * 60 * 1000,
+        });
+      });
+    };
+
+    // Delay prefetch slightly to not block UI
+    const timer = setTimeout(prefetchReviews, 300);
+    return () => clearTimeout(timer);
+  }, [services, queryClient]);
 
   // Load ratings for all services
   useEffect(() => {

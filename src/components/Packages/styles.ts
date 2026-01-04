@@ -61,8 +61,9 @@ export const createStyles = (screenWidth: number) => {
     padding: 8,
   },
   row: {
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     paddingHorizontal: 8,
+    gap: 8,
   },
   packageCard: {
     width: cardWidth,

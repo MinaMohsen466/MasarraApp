@@ -50,26 +50,48 @@ export const ADMIN_URL = `${API_BASE_URL}/admin`;
 /**
  * Helper function to get full image URL
  * @param imagePath - The image path from the database (can be full URL, /public/ path, or just filename)
+ * @param bustCache - If true, adds timestamp to URL to bypass cache (useful for profile pictures)
  * @returns Full URL to the image
  */
-export const getImageUrl = (imagePath: string): string => {
+export const getImageUrl = (imagePath: string, bustCache: boolean = false): string => {
   if (!imagePath) return '';
 
-  // If it's already a full URL, return as is
-  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-    return imagePath;
+  let url = '';
+  let existingParams = '';
+
+  // Extract existing query parameters (like ?updated=timestamp from AuthContext)
+  const paramIndex = imagePath.indexOf('?');
+  let basePath = imagePath;
+  if (paramIndex !== -1) {
+    basePath = imagePath.substring(0, paramIndex);
+    existingParams = imagePath.substring(paramIndex);
   }
 
+  // If it's already a full URL, use as is
+  if (basePath.startsWith('http://') || basePath.startsWith('https://')) {
+    return imagePath; // Keep full URL with its parameters intact
+  }
   // If it starts with /public/, use it as is
-  if (imagePath.startsWith('/public/')) {
-    return `${API_BASE_URL}${imagePath}`;
+  else if (basePath.startsWith('/public/')) {
+    url = `${API_BASE_URL}${basePath}`;
   }
-
   // If it starts with public/ (without leading slash), add the slash
-  if (imagePath.startsWith('public/')) {
-    return `${API_BASE_URL}/${imagePath}`;
+  else if (basePath.startsWith('public/')) {
+    url = `${API_BASE_URL}/${basePath}`;
+  }
+  // Otherwise, assume it's just a filename and add /public/ prefix
+  else {
+    url = `${API_BASE_URL}/public/${basePath}`;
   }
 
-  // Otherwise, assume it's just a filename and add /public/ prefix
-  return `${API_BASE_URL}/public/${imagePath}`;
+  // Append existing parameters first (like ?updated=timestamp from AuthContext)
+  url = url + existingParams;
+
+  // Add timestamp to bust cache if requested (useful for profile pictures that may be updated)
+  if (bustCache) {
+    const separator = url.includes('?') ? '&' : '?';
+    url = `${url}${separator}t=${Date.now()}`;
+  }
+
+  return url;
 };

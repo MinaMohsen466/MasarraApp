@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
-  Alert,
   ActivityIndicator,
   Linking,
 } from 'react-native';
@@ -16,6 +15,7 @@ import { useSiteSettings } from '../hooks/useSiteSettings';
 import { submitContactRequest } from '../services/api';
 import { colors } from '../constants/colors';
 import { styles as contactStyles } from './contactStyles';
+import { CustomAlert } from '../components/CustomAlert';
 
 const Contact: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const { isRTL } = useLanguage();
@@ -30,10 +30,38 @@ const Contact: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // CustomAlert state
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertButtons, setAlertButtons] = useState<
+    Array<{
+      text: string;
+      onPress?: () => void;
+      style?: 'default' | 'cancel' | 'destructive';
+    }>
+  >([]);
+
+  // Helper function to show custom alert
+  const showAlert = (
+    title: string,
+    msg: string,
+    buttons?: Array<{
+      text: string;
+      onPress?: () => void;
+      style?: 'default' | 'cancel' | 'destructive';
+    }>,
+  ) => {
+    setAlertTitle(title);
+    setAlertMessage(msg);
+    setAlertButtons(buttons || [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }]);
+    setAlertVisible(true);
+  };
+
   const handleSubmit = async () => {
     // Validation
     if (!name.trim()) {
-      Alert.alert(
+      showAlert(
         isRTL ? 'خطأ' : 'Error',
         isRTL ? 'الرجاء إدخال اسمك' : 'Please enter your name',
       );
@@ -41,7 +69,7 @@ const Contact: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
     }
 
     if (!email.trim()) {
-      Alert.alert(
+      showAlert(
         isRTL ? 'خطأ' : 'Error',
         isRTL ? 'الرجاء إدخال بريدك الإلكتروني' : 'Please enter your email',
       );
@@ -49,7 +77,7 @@ const Contact: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
     }
 
     if (!phone.trim()) {
-      Alert.alert(
+      showAlert(
         isRTL ? 'خطأ' : 'Error',
         isRTL ? 'الرجاء إدخال رقم هاتفك' : 'Please enter your phone number',
       );
@@ -57,7 +85,7 @@ const Contact: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
     }
 
     if (!message.trim()) {
-      Alert.alert(
+      showAlert(
         isRTL ? 'خطأ' : 'Error',
         isRTL ? 'الرجاء إدخال نص الرسالة' : 'Please enter message content',
       );
@@ -65,7 +93,7 @@ const Contact: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
     }
 
     if (message.length < 10) {
-      Alert.alert(
+      showAlert(
         isRTL ? 'خطأ' : 'Error',
         isRTL
           ? 'الرجاء كتابة رسالة لا تقل عن 10 أحرف'
@@ -88,7 +116,7 @@ const Contact: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         token || undefined,
       );
 
-      Alert.alert(
+      showAlert(
         isRTL ? 'نجح!' : 'Success!',
         isRTL
           ? 'تم إرسال رسالتك بنجاح'
@@ -105,12 +133,13 @@ const Contact: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                 setEmail('');
                 setPhone('');
               }
+              setAlertVisible(false);
             },
           },
         ],
       );
     } catch (error: any) {
-      Alert.alert(
+      showAlert(
         isRTL ? 'خطأ' : 'Error',
         error.message ||
           (isRTL ? 'فشل في إرسال الرسالة' : 'Failed to send message'),
@@ -121,7 +150,15 @@ const Contact: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   };
 
   return (
-    <View style={contactStyles.container}>
+    <>
+      <CustomAlert
+        visible={alertVisible}
+        title={alertTitle}
+        message={alertMessage}
+        buttons={alertButtons}
+        onClose={() => setAlertVisible(false)}
+      />
+      <View style={contactStyles.container}>
       <View style={[contactStyles.headerBar, { height: insets.top + 60 }]}>
         <TouchableOpacity
           onPress={() => onBack && onBack()}
@@ -363,6 +400,7 @@ const Contact: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         </View>
       </ScrollView>
     </View>
+    </>
   );
 };
 

@@ -3,13 +3,14 @@ import { colors } from '../../constants/colors';
 
 export const createStyles = (screenWidth: number, screenHeight: number) => {
   const isTallScreen = screenHeight > 800;
+  const isSmallScreen = screenHeight < 700; // للشاشات الصغيرة جداً
   const drawerWidth = screenWidth * 0.75;
   
   // حساب حجم اللوجو حسب حجم الشاشة
   const logoSize = Math.min(
-    drawerWidth * 0.35, // 35% من عرض الدرور
-    isTallScreen ? 100 : 80, // حد أقصى
-    90 // حد أقصى عام
+    drawerWidth * (isSmallScreen ? 0.35 : 0.45), // 25% للشاشات الصغيرة، 35% للعادية
+    isTallScreen ? 110 : isSmallScreen ? 70 : 90, // حد أقصى حسب حجم الشاشة
+    isSmallScreen ? 70 : 100 // حد أقصى عام
   );
   
   return StyleSheet.create({
@@ -44,6 +45,7 @@ export const createStyles = (screenWidth: number, screenHeight: number) => {
   // Drawer content wrapper
   drawerContent: {
     flex: 1,
+    flexDirection: 'column',
   },
 
   // Close button container
@@ -55,13 +57,15 @@ export const createStyles = (screenWidth: number, screenHeight: number) => {
 
   // Menu items container
   menuItemsContainer: {
-    flex: 1,
-    paddingTop: 10,
+    flexGrow: 0, // لا تأخذ مساحة إضافية
+    flexShrink: 1, // يمكن تصغيرها إذا لزم الأمر
+    paddingTop: 8,
+    paddingBottom: 8,
   },
 
   // Individual menu item
   menuItem: {
-    paddingVertical: 16,
+    paddingVertical: 14,
     paddingHorizontal: 25,
     borderBottomWidth: 0.5,
     borderBottomColor: colors.border,
@@ -92,18 +96,18 @@ export const createStyles = (screenWidth: number, screenHeight: number) => {
   // Logo section at bottom
   logoSection: {
     alignItems: 'center',
-    paddingBottom: isTallScreen ? 30 : 20,
-    paddingTop: isTallScreen ? 25 : 15,
+    paddingBottom: isTallScreen ? 25 : isSmallScreen ? 15 : 20,
+    paddingTop: isTallScreen ? 20 : isSmallScreen ? 12 : 18,
     paddingHorizontal: 10,
     borderTopWidth: 0,
     marginTop: 'auto',
     flexShrink: 0,
-    minHeight: logoSize + 40,
+    minHeight: logoSize + (isSmallScreen ? 35 : 50),
   },
 
   // Logo container
   logoContainer: {
-    marginBottom: isTallScreen ? 12 : 8,
+    marginBottom: isTallScreen ? 10 : 8,
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
