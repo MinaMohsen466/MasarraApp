@@ -556,7 +556,9 @@ export async function createBookingsFromCart(
             error: error.message || 'Failed to create booking',
           });
         } else {
-          const booking = await response.json();
+          const responseData = await response.json();
+          // Server returns { message: string, booking: object }
+          const booking = responseData.booking || responseData;
           bookings.push(booking);
 
           // حذف الـ cache للخدمة بعد نجاح الحجز

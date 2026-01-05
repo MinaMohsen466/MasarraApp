@@ -10,7 +10,7 @@ import { Platform } from 'react-native';
 
 // 🔧 Production Server Configuration
 export const PRODUCTION_URL = 'https://masarrakw.com';
-export const LOCAL_IP = '192.168.1.127'; // For local development only
+export const LOCAL_IP = '192.168.1.190'; // For local development only
 
 // Set to true to use local server in development, false to always use AWS
 const USE_LOCAL_IN_DEV = false;

@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Dimensions,
   TextInput,
+  Linking,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -32,6 +33,13 @@ import AddressSelection from '../components/AddressSelection/AddressSelection';
 import { CustomAlert } from '../components/CustomAlert';
 import { validateCoupon, Coupon } from '../services/couponApi';
 import { API_URL } from '../config/api.config';
+import PaymentWebView from '../components/PaymentWebView';
+import {
+  sendPayment,
+  getActiveSuppliers,
+  calculateSupplierShares,
+  Supplier,
+} from '../services/paymentApi';
 
 interface CartProps {
   onBack?: () => void;
@@ -50,7 +58,7 @@ const Cart: React.FC<CartProps> = ({onViewDetails, onNavigate }) => {
   const [showSuccessScreen, setShowSuccessScreen] = useState(false);
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
   const [showAddressSelection, setShowAddressSelection] = useState(false);
-  const [setSelectedAddress] = useState<any>(null);
+  const [selectedAddress, setSelectedAddress] = useState<any>(null);
   const [userToken, setUserToken] = useState<string>('');
   // measured height of the bottom summary (used to reserve scroll space)
   const [summaryHeight, setSummaryHeight] = useState<number>(300);
@@ -65,6 +73,11 @@ const Cart: React.FC<CartProps> = ({onViewDetails, onNavigate }) => {
       style?: 'default' | 'cancel' | 'destructive';
     }>
   >([]);
+  // Payment state
+  const [showPaymentWebView, setShowPaymentWebView] = useState(false);
+  const [paymentUrl, setPaymentUrl] = useState('');
+  const [createdBookingIds, setCreatedBookingIds] = useState<string[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   // Coupon state
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
@@ -152,6 +165,27 @@ const Cart: React.FC<CartProps> = ({onViewDetails, onNavigate }) => {
       setLoading(false);
     }
   }, [isLoggedIn]);
+
+  // Fetch suppliers for commission calculation when cart items change
+  React.useEffect(() => {
+    const fetchSuppliers = async () => {
+      if (cartItems.length === 0) return;
+      
+      try {
+        const response = await getActiveSuppliers();
+        if (response.success && response.data) {
+          setSuppliers(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching suppliers:', error);
+        // Continue without suppliers - payment will work but without commission tracking
+      }
+    };
+
+    if (isLoggedIn && cartItems.length > 0) {
+      fetchSuppliers();
+    }
+  }, [isLoggedIn, cartItems.length]);
 
   const handleRemoveItem = async (id: string) => {
     const buttons = [
@@ -292,19 +326,19 @@ const Cart: React.FC<CartProps> = ({onViewDetails, onNavigate }) => {
             }
           : undefined;
 
-      const { success, errors } = await createBookingsFromCart(
+      // Step 1: Create bookings first (payment status will be 'pending')
+      const { success, errors, bookings } = await createBookingsFromCart(
         fullAddress,
         couponData,
       );
 
-      setIsProcessingCheckout(false);
-
       if (!success) {
+        setIsProcessingCheckout(false);
         // Some bookings failed
         const errorItems = errors
           .map(({ item, error }) => {
             const itemName = isRTL ? item.nameAr || item.name : item.name;
-            return `� ${itemName}\n  ${error}`;
+            return `• ${itemName}\n  ${error}`;
           })
           .join('\n\n');
 
@@ -319,18 +353,148 @@ const Cart: React.FC<CartProps> = ({onViewDetails, onNavigate }) => {
         return;
       }
 
-      await clearCart();
-      setCartItems([]);
+      // Store created booking IDs for payment
+      console.log('Created bookings:', JSON.stringify(bookings, null, 2));
+      const bookingIds = bookings.map((b: any) => b._id || b.id);
+      console.log('Booking IDs:', bookingIds);
+      setCreatedBookingIds(bookingIds);
 
-      // Show success screen
-      setShowSuccessScreen(true);
-    } catch (error) {
+      // Validate booking IDs
+      if (!bookingIds.length || !bookingIds[0]) {
+        throw new Error('Failed to get booking ID from server response');
+      }
+
+      // Step 2: Calculate total amount for payment
+      const totalAmount = calculateTotalAfterDiscount();
+
+      // If total is 0 (fully covered by coupon), skip payment
+      if (totalAmount <= 0) {
+        await clearCart();
+        setCartItems([]);
+        setIsProcessingCheckout(false);
+        setShowSuccessScreen(true);
+        return;
+      }
+
+      // Step 3: Prepare invoice items
+      const invoiceItems = cartItems
+        .filter(
+          item =>
+            !item.availabilityStatus ||
+            item.availabilityStatus === 'available_now',
+        )
+        .map(item => ({
+          ItemName: isRTL && item.nameAr ? item.nameAr : item.name,
+          Quantity: item.quantity,
+          UnitPrice: (item.totalPrice ?? item.price) / item.quantity,
+        }));
+
+      // Step 4: Calculate supplier shares for commission tracking
+      const supplierShares = suppliers.length > 0
+        ? calculateSupplierShares(
+            cartItems.map(item => ({
+              vendorId: item.vendorId,
+              totalPrice: item.totalPrice,
+              price: item.price,
+              quantity: item.quantity,
+            })),
+            suppliers,
+          )
+        : undefined;
+
+      // Step 5: Prepare customer info for payment
+      const customerName = user?.name || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Customer';
+      const customerEmail = user?.email || '';
+      const customerMobile = user?.phoneNumber?.replace(/^\+965/, '').replace(/\s/g, '') || '';
+
+      // Validate: MyFatoorah requires either email or mobile
+      if (!customerEmail && !customerMobile) {
+        throw new Error(t('emailOrPhoneRequired') || 'Email or phone number is required for payment');
+      }
+
+      console.log('Payment data:', {
+        bookingId: bookingIds[0],
+        invoiceValue: totalAmount,
+        customerName,
+        customerEmail,
+        customerMobile,
+        invoiceItems: invoiceItems.length,
+        suppliers: supplierShares?.length || 0,
+      });
+
+      // Step 6: Send payment link (creates invoice URL for user to pay)
+      const paymentResponse = await sendPayment({
+        bookingId: bookingIds[0],
+        invoiceValue: totalAmount,
+        customerName,
+        customerEmail,
+        customerMobile,
+        mobileCountryCode: '965',
+        displayCurrencyIso: 'KWD',
+        language: isRTL ? 'ar' : 'en',
+        customerAddress: {
+          Block: '',
+          Street: address.street || '',
+          HouseBuildingNo: address.houseNumber || '',
+          AddressInstructions: address.floorNumber ? `Floor: ${address.floorNumber}` : '',
+        },
+        invoiceItems,
+        suppliers: supplierShares,
+        notificationOption: 'LNK', // LNK = Link only (no SMS/Email)
+      });
+
+      console.log('Payment response:', paymentResponse);
+
+      if (!paymentResponse.success || !paymentResponse.data) {
+        throw new Error(paymentResponse.message || 'Failed to create payment link');
+      }
+
+      setIsProcessingCheckout(false);
+
+      // Step 6: Open payment URL in browser
+      const payUrl = paymentResponse.data.invoiceURL;
+      if (payUrl) {
+        setPaymentUrl(payUrl);
+        setShowPaymentWebView(true);
+      } else {
+        // No payment URL - something went wrong
+        throw new Error('No payment URL received');
+      }
+    } catch (error: any) {
+      console.error('Checkout error:', error);
       setIsProcessingCheckout(false);
       setAlertTitle(t('error'));
-      setAlertMessage(t('errorCreatingBookings'));
+      setAlertMessage(error.message || t('errorCreatingBookings'));
       setAlertButtons([{ text: t('ok'), style: 'default' }]);
       setAlertVisible(true);
     }
+  };
+
+  // Handle payment success from WebView
+  const handlePaymentSuccess = async () => {
+    setShowPaymentWebView(false);
+    await clearCart();
+    setCartItems([]);
+    setShowSuccessScreen(true);
+  };
+
+  // Handle payment error from WebView
+  const handlePaymentError = (error: string) => {
+    setShowPaymentWebView(false);
+    setAlertTitle(t('paymentError') || 'Payment Error');
+    setAlertMessage(error || t('paymentFailed') || 'Payment failed. Please try again.');
+    setAlertButtons([{ text: t('ok'), style: 'default' }]);
+    setAlertVisible(true);
+  };
+
+  // Handle payment WebView close
+  const handlePaymentClose = () => {
+    setShowPaymentWebView(false);
+    // Don't clear cart - user might want to try again
+    setAlertTitle(t('paymentCancelled') || 'Payment Cancelled');
+    setAlertMessage(t('paymentCancelledMessage') || 'Payment was cancelled. Your cart items are still saved.');
+    setAlertButtons([{ text: t('ok'), style: 'default' }]);
+    setAlertVisible(true);
   };
 
   const calculateSubTotal = () => {
@@ -1179,6 +1343,15 @@ const Cart: React.FC<CartProps> = ({onViewDetails, onNavigate }) => {
         onSelectAddress={handleAddressSelected}
         onAddAddress={handleAddAddress}
         token={userToken}
+      />
+
+      {/* Payment WebView Modal */}
+      <PaymentWebView
+        visible={showPaymentWebView}
+        paymentUrl={paymentUrl}
+        onClose={handlePaymentClose}
+        onPaymentSuccess={handlePaymentSuccess}
+        onPaymentError={handlePaymentError}
       />
 
       {/* Custom Alert */}

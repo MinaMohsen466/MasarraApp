@@ -93,6 +93,19 @@ const translations = {
     errorCreatingBookings: 'Error creating bookings',
     pleaseLoginToViewCart: 'Please login to view cart',
     login: 'Login',
+
+    // Payment
+    payment: 'Payment',
+    completePayment: 'Complete Your Payment',
+    paymentRedirectMessage: 'You will be redirected to our secure payment page to complete your transaction.',
+    proceedToPayment: 'Proceed to Payment',
+    securePayment: 'Secured by MyFatoorah',
+    paymentError: 'Payment Error',
+    paymentFailed: 'Payment failed. Please try again.',
+    paymentCancelled: 'Payment Cancelled',
+    paymentCancelledMessage: 'Payment was cancelled. Your cart items are still saved.',
+    paymentSuccess: 'Payment completed successfully!',
+    emailOrPhoneRequired: 'Email or phone number is required for payment',
   },
   ar: {
     // Header
@@ -169,6 +182,19 @@ const translations = {
     errorCreatingBookings: 'حدث خطأ أثناء إنشاء الحجوزات',
     pleaseLoginToViewCart: 'يجب تسجيل الدخول لعرض السلة',
     login: 'تسجيل الدخول',
+
+    // Payment
+    payment: 'الدفع',
+    completePayment: 'إتمام عملية الدفع',
+    paymentRedirectMessage: 'سيتم توجيهك إلى صفحة الدفع الآمنة لإتمام معاملتك.',
+    proceedToPayment: 'المتابعة للدفع',
+    securePayment: 'مؤمن بواسطة MyFatoorah',
+    paymentError: 'خطأ في الدفع',
+    paymentFailed: 'فشل الدفع. الرجاء المحاولة مرة أخرى.',
+    paymentCancelled: 'تم إلغاء الدفع',
+    paymentCancelledMessage: 'تم إلغاء الدفع. لا تزال عناصر سلتك محفوظة.',
+    paymentSuccess: 'تم إتمام الدفع بنجاح!',
+    emailOrPhoneRequired: 'البريد الإلكتروني أو رقم الهاتف مطلوب للدفع',
   },
 };
 
