@@ -106,6 +106,9 @@ const translations = {
     paymentCancelledMessage: 'Payment was cancelled. Your cart items are still saved.',
     paymentSuccess: 'Payment completed successfully!',
     emailOrPhoneRequired: 'Email or phone number is required for payment',
+    loadingPayment: 'Loading payment page...',
+    paymentLoadError: 'Failed to load payment page. Please try again.',
+    retry: 'Retry',
   },
   ar: {
     // Header
@@ -195,6 +198,9 @@ const translations = {
     paymentCancelledMessage: 'تم إلغاء الدفع. لا تزال عناصر سلتك محفوظة.',
     paymentSuccess: 'تم إتمام الدفع بنجاح!',
     emailOrPhoneRequired: 'البريد الإلكتروني أو رقم الهاتف مطلوب للدفع',
+    loadingPayment: 'جاري تحميل صفحة الدفع...',
+    paymentLoadError: 'فشل تحميل صفحة الدفع. الرجاء المحاولة مرة أخرى.',
+    retry: 'إعادة المحاولة',
   },
 };
 

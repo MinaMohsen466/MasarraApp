@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -6,8 +6,9 @@ import {
   TouchableOpacity,
   Text,
   Modal,
-  Linking,
+  Platform,
 } from 'react-native';
+import { WebView } from 'react-native-webview';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../constants/colors';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -22,9 +23,7 @@ interface PaymentWebViewProps {
 
 /**
  * PaymentWebView Component
- * Opens the MyFatoorah payment URL in an external browser
- * Since we don't have react-native-webview installed, we use Linking.openURL
- * The payment callback will be handled when user returns to the app
+ * Displays MyFatoorah payment page inside the app using WebView
  */
 const PaymentWebView: React.FC<PaymentWebViewProps> = ({
   visible,
@@ -34,38 +33,45 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
   onPaymentError,
 }) => {
   const { isRTL, t } = useLanguage();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const webViewRef = useRef<WebView>(null);
 
-  const openPaymentInBrowser = async () => {
-    try {
-      setLoading(true);
-      console.log('Opening payment URL:', paymentUrl);
-      
-      // Try to open URL directly - canOpenURL on Android requires special manifest config
-      // which is unnecessary for http/https URLs that the browser can always handle
-      try {
-        await Linking.openURL(paymentUrl);
-        console.log('Payment URL opened successfully');
-        // After opening browser, user will complete payment there
-        // The callback URL will redirect back or user will manually return
-        onPaymentSuccess();
-      } catch (openError: any) {
-        console.error('Failed to open URL directly:', openError);
-        // Fallback: check if supported
-        const supported = await Linking.canOpenURL(paymentUrl);
-        console.log('canOpenURL result:', supported);
-        if (supported) {
-          await Linking.openURL(paymentUrl);
-          onPaymentSuccess();
-        } else {
-          onPaymentError('Cannot open payment URL. Please copy this link and open in your browser.');
-        }
-      }
-    } catch (error: any) {
-      console.error('Error opening payment URL:', error);
-      onPaymentError(error.message || 'Failed to open payment page');
-    } finally {
-      setLoading(false);
+  // Handle navigation state changes to detect payment completion
+  const handleNavigationStateChange = (navState: any) => {
+    const { url } = navState;
+    console.log('WebView navigating to:', url);
+
+    // Check if redirected to success/callback URL
+    if (url.includes('/payment/callback') || url.includes('/payment/success')) {
+      console.log('Payment success detected!');
+      onPaymentSuccess();
+      return;
+    }
+
+    // Check if redirected to error URL
+    if (url.includes('/payment/error') || url.includes('/payment/failed')) {
+      console.log('Payment error detected!');
+      onPaymentError('Payment was not completed');
+      return;
+    }
+  };
+
+  // Handle WebView errors
+  const handleError = (syntheticEvent: any) => {
+    const { nativeEvent } = syntheticEvent;
+    console.error('WebView error:', nativeEvent);
+    setError(true);
+    setLoading(false);
+  };
+
+  // Handle HTTP errors
+  const handleHttpError = (syntheticEvent: any) => {
+    const { nativeEvent } = syntheticEvent;
+    console.error('WebView HTTP error:', nativeEvent);
+    // Only show error for critical status codes
+    if (nativeEvent.statusCode >= 400) {
+      setError(true);
     }
   };
 
@@ -75,10 +81,10 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
     <Modal
       visible={visible}
       animationType="slide"
-      presentationStyle="pageSheet"
+      presentationStyle="fullScreen"
       onRequestClose={onClose}
     >
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -90,43 +96,75 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
           <View style={styles.placeholder} />
         </View>
 
-        {/* Content */}
-        <View style={styles.content}>
-          <View style={styles.iconContainer}>
-            <Text style={styles.paymentIcon}>💳</Text>
-          </View>
-          
-          <Text style={[styles.title, isRTL && styles.rtlText]}>
-            {t('completePayment') || 'Complete Your Payment'}
-          </Text>
-          
-          <Text style={[styles.description, isRTL && styles.rtlText]}>
-            {t('paymentRedirectMessage') ||
-              'You will be redirected to our secure payment page to complete your transaction.'}
-          </Text>
-
-          <TouchableOpacity
-            style={[styles.payButton, loading && styles.payButtonDisabled]}
-            onPress={openPaymentInBrowser}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.payButtonText}>
-                {t('proceedToPayment') || 'Proceed to Payment'}
+        {/* WebView */}
+        <View style={styles.webViewContainer}>
+          {error ? (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorIcon}>⚠️</Text>
+              <Text style={[styles.errorTitle, isRTL && styles.rtlText]}>
+                {t('paymentError') || 'Payment Error'}
               </Text>
-            )}
-          </TouchableOpacity>
+              <Text style={[styles.errorText, isRTL && styles.rtlText]}>
+                {t('paymentLoadError') || 'Failed to load payment page. Please try again.'}
+              </Text>
+              <TouchableOpacity
+                style={styles.retryButton}
+                onPress={() => {
+                  setError(false);
+                  setLoading(true);
+                  webViewRef.current?.reload();
+                }}
+              >
+                <Text style={styles.retryButtonText}>
+                  {t('retry') || 'Retry'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.cancelLink} onPress={onClose}>
+                <Text style={[styles.cancelLinkText, isRTL && styles.rtlText]}>
+                  {t('cancel') || 'Cancel'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <>
+              <WebView
+                ref={webViewRef}
+                source={{ uri: paymentUrl }}
+                style={styles.webView}
+                onLoadStart={() => setLoading(true)}
+                onLoadEnd={() => setLoading(false)}
+                onNavigationStateChange={handleNavigationStateChange}
+                onError={handleError}
+                onHttpError={handleHttpError}
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
+                startInLoadingState={true}
+                scalesPageToFit={true}
+                mixedContentMode="compatibility"
+                allowsInlineMediaPlayback={true}
+                mediaPlaybackRequiresUserAction={false}
+                originWhitelist={['*']}
+                userAgent={Platform.select({
+                  android: 'Mozilla/5.0 (Linux; Android 10; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36',
+                  ios: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.1 Mobile/15E148 Safari/604.1',
+                })}
+              />
+              {loading && (
+                <View style={styles.loadingOverlay}>
+                  <ActivityIndicator size="large" color={colors.primary} />
+                  <Text style={[styles.loadingText, isRTL && styles.rtlText]}>
+                    {t('loadingPayment') || 'Loading payment page...'}
+                  </Text>
+                </View>
+              )}
+            </>
+          )}
+        </View>
 
-          <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-            <Text style={[styles.cancelButtonText, isRTL && styles.rtlText]}>
-              {t('cancel') || 'Cancel'}
-            </Text>
-          </TouchableOpacity>
-
+        {/* Footer */}
+        <View style={styles.footer}>
           <Text style={[styles.secureText, isRTL && styles.rtlText]}>
-            🔒 {t('securePayment') || 'Secured by MyFatoorah'}
+            {t('securePayment') || 'Secured by MyFatoorah'}
           </Text>
         </View>
       </SafeAreaView>
@@ -147,9 +185,14 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    backgroundColor: '#fff',
   },
   closeButton: {
     padding: 8,
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   closeButtonText: {
     fontSize: 20,
@@ -163,64 +206,73 @@ const styles = StyleSheet.create({
   placeholder: {
     width: 36,
   },
-  content: {
+  webViewContainer: {
+    flex: 1,
+  },
+  webView: {
+    flex: 1,
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: colors.textSecondary,
+  },
+  errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 32,
   },
-  iconContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: colors.backgroundCard,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  paymentIcon: {
-    fontSize: 48,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.primary,
-    textAlign: 'center',
+  errorIcon: {
+    fontSize: 64,
     marginBottom: 16,
   },
-  description: {
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: colors.primary,
+    marginBottom: 8,
+  },
+  errorText: {
     fontSize: 16,
     color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 32,
+    marginBottom: 24,
     lineHeight: 24,
   },
-  payButton: {
+  retryButton: {
     backgroundColor: colors.primary,
-    paddingVertical: 16,
+    paddingVertical: 14,
     paddingHorizontal: 48,
     borderRadius: 12,
-    width: '100%',
-    alignItems: 'center',
     marginBottom: 16,
   },
-  payButtonDisabled: {
-    opacity: 0.7,
-  },
-  payButtonText: {
+  retryButtonText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
   },
-  cancelButton: {
-    paddingVertical: 12,
+  cancelLink: {
+    paddingVertical: 8,
   },
-  cancelButtonText: {
+  cancelLinkText: {
     color: colors.textSecondary,
     fontSize: 16,
   },
+  footer: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: '#fff',
+  },
   secureText: {
-    marginTop: 24,
     fontSize: 14,
     color: colors.textLight,
   },
