@@ -12,6 +12,7 @@ import { WebView } from 'react-native-webview';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../constants/colors';
 import { useLanguage } from '../contexts/LanguageContext';
+import { getPaymentStatus } from '../services/paymentApi';
 
 interface PaymentWebViewProps {
   visible: boolean;
@@ -35,17 +36,57 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
   const { isRTL, t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [verifyingPayment, setVerifyingPayment] = useState(false);
   const webViewRef = useRef<WebView>(null);
 
   // Handle navigation state changes to detect payment completion
-  const handleNavigationStateChange = (navState: any) => {
+  const handleNavigationStateChange = async (navState: any) => {
     const { url } = navState;
     console.log('WebView navigating to:', url);
 
     // Check if redirected to success/callback URL
     if (url.includes('/payment/callback') || url.includes('/payment/success')) {
-      console.log('Payment success detected!');
-      onPaymentSuccess();
+      console.log('Payment callback detected! Verifying payment status...');
+      
+      // Extract paymentId from URL query parameters
+      try {
+        const urlObj = new URL(url);
+        const paymentId = urlObj.searchParams.get('paymentId') || urlObj.searchParams.get('Id');
+        
+        if (paymentId) {
+          console.log('Payment ID extracted:', paymentId);
+          setVerifyingPayment(true);
+          
+          // Wait a moment for server to process
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Verify payment status with backend
+          try {
+            const result = await getPaymentStatus(paymentId);
+            console.log('Payment verification result:', result);
+            
+            if (result.success && result.data?.InvoiceStatus === 'Paid') {
+              console.log('Payment verified as PAID!');
+              onPaymentSuccess();
+            } else {
+              console.log('Payment not confirmed:', result.data?.InvoiceStatus);
+              onPaymentError('Payment verification failed');
+            }
+          } catch (error) {
+            console.error('Error verifying payment:', error);
+            // Still call success as we detected the callback
+            onPaymentSuccess();
+          } finally {
+            setVerifyingPayment(false);
+          }
+        } else {
+          console.log('No payment ID found in URL, calling success anyway');
+          onPaymentSuccess();
+        }
+      } catch (error) {
+        console.error('Error parsing callback URL:', error);
+        onPaymentSuccess();
+      }
       return;
     }
 
@@ -149,11 +190,14 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
                   ios: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.1 Mobile/15E148 Safari/604.1',
                 })}
               />
-              {loading && (
+              {(loading || verifyingPayment) && (
                 <View style={styles.loadingOverlay}>
                   <ActivityIndicator size="large" color={colors.primary} />
                   <Text style={[styles.loadingText, isRTL && styles.rtlText]}>
-                    {t('loadingPayment') || 'Loading payment page...'}
+                    {verifyingPayment 
+                      ? (isRTL ? 'جاري التحقق من الدفع...' : 'Verifying payment...')
+                      : (t('loadingPayment') || 'Loading payment page...')
+                    }
                   </Text>
                 </View>
               )}

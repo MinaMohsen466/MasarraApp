@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
-import { API_BASE_URL } from '../config/api.config';
+import { API_BASE_URL } from './api';
 
 export interface Review {
   _id: string;
@@ -92,25 +92,44 @@ export async function createReview(
       throw new Error('Authentication required');
     }
 
-    const response = await fetch(
-      `${API_BASE_URL}/reviews/service/${serviceId}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          rating,
-          comment,
-          bookingId, // إضافة bookingId
-        }),
+    // Validate serviceId
+    if (!serviceId || serviceId === 'undefined') {
+      throw new Error('Invalid service ID');
+    }
+
+    const url = `${API_BASE_URL}/reviews/service/${serviceId}`;
+    console.log('[createReview] Sending to URL:', url);
+    console.log('[createReview] Data:', { rating, comment: comment.substring(0, 50), bookingId });
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
       },
-    );
+      body: JSON.stringify({
+        rating,
+        comment,
+        bookingId,
+      }),
+    });
+
+    console.log('[createReview] Response status:', response.status);
+
+    // Check content type before parsing
+    const contentType = response.headers.get('content-type');
+    console.log('[createReview] Content-Type:', contentType);
+    
+    if (!contentType || !contentType.includes('application/json')) {
+      // Try to get the text to see what was returned
+      const text = await response.text();
+      console.log('[createReview] Non-JSON response:', text.substring(0, 200));
+      throw new Error('Server error - please try again later');
+    }
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error || 'Failed to create review');
+      throw new Error(error.error || error.message || 'Failed to create review');
     }
 
     const result = await response.json();

@@ -28,10 +28,6 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: colors.shadow,
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 2,
   },
   backIcon: {
     color: colors.textWhite,

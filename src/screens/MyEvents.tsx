@@ -10,6 +10,7 @@ import {
   Linking,
   Modal,
   TextInput,
+  StatusBar,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -526,7 +527,15 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
 
   if (loading) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+      <>
+        <StatusBar
+          barStyle="light-content"
+          backgroundColor={colors.primary}
+          translucent={false}
+        />
+        <View style={{ flex: 1, backgroundColor: colors.primary }}>
+          <View style={{ height: insets.top, backgroundColor: colors.primary }} />
+          <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={onBack} style={styles.backButton}>
             <Text style={styles.backIcon}>{isRTL ? '›' : '‹'}</Text>
@@ -539,12 +548,22 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
-      </View>
+          </View>
+        </View>
+      </>
     );
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <>
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={colors.primary}
+        translucent={false}
+      />
+      <View style={{ flex: 1, backgroundColor: colors.primary }}>
+        <View style={{ height: insets.top, backgroundColor: colors.primary }} />
+        <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
@@ -715,7 +734,9 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
           </View>
         </TouchableOpacity>
       </Modal>
-    </View>
+        </View>
+      </View>
+    </>
   );
 };
 

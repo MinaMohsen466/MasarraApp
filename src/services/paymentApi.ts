@@ -338,6 +338,13 @@ export const getActiveSuppliers = async (): Promise<{
       },
     });
 
+    // Check if response is JSON before parsing
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      console.warn('Suppliers API returned non-JSON response, returning empty array');
+      return [];
+    }
+
     const data = await response.json();
 
     if (!response.ok) {
@@ -347,7 +354,8 @@ export const getActiveSuppliers = async (): Promise<{
     return data;
   } catch (error: any) {
     console.error('Error getting suppliers:', error);
-    throw error;
+    // Return empty array instead of throwing to prevent cart from breaking
+    return [];
   }
 };
 

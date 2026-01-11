@@ -165,15 +165,14 @@ const Contact: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
           style={[
             contactStyles.backButton,
             {
-              top: insets.top + 12,
+              top: insets.top + 3,
               left: isRTL ? undefined : 12,
               right: isRTL ? 12 : undefined,
-              position: 'absolute',
             },
           ]}
           activeOpacity={0.8}
         >
-          <Text style={{ fontSize: 20, color: colors.primary }}>
+          <Text style={{ fontSize: 37, color: colors.textWhite }}>
             {isRTL ? '›' : '‹'}
           </Text>
         </TouchableOpacity>

@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   Dimensions,
   TextInput,
-  Linking,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -77,6 +76,7 @@ const Cart: React.FC<CartProps> = ({onViewDetails, onNavigate }) => {
   const [showPaymentWebView, setShowPaymentWebView] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState('');
   const [createdBookingIds, setCreatedBookingIds] = useState<string[]>([]);
+  const [successfullyBookedItemIds, setSuccessfullyBookedItemIds] = useState<string[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   // Coupon state
   const [couponCode, setCouponCode] = useState('');
@@ -327,14 +327,18 @@ const Cart: React.FC<CartProps> = ({onViewDetails, onNavigate }) => {
           : undefined;
 
       // Step 1: Create bookings first (payment status will be 'pending')
-      const { success, errors, bookings } = await createBookingsFromCart(
+      const deliveryCharges = calculateDeliveryCharges();
+      const { errors, bookings } = await createBookingsFromCart(
         fullAddress,
         couponData,
+        deliveryCharges,
       );
 
-      if (!success) {
+      // Check if ALL bookings failed (no bookings were created)
+      if (bookings.length === 0 && errors.length > 0) {
         setIsProcessingCheckout(false);
-        // Some bookings failed
+        
+        // All bookings failed
         const errorItems = errors
           .map(({ item, error }) => {
             const itemName = isRTL ? item.nameAr || item.name : item.name;
@@ -342,70 +346,172 @@ const Cart: React.FC<CartProps> = ({onViewDetails, onNavigate }) => {
           })
           .join('\n\n');
 
-        const message = t('failedToCreateBookings').replace(
-          '{items}',
-          errorItems,
+        // Check if error is about pending payment
+        const hasPendingPaymentError = errors.some(({ error }) => 
+          error && typeof error === 'string' && 
+          error.toLowerCase().includes('pending payment')
         );
+
+        let message;
+        if (hasPendingPaymentError) {
+          // Special message for pending payment error
+          message = isRTL 
+            ? 'لديك حجز نشط بدفع معلق لإحدى هذه الخدمات. يرجى إكمال الدفع أو إلغاء الطلب من سجل الطلبات قبل إنشاء حجز جديد.'
+            : 'You have an active booking with pending payment for one of these services. Please complete payment or cancel the order from Order History before creating a new booking.';
+        } else {
+          message = t('failedToCreateBookings').replace('{items}', errorItems);
+        }
+        
         setAlertTitle(t('bookingError'));
         setAlertMessage(message);
         setAlertButtons([{ text: t('ok'), style: 'default' }]);
         setAlertVisible(true);
         return;
       }
+      
+      // If some bookings succeeded but some failed, log the errors but continue
+      if (errors.length > 0) {
+        console.log('Some bookings failed but continuing with successful ones:', errors);
+      }
 
       // Store created booking IDs for payment
       console.log('Created bookings:', JSON.stringify(bookings, null, 2));
-      const bookingIds = bookings.map((b: any) => b._id || b.id);
-      console.log('Booking IDs:', bookingIds);
-      setCreatedBookingIds(bookingIds);
+      
+      // Separate bookings that require payment now vs those awaiting vendor confirmation
+      const bookingsRequiringPayment = bookings.filter((b: any) => b._requiresPaymentNow);
+      const bookingsAwaitingConfirmation = bookings.filter((b: any) => !b._requiresPaymentNow);
+      
+      console.log('Bookings requiring payment:', bookingsRequiringPayment.map((b: any) => ({ id: b._id, names: b._cartItemNames || b._cartItemName })));
+      console.log('Bookings awaiting vendor confirmation:', bookingsAwaitingConfirmation.map((b: any) => ({ id: b._id, name: b._cartItemName })));
+      
+      const payableBookingIds = bookingsRequiringPayment.map((b: any) => b._id || b.id);
+      const allBookingIds = bookings.map((b: any) => b._id || b.id);
+      
+      console.log('Payable Booking IDs:', payableBookingIds);
+      setCreatedBookingIds(allBookingIds);
 
-      // Validate booking IDs
-      if (!bookingIds.length || !bookingIds[0]) {
-        throw new Error('Failed to get booking ID from server response');
-      }
+      // Get the cart items that were successfully booked
+      // Handle both single item bookings (_cartItemId) and combined bookings (_cartItemIds array)
+      const successfullyBookedItemIds: string[] = [];
+      bookings.forEach((b: any) => {
+        if (b._cartItemIds && Array.isArray(b._cartItemIds)) {
+          successfullyBookedItemIds.push(...b._cartItemIds);
+        } else if (b._cartItemId) {
+          successfullyBookedItemIds.push(b._cartItemId);
+        }
+      });
+      
+      const successfullyBookedItems = cartItems.filter(item => 
+        successfullyBookedItemIds.includes(item._id)
+      );
+      
+      // Store the IDs of successfully booked items for later removal from cart
+      setSuccessfullyBookedItemIds(successfullyBookedItemIds);
+      
+      // Step 2: Calculate total amount for payment (only for successfully booked available_now items)
+      const payableItems = successfullyBookedItems.filter(
+        item => !item.availabilityStatus || item.availabilityStatus === 'available_now'
+      );
+      
+      // Calculate total for payable items only
+      // item.totalPrice is the price from cart (base + custom options) × quantity
+      // Delivery charges need to be added separately for items with maxBookingsPerSlot === -1
+      const payableSubTotal = payableItems.reduce((total, item) => {
+        const itemTotal = item.totalPrice ?? (item.price * item.quantity);
+        return total + itemTotal;
+      }, 0);
+      
+      // Calculate delivery charges for payable items only
+      // Each item with maxBookingsPerSlot === -1 gets 5 KD delivery charge
+      const payableDeliveryCharges = payableItems.reduce((total, item) => {
+        if (item.maxBookingsPerSlot === -1) {
+          return total + 5;
+        }
+        return total;
+      }, 0);
+      
+      // Total = subtotal + delivery - discount
+      const payableTotal = payableSubTotal + payableDeliveryCharges - couponDiscount;
+      
+      // Round to 3 decimal places to avoid floating point precision issues
+      const totalAmount = parseFloat(Math.max(0, payableTotal).toFixed(3));
+      
+      console.log('[handleAddressSelected] Payment calculation:', {
+        payableSubTotal,
+        payableDeliveryCharges,
+        couponDiscount,
+        payableTotal,
+        totalAmount,
+      });
 
-      // Step 2: Calculate total amount for payment
-      const totalAmount = calculateTotalAfterDiscount();
-
-      // If total is 0 (fully covered by coupon), skip payment
-      if (totalAmount <= 0) {
+      // If no items require payment now (all awaiting confirmation) or total is 0
+      if (payableBookingIds.length === 0 || totalAmount <= 0) {
         await clearCart();
         setCartItems([]);
         setIsProcessingCheckout(false);
-        setShowSuccessScreen(true);
+        
+        // Show appropriate message
+        if (bookingsAwaitingConfirmation.length > 0 && payableBookingIds.length === 0) {
+          setAlertTitle(isRTL ? 'تم إنشاء الحجز' : 'Booking Created');
+          setAlertMessage(
+            isRTL 
+              ? 'تم إنشاء حجزك بنجاح. سيتم إشعارك عندما يؤكد مقدم الخدمة الحجز ويمكنك الدفع.'
+              : 'Your booking has been created successfully. You will be notified when the vendor confirms and you can proceed with payment.'
+          );
+          setAlertButtons([{ text: t('ok'), style: 'default' }]);
+          setAlertVisible(true);
+        } else {
+          setShowSuccessScreen(true);
+        }
         return;
       }
 
-      // Step 3: Prepare invoice items
-      const invoiceItems = cartItems
-        .filter(
-          item =>
-            !item.availabilityStatus ||
-            item.availabilityStatus === 'available_now',
-        )
-        .map(item => ({
+      // Use the first payable booking ID for payment
+      // Note: Only this booking will be marked as paid via webhook
+      // TODO: Server needs to be updated to support multiple booking IDs
+      const primaryBookingId = payableBookingIds[0];
+
+      // Step 3: Prepare invoice items (only for successfully booked items)
+      // Note: item.totalPrice = (basePrice + customOptions + delivery) × quantity
+      // Delivery charges are already included in totalPrice from createBookingsFromCart
+      // For MyFatoorah: we need UnitPrice (per item), so we divide by quantity
+      const invoiceItems = payableItems.map(item => {
+        // item.totalPrice is base + custom options × quantity (without delivery)
+        const itemTotal = item.totalPrice ?? (item.price * item.quantity);
+        const unitPrice = itemTotal / item.quantity;
+        return {
           ItemName: isRTL && item.nameAr ? item.nameAr : item.name,
           Quantity: item.quantity,
-          UnitPrice: (item.totalPrice ?? item.price) / item.quantity,
-        }));
+          UnitPrice: parseFloat(unitPrice.toFixed(3)),
+        };
+      });
 
-      // Step 4: Calculate supplier shares for commission tracking
+      // Add delivery charges as a separate line item if there are any
+      if (payableDeliveryCharges > 0) {
+        invoiceItems.push({
+          ItemName: isRTL ? 'رسوم التوصيل' : 'Delivery Charges',
+          Quantity: 1,
+          UnitPrice: parseFloat(payableDeliveryCharges.toFixed(3)),
+        });
+      }
+
+      // Step 4: Calculate supplier shares for commission tracking (only for successfully booked items)
       const supplierShares = suppliers.length > 0
         ? calculateSupplierShares(
-            cartItems.map(item => ({
-              vendorId: item.vendorId,
-              totalPrice: item.totalPrice,
-              price: item.price,
-              quantity: item.quantity,
-            })),
+            payableItems.map(item => ({
+                vendorId: item.vendorId,
+                totalPrice: item.totalPrice || item.price,
+                price: item.price,
+                quantity: item.quantity,
+              })),
             suppliers,
           )
         : undefined;
 
       // Step 5: Prepare customer info for payment
-      const customerName = user?.name || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Customer';
+      const customerName = user?.name || 'Customer';
       const customerEmail = user?.email || '';
-      const customerMobile = user?.phoneNumber?.replace(/^\+965/, '').replace(/\s/g, '') || '';
+      const customerMobile = user?.phone?.replace(/^\+965/, '').replace(/\s/g, '') || '';
 
       // Validate: MyFatoorah requires either email or mobile
       if (!customerEmail && !customerMobile) {
@@ -413,7 +519,7 @@ const Cart: React.FC<CartProps> = ({onViewDetails, onNavigate }) => {
       }
 
       console.log('Payment data:', {
-        bookingId: bookingIds[0],
+        bookingId: primaryBookingId,
         invoiceValue: totalAmount,
         customerName,
         customerEmail,
@@ -424,7 +530,7 @@ const Cart: React.FC<CartProps> = ({onViewDetails, onNavigate }) => {
 
       // Step 6: Send payment link (creates invoice URL for user to pay)
       const paymentResponse = await sendPayment({
-        bookingId: bookingIds[0],
+        bookingId: primaryBookingId,
         invoiceValue: totalAmount,
         customerName,
         customerEmail,
@@ -473,8 +579,26 @@ const Cart: React.FC<CartProps> = ({onViewDetails, onNavigate }) => {
   // Handle payment success from WebView
   const handlePaymentSuccess = async () => {
     setShowPaymentWebView(false);
-    await clearCart();
-    setCartItems([]);
+    
+    // Remove only the successfully booked items from cart
+    if (successfullyBookedItemIds.length > 0) {
+      for (const itemId of successfullyBookedItemIds) {
+        try {
+          await removeFromCart(itemId);
+        } catch (error) {
+          console.error('Error removing item from cart:', itemId, error);
+        }
+      }
+      // Reload cart to get remaining items
+      const remainingItems = await getCart();
+      setCartItems(remainingItems);
+      setSuccessfullyBookedItemIds([]);
+    } else {
+      // Fallback: clear entire cart if no specific items tracked
+      await clearCart();
+      setCartItems([]);
+    }
+    
     setShowSuccessScreen(true);
   };
 
@@ -488,8 +612,43 @@ const Cart: React.FC<CartProps> = ({onViewDetails, onNavigate }) => {
   };
 
   // Handle payment WebView close
-  const handlePaymentClose = () => {
+  const handlePaymentClose = async () => {
     setShowPaymentWebView(false);
+    
+    // Cancel the booking that was created since payment was not completed
+    console.log('handlePaymentClose - createdBookingIds:', createdBookingIds);
+    console.log('handlePaymentClose - userToken exists:', !!userToken);
+    
+    if (createdBookingIds && createdBookingIds.length > 0 && userToken) {
+      try {
+        for (const bookingId of createdBookingIds) {
+          console.log('Attempting to cancel booking:', bookingId);
+          
+          // Cancel the booking (this changes booking.status to 'cancelled')
+          const cancelResponse = await fetch(`${API_URL}/bookings/${bookingId}/cancel`, {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${userToken}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          if (cancelResponse.ok) {
+            const cancelData = await cancelResponse.json();
+            console.log('Booking cancelled successfully:', bookingId, cancelData);
+          } else {
+            console.log('Cancel booking failed:', cancelResponse.status);
+          }
+        }
+      } catch (error) {
+        console.error('Error cancelling bookings:', error);
+      }
+      // Clear the booking IDs
+      setCreatedBookingIds([]);
+    } else {
+      console.log('No bookings to cancel or no token');
+    }
+    
     // Don't clear cart - user might want to try again
     setAlertTitle(t('paymentCancelled') || 'Payment Cancelled');
     setAlertMessage(t('paymentCancelledMessage') || 'Payment was cancelled. Your cart items are still saved.');
@@ -503,25 +662,29 @@ const Cart: React.FC<CartProps> = ({onViewDetails, onNavigate }) => {
         !item.availabilityStatus ||
         item.availabilityStatus === 'available_now'
       ) {
-        const itemPrice = item.totalPrice ?? item.price;
-        return total + itemPrice * item.quantity;
+        // item.totalPrice already includes quantity (calculated as: (basePrice + options) * quantity)
+        // item.price is the base price per unit, so we multiply by quantity
+        const itemTotal = item.totalPrice ?? (item.price * item.quantity);
+        return total + itemTotal;
       }
       return total;
     }, 0);
   };
 
   const calculateDeliveryCharges = () => {
-    const uniqueUnlimitedServiceIds = new Set<string>();
+    // Calculate delivery charges for EACH cart item that requires delivery
+    // Each item with maxBookingsPerSlot === -1 gets 5 KD delivery charge
+    let deliveryCount = 0;
     cartItems.forEach(item => {
       if (
         (!item.availabilityStatus ||
           item.availabilityStatus === 'available_now') &&
         item.maxBookingsPerSlot === -1
       ) {
-        uniqueUnlimitedServiceIds.add(item.serviceId);
+        deliveryCount++;
       }
     });
-    return uniqueUnlimitedServiceIds.size * 5;
+    return deliveryCount * 5;
   };
 
   const calculateTotalBeforeDiscount = () => {
@@ -864,19 +1027,19 @@ const Cart: React.FC<CartProps> = ({onViewDetails, onNavigate }) => {
                               justifyContent: 'center',
                               alignItems: 'center',
                             }}
-                            onPress={() => {
+                            onPress={async () => {
                               if (item.quantity > 1) {
-                                updateCartItemQuantity(
-                                  item._id,
-                                  item.quantity - 1,
-                                );
-                                setCartItems(
-                                  cartItems.map(i =>
-                                    i._id === item._id
-                                      ? { ...i, quantity: i.quantity - 1 }
-                                      : i,
-                                  ),
-                                );
+                                try {
+                                  const updatedCart = await updateCartItemQuantity(
+                                    item._id,
+                                    item.quantity - 1,
+                                  );
+                                  if (updatedCart) {
+                                    setCartItems([...updatedCart]);
+                                  }
+                                } catch (error) {
+                                  console.error('Error updating quantity:', error);
+                                }
                               }
                             }}
                             activeOpacity={0.7}
@@ -913,18 +1076,18 @@ const Cart: React.FC<CartProps> = ({onViewDetails, onNavigate }) => {
                               justifyContent: 'center',
                               alignItems: 'center',
                             }}
-                            onPress={() => {
-                              updateCartItemQuantity(
-                                item._id,
-                                item.quantity + 1,
-                              );
-                              setCartItems(
-                                cartItems.map(i =>
-                                  i._id === item._id
-                                    ? { ...i, quantity: i.quantity + 1 }
-                                    : i,
-                                ),
-                              );
+                            onPress={async () => {
+                              try {
+                                const updatedCart = await updateCartItemQuantity(
+                                  item._id,
+                                  item.quantity + 1,
+                                );
+                                if (updatedCart) {
+                                  setCartItems([...updatedCart]);
+                                }
+                              } catch (error) {
+                                console.error('Error updating quantity:', error);
+                              }
                             }}
                             activeOpacity={0.7}
                           >
@@ -1051,7 +1214,7 @@ const Cart: React.FC<CartProps> = ({onViewDetails, onNavigate }) => {
                           ) : (
                             <Text style={styles.priceValue}>
                               {(
-                                (item.totalPrice ?? item.price) * item.quantity
+                                item.totalPrice ?? (item.price * item.quantity)
                               ).toFixed(3)}
                               {isRTL ? 'د.ك' : 'KD'}{' '}
                             </Text>
@@ -1078,7 +1241,7 @@ const Cart: React.FC<CartProps> = ({onViewDetails, onNavigate }) => {
                           ) : (
                             <Text style={styles.priceValue}>
                               {(
-                                (item.totalPrice ?? item.price) * item.quantity
+                                item.totalPrice ?? (item.price * item.quantity)
                               ).toFixed(3)}
                               {isRTL ? 'د.ك' : 'KD'}{' '}
                             </Text>

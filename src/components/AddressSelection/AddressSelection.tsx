@@ -245,7 +245,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: '85%',
+    minHeight: '38%',
+    maxHeight: '75%',
     display: 'flex',
     flexDirection: 'column',
   },
@@ -328,7 +329,7 @@ const styles = StyleSheet.create({
   },
   addressList: {
     paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingTop: 5,
     paddingBottom: 10,
   },
   addressCard: {

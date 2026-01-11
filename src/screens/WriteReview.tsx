@@ -84,6 +84,7 @@ const WriteReview: React.FC<WriteReviewProps> = ({
     setIsSubmitting(true);
 
     try {
+      console.log('[WriteReview] Submitting review:', { serviceId, bookingId, rating, comment: comment.substring(0, 50) });
       await createReview(serviceId, rating, comment, bookingId);
 
       setAlertConfig({

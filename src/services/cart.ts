@@ -249,8 +249,7 @@ export async function updateCartItemQuantity(
 
     if (itemIndex !== -1) {
       const item = currentCart[itemIndex];
-      item.quantity = quantity;
-
+      
       // Recalculate totalPrice: (quantity × basePrice) + (quantity × optionsTotal)
       let optionsTotal = 0;
       if (item.customInputs && Array.isArray(item.customInputs)) {
@@ -268,9 +267,19 @@ export async function updateCartItemQuantity(
       }
 
       // Formula: quantity × (basePrice + options)
-      item.totalPrice = (item.price + optionsTotal) * quantity;
+      const newTotalPrice = (item.price + optionsTotal) * quantity;
+      
+      // Create a new item object to ensure React detects the change
+      currentCart[itemIndex] = {
+        ...item,
+        quantity: quantity,
+        totalPrice: newTotalPrice,
+      };
 
       await saveCart(currentCart);
+      
+      // Return a new array with new item references
+      return currentCart.map(cartItem => ({...cartItem}));
     }
 
     return currentCart;
@@ -316,10 +325,10 @@ export async function clearUserCart(): Promise<void> {
   }
 }
 
-// Get cart count
+// Get cart count (number of unique items in cart)
 export async function getCartCount(): Promise<number> {
   const items = await getCart();
-  return items.reduce((total, item) => total + item.quantity, 0);
+  return items.length; // Return number of unique items, not sum of quantities
 }
 
 // Check availability of all cart items before checkout
@@ -411,6 +420,8 @@ export async function checkCartAvailability(): Promise<{
 }
 
 // Create bookings from cart items in the backend
+// - Services that DON'T require confirmation (available_now) are grouped into ONE booking
+// - Services that require confirmation (pending_confirmation) get separate bookings
 export async function createBookingsFromCart(
   address?: string,
   couponData?: {
@@ -419,6 +430,7 @@ export async function createBookingsFromCart(
     originalPrice: number;
     deductFrom: string;
   },
+  deliveryCharges: number = 0,
 ): Promise<{
   success: boolean;
   bookings: any[];
@@ -434,102 +446,106 @@ export async function createBookingsFromCart(
     const bookings: any[] = [];
     const errors: any[] = [];
 
-    for (const item of cartItems) {
-      try {
-        // Convert customInputs from array to object format, keeping price information
-        const customInputsObject: { [key: string]: string | number | any } = {};
-        const customInputsWithPrices: Array<{
-          label: string;
-          value: string | number;
-          price?: number;
-        }> = [];
+    console.log('[createBookingsFromCart] Cart items count:', cartItems.length);
+    console.log('[createBookingsFromCart] Cart items:', cartItems.map(i => ({ name: i.name, serviceId: i.serviceId, availabilityStatus: i.availabilityStatus })));
 
-        if (item.customInputs && Array.isArray(item.customInputs)) {
-          item.customInputs.forEach(input => {
-            // Handle radio-multiple selections (array of values) and other types
-            if (Array.isArray(input)) {
-              // This is a radio-multiple selection - array of option objects
-              const values: (string | number)[] = [];
-              input.forEach(option => {
-                values.push(option.value);
-                customInputsWithPrices.push({
-                  label: option.label,
-                  value: option.value,
-                  price: option.price,
-                });
-              });
-              // Store as array for radio-multiple
-              if (input.length > 0) {
-                customInputsObject[input[0].label] = values;
-              }
-            } else {
-              // Regular input (text, number, radio-single)
-              customInputsObject[input.label] = input.value;
-              customInputsWithPrices.push({
-                label: input.label,
-                value: input.value,
-                price: input.price,
-              });
+    if (cartItems.length === 0) {
+      return { success: true, bookings: [], errors: [] };
+    }
+
+    // Separate items into two groups:
+    // 1. Items that DON'T require vendor confirmation (available_now) - will be ONE booking
+    // 2. Items that require vendor confirmation (pending_confirmation) - separate bookings
+    const immediatePaymentItems = cartItems.filter(
+      item => !item.availabilityStatus || item.availabilityStatus === 'available_now'
+    );
+    const pendingConfirmationItems = cartItems.filter(
+      item => item.availabilityStatus === 'pending_confirmation'
+    );
+
+    console.log('[createBookingsFromCart] Immediate payment items:', immediatePaymentItems.length);
+    console.log('[createBookingsFromCart] Pending confirmation items:', pendingConfirmationItems.length);
+
+    // Helper function to convert customInputs
+    const convertCustomInputs = (item: CartItem) => {
+      const customInputsObject: { [key: string]: string | number | any } = {};
+      if (item.customInputs && Array.isArray(item.customInputs)) {
+        item.customInputs.forEach(input => {
+          if (Array.isArray(input)) {
+            const values: (string | number)[] = [];
+            input.forEach(option => {
+              values.push(option.value);
+            });
+            if (input.length > 0) {
+              customInputsObject[input[0].label] = values;
             }
-          });
-        }
+          } else {
+            customInputsObject[input.label] = input.value;
+          }
+        });
+      }
+      return customInputsObject;
+    };
 
-        // For packages, send in packages array format. For regular services, send as serviceId
-        // Store package name in specialRequests for display purposes
-        let specialRequestsText = item.moreInfo || '';
-        if (item.isPackage && item.packageName) {
-          specialRequestsText = `[PKG:${item.packageName}]${
-            specialRequestsText ? ' ' + specialRequestsText : ''
-          }`;
-        }
+    // 1. Create ONE booking for ALL immediate payment items (regardless of date/time)
+    if (immediatePaymentItems.length > 0) {
+      try {
+        // Build services array with all immediate payment items
+        const servicesArray = immediatePaymentItems.map(item => {
+          const itemDelivery = item.maxBookingsPerSlot === -1 ? 5 : 0;
+          const itemTotal = (item.totalPrice || item.price) + itemDelivery;
+          return {
+            service: item.serviceId,
+            vendor: item.vendorId,
+            price: itemTotal,
+            quantity: item.quantity,
+            notes: item.moreInfo || '',
+            customInputs: convertCustomInputs(item),
+            // Store original cart item info for reference
+            _cartItemId: item._id,
+            _cartItemName: item.name,
+            // Store the event date/time for this specific service
+            _eventDate: item.selectedDate,
+            _eventTime: item.selectedTime,
+            _timeSlot: item.timeSlot,
+          };
+        });
 
-        const bookingData: any = {
-          eventDate: item.selectedDate,
-          eventTime: item.selectedTime, // Add eventTime for packages
+        // Calculate total price for the combined booking
+        let combinedTotalPrice = immediatePaymentItems.reduce((total, item) => {
+          const itemDelivery = item.maxBookingsPerSlot === -1 ? 5 : 0;
+          return total + (item.totalPrice || item.price) + itemDelivery;
+        }, 0);
+
+        // Use the first item's date/time for the booking
+        const firstItem = immediatePaymentItems[0];
+
+        const bookingPayload: any = {
+          eventDate: firstItem.selectedDate,
+          eventTime: firstItem.selectedTime,
           timeSlot: {
-            start: item.timeSlot.start, // Use parsed Date objects from timeSlot
-            end: item.timeSlot.end,
+            start: firstItem.timeSlot.start,
+            end: firstItem.timeSlot.end,
           },
-          quantity: item.quantity,
           address: address || '',
           notes: '',
-          customInputs: customInputsObject,
-          customInputsWithPrices: customInputsWithPrices, // Send full data including prices
-          specialRequests: specialRequestsText,
-          totalPrice: item.totalPrice || item.price, // Send total price including custom options
+          totalPrice: combinedTotalPrice,
+          services: servicesArray,
         };
 
-        // Add coupon data if provided and calculate discounted price
+        // Add coupon data if provided
         if (couponData) {
-          // Calculate this item's share of the discount
-          const itemOriginalPrice = item.totalPrice || item.price;
-          const itemDiscountShare =
-            (itemOriginalPrice / couponData.originalPrice) *
-            couponData.discountAmount;
-          const itemFinalPrice = itemOriginalPrice - itemDiscountShare;
-
-          bookingData.coupon = {
+          const discountShare = (combinedTotalPrice / couponData.originalPrice) * couponData.discountAmount;
+          bookingPayload.coupon = {
             code: couponData.code,
-            discountAmount: itemDiscountShare,
-            originalPrice: itemOriginalPrice,
+            discountAmount: discountShare,
+            originalPrice: combinedTotalPrice,
             deductFrom: couponData.deductFrom,
           };
-
-          // Update totalPrice to reflect the discounted price
-          bookingData.totalPrice = itemFinalPrice;
+          bookingPayload.totalPrice = combinedTotalPrice - discountShare;
         }
 
-        // Add serviceId for regular services or packages array for packages
-        if (item.isPackage) {
-          bookingData.packages = [
-            {
-              package: item.serviceId,
-              price: item.totalPrice || item.price,
-            },
-          ];
-        } else {
-          bookingData.serviceId = item.serviceId;
-        }
+        console.log('[createBookingsFromCart] Sending COMBINED booking for all immediate payment items:', bookingPayload);
 
         const response = await fetch(`${API_BASE_URL}/bookings`, {
           method: 'POST',
@@ -537,41 +553,127 @@ export async function createBookingsFromCart(
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(bookingData),
+          body: JSON.stringify(bookingPayload),
         });
 
         if (!response.ok) {
           const contentType = response.headers.get('content-type');
           let error;
-
           if (contentType && contentType.includes('application/json')) {
             error = await response.json();
           } else {
-            const text = await response.text();
             error = { message: 'Server error - received HTML instead of JSON' };
           }
-
-          errors.push({
-            item,
-            error: error.message || 'Failed to create booking',
+          console.log('[createBookingsFromCart] Error for combined booking:', error);
+          // Add error for each item
+          immediatePaymentItems.forEach(item => {
+            errors.push({ item, error: error.message || 'Failed to create booking' });
           });
         } else {
           const responseData = await response.json();
-          // Server returns { message: string, booking: object }
           const booking = responseData.booking || responseData;
+          console.log('[createBookingsFromCart] Success for combined booking, ID:', booking._id);
+          
+          // Mark this booking as requiring payment now
+          booking._requiresPaymentNow = true;
+          booking._cartItemIds = immediatePaymentItems.map(i => i._id);
+          booking._cartItemNames = immediatePaymentItems.map(i => i.name);
           bookings.push(booking);
 
-          // حذف الـ cache للخدمة بعد نجاح الحجز
-          clearDatePickerCacheForService(item.serviceId, item.vendorId);
+          // Clear cache for all services
+          immediatePaymentItems.forEach(item => {
+            clearDatePickerCacheForService(item.serviceId, item.vendorId);
+          });
         }
       } catch (error: any) {
-        errors.push({
-          item,
-          error: error.message || 'Network error',
+        console.log('[createBookingsFromCart] Exception for combined booking:', error.message);
+        immediatePaymentItems.forEach(item => {
+          errors.push({ item, error: error.message || 'Network error' });
         });
       }
     }
 
+    // 2. Create SEPARATE bookings for pending confirmation items
+    for (const item of pendingConfirmationItems) {
+      try {
+        const itemDelivery = item.maxBookingsPerSlot === -1 ? 5 : 0;
+        let itemTotalWithDelivery = (item.totalPrice || item.price) + itemDelivery;
+
+        const bookingPayload: any = {
+          eventDate: item.selectedDate,
+          eventTime: item.selectedTime,
+          timeSlot: {
+            start: item.timeSlot.start,
+            end: item.timeSlot.end,
+          },
+          address: address || '',
+          notes: item.moreInfo || '',
+          totalPrice: itemTotalWithDelivery,
+          services: [
+            {
+              service: item.serviceId,
+              vendor: item.vendorId,
+              price: itemTotalWithDelivery,
+              quantity: item.quantity,
+              notes: item.moreInfo || '',
+              customInputs: convertCustomInputs(item),
+            },
+          ],
+        };
+
+        // Add coupon data if provided
+        if (couponData) {
+          const itemDiscountShare = (itemTotalWithDelivery / couponData.originalPrice) * couponData.discountAmount;
+          bookingPayload.coupon = {
+            code: couponData.code,
+            discountAmount: itemDiscountShare,
+            originalPrice: itemTotalWithDelivery,
+            deductFrom: couponData.deductFrom,
+          };
+          bookingPayload.totalPrice = itemTotalWithDelivery - itemDiscountShare;
+        }
+
+        console.log('[createBookingsFromCart] Sending separate booking for pending item:', item.name, bookingPayload);
+
+        const response = await fetch(`${API_BASE_URL}/bookings`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(bookingPayload),
+        });
+
+        if (!response.ok) {
+          const contentType = response.headers.get('content-type');
+          let error;
+          if (contentType && contentType.includes('application/json')) {
+            error = await response.json();
+          } else {
+            error = { message: 'Server error - received HTML instead of JSON' };
+          }
+          console.log('[createBookingsFromCart] Error for item:', item.name, error);
+          errors.push({ item, error: error.message || 'Failed to create booking' });
+        } else {
+          const responseData = await response.json();
+          const booking = responseData.booking || responseData;
+          console.log('[createBookingsFromCart] Success for item:', item.name, 'ID:', booking._id);
+          
+          booking._requiresPaymentNow = false;
+          booking._cartItemId = item._id;
+          booking._cartItemName = item.name;
+          bookings.push(booking);
+
+          clearDatePickerCacheForService(item.serviceId, item.vendorId);
+        }
+      } catch (error: any) {
+        console.log('[createBookingsFromCart] Exception for item:', item.name, error.message);
+        errors.push({ item, error: error.message || 'Network error' });
+      }
+    }
+
+    console.log('[createBookingsFromCart] Final result - Bookings:', bookings.length, 'Errors:', errors.length);
+    
     return {
       success: errors.length === 0,
       bookings,

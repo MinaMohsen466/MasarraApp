@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import { API_BASE_URL } from '../config/api.config';
+import { API_BASE_URL } from './api';
 
 // Base URL for API requests
 const baseUrl = API_BASE_URL;
