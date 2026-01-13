@@ -38,7 +38,7 @@ const queryClient = new QueryClient({
     queries: {
       retry: 2,
       staleTime: 10 * 60 * 1000, // 10 minutes - longer stale time
-      cacheTime: 15 * 60 * 1000, // 15 minutes - keep cached data longer
+      gcTime: 15 * 60 * 1000, // 15 minutes - keep cached data longer
       refetchOnWindowFocus: false, // Don't refetch on focus in mobile
       refetchOnMount: false, // Don't refetch on mount if data exists
       refetchOnReconnect: true, // Only refetch on network reconnect
@@ -149,13 +149,11 @@ function App() {
       case 'auth':
       case 'profile':
         return (
-          <Home 
-            onNavigate={handleNavigation} 
-            currentRoute={currentRoute} 
-            onSelectService={(serviceId) => handleServiceSelect(serviceId, 'home')} 
-            onSelectOccasion={(occasion) => handleOccasionSelect(occasion._id, occasion.name || occasion.nameAr, 'home')} 
-            onShowChat={() => setShowBottomNav(false)} 
-            onHideChat={() => setShowBottomNav(true)} 
+          <Home
+            onNavigate={handleNavigation}
+            currentRoute={currentRoute}
+            onSelectService={(serviceId) => handleServiceSelect(serviceId, 'home')}
+            onSelectOccasion={(occasion) => handleOccasionSelect(occasion._id, occasion.name || occasion.nameAr, 'home')}
           />
         );
       case 'search':
@@ -169,7 +167,7 @@ function App() {
       case 'occasions':
       case 'categories':
         return (
-          <Occasions 
+          <Occasions
             onSelectOccasion={(occasion) => handleOccasionSelect(occasion._id, occasion.name || occasion.nameAr, 'occasions')}
             onBack={handleBack}
           />
@@ -178,7 +176,7 @@ function App() {
         return <Packages onBack={handleBack} onSelectPackage={(pkg) => handlePackageSelect(pkg._id, 'packages')} />;
       case 'occasion-services':
         return (
-          <ServicesPage 
+          <ServicesPage
             onSelectService={(service) => handleServiceSelect(service._id, 'occasion-services')}
             onBack={handleBack}
             occasionId={selectedOccasionId}
@@ -187,21 +185,21 @@ function App() {
         );
       case 'services':
         return (
-          <ServicesPage 
+          <ServicesPage
             onSelectService={(service) => handleServiceSelect(service._id, 'services')}
             onBack={handleBack}
           />
         );
       case 'vendors':
         return (
-          <Vendors 
+          <Vendors
             onSelectVendor={handleVendorSelect}
             onBack={handleBack}
           />
         );
       case 'vendor-services':
         return (
-          <ServicesPage 
+          <ServicesPage
             onSelectService={(service) => handleServiceSelect(service._id, 'vendor-services')}
             onSelectPackage={(pkg) => handlePackageSelect(pkg._id, 'vendor-services')}
             onBack={handleBack}
@@ -211,21 +209,21 @@ function App() {
         );
       case 'service-details':
         return (
-          <ServiceDetails 
+          <ServiceDetails
             serviceId={selectedServiceId!}
             onBack={handleBack}
           />
         );
       case 'package-details':
         return (
-          <PackageDetails 
+          <PackageDetails
             packageId={selectedPackageId!}
             onBack={handleBack}
           />
         );
       case 'cart':
         return (
-          <Cart 
+          <Cart
             onBack={handleBack}
             onNavigate={handleNavigation}
             onViewDetails={(serviceId) => handleServiceSelect(serviceId, 'services')}
@@ -234,7 +232,13 @@ function App() {
       case 'about':
         return <About onBack={handleBack} />;
       case 'contact':
-        return <Contact onBack={handleBack} />;
+        return (
+          <Contact
+            onBack={handleBack}
+            onShowChat={() => setShowBottomNav(false)}
+            onHideChat={() => setShowBottomNav(true)}
+          />
+        );
       case 'addresses':
         return <AddressesWithAuth onBack={handleBack} />;
       case 'terms':
@@ -242,13 +246,13 @@ function App() {
       case 'privacy':
         return <Privacy onBack={handleBack} />;
       default:
-        return <Home onNavigate={handleNavigation} />;
+        return <Home onNavigate={handleNavigation} currentRoute={currentRoute} onSelectService={() => { }} onSelectOccasion={() => { }} />;
     }
   };
 
   const routesWithoutHeader = ['occasions', 'packages', 'categories', 'services', 'vendors', 'vendor-services', 'occasion-services', 'service-details', 'package-details', 'cart', 'about', 'terms', 'privacy', 'contact', 'profile', 'addresses', 'search'];
   const shouldShowHeader = !routesWithoutHeader.includes(currentRoute);
-  
+
   const routesWithoutSafeArea = ['about', 'terms', 'privacy', 'contact', 'service-details', 'cart', 'profile', 'search'];
   const shouldRenderWithoutSafeArea = routesWithoutSafeArea.includes(currentRoute);
 
@@ -266,7 +270,7 @@ function App() {
                   {renderScreen()}
                   {showBottomNav && (
                     <>
-                      <BottomNavigation 
+                      <BottomNavigation
                         activeRoute={currentRoute}
                         onNavigate={handleNavigation}
                       />
@@ -282,7 +286,7 @@ function App() {
                   </View>
                   {showBottomNav && (
                     <>
-                      <BottomNavigation 
+                      <BottomNavigation
                         activeRoute={currentRoute}
                         onNavigate={handleNavigation}
                       />

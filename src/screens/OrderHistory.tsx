@@ -25,7 +25,6 @@ import {
 
 interface OrderHistoryProps {
   onBack?: () => void;
-  onViewDetails?: (bookingId: string) => void;
   onWriteReview?: (
     bookingId: string,
     serviceId: string,
@@ -53,7 +52,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
   const [cancellingBookings, setCancellingBookings] = useState<Set<string>>(new Set());
   const [payingBookings, setPayingBookings] = useState<Set<string>>(new Set());
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  
+
   // CustomAlert state
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
@@ -63,7 +62,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
     onPress?: () => void;
     style?: 'default' | 'cancel' | 'destructive';
   }>>([]);
-  
+
   // PaymentWebView state
   const [showPaymentWebView, setShowPaymentWebView] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState('');
@@ -135,17 +134,17 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
     if (booking.status === 'cancelled') {
       return 0;
     }
-    
+
     // Only calculate time if booking payment is pending and booking is confirmed
     if (booking.paymentStatus !== 'pending' || booking.status !== 'confirmed') {
       return 0;
     }
-    
+
     // Check if there are any services that are confirmed by vendor (have confirmedAt)
     const confirmedServices = booking.services?.filter(
       (s: any) => s.status === 'confirmed' && s.confirmedAt
     );
-    
+
     if (!confirmedServices || confirmedServices.length === 0) {
       return 0;
     }
@@ -161,7 +160,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
     const earliestConfirmed = Math.min(...confirmedDates);
     const expiryTime = earliestConfirmed + PAYMENT_TIMEOUT;
     const now = Date.now();
-    
+
     return Math.max(0, expiryTime - now);
   }, [PAYMENT_TIMEOUT]);
 
@@ -169,7 +168,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
   useEffect(() => {
     const updateTimers = () => {
       const newTimeLeftMap: { [key: string]: number } = {};
-      
+
       bookings.forEach(booking => {
         // Always calculate time left for bookings with pending payment and confirmed status
         if (booking.paymentStatus === 'pending' && booking.status === 'confirmed') {
@@ -178,14 +177,14 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
           newTimeLeftMap[booking._id] = timeLeft;
         }
       });
-      
+
       setTimeLeftMap(newTimeLeftMap);
     };
 
     updateTimers();
-    
+
     timerRef.current = setInterval(updateTimers, 1000);
-    
+
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -213,7 +212,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
           try {
             setCancellingBookings(prev => new Set(prev).add(bookingId));
             const token = await AsyncStorage.getItem('userToken');
-            
+
             if (!token) {
               setAlertTitle(isRTL ? 'خطأ' : 'Error');
               setAlertMessage(isRTL ? 'يرجى تسجيل الدخول' : 'Please login');
@@ -281,7 +280,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
       const pendingServices = booking.services?.filter(
         (s: any) => s.status === 'confirmed' && s.confirmedAt
       ) || [];
-      
+
       const pendingTotal = pendingServices.reduce(
         (sum: number, s: any) => sum + s.price * (s.quantity || 1), 0
       );
@@ -355,13 +354,13 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
       });
     }
     setCurrentPayingBooking(null);
-    
+
     // Wait longer for the server to process the callback (increased to 3 seconds)
     await new Promise(resolve => setTimeout(resolve, 3000));
-    
+
     // Reload bookings to get updated status
     await loadBookings();
-    
+
     // Show success alert
     setAlertTitle(isRTL ? 'نجح الدفع' : 'Payment Success');
     setAlertMessage(isRTL ? 'تم الدفع بنجاح! تم تحديث حالة طلبك.' : 'Payment completed successfully! Your order status has been updated.');
@@ -384,7 +383,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
       });
     }
     setCurrentPayingBooking(null);
-    
+
     // Show error alert
     setAlertTitle(isRTL ? 'فشل الدفع' : 'Payment Failed');
     setAlertMessage(error || (isRTL ? 'لم يتم إكمال الدفع. يرجى المحاولة مرة أخرى.' : 'Payment was not completed. Please try again.'));
@@ -462,12 +461,12 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
       return isRTL ? 'مقدم الخدمة' : 'Vendor';
     return isRTL
       ? vendor?.nameAr ||
-          vendor?.vendorProfile?.businessName_ar ||
-          vendor?.name ||
-          'مقدم الخدمة'
+      vendor?.vendorProfile?.businessName_ar ||
+      vendor?.name ||
+      'مقدم الخدمة'
       : vendor?.name ||
-          vendor?.vendorProfile?.businessName ||
-          'Vendor';
+      vendor?.vendorProfile?.businessName ||
+      'Vendor';
   };
 
   const getServiceId = (booking: Booking) => {
@@ -484,23 +483,23 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
           return typeof vendor === 'string' ? vendor : vendor?._id;
         }).filter(Boolean)
       );
-      
+
       if (uniqueVendorIds.size > 1) {
         return isRTL ? 'عدة مقدمي خدمات' : 'Multiple Vendors';
       }
     }
-    
+
     const vendor = booking.services[0]?.vendor;
     if (!vendor || typeof vendor !== 'object')
       return isRTL ? 'مقدم الخدمة' : 'Vendor';
     return isRTL
       ? (vendor as any)?.nameAr ||
-          (vendor as any)?.vendorProfile?.businessName_ar ||
-          (vendor as any)?.name ||
-          'مقدم الخدمة'
+      (vendor as any)?.vendorProfile?.businessName_ar ||
+      (vendor as any)?.name ||
+      'مقدم الخدمة'
       : (vendor as any)?.name ||
-          (vendor as any)?.vendorProfile?.businessName ||
-          'Vendor';
+      (vendor as any)?.vendorProfile?.businessName ||
+      'Vendor';
   };
 
   const getDescription = (booking: Booking) => {
@@ -509,8 +508,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
       return isRTL ? 'لا يوجد وصف' : 'No description';
     return isRTL
       ? (service as any)?.descriptionAr ||
-          (service as any)?.description ||
-          'لا يوجد وصف'
+      (service as any)?.description ||
+      'لا يوجد وصف'
       : (service as any)?.description || 'No description';
   };
 
@@ -557,7 +556,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
       text: isRTL
         ? labels[statusLower]?.ar || status
         : labels[statusLower]?.en ||
-          status.charAt(0).toUpperCase() + status.slice(1),
+        status.charAt(0).toUpperCase() + status.slice(1),
     };
   };
 
@@ -586,10 +585,10 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
     try {
       const token = await AsyncStorage.getItem('userToken');
       if (!token) {
-        Alert.alert(
-          isRTL ? 'خطأ' : 'Error',
-          isRTL ? 'لم يتم العثور على رمز التوثيق' : 'Authentication required',
-        );
+        setAlertTitle(isRTL ? 'خطأ' : 'Error');
+        setAlertMessage(isRTL ? 'لم يتم العثور على رمز التوثيق' : 'Authentication required');
+        setAlertButtons([{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }]);
+        setAlertVisible(true);
         return;
       }
 
@@ -599,10 +598,10 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
       setSelectedQRCode(existingQR);
       setQrModalVisible(true);
     } catch (error) {
-      Alert.alert(
-        isRTL ? 'خطأ' : 'Error',
-        isRTL ? 'حدث خطأ' : 'An error occurred',
-      );
+      setAlertTitle(isRTL ? 'خطأ' : 'Error');
+      setAlertMessage(isRTL ? 'حدث خطأ' : 'An error occurred');
+      setAlertButtons([{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }]);
+      setAlertVisible(true);
     }
   };
 
@@ -758,8 +757,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                   ? 'لا توجد حجوزات بعد'
                   : 'No bookings yet'
                 : isRTL
-                ? 'لا توجد حجوزات في هذه الفئة'
-                : 'No bookings in this category'}
+                  ? 'لا توجد حجوزات في هذه الفئة'
+                  : 'No bookings in this category'}
             </Text>
           </View>
         ) : (
@@ -838,13 +837,13 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                     {isRTL ? 'الخدمات المحجوزة:' : 'Booked Services:'}
                   </Text>
                   {booking.services.map((serviceEntry: any, serviceIndex: number) => {
-                    const serviceId = typeof serviceEntry.service === 'string' 
-                      ? serviceEntry.service 
+                    const serviceId = typeof serviceEntry.service === 'string'
+                      ? serviceEntry.service
                       : serviceEntry.service?._id;
                     const serviceName = getSingleServiceName(serviceEntry.service);
                     const serviceStatus = serviceEntry.status || booking.status;
                     const isPaid = serviceEntry.paymentStatus === 'paid' || booking.paymentStatus === 'paid';
-                    
+
                     return (
                       <View key={serviceIndex} style={{ marginBottom: serviceIndex < booking.services.length - 1 ? 16 : 0, paddingBottom: serviceIndex < booking.services.length - 1 ? 16 : 0, borderBottomWidth: serviceIndex < booking.services.length - 1 ? 1 : 0, borderBottomColor: '#E0E0E0' }}>
                         {/* Service Name with Status Badge */}
@@ -853,6 +852,15 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                             <Text style={[styles.customInputLabel, { fontWeight: '600', fontSize: 14 }]}>
                               {serviceIndex + 1}. {serviceName}
                             </Text>
+                            {/* Pending Confirmation Badge under service name */}
+                            {(serviceEntry.availabilityStatus === 'pending_confirmation' ||
+                              (serviceStatus === 'pending' && !isPaid)) && (
+                                <View style={{ backgroundColor: '#FF9800', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4, marginTop: 6, alignSelf: 'flex-start' }}>
+                                  <Text style={{ color: '#fff', fontSize: 10, fontWeight: '600' }}>
+                                    {isRTL ? 'في انتظار الموافقة' : 'Pending Confirmation'}
+                                  </Text>
+                                </View>
+                              )}
                           </View>
                           <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
                             <Text style={[styles.customInputValue, { color: colors.primary, fontWeight: '600' }]}>
@@ -866,17 +874,18 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                             </View>
                           </View>
                         </View>
-                        
+
                         {/* Event Date and Time for this service */}
                         <View style={[styles.customInputRow, { marginTop: 6 }]}>
                           <Text style={[styles.customInputLabel, { fontSize: 12, color: '#666' }]}>
                             {isRTL ? 'موعد الخدمة:' : 'Service Date:'}
                           </Text>
                           <Text style={[styles.customInputValue, { fontSize: 12, color: '#666' }]}>
-                            {formatDateTime(booking.eventDate)} | {formatDateTime(booking.eventTime.start, true)} - {formatDateTime(booking.eventTime.end, true)}
+                            {/* Use service's timeSlot if available, otherwise fall back to booking's eventDate/eventTime */}
+                            {formatDateTime(serviceEntry.timeSlot?.start || serviceEntry.eventDate || booking.eventDate)} | {formatDateTime(serviceEntry.timeSlot?.start || booking.eventTime?.start, true)} - {formatDateTime(serviceEntry.timeSlot?.end || booking.eventTime?.end, true)}
                           </Text>
                         </View>
-                        
+
                         {/* Vendor Name */}
                         <View style={[styles.customInputRow, { marginTop: 4 }]}>
                           <Text style={[styles.customInputLabel, { fontSize: 12, color: '#666' }]}>
@@ -886,7 +895,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                             {getServiceVendorName(serviceEntry)}
                           </Text>
                         </View>
-                        
+
                         {/* Quantity if > 1 */}
                         {serviceEntry.quantity > 1 && (
                           <View style={[styles.customInputRow, { marginTop: 4 }]}>
@@ -898,13 +907,13 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                             </Text>
                           </View>
                         )}
-                        
+
                         {/* Custom Inputs / Add-ons for this service */}
                         {serviceEntry.customInputs && (() => {
                           // Handle both object format {label: value} and array format
                           const inputs = serviceEntry.customInputs;
                           const entries: Array<[string, any]> = [];
-                          
+
                           if (Array.isArray(inputs)) {
                             // Array format: [{label, value, price}]
                             inputs.forEach((input: any) => {
@@ -928,14 +937,14 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                               }
                             });
                           }
-                          
+
                           // Filter out entries with numeric-only keys that look like indices
                           const filteredEntries = entries.filter(([label]) => {
                             return label && isNaN(Number(label));
                           });
-                          
+
                           if (filteredEntries.length === 0) return null;
-                          
+
                           return (
                             <View style={{ marginTop: 8, paddingLeft: 12 }}>
                               <Text style={[styles.customInputLabel, { fontSize: 12, color: '#888', marginBottom: 4 }]}>
@@ -950,17 +959,17 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                                     {Array.isArray(value)
                                       ? value.join(', ')
                                       : typeof value === 'number'
-                                      ? value
-                                      : value !== undefined && value !== null
-                                      ? String(value)
-                                      : '-'}
+                                        ? value
+                                        : value !== undefined && value !== null
+                                          ? String(value)
+                                          : '-'}
                                   </Text>
                                 </View>
                               ))}
                             </View>
                           );
                         })()}
-                        
+
                         {/* Action Buttons for this service (Review & QR) */}
                         {isPaid && serviceStatus === 'confirmed' && serviceId && (
                           <View style={{ flexDirection: 'row', marginTop: 10, gap: 8 }}>
@@ -982,7 +991,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                                 </Text>
                               </TouchableOpacity>
                             )}
-                            
+
                             {/* Create QR Code Button */}
                             {qrAllowedBookings.has(booking._id) && (
                               <TouchableOpacity
@@ -1072,31 +1081,9 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                     <Text style={styles.priceLabel}>
                       {isRTL ? 'المبلغ الإجمالي:' : 'Total Amount:'}
                     </Text>
-                    <View
-                      style={{
-                        flexDirection: isRTL ? 'row-reverse' : 'row',
-                        alignItems: 'center',
-                        gap: 4,
-                      }}
-                    >
-                      {booking.services?.[0]?.quantity > 1 && (
-                        <Text
-                          style={[
-                            styles.priceValue,
-                            { fontSize: 12, color: '#666' },
-                          ]}
-                        >
-                          ({booking.services[0].quantity} ×{' '}
-                          {(
-                            booking.services[0].price + getOptionsPrice(booking)
-                          ).toFixed(3)}
-                          ){' = '}
-                        </Text>
-                      )}
-                      <Text style={styles.priceValue}>
-                        KWD {getTotalPrice(booking).toFixed(3)}
-                      </Text>
-                    </View>
+                    <Text style={styles.priceValue}>
+                      KWD {getTotalPrice(booking).toFixed(3)}
+                    </Text>
                   </>
                 )}
               </View>
@@ -1115,17 +1102,17 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
               {(() => {
                 // Check if booking payment is pending and status is confirmed (vendor approved)
                 const isPaymentPending = booking.paymentStatus === 'pending' && booking.status === 'confirmed';
-                
+
                 // Check if there are confirmed services (vendor approved with confirmedAt)
                 const hasConfirmedServices = booking.services?.some(
                   (s: any) => s.status === 'confirmed' && s.confirmedAt
                 );
-                
+
                 const bookingTimeLeft = timeLeftMap[booking._id];
-                
-                return isPaymentPending && 
-                       hasConfirmedServices &&
-                       bookingTimeLeft !== undefined ? (
+
+                return isPaymentPending &&
+                  hasConfirmedServices &&
+                  bookingTimeLeft !== undefined ? (
                   <View style={{
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -1176,24 +1163,24 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
               })()}
 
               {/* Awaiting Vendor Confirmation Banner */}
-              {(booking.services?.some((s: any) => s.status !== 'confirmed' || !s.confirmedAt)) && 
-               booking.status !== 'cancelled' && (booking.status === 'pending' || booking.paymentStatus === 'awaiting_confirmation') && (
-                <View style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  backgroundColor: '#E3F2FD',
-                  borderWidth: 1,
-                  borderColor: '#90CAF9',
-                  borderRadius: 8,
-                  padding: 12,
-                  marginTop: 12,
-                }}>
-                  <Text style={{ fontSize: 16, marginRight: 8 }}>⏳</Text>
-                  <Text style={{ color: '#1565C0', fontSize: 13, flex: 1 }}>
-                    {isRTL ? 'في انتظار موافقة مقدم الخدمة' : 'Awaiting vendor confirmation'}
-                  </Text>
-                </View>
-              )}
+              {(booking.services?.some((s: any) => s.status !== 'confirmed' || !s.confirmedAt)) &&
+                booking.status !== 'cancelled' && (booking.status === 'pending' || booking.paymentStatus === 'awaiting_confirmation') && (
+                  <View style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    backgroundColor: '#E3F2FD',
+                    borderWidth: 1,
+                    borderColor: '#90CAF9',
+                    borderRadius: 8,
+                    padding: 12,
+                    marginTop: 12,
+                  }}>
+                    <Text style={{ fontSize: 16, marginRight: 8 }}>⏳</Text>
+                    <Text style={{ color: '#1565C0', fontSize: 13, flex: 1 }}>
+                      {isRTL ? 'في انتظار موافقة مقدم الخدمة' : 'Awaiting vendor confirmation'}
+                    </Text>
+                  </View>
+                )}
 
               {/* Pay Now and Cancel Buttons for Payment Pending ONLY */}
               {(() => {
@@ -1201,35 +1188,35 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                 if (booking.paymentStatus === 'paid' || booking.status === 'cancelled') {
                   return null;
                 }
-                
+
                 // Check if booking payment is pending and confirmed (vendor approved)
                 const isPaymentPending = booking.paymentStatus === 'pending' && booking.status === 'confirmed';
-                
+
                 // Check if any service is still awaiting vendor confirmation (not confirmed yet)
                 const isAwaitingVendorConfirmation = booking.services?.some(
                   (s: any) => s.status !== 'confirmed' || !s.confirmedAt
                 );
-                
+
                 // Check if there are services ready for payment (vendor confirmed with confirmedAt)
                 const hasServicesReadyForPayment = booking.services?.some(
                   (s: any) => s.status === 'confirmed' && s.confirmedAt
                 );
-                
+
                 // Calculate total from confirmed services only
                 const totalAmount = booking.services
                   ?.filter((s: any) => s.status === 'confirmed' && s.confirmedAt)
                   .reduce((sum: number, s: any) => sum + s.price * (s.quantity || 1), 0) || 0;
-                
+
                 // Show pay button only if:
                 // 1. Booking payment is pending and status is confirmed
                 // 2. There are services ready for payment (not awaiting confirmation)
                 // 3. Payment timer exists and has not expired (timeLeft > 0)
-                const showPayButton = isPaymentPending && 
-                                      hasServicesReadyForPayment &&
-                                      timeLeftMap[booking._id] !== undefined &&
-                                      timeLeftMap[booking._id] > 0 &&
-                                      totalAmount > 0;
-                
+                const showPayButton = isPaymentPending &&
+                  hasServicesReadyForPayment &&
+                  timeLeftMap[booking._id] !== undefined &&
+                  timeLeftMap[booking._id] > 0 &&
+                  totalAmount > 0;
+
                 // Show cancel button if booking is pending payment or any service is awaiting confirmation
                 const showCancelButton = isPaymentPending || isAwaitingVendorConfirmation;
 
@@ -1328,7 +1315,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
           }}
         />
       )}
-      
+
       {/* CustomAlert */}
       <CustomAlert
         visible={alertVisible}
@@ -1337,7 +1324,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
         buttons={alertButtons}
         onClose={() => setAlertVisible(false)}
       />
-      
+
       {/* Payment WebView Modal */}
       <PaymentWebView
         visible={showPaymentWebView}

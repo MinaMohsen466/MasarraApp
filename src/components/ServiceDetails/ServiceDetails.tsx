@@ -138,22 +138,22 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
           // Get actual screen dimensions
           const screenHeight = Dimensions.get('window').height;
           const screenWidth = Dimensions.get('window').width;
-          
+
           // Bottom tab bar height (more accurate for different devices)
           const tabBarHeight = 65;
           const safeAreaBottom = 20; // Account for safe area insets
-          
+
           // Cart icon is the LAST item in bottom nav
           // Bottom nav has 5 items evenly distributed
           const navItemWidth = screenWidth / 5;
           const cartIconIndex = 4; // 0-based index (5th item)
-          
+
           // In RTL, cart moves to the beginning
           const cartPosition = isRTL ? 0 : cartIconIndex;
-          
+
           // Calculate X position: center of the nav item
           const targetX = (cartPosition * navItemWidth) + (navItemWidth / 2);
-          
+
           // Calculate Y position: screen height minus tab bar
           const targetY = screenHeight - tabBarHeight - safeAreaBottom;
 
@@ -555,7 +555,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                 Alert.alert(
                   isRTL ? 'خطأ' : 'Error',
                   error.message ||
-                    (isRTL ? 'فشلت المشاركة' : 'Failed to share'),
+                  (isRTL ? 'فشلت المشاركة' : 'Failed to share'),
                 );
               }
             }}
@@ -651,11 +651,11 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
               </Text>
 
               {service.isOnSale === true &&
-              ((service.salePrice &&
-                service.salePrice > 0 &&
-                service.salePrice < service.price) ||
-                (service.discountPercentage &&
-                  service.discountPercentage > 0)) ? (
+                ((service.salePrice &&
+                  service.salePrice > 0 &&
+                  service.salePrice < service.price) ||
+                  (service.discountPercentage &&
+                    service.discountPercentage > 0)) ? (
                 <View style={{ gap: 4 }}>
                   {/* Sale Price */}
                   <Text style={styles.priceValue}>
@@ -663,11 +663,11 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                       // Priority: use salePrice if available, otherwise calculate from discountPercentage
                       const finalPrice =
                         service.salePrice &&
-                        service.salePrice > 0 &&
-                        service.salePrice < service.price
+                          service.salePrice > 0 &&
+                          service.salePrice < service.price
                           ? service.salePrice
                           : service.price *
-                            (1 - (service.discountPercentage || 0) / 100);
+                          (1 - (service.discountPercentage || 0) / 100);
                       return `${finalPrice.toFixed(3)} ${isRTL ? 'د.ك' : 'KD'}`;
                     })()}{' '}
                     <Text style={styles.priceUnit}>
@@ -852,12 +852,12 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                 >
                   {selectedDate
                     ? selectedDate.toLocaleDateString(
-                        isRTL ? 'ar-KW' : 'en-US',
-                        { year: 'numeric', month: '2-digit', day: '2-digit' },
-                      )
+                      isRTL ? 'ar-KW' : 'en-US',
+                      { year: 'numeric', month: '2-digit', day: '2-digit' },
+                    )
                     : isRTL
-                    ? 'اختر التاريخ'
-                    : 'Select Date'}
+                      ? 'اختر التاريخ'
+                      : 'Select Date'}
                 </Text>
               </TouchableOpacity>
 
@@ -924,20 +924,20 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                       ? 'جاري التحقق...'
                       : 'Checking...'
                     : isTimeInPast()
-                    ? isRTL
-                      ? '⚠ وقت قديم'
-                      : '⚠ Past Time'
-                    : !isTimeSlotAvailable && selectedDate && selectedTime
-                    ? isRTL
-                      ? '✗ غير متاح'
-                      : '✗ Not Available'
-                    : selectedDate && selectedTime
-                    ? isRTL
-                      ? '✓ متاح'
-                      : '✓ Available'
-                    : isRTL
-                    ? 'اختر التاريخ والوقت'
-                    : 'Select Date & Time'}
+                      ? isRTL
+                        ? '⚠ وقت قديم'
+                        : '⚠ Past Time'
+                      : !isTimeSlotAvailable && selectedDate && selectedTime
+                        ? isRTL
+                          ? '✗ غير متاح'
+                          : '✗ Not Available'
+                        : selectedDate && selectedTime
+                          ? isRTL
+                            ? '✓ متاح'
+                            : '✓ Available'
+                          : isRTL
+                            ? 'اختر التاريخ والوقت'
+                            : 'Select Date & Time'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -1085,8 +1085,8 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                       const currentArray = selectedArray;
                                       const newArray = isSelected
                                         ? currentArray.filter(
-                                            idx => idx !== optIndex,
-                                          )
+                                          idx => idx !== optIndex,
+                                        )
                                         : [...currentArray, optIndex];
 
                                       if (newArray.length === 0) {
@@ -1200,7 +1200,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                   {[5, 4, 3, 2, 1].map(star => {
                     const count =
                       reviewStats.ratingDistribution[
-                        star as keyof typeof reviewStats.ratingDistribution
+                      star as keyof typeof reviewStats.ratingDistribution
                       ] || 0;
                     const percentage =
                       reviewStats.totalRatings > 0
@@ -1379,6 +1379,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
               !selectedTime ||
               isTimeInPast() ||
               !isTimeSlotAvailable ||
+              checkingAvailability ||
               isAddingToCart) && { opacity: 0.5 },
           ]}
           activeOpacity={0.85}
@@ -1387,6 +1388,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
             !selectedTime ||
             isTimeInPast() ||
             !isTimeSlotAvailable ||
+            checkingAvailability ||
             isAddingToCart
           }
           onPress={async () => {
@@ -1535,8 +1537,8 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                     const selectedIndices = isMultiple
                       ? (selectedValue as number[]) || []
                       : selectedValue !== undefined
-                      ? [selectedValue as number]
-                      : [];
+                        ? [selectedValue as number]
+                        : [];
 
                     if (selectedIndices.length > 0) {
                       const selectedOptions = selectedIndices.map(
@@ -1677,13 +1679,17 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
             />
           </Svg>
           <Text style={styles.addToCartButtonText}>
-            {isAddingToCart
+            {checkingAvailability
               ? isRTL
-                ? 'جاري الإضافة...'
-                : 'ADDING...'
-              : isRTL
-              ? 'أضف إلى السلة'
-              : 'ADD TO CART'}
+                ? 'جاري التحقق...'
+                : 'CHECKING...'
+              : isAddingToCart
+                ? isRTL
+                  ? 'جاري الإضافة...'
+                  : 'ADDING...'
+                : isRTL
+                  ? 'أضف إلى السلة'
+                  : 'ADD TO CART'}
           </Text>
         </TouchableOpacity>
 

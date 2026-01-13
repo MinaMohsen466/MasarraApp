@@ -26,9 +26,9 @@ const Occasions: React.FC<OccasionsProps> = ({ onSelectOccasion, onBack }) => {
   const { width: screenWidth } = useWindowDimensions();
   const { isRTL, t } = useLanguage();
   const { data: occasions, isLoading, error } = useOccasions();
-  
+
   // تحديد عدد الأعمدة حسب حجم الشاشة
-  const numColumns = screenWidth >= 600 ? 5 : 3; // 5 للأجهزة اللوحية، 3 للهواتف
+  const numColumns = screenWidth >= 600 ? 4 : 3; // 4 للأجهزة اللوحية، 3 للهواتف
   const styles = createStyles(screenWidth, numColumns);
 
   const renderOccasionCard = ({ item }: { item: Occasion }) => {

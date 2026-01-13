@@ -47,24 +47,24 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
     // Check if redirected to success/callback URL
     if (url.includes('/payment/callback') || url.includes('/payment/success')) {
       console.log('Payment callback detected! Verifying payment status...');
-      
+
       // Extract paymentId from URL query parameters
       try {
         const urlObj = new URL(url);
         const paymentId = urlObj.searchParams.get('paymentId') || urlObj.searchParams.get('Id');
-        
+
         if (paymentId) {
           console.log('Payment ID extracted:', paymentId);
           setVerifyingPayment(true);
-          
+
           // Wait a moment for server to process
           await new Promise(resolve => setTimeout(resolve, 2000));
-          
+
           // Verify payment status with backend
           try {
             const result = await getPaymentStatus(paymentId);
             console.log('Payment verification result:', result);
-            
+
             if (result.success && result.data?.InvoiceStatus === 'Paid') {
               console.log('Payment verified as PAID!');
               onPaymentSuccess();
@@ -185,16 +185,35 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
                 allowsInlineMediaPlayback={true}
                 mediaPlaybackRequiresUserAction={false}
                 originWhitelist={['*']}
+                setSupportMultipleWindows={false}
+                thirdPartyCookiesEnabled={true}
+                sharedCookiesEnabled={true}
+                cacheEnabled={true}
+                allowsBackForwardNavigationGestures={true}
+                allowsFullscreenVideo={true}
+                injectedJavaScript={`
+                  // Only set viewport meta, don't override MyFatoorah styles
+                  (function() {
+                    var meta = document.querySelector('meta[name="viewport"]');
+                    if (!meta) {
+                      meta = document.createElement('meta');
+                      meta.name = 'viewport';
+                      document.head.appendChild(meta);
+                    }
+                    meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+                  })();
+                  true;
+                `}
                 userAgent={Platform.select({
-                  android: 'Mozilla/5.0 (Linux; Android 10; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36',
-                  ios: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.1 Mobile/15E148 Safari/604.1',
+                  android: 'Mozilla/5.0 (Linux; Android 12; SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Mobile Safari/537.36',
+                  ios: 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.5 Mobile/15E148 Safari/604.1',
                 })}
               />
               {(loading || verifyingPayment) && (
                 <View style={styles.loadingOverlay}>
                   <ActivityIndicator size="large" color={colors.primary} />
                   <Text style={[styles.loadingText, isRTL && styles.rtlText]}>
-                    {verifyingPayment 
+                    {verifyingPayment
                       ? (isRTL ? 'جاري التحقق من الدفع...' : 'Verifying payment...')
                       : (t('loadingPayment') || 'Loading payment page...')
                     }
@@ -233,14 +252,17 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: 8,
-    width: 36,
-    height: 36,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#f0f0f0',
+    borderRadius: 22,
   },
   closeButtonText: {
-    fontSize: 20,
-    color: colors.textSecondary,
+    fontSize: 22,
+    fontWeight: '600',
+    color: colors.textDark,
   },
   headerTitle: {
     fontSize: 18,

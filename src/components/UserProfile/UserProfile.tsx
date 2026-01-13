@@ -9,7 +9,6 @@ import EditProfile from '../EditProfile';
 import Wishlist from '../Wishlist/Wishlist';
 import OrderHistory from '../../screens/OrderHistory';
 import MyEvents from '../../screens/MyEvents';
-import Chat from '../../screens/Chat';
 import WriteReview from '../../screens/WriteReview';
 import { API_URL } from '../../config/api.config';
 
@@ -18,8 +17,6 @@ interface UserProfileProps {
   onShowAuth?: () => void;
   onNavigate?: (route: string) => void;
   onSelectService?: (serviceId: string) => void;
-  onShowChat?: () => void;
-  onHideChat?: () => void;
   userName?: string;
   userPhone?: string;
   userEmail?: string;
@@ -31,8 +28,6 @@ const UserProfile: React.FC<UserProfileProps> = ({
   onShowAuth,
   onNavigate,
   onSelectService,
-  onShowChat,
-  onHideChat,
   userName = 'User',
   userPhone,
   userEmail: _userEmail,
@@ -45,7 +40,6 @@ const UserProfile: React.FC<UserProfileProps> = ({
   const [showWishlist, setShowWishlist] = useState(false);
   const [showOrderHistory, setShowOrderHistory] = useState(false);
   const [showMyEvents, setShowMyEvents] = useState(false);
-  const [showChat, setShowChat] = useState(false);
   const [showWriteReview, setShowWriteReview] = useState(false);
   const [reviewData, setReviewData] = useState<{
     bookingId: string;
@@ -86,11 +80,6 @@ const UserProfile: React.FC<UserProfileProps> = ({
 
   const handleMyEvents = () => {
     setShowMyEvents(true);
-  };
-
-  const handleChat = () => {
-    setShowChat(true);
-    onShowChat?.();
   };
 
   const handleWishlist = () => {
@@ -181,17 +170,6 @@ const UserProfile: React.FC<UserProfileProps> = ({
           setShowWriteReview(false);
           setReviewData(null);
           setShowOrderHistory(true);
-        }}
-      />
-    );
-  }
-
-  if (showChat) {
-    return (
-      <Chat
-        onBack={() => {
-          setShowChat(false);
-          onHideChat?.();
         }}
       />
     );
@@ -402,17 +380,6 @@ const UserProfile: React.FC<UserProfileProps> = ({
           >
             <Text style={[styles.menuText, isRTL && styles.menuTextRTL]}>
               {isRTL ? 'فعالياتي' : 'My Events'}
-            </Text>
-          </TouchableOpacity>
-
-          {/* Chat */}
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={handleChat}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.menuText, isRTL && styles.menuTextRTL]}>
-              {isRTL ? 'المحادثة' : 'Chat'}
             </Text>
           </TouchableOpacity>
 

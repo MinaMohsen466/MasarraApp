@@ -12,12 +12,12 @@ import {
   Dimensions,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Svg, { Path } from 'react-native-svg';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useSocket } from '../contexts/SocketContext';
-import { API_BASE_URL } from '../config/api.config';
+import { API_URL } from '../config/api.config';
 
 interface Message {
   _id: string;
@@ -37,6 +37,7 @@ interface ChatConversationProps {
 const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
   const { isRTL } = useLanguage();
   const { socket, isConnected, joinChat, leaveChat, sendTyping } = useSocket();
+  const insets = useSafeAreaInsets();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [messageText, setMessageText] = useState('');
@@ -63,7 +64,7 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
       // Get current user ID first if not set
       let userId = currentUserId;
       if (!userId) {
-        const userResponse = await fetch(`${API_BASE_URL}/auth/me`, {
+        const userResponse = await fetch(`${API_URL}/auth/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (userResponse.ok) {
@@ -74,7 +75,7 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
       }
 
       // Only admin chat is supported - get all chats and find admin chat
-      const chatResponse = await fetch(`${API_BASE_URL}/chats`, {
+      const chatResponse = await fetch(`${API_URL}/chats`, {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -89,19 +90,69 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
 
       const chatsData = await chatResponse.json();
       const chats = Array.isArray(chatsData) ? chatsData : chatsData.data || [];
+      console.log('[Chat] Found chats:', chats.length);
 
-      // Find admin chat - admin chat has vendor: null
-      const adminChat = chats.find((chat: any) => chat.vendor === null);
+      // Find admin chat - admin chat has vendor: null or undefined
+      let adminChat = chats.find((chat: any) => !chat.vendor);
+      console.log('[Chat] Admin chat found:', adminChat ? adminChat._id : 'none');
 
+      // If no admin chat exists, create one
       if (!adminChat) {
+        console.log('[Chat] Creating new admin chat...');
+        try {
+          const createChatResponse = await fetch(`${API_URL}/chats/start`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              vendorId: null,
+              serviceId: null,
+            }),
+          });
+
+          console.log('[Chat] Create response status:', createChatResponse.status);
+
+          if (createChatResponse.ok) {
+            const createChatData = await createChatResponse.json();
+            console.log('[Chat] Create response data:', JSON.stringify(createChatData));
+            adminChat = createChatData.data || createChatData;
+          } else {
+            const errorText = await createChatResponse.text();
+            console.error('[Chat] Failed to create admin chat:', errorText);
+            if (!silent) setLoading(false);
+            return;
+          }
+        } catch (createError) {
+          console.error('[Chat] Error creating admin chat:', createError);
+          if (!silent) setLoading(false);
+          return;
+        }
+      }
+
+      if (!adminChat || !adminChat._id) {
+        console.error('[Chat] No admin chat available');
         if (!silent) setLoading(false);
         return;
       }
+      console.log('[Chat] Setting chatId to:', adminChat._id);
       setChatId(adminChat._id);
       markMessagesAsRead(token, adminChat._id);
 
-      // Load messages from chat
-      const messages = adminChat.messages || [];
+      // Fetch full conversation with all messages (not from list which may be truncated)
+      const fullChatResponse = await fetch(`${API_URL}/chats/${adminChat._id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      let messages: any[] = [];
+      if (fullChatResponse.ok) {
+        const fullChatData = await fullChatResponse.json();
+        messages = fullChatData.data?.messages || fullChatData.messages || adminChat.messages || [];
+      } else {
+        // Fallback to messages from list if separate fetch fails
+        messages = adminChat.messages || [];
+      }
 
       // Format messages with correct isMe flag
       const messagesWithFlag = messages.map((msg: any, index: number) => {
@@ -117,7 +168,7 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
       });
 
       setMessages(messagesWithFlag);
-      
+
       // Scroll to bottom after messages load
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: false });
@@ -143,21 +194,30 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
     // Listen for new messages
     const handleNewMessage = (data: any) => {
       const { chatId: messageChatId, message } = data;
-      
+
       // Don't add our own messages (they're added optimistically)
       if (message?.sender === currentUserId) return;
+      if (message?.sender?._id === currentUserId) return;
 
       // If this is the active conversation, add the message directly
       if (messageChatId === chatId && message) {
-        const newMessage: Message = {
-          _id: message._id || `received-${Date.now()}`,
-          sender: message.sender || { _id: '', name: 'Admin' },
-          message: message.content || message.message || '',
-          createdAt: message.timestamp || message.createdAt || new Date().toISOString(),
-          isMe: false,
-        };
-        setMessages(prev => [...prev, newMessage]);
-        
+        const messageId = message._id || `received-${Date.now()}`;
+
+        // Check if message already exists to prevent duplicates
+        setMessages(prev => {
+          const exists = prev.some(m => m._id === messageId);
+          if (exists) return prev;
+
+          const newMessage: Message = {
+            _id: messageId,
+            sender: message.sender || { _id: '', name: 'Admin' },
+            message: message.content || message.message || '',
+            createdAt: message.timestamp || message.createdAt || new Date().toISOString(),
+            isMe: false,
+          };
+          return [...prev, newMessage];
+        });
+
         // Scroll to bottom if already at bottom
         if (isAtBottom) {
           setTimeout(() => {
@@ -171,7 +231,7 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
     const handleUserTyping = ({ userId, isTyping: typing }: any) => {
       if (userId === currentUserId) return; // Ignore our own typing
       setIsTyping(typing);
-      
+
       // Clear typing indicator after 3 seconds
       if (typing) {
         if (typingTimeoutRef.current) {
@@ -214,28 +274,28 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
 
   const markMessagesAsRead = async (token: string, chatId: string) => {
     try {
-      await fetch(`${API_BASE_URL}/chats/${chatId}/read`, {
+      await fetch(`${API_URL}/chats/${chatId}/read`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
-    } catch {}
+    } catch { }
   };
 
   const handleTyping = (text: string) => {
     setMessageText(text);
-    
+
     // Send typing indicator
     if (socket && isConnected && chatId) {
       sendTyping(chatId, true);
-      
+
       // Clear previous timeout
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
-      
+
       // Stop typing indicator after 2 seconds of no typing
       typingTimeoutRef.current = setTimeout(() => {
         sendTyping(chatId, false);
@@ -260,9 +320,12 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
       // Clear input immediately for UX
       setMessageText('');
 
+      // Create temp message ID
+      const tempId = `temp-${Date.now()}`;
+
       // Add message optimistically to UI
       const newMessage: Message = {
-        _id: `temp-${Date.now()}`,
+        _id: tempId,
         sender: { _id: currentUserId || 'me', name: 'You' },
         message: messageToSend,
         createdAt: new Date().toISOString(),
@@ -271,14 +334,16 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
 
       // Add to end of array (bottom of chat)
       setMessages(prev => [...prev, newMessage]);
-      setTimeout(
-        () => flatListRef.current?.scrollToEnd({ animated: true }),
-        100,
-      );
+
+      // Scroll to bottom after adding message
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+        setIsAtBottom(true);
+      }, 100);
 
       // Send message in background (non-blocking)
       const response = await fetch(
-        `${API_BASE_URL}/chats/${chatId}/messages`,
+        `${API_URL}/chats/${chatId}/messages`,
         {
           method: 'POST',
           headers: {
@@ -290,11 +355,18 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
       );
 
       if (response.ok) {
-        // Reload messages silently in background to sync
-        loadMessages(true);
+        // Update the temp message with the real ID from server
+        const responseData = await response.json();
+        const realMessage = responseData.data || responseData;
+        if (realMessage && realMessage._id) {
+          setMessages(prev => prev.map(m =>
+            m._id === tempId ? { ...m, _id: realMessage._id } : m
+          ));
+        }
+        // No need to reload all messages - just update the ID
       } else {
         // Revert on failure
-        setMessages(prev => prev.filter(m => m._id !== newMessage._id));
+        setMessages(prev => prev.filter(m => m._id !== tempId));
         Alert.alert('Error', 'Failed to send message. Please try again.');
       }
     } catch {
@@ -390,7 +462,7 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
         <View
           style={[
             styles.messagesContainer,
-            { paddingBottom: isTablet ? 160 : 130 },
+            { paddingBottom: isTablet ? 120 : 100 },
           ]}
         >
           {messages.length === 0 ? (
@@ -409,17 +481,14 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
               ref={flatListRef}
               data={messages}
               renderItem={renderMessage}
-              keyExtractor={item => item._id}
+              keyExtractor={(item, index) => `${item._id}-${index}`}
               contentContainerStyle={[
                 styles.messagesContent,
                 { paddingBottom: 16 },
               ]}
               showsVerticalScrollIndicator={false}
               onScroll={handleScroll}
-              scrollEventThrottle={400}
-              onContentSizeChange={() =>
-                flatListRef.current?.scrollToEnd({ animated: false })
-              }
+              scrollEventThrottle={16}
               ListFooterComponent={
                 isTyping ? (
                   <View style={styles.typingIndicator}>
@@ -460,7 +529,7 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={0}
-        style={styles.inputWrapper}
+        style={[styles.inputWrapper, { paddingBottom: insets.bottom }]}
       >
         <View style={styles.inputContainer}>
           <TextInput
@@ -660,7 +729,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     paddingVertical: 12,
     paddingHorizontal: 16,
-    paddingBottom: 62,
+    paddingBottom: 16,
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#E0E0E0',

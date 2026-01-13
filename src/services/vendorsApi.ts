@@ -1,8 +1,7 @@
-import { Platform } from 'react-native';
-import { API_BASE_URL } from './api';
+import { API_URL } from './../config/api.config';
 
 // Base URL for API requests
-const baseUrl = API_BASE_URL;
+const baseUrl = API_URL;
 
 export interface VendorProfile {
   rating: number;
@@ -31,7 +30,7 @@ export interface Vendor {
  */
 export const fetchVendors = async (): Promise<Vendor[]> => {
   try {
-    const response = await fetch(`${baseUrl}/api/vendors`);
+    const response = await fetch(`${baseUrl}/vendors`);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch vendors: ${response.statusText}`);
