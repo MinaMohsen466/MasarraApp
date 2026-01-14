@@ -40,7 +40,9 @@ import {
   getServiceReviews,
   Review,
   ReviewStats,
+  deleteReview,
 } from '../../services/reviewsApi';
+import { CustomAlert } from '../../screens/../components/CustomAlert/CustomAlert';
 
 interface ServiceDetailsProps {
   serviceId: string;
@@ -86,6 +88,18 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewStats, setReviewStats] = useState<ReviewStats | null>(null);
   const [showAllReviewsModal, setShowAllReviewsModal] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isDeletingReview, setIsDeletingReview] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    buttons: Array<{
+      text: string;
+      onPress?: () => void;
+      style?: 'default' | 'cancel' | 'destructive';
+    }>;
+  }>({ visible: false, title: '', message: '', buttons: [] });
 
   // Animation states
   const [showFlyingIcon, setShowFlyingIcon] = useState(false);
@@ -204,13 +218,15 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
     }
   };
 
-  // Load user token
+  // Load user token and userId
   React.useEffect(() => {
-    const loadToken = async () => {
+    const loadUserData = async () => {
       const token = await AsyncStorage.getItem('userToken');
+      const userId = await AsyncStorage.getItem('userId');
       setUserToken(token);
+      setCurrentUserId(userId);
     };
-    loadToken();
+    loadUserData();
   }, []);
 
   // Fetch services and find the selected service - Load first for faster UI
@@ -224,16 +240,16 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
   });
 
   // Load reviews in parallel using React Query for better caching
-  const { data: reviewsData } = useQuery<any>({
+  const { data: reviewsData, refetch: refetchReviews } = useQuery<any>({
     queryKey: ['service-reviews', serviceId],
     queryFn: async () => {
       if (!serviceId) return null;
       return await getServiceReviews(serviceId, 1, 10);
     },
     enabled: !!serviceId,
-    staleTime: 10 * 60 * 1000, // 10 minutes
-    gcTime: 20 * 60 * 1000, // 20 minutes cache
-    refetchOnMount: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes - shorter to allow refresh after new reviews
+    gcTime: 15 * 60 * 1000, // 15 minutes cache
+    refetchOnMount: 'always', // Always refetch when component mounts to show new reviews
     refetchOnWindowFocus: false,
   });
 
@@ -245,7 +261,49 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
     }
   }, [reviewsData]);
 
+  // Handle delete review
+  const handleDeleteReview = (review: Review) => {
+    setAlertConfig({
+      visible: true,
+      title: isRTL ? 'حذف التقييم' : 'Delete Review',
+      message: isRTL
+        ? 'هل أنت متأكد من حذف هذا التقييم؟ لا يمكن التراجع عن هذا الإجراء.'
+        : 'Are you sure you want to delete this review? This action cannot be undone.',
+      buttons: [
+        { text: isRTL ? 'إلغاء' : 'Cancel', style: 'cancel' },
+        {
+          text: isRTL ? 'حذف' : 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setIsDeletingReview(true);
+            try {
+              await deleteReview(review._id);
+              // Refresh reviews after deletion
+              refetchReviews();
+              setAlertConfig({
+                visible: true,
+                title: isRTL ? 'تم الحذف' : 'Deleted',
+                message: isRTL ? 'تم حذف تقييمك بنجاح' : 'Your review has been deleted successfully',
+                buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
+              });
+            } catch (error: any) {
+              setAlertConfig({
+                visible: true,
+                title: isRTL ? 'خطأ' : 'Error',
+                message: error.message || (isRTL ? 'فشل حذف التقييم' : 'Failed to delete review'),
+                buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
+              });
+            } finally {
+              setIsDeletingReview(false);
+            }
+          },
+        },
+      ],
+    });
+  };
+
   const service = (services as any)?.find((s: any) => s._id === serviceId);
+
 
   // Debug: Log service discount info
   React.useEffect(() => {
@@ -1296,14 +1354,49 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                           </Text>
                         </View>
                       </View>
-                      <Text
-                        style={[
-                          styles.reviewComment,
-                          isRTL && styles.reviewCommentRTL,
-                        ]}
-                      >
-                        {review.comment}
-                      </Text>
+
+                      {/* Comment with Delete Button in same row */}
+                      <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                        <Text
+                          style={[
+                            styles.reviewComment,
+                            isRTL && styles.reviewCommentRTL,
+                            { flex: 1 },
+                          ]}
+                        >
+                          {review.comment}
+                        </Text>
+
+                        {/* Delete Button - Only show for current user's reviews */}
+                        {currentUserId && review.user._id === currentUserId && (
+                          <TouchableOpacity
+                            style={{
+                              marginLeft: isRTL ? 0 : 8,
+                              marginRight: isRTL ? 8 : 0,
+                              padding: 6,
+                              backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                              borderRadius: 6,
+                            }}
+                            onPress={() => handleDeleteReview(review)}
+                            disabled={isDeletingReview}
+                          >
+                            {isDeletingReview ? (
+                              <ActivityIndicator size="small" color="#e57373" />
+                            ) : (
+                              <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                                <Path
+                                  d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"
+                                  stroke="#e57373"
+                                  strokeWidth={2}
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </Svg>
+                            )}
+                          </TouchableOpacity>
+                        )}
+                      </View>
+
                       {review.vendorReply && (
                         <View style={styles.vendorReply}>
                           <Text style={styles.vendorReplyLabel}>
@@ -1750,6 +1843,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
             reviewStats={reviewStats}
             serviceName={displayName}
             onBack={() => setShowAllReviewsModal(false)}
+            onReviewDeleted={() => refetchReviews()}
           />
         </Modal>
       )}
@@ -1801,6 +1895,15 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
           </View>
         </Animated.View>
       )}
+
+      {/* Custom Alert for Delete Confirmation */}
+      <CustomAlert
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttons={alertConfig.buttons}
+        onClose={() => setAlertConfig({ ...alertConfig, visible: false })}
+      />
     </View>
   );
 };

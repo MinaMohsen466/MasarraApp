@@ -57,7 +57,7 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onNavigate }) => {
   const [showSuccessScreen, setShowSuccessScreen] = useState(false);
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
   const [showAddressSelection, setShowAddressSelection] = useState(false);
-  const [selectedAddress, setSelectedAddress] = useState<any>(null);
+  const [SelectedAddress, setSelectedAddress] = useState<any>(null);
   const [userToken, setUserToken] = useState<string>('');
   // measured height of the bottom summary (used to reserve scroll space)
   const [summaryHeight, setSummaryHeight] = useState<number>(300);
@@ -397,10 +397,24 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onNavigate }) => {
             ? 'تم إنشاء حجزك بنجاح. سيتم إشعارك عندما يؤكد مقدم الخدمة الحجز ويمكنك الدفع.'
             : 'Your booking has been created successfully. You will be notified when the vendor confirms and you can proceed with payment.'
         );
-        setAlertButtons([{ text: t('ok'), style: 'default' }]);
+        setAlertButtons([
+          {
+            text: isRTL ? 'الذهاب للطلبات' : 'Go to Orders',
+            style: 'default',
+            onPress: async () => {
+              // Save flag to indicate OrderHistory should be opened
+              await AsyncStorage.setItem('openOrderHistory', '1');
+              if (onNavigate) {
+                onNavigate('profile');
+              }
+            }
+          },
+          { text: t('ok'), style: 'cancel' }
+        ]);
         setAlertVisible(true);
         return;
       }
+
 
       // Step 3: Calculate total amount for payment
       const successfullyBookedItems = cartItems.filter(item =>

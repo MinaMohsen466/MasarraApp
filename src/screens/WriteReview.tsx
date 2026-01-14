@@ -11,10 +11,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
+import { useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '../contexts/LanguageContext';
 import { createReview } from '../services/reviewsApi';
 import { colors } from '../constants/colors';
 import { CustomAlert } from '../components/CustomAlert/CustomAlert';
+
 
 interface WriteReviewProps {
   bookingId: string;
@@ -32,6 +34,7 @@ const WriteReview: React.FC<WriteReviewProps> = ({
   onSuccess,
 }) => {
   const { isRTL } = useLanguage();
+  const queryClient = useQueryClient();
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,6 +48,7 @@ const WriteReview: React.FC<WriteReviewProps> = ({
       style?: 'default' | 'cancel' | 'destructive';
     }>;
   }>({ visible: false, title: '', message: '', buttons: [] });
+
 
   const handleSubmit = async () => {
     // Validation
@@ -86,6 +90,9 @@ const WriteReview: React.FC<WriteReviewProps> = ({
     try {
       console.log('[WriteReview] Submitting review:', { serviceId, bookingId, rating, comment: comment.substring(0, 50) });
       await createReview(serviceId, rating, comment, bookingId);
+
+      // Invalidate the reviews cache so ServiceDetails will refetch
+      queryClient.invalidateQueries({ queryKey: ['service-reviews', serviceId] });
 
       setAlertConfig({
         visible: true,

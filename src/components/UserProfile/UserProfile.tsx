@@ -63,8 +63,24 @@ const UserProfile: React.FC<UserProfileProps> = ({
       }
     };
 
+    // Check if cart requested opening order history
+    const checkOpenOrderHistory = async () => {
+      try {
+        const flag = await AsyncStorage.getItem('openOrderHistory');
+        if (flag === '1') {
+          // remove flag and open order history
+          await AsyncStorage.removeItem('openOrderHistory');
+          setShowOrderHistory(true);
+        }
+      } catch (e) {
+        // Error checking flag
+      }
+    };
+
     checkOpenEdit();
+    checkOpenOrderHistory();
   }, []);
+
 
   const handleEditProfile = () => {
     setShowEditProfile(true);

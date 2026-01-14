@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,19 +8,23 @@ import {
   StyleSheet,
   Platform,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Review, ReviewStats } from '../services/reviewsApi';
+import { Review, ReviewStats, deleteReview } from '../services/reviewsApi';
 import { getImageUrl } from '../services/api';
 import { colors } from '../constants/colors';
+import { CustomAlert } from '../components/CustomAlert/CustomAlert';
 
 interface AllReviewsProps {
   reviews: Review[];
   reviewStats: ReviewStats;
   serviceName: string;
   onBack: () => void;
+  onReviewDeleted?: () => void;
 }
 
 const AllReviews: React.FC<AllReviewsProps> = ({
@@ -28,9 +32,81 @@ const AllReviews: React.FC<AllReviewsProps> = ({
   reviewStats,
   serviceName,
   onBack,
+  onReviewDeleted,
 }) => {
   const [imageErrors, setImageErrors] = React.useState<Set<string>>(new Set());
   const { isRTL } = useLanguage();
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Alert state
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    buttons: Array<{
+      text: string;
+      onPress?: () => void;
+      style?: 'default' | 'cancel' | 'destructive';
+    }>;
+  }>({ visible: false, title: '', message: '', buttons: [] });
+
+  // Get current user ID on mount
+  useEffect(() => {
+    const getUserId = async () => {
+      const userId = await AsyncStorage.getItem('userId');
+      setCurrentUserId(userId);
+    };
+    getUserId();
+  }, []);
+
+
+
+  const handleDeleteReview = (review: Review) => {
+    setAlertConfig({
+      visible: true,
+      title: isRTL ? 'حذف التقييم' : 'Delete Review',
+      message: isRTL
+        ? 'هل أنت متأكد من حذف هذا التقييم؟ لا يمكن التراجع عن هذا الإجراء.'
+        : 'Are you sure you want to delete this review? This action cannot be undone.',
+      buttons: [
+        { text: isRTL ? 'إلغاء' : 'Cancel', style: 'cancel' },
+        {
+          text: isRTL ? 'حذف' : 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setIsDeleting(true);
+            try {
+              await deleteReview(review._id);
+              setAlertConfig({
+                visible: true,
+                title: isRTL ? 'تم الحذف' : 'Deleted',
+                message: isRTL ? 'تم حذف تقييمك بنجاح' : 'Your review has been deleted successfully',
+                buttons: [{
+                  text: isRTL ? 'حسناً' : 'OK',
+                  style: 'default',
+                  onPress: () => {
+                    if (onReviewDeleted) {
+                      onReviewDeleted();
+                    }
+                  }
+                }],
+              });
+            } catch (error: any) {
+              setAlertConfig({
+                visible: true,
+                title: isRTL ? 'خطأ' : 'Error',
+                message: error.message || (isRTL ? 'فشل حذف التقييم' : 'Failed to delete review'),
+                buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
+              });
+            } finally {
+              setIsDeleting(false);
+            }
+          },
+        },
+      ],
+    });
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -86,7 +162,7 @@ const AllReviews: React.FC<AllReviewsProps> = ({
             {[5, 4, 3, 2, 1].map(star => {
               const count =
                 reviewStats.ratingDistribution[
-                  star as keyof typeof reviewStats.ratingDistribution
+                star as keyof typeof reviewStats.ratingDistribution
                 ] || 0;
               const percentage =
                 reviewStats.totalRatings > 0
@@ -114,11 +190,11 @@ const AllReviews: React.FC<AllReviewsProps> = ({
         <View style={styles.reviewsList}>
           {reviews.map(review => (
             <View key={review._id} style={styles.reviewCard}>
-              {/* Header: Avatar + Name + Date + Rating in one row */}
+              {/* Header: Avatar + Name + Date + Rating + Delete in one row */}
               <View style={styles.reviewHeader}>
                 <View style={styles.reviewUserSection}>
                   {review.user.profilePicture &&
-                  !imageErrors.has(review._id) ? (
+                    !imageErrors.has(review._id) ? (
                     <Image
                       source={{ uri: getImageUrl(review.user.profilePicture) }}
                       style={styles.avatar}
@@ -145,7 +221,7 @@ const AllReviews: React.FC<AllReviewsProps> = ({
                       <Text style={styles.reviewDate}>
                         {new Date(review.createdAt).toLocaleDateString(
                           isRTL ? 'ar-EG' : 'en-US',
-                          { month: 'short', day: 'numeric', year: 'numeric' },
+                          { month: 'short', day: 'numeric' },
                         )}
                       </Text>
                     </View>
@@ -163,10 +239,35 @@ const AllReviews: React.FC<AllReviewsProps> = ({
                 </View>
               </View>
 
-              {/* Comment */}
-              <Text style={[styles.comment, isRTL && styles.commentRTL]}>
-                {review.comment}
-              </Text>
+              {/* Comment with Delete Button in same row */}
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                <Text style={[styles.comment, isRTL && styles.commentRTL, { flex: 1 }]}>
+                  {review.comment}
+                </Text>
+
+                {/* Delete Button - Only show for current user's reviews */}
+                {currentUserId && review.user._id === currentUserId && (
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => handleDeleteReview(review)}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? (
+                      <ActivityIndicator size="small" color="#e57373" />
+                    ) : (
+                      <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                        <Path
+                          d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"
+                          stroke="#e57373"
+                          strokeWidth={2}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </Svg>
+                    )}
+                  </TouchableOpacity>
+                )}
+              </View>
 
               {/* Vendor Reply */}
               {review.vendorReply && (
@@ -188,9 +289,20 @@ const AllReviews: React.FC<AllReviewsProps> = ({
           ))}
         </View>
       </ScrollView>
+
+      {/* Custom Alert */}
+      <CustomAlert
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttons={alertConfig.buttons}
+        onClose={() => setAlertConfig({ ...alertConfig, visible: false })}
+      />
     </SafeAreaView>
   );
 };
+
+
 
 const styles = StyleSheet.create({
   container: {
@@ -443,6 +555,13 @@ const styles = StyleSheet.create({
   vendorReplyTextRTL: {
     textAlign: 'right',
     fontFamily: 'Arial',
+  },
+  // Delete button styles
+  deleteButton: {
+    marginLeft: 8,
+    padding: 6,
+    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+    borderRadius: 6,
   },
 });
 

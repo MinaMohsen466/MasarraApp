@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
 import { API_BASE_URL } from './api';
+
 
 export interface Review {
   _id: string;
@@ -119,7 +119,7 @@ export async function createReview(
     // Check content type before parsing
     const contentType = response.headers.get('content-type');
     console.log('[createReview] Content-Type:', contentType);
-    
+
     if (!contentType || !contentType.includes('application/json')) {
       // Try to get the text to see what was returned
       const text = await response.text();
@@ -159,5 +159,39 @@ export async function checkUserReviewedService(
     return reviewsResponse.reviews.some(review => review.user._id === userId);
   } catch (error) {
     return false;
+  }
+}
+
+// Delete a review
+export async function deleteReview(reviewId: string): Promise<void> {
+  try {
+    const token = await AsyncStorage.getItem('userToken');
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+
+    const url = `${API_BASE_URL}/reviews/${reviewId}`;
+    console.log('[deleteReview] Sending to URL:', url);
+
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    console.log('[deleteReview] Response status:', response.status);
+
+    if (!response.ok) {
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const error = await response.json();
+        throw new Error(error.error || error.message || 'Failed to delete review');
+      }
+      throw new Error('Failed to delete review');
+    }
+  } catch (error) {
+    throw error;
   }
 }

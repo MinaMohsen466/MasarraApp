@@ -356,7 +356,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
     setCurrentPayingBooking(null);
 
     // Wait longer for the server to process the callback (increased to 3 seconds)
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise<void>(resolve => setTimeout(resolve, 3000));
+
 
     // Reload bookings to get updated status
     await loadBookings();
@@ -469,38 +470,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
       'Vendor';
   };
 
-  const getServiceId = (booking: Booking) => {
-    const service = booking.services[0]?.service;
-    return typeof service === 'string' ? service : (service as any)?._id;
-  };
 
-  const getVendorName = (booking: Booking) => {
-    // If booking has multiple services with different vendors
-    if (booking.services && booking.services.length > 1) {
-      const uniqueVendorIds = new Set(
-        booking.services.map((s: any) => {
-          const vendor = s.vendor;
-          return typeof vendor === 'string' ? vendor : vendor?._id;
-        }).filter(Boolean)
-      );
-
-      if (uniqueVendorIds.size > 1) {
-        return isRTL ? 'عدة مقدمي خدمات' : 'Multiple Vendors';
-      }
-    }
-
-    const vendor = booking.services[0]?.vendor;
-    if (!vendor || typeof vendor !== 'object')
-      return isRTL ? 'مقدم الخدمة' : 'Vendor';
-    return isRTL
-      ? (vendor as any)?.nameAr ||
-      (vendor as any)?.vendorProfile?.businessName_ar ||
-      (vendor as any)?.name ||
-      'مقدم الخدمة'
-      : (vendor as any)?.name ||
-      (vendor as any)?.vendorProfile?.businessName ||
-      'Vendor';
-  };
 
   const getDescription = (booking: Booking) => {
     const service = booking.services[0]?.service;
@@ -564,21 +534,6 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
   const getTotalPrice = (booking: Booking): number => {
     // Use totalPrice from booking as it already includes quantity and options
     return booking.totalPrice || 0;
-  };
-
-  // Get options price separately for display
-  const getOptionsPrice = (booking: Booking): number => {
-    const service = booking.services?.[0];
-    if (!service || !service.customInputs) return 0;
-
-    let optionsTotal = 0;
-    service.customInputs.forEach((input: any) => {
-      if (input.price) {
-        optionsTotal += input.price;
-      }
-    });
-
-    return optionsTotal;
   };
 
   const handleQRCode = async (booking: Booking) => {
@@ -775,24 +730,28 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                   <View
                     style={[
                       styles.statusBadge,
-                      { backgroundColor: getStatusStyle(booking.status).color },
+                      {
+                        backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                        borderWidth: 1,
+                        borderColor: getStatusStyle(booking.status).color
+                      },
                     ]}
                   >
-                    <Text style={styles.statusText}>
+                    <Text style={[styles.statusText, { color: getStatusStyle(booking.status).color }]}>
                       {getStatusStyle(booking.status).text}
                     </Text>
                   </View>
                   {/* Payment Status Badge */}
                   {booking.paymentStatus === 'paid' && (
-                    <View style={[styles.statusBadge, { backgroundColor: '#4CAF50' }]}>
-                      <Text style={styles.statusText}>
+                    <View style={[styles.statusBadge, { backgroundColor: 'rgba(255, 255, 255, 0.7)', borderWidth: 1, borderColor: '#4CAF50' }]}>
+                      <Text style={[styles.statusText, { color: '#4CAF50' }]}>
                         {isRTL ? 'مدفوع' : 'Paid'}
                       </Text>
                     </View>
                   )}
                   {booking.paymentStatus === 'pending' && booking.status !== 'pending' && (
-                    <View style={[styles.statusBadge, { backgroundColor: '#FF9800' }]}>
-                      <Text style={styles.statusText}>
+                    <View style={[styles.statusBadge, { backgroundColor: 'rgba(255, 255, 255, 0.7)', borderWidth: 1, borderColor: '#FF9800' }]}>
+                      <Text style={[styles.statusText, { color: '#FF9800' }]}>
                         {isRTL ? 'بانتظار الدفع' : 'Payment Pending'}
                       </Text>
                     </View>
@@ -867,8 +826,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                               {serviceEntry.price?.toFixed(3) || '0.000'} {isRTL ? 'د.ك' : 'KWD'}
                             </Text>
                             {/* Payment Status Badge for this service */}
-                            <View style={[styles.statusBadge, { backgroundColor: isPaid ? '#4CAF50' : '#FF9800', paddingHorizontal: 8, paddingVertical: 2 }]}>
-                              <Text style={[styles.statusText, { fontSize: 10 }]}>
+                            <View style={[styles.statusBadge, { backgroundColor: 'rgba(255, 255, 255, 0.7)', borderWidth: 1, borderColor: isPaid ? '#4CAF50' : '#FF9800', paddingHorizontal: 8, paddingVertical: 2 }]}>
+                              <Text style={[styles.statusText, { fontSize: 10, color: isPaid ? '#4CAF50' : '#FF9800' }]}>
                                 {isPaid ? (isRTL ? 'مدفوع' : 'Paid') : (isRTL ? 'غير مدفوع' : 'Unpaid')}
                               </Text>
                             </View>
@@ -978,15 +937,17 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                               <TouchableOpacity
                                 style={{
                                   flex: 1,
-                                  backgroundColor: colors.primary,
+                                  backgroundColor: 'rgba(255, 255, 255, 0.7)',
                                   paddingVertical: 8,
                                   paddingHorizontal: 12,
                                   borderRadius: 6,
                                   alignItems: 'center',
+                                  borderWidth: 1,
+                                  borderColor: colors.primary,
                                 }}
                                 onPress={() => onWriteReview(booking._id, serviceId, serviceName)}
                               >
-                                <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>
+                                <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '600' }}>
                                   {isRTL ? 'كتابة تقييم' : 'Write Review'}
                                 </Text>
                               </TouchableOpacity>
@@ -997,15 +958,17 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                               <TouchableOpacity
                                 style={{
                                   flex: 1,
-                                  backgroundColor: '#00695C',
+                                  backgroundColor: 'rgba(255, 255, 255, 0.7)',
                                   paddingVertical: 8,
                                   paddingHorizontal: 12,
                                   borderRadius: 6,
                                   alignItems: 'center',
+                                  borderWidth: 1,
+                                  borderColor: '#00695C',
                                 }}
                                 onPress={() => handleQRCode(booking)}
                               >
-                                <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>
+                                <Text style={{ color: '#00695C', fontSize: 12, fontWeight: '600' }}>
                                   {isRTL ? 'إنشاء QR' : 'Create QR'}
                                 </Text>
                               </TouchableOpacity>
