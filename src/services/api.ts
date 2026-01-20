@@ -9,6 +9,8 @@ export const API_BASE_URL = API_URL;
 
 // Service cache for avoiding repeated requests
 const serviceCache = new Map<string, { data: any; timestamp: number }>();
+// Time slots cache for faster time selection
+const timeSlotsCache = new Map<string, { data: any[]; timestamp: number }>();
 
 /**
  * Helper function to safely parse JSON responses
@@ -16,11 +18,11 @@ const serviceCache = new Map<string, { data: any; timestamp: number }>();
  */
 const parseJsonResponse = async (response: Response): Promise<any> => {
   const responseText = await response.text();
-  
+
   if (!responseText || responseText.trim() === '') {
     return null;
   }
-  
+
   try {
     return JSON.parse(responseText);
   } catch (parseError) {
@@ -326,12 +328,25 @@ export const changePassword = async (
       body: JSON.stringify({ currentPassword, newPassword }),
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Password change failed');
+    // Get response text first to safely parse
+    const responseText = await response.text();
+
+    // Try to parse as JSON
+    let responseData;
+    try {
+      responseData = JSON.parse(responseText);
+    } catch {
+      // If response is not JSON, create error object from text
+      if (!response.ok) {
+        throw new Error(responseText || 'Password change failed');
+      }
+      return { message: responseText || 'Password changed successfully' };
     }
 
-    const responseData = await response.json();
+    if (!response.ok) {
+      throw new Error(responseData.error || responseData.message || 'Password change failed');
+    }
+
     return responseData;
   } catch (error) {
     throw error;
@@ -616,7 +631,8 @@ export const getUserBookings = async (token: string): Promise<Booking[]> => {
 
 /**
  * Check availability for multiple dates at once (batch request)
- * Much faster than individual requests
+ * Uses a single API call to the backend batch-availability endpoint
+ * Much faster than individual requests (~30 calls reduced to 1)
  */
 export const checkBatchDateAvailability = async (
   serviceId: string,
@@ -627,48 +643,112 @@ export const checkBatchDateAvailability = async (
   Map<string, { available: boolean; bookingsCount: number; slots: number }>
 > => {
   try {
-    // استخدم Promise.all لإرسال جميع الطلبات بشكل متوازٍ
-    const results = await Promise.all(
-      dates.map(async date => {
-        try {
-          const result = await checkDateAvailability(
-            serviceId,
-            vendorId,
-            date,
-            token,
-          );
-          const dateKey = `${date.getUTCFullYear()}-${(date.getUTCMonth() + 1)
-            .toString()
-            .padStart(2, '0')}-${date
-            .getUTCDate()
-            .toString()
-            .padStart(2, '0')}`;
-          return { dateKey, ...result };
-        } catch (error) {
-          const dateKey = `${date.getUTCFullYear()}-${(date.getUTCMonth() + 1)
-            .toString()
-            .padStart(2, '0')}-${date
-            .getUTCDate()
-            .toString()
-            .padStart(2, '0')}`;
-          return { dateKey, available: false, bookingsCount: 0, slots: 0 };
-        }
-      }),
-    );
-
-    // حوّل النتائج إلى Map
-    const availabilityMap = new Map<
-      string,
-      { available: boolean; bookingsCount: number; slots: number }
-    >();
-    results.forEach(({ dateKey, available, bookingsCount, slots }) => {
-      availabilityMap.set(dateKey, { available, bookingsCount, slots });
+    // تحويل التواريخ إلى تنسيق YYYY-MM-DD
+    const dateStrings = dates.map(date => {
+      const year = date.getUTCFullYear();
+      const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+      const day = date.getUTCDate().toString().padStart(2, '0');
+      return `${year}-${month}-${day}`;
     });
 
-    return availabilityMap;
+    // استخدام batch endpoint الموحد بدلاً من طلبات منفصلة
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+    try {
+      const response = await fetch(`${BASE_URL}/api/bookings/batch-availability`, {
+        method: 'POST',
+        headers: token
+          ? {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          }
+          : {
+            'Content-Type': 'application/json',
+          },
+        body: JSON.stringify({
+          serviceIds: [serviceId],
+          dates: dateStrings,
+        }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error('Batch availability request failed');
+      }
+
+      const data = await response.json();
+      const availabilityMap = new Map<
+        string,
+        { available: boolean; bookingsCount: number; slots: number }
+      >();
+
+      // معالجة النتائج من الـ backend
+      if (data.availability && data.availability[serviceId]) {
+        const serviceAvailability = data.availability[serviceId];
+        for (const [dateStr, info] of Object.entries(serviceAvailability)) {
+          const availInfo = info as { hasSlots: boolean; availableSlots: number };
+          availabilityMap.set(dateStr, {
+            available: availInfo.hasSlots,
+            bookingsCount: 0, // الـ backend لا يرجع هذه القيمة، لكنها غير مستخدمة في UI
+            slots: availInfo.availableSlots === -1 ? 99 : availInfo.availableSlots, // -1 يعني unlimited
+          });
+        }
+      }
+
+      return availabilityMap;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      // في حالة فشل الـ batch، نرجع إلى الطريقة القديمة كـ fallback
+      console.warn('Batch availability failed, falling back to individual requests');
+      throw error;
+    }
   } catch (error) {
-    // في حالة الخطأ، أرجع Map فارغ
-    return new Map();
+    // Fallback: استخدام الطريقة القديمة (طلبات فردية) في حالة فشل الـ batch
+    try {
+      const results = await Promise.all(
+        dates.map(async date => {
+          try {
+            const result = await checkDateAvailability(
+              serviceId,
+              vendorId,
+              date,
+              token,
+            );
+            const dateKey = `${date.getUTCFullYear()}-${(date.getUTCMonth() + 1)
+              .toString()
+              .padStart(2, '0')}-${date
+                .getUTCDate()
+                .toString()
+                .padStart(2, '0')}`;
+            return { dateKey, ...result };
+          } catch (err) {
+            const dateKey = `${date.getUTCFullYear()}-${(date.getUTCMonth() + 1)
+              .toString()
+              .padStart(2, '0')}-${date
+                .getUTCDate()
+                .toString()
+                .padStart(2, '0')}`;
+            return { dateKey, available: false, bookingsCount: 0, slots: 0 };
+          }
+        }),
+      );
+
+      const availabilityMap = new Map<
+        string,
+        { available: boolean; bookingsCount: number; slots: number }
+      >();
+      results.forEach(({ dateKey, available, bookingsCount, slots }) => {
+        availabilityMap.set(dateKey, { available, bookingsCount, slots });
+      });
+
+      return availabilityMap;
+    } catch (fallbackError) {
+      // في حالة فشل كل شيء، نرجع Map فارغ
+      return new Map();
+    }
   }
 };
 
@@ -762,12 +842,12 @@ export const checkDateAvailability = async (
           signal: controller.signal,
           headers: token
             ? {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              }
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            }
             : {
-                'Content-Type': 'application/json',
-              },
+              'Content-Type': 'application/json',
+            },
         },
       );
 
@@ -837,19 +917,34 @@ export const checkTimeSlotAvailability = async (
     const day = date.getUTCDate().toString().padStart(2, '0');
     const dateStr = `${year}-${month}-${day}`;
 
+    // Check cache first
+    const cacheKey = `timeslots-${serviceId}-${dateStr}`;
+    const cachedData = timeSlotsCache.get(cacheKey);
+    if (cachedData && Date.now() - cachedData.timestamp < 2 * 60 * 1000) {
+      // 2 minutes cache
+      return cachedData.data;
+    }
+
+    // Add timeout for faster response
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+
     const response = await fetch(
       `${BASE_URL}/api/bookings/available-timeslots?serviceId=${serviceId}&date=${dateStr}`,
       {
+        signal: controller.signal,
         headers: token
           ? {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            }
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          }
           : {
-              'Content-Type': 'application/json',
-            },
+            'Content-Type': 'application/json',
+          },
       },
     );
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -891,8 +986,17 @@ export const checkTimeSlotAvailability = async (
       },
     );
 
+    // Cache the result
+    timeSlotsCache.set(cacheKey, {
+      data: slots,
+      timestamp: Date.now(),
+    });
+
     return slots;
   } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.warn('Time slots request timed out');
+    }
     return [];
   }
 };

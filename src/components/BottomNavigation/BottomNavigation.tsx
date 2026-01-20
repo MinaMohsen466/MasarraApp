@@ -230,39 +230,32 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
             viewBox="0 0 24 24"
             fill="none"
           >
+            {/* Cart body */}
             <Path
-              d="M9 2L7 6"
-              stroke={colors.primary}
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <Path
-              d="M15 2L17 6"
-              stroke={colors.primary}
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <Path
-              d="M2 6H22L20 20H4L2 6Z"
+              d="M1 1H5L7.68 14.39C7.77 14.87 8.02 15.31 8.38 15.64C8.74 15.97 9.19 16.15 9.68 16.15H19.4C19.86 16.15 20.29 15.99 20.64 15.68C20.99 15.38 21.23 14.97 21.32 14.51L23 6H6"
               stroke={colors.primary}
               strokeWidth={2}
               strokeLinecap="round"
               strokeLinejoin="round"
               fill={isActive('cart') ? colors.primary : 'none'}
             />
+            {/* Left wheel */}
             <Circle
-              cx="9"
-              cy="20"
-              r="1"
-              fill={isActive('cart') ? colors.textWhite : colors.primary}
+              cx="10"
+              cy="21"
+              r="2"
+              stroke={colors.primary}
+              strokeWidth={2}
+              fill={isActive('cart') ? colors.primary : 'none'}
             />
+            {/* Right wheel */}
             <Circle
-              cx="15"
-              cy="20"
-              r="1"
-              fill={isActive('cart') ? colors.textWhite : colors.primary}
+              cx="19"
+              cy="21"
+              r="2"
+              stroke={colors.primary}
+              strokeWidth={2}
+              fill={isActive('cart') ? colors.primary : 'none'}
             />
           </Svg>
           {cartCount > 0 && (

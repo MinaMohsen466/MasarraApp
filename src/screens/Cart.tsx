@@ -816,15 +816,11 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onNavigate }) => {
             activeOpacity={0.6}
             hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
           >
-            <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-              <Path
-                d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"
-                stroke={colors.primary}
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </Svg>
+            <Image
+              source={require('../imgs/user.png')}
+              style={styles.profileIcon}
+              resizeMode="contain"
+            />
           </TouchableOpacity>
         </View>
 
@@ -903,15 +899,11 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onNavigate }) => {
               onError={() => setImageError(true)}
             />
           ) : (
-            <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-              <Path
-                d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"
-                stroke={colors.primary}
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </Svg>
+            <Image
+              source={require('../imgs/user.png')}
+              style={styles.profileIcon}
+              resizeMode="contain"
+            />
           )}
         </TouchableOpacity>
       </View>

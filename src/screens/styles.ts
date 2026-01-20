@@ -11,15 +11,15 @@ const styles = StyleSheet.create({
     paddingBottom: isTablet ? 120 : 80, // إضافة مساحة تحت Bottom Nav على التابلت
   },
   occasionsSection: {
-    paddingTop: isTablet ? 30 : 20,
-    paddingBottom: isTablet ? 100 : 40,
-    marginBottom: isTablet ? 40 : 20,
+    paddingTop: isTablet ? 15 : 10,
+    paddingBottom: isTablet ? 80 : 30,
+    marginBottom: isTablet ? 20 : 10,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: isTablet ? 24 : 16,
+    marginBottom: isTablet ? 16 : 10,
     paddingHorizontal: isTablet ? 30 : 16,
   },
   sectionHeaderRTL: {

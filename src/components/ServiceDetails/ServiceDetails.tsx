@@ -153,11 +153,13 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
           const screenHeight = Dimensions.get('window').height;
           const screenWidth = Dimensions.get('window').width;
 
-          // Bottom tab bar height (more accurate for different devices)
-          const tabBarHeight = 65;
-          const safeAreaBottom = 20; // Account for safe area insets
+          // Bottom tab bar configuration
+          // Tab bar is approximately 60px + safe area bottom
+          const tabBarBaseHeight = 60;
+          const bottomInset = insets.bottom || 0;
+          const totalTabBarHeight = tabBarBaseHeight + bottomInset;
 
-          // Cart icon is the LAST item in bottom nav
+          // Cart icon is the LAST item in bottom nav (5th item, index 4)
           // Bottom nav has 5 items evenly distributed
           const navItemWidth = screenWidth / 5;
           const cartIconIndex = 4; // 0-based index (5th item)
@@ -168,8 +170,8 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
           // Calculate X position: center of the nav item
           const targetX = (cartPosition * navItemWidth) + (navItemWidth / 2);
 
-          // Calculate Y position: screen height minus tab bar
-          const targetY = screenHeight - tabBarHeight - safeAreaBottom;
+          // Calculate Y position: icon center should be in middle of tab bar
+          const targetY = screenHeight - (totalTabBarHeight / 2) - 5;
 
           // Calculate icon size (60x60)
           const iconSize = 60;

@@ -9,7 +9,6 @@ import {
   Clipboard,
   Linking,
   Modal,
-  TextInput,
   StatusBar,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,7 +19,7 @@ import { CustomAlert } from '../components/CustomAlert';
 import { API_URL } from '../config/api.config';
 import { myEventsStyles as styles } from './myEventsStyles';
 import { fetchOccasions } from '../services/api';
-import { canCreateQRCode, getQRCodeByBooking } from '../services/qrCodeApi';
+import { getQRCodeByBooking } from '../services/qrCodeApi';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 interface MyEventsProps {
@@ -140,17 +139,31 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
       }
 
       const bookings = await response.json();
+      const allBookings = Array.isArray(bookings) ? bookings : [];
 
-      // Filter bookings that can create QR codes
-      const filteredBookings = [];
-      for (const booking of Array.isArray(bookings) ? bookings : []) {
-        const canCreate = await canCreateQRCode(booking, null, token);
-        if (canCreate) {
-          filteredBookings.push(booking);
-        }
-      }
+      // Filter bookings that already have QR codes created (in parallel for speed)
+      const qrChecks = await Promise.all(
+        allBookings.map(async (booking) => {
+          try {
+            const qrData = await getQRCodeByBooking(token, booking._id);
+            return { booking, hasQR: qrData !== null && qrData.qrUrl };
+          } catch {
+            return { booking, hasQR: false };
+          }
+        })
+      );
 
-      setEvents(filteredBookings);
+      // Only keep bookings that have QR codes
+      const bookingsWithQR = qrChecks
+        .filter(item => item.hasQR)
+        .map(item => item.booking);
+
+      // Sort by event date (newest first)
+      bookingsWithQR.sort((a, b) =>
+        new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime()
+      );
+
+      setEvents(bookingsWithQR);
     } catch (error: any) {
       showAlert(
         isRTL ? 'خطأ' : 'Error',
@@ -458,31 +471,31 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
         </View>
 
         {isExpanded && (
-          <View style={styles.menuDropdown}>
+          <View style={styles.actionButtonsRow}>
             <TouchableOpacity
-              style={styles.menuItem}
+              style={styles.simpleActionButton}
               onPress={() => handleCopyQR(item._id)}
             >
-              <Text style={styles.menuItemText}>
+              <Text style={styles.simpleActionButtonText}>
                 {isRTL ? 'نسخ QR' : 'Copy QR'}
               </Text>
             </TouchableOpacity>
-            <View style={styles.menuDivider} />
+
             <TouchableOpacity
-              style={styles.menuItem}
+              style={styles.simpleActionButton}
               onPress={() => handleViewQR(item._id)}
             >
-              <Text style={styles.menuItemText}>
+              <Text style={styles.simpleActionButtonText}>
                 {isRTL ? 'عرض QR' : 'View QR'}
               </Text>
             </TouchableOpacity>
-            <View style={styles.menuDivider} />
+
             <TouchableOpacity
-              style={styles.menuItem}
+              style={styles.simpleActionButton}
               onPress={() => handleGuestList(item._id)}
             >
-              <Text style={styles.menuItemText}>
-                {isRTL ? 'قائمة الضيوف' : 'Guest List'}
+              <Text style={styles.simpleActionButtonText}>
+                {isRTL ? 'الضيوف' : 'Guests'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -536,18 +549,18 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
         <View style={{ flex: 1, backgroundColor: colors.primary }}>
           <View style={{ height: insets.top, backgroundColor: colors.primary }} />
           <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Text style={styles.backIcon}>{isRTL ? '›' : '‹'}</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>
-            {isRTL ? 'فعالياتي' : 'My Events'}
-          </Text>
-          <View style={styles.placeholder} />
-        </View>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
+            <View style={styles.header}>
+              <TouchableOpacity onPress={onBack} style={styles.backButton}>
+                <Text style={styles.backIcon}>{isRTL ? '›' : '‹'}</Text>
+              </TouchableOpacity>
+              <Text style={styles.headerTitle}>
+                {isRTL ? 'فعالياتي' : 'My Events'}
+              </Text>
+              <View style={styles.placeholder} />
+            </View>
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
           </View>
         </View>
       </>
@@ -564,176 +577,176 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
       <View style={{ flex: 1, backgroundColor: colors.primary }}>
         <View style={{ height: insets.top, backgroundColor: colors.primary }} />
         <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backIcon}>{isRTL ? '›' : '‹'}</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          {isRTL ? 'فعالياتي' : 'My Events'}
-        </Text>
-        <View style={styles.placeholder} />
-      </View>
-
-      {/* Date and Occasion Filters */}
-      <View style={styles.filterSection}>
-        <TouchableOpacity
-          style={styles.dateFilterButton}
-          onPress={() => setShowDatePicker(true)}
-        >
-          <Text style={styles.dateFilterText} numberOfLines={1}>
-            {selectedDate
-              ? selectedDate.toLocaleDateString('en-US', {
-                  month: '2-digit',
-                  day: '2-digit',
-                  year: 'numeric',
-                })
-              : 'mm/dd/yyyy'}
-          </Text>
-          {selectedDate && (
-            <TouchableOpacity
-              onPress={clearDateFilter}
-              style={styles.clearButton}
-            >
-              <Text style={styles.clearButtonText}>✕</Text>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={onBack} style={styles.backButton}>
+              <Text style={styles.backIcon}>{isRTL ? '›' : '‹'}</Text>
             </TouchableOpacity>
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.occasionFilterButton}
-          onPress={() => setShowOccasionPicker(true)}
-        >
-          <Text
-            style={styles.occasionFilterText}
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >
-            {selectedOccasion || (isRTL ? 'اختر المناسبة' : 'Select Occasion')}
-          </Text>
-          {selectedOccasion && (
-            <TouchableOpacity
-              onPress={clearOccasionFilter}
-              style={styles.clearButton}
-            >
-              <Text style={styles.clearButtonText}>✕</Text>
-            </TouchableOpacity>
-          )}
-        </TouchableOpacity>
-      </View>
-
-      {/* Status Filter */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterContainer}
-        contentContainerStyle={styles.filterContent}
-      >
-        {renderFilterButton(isRTL ? 'الكل' : 'All', 'all')}
-        {renderFilterButton(isRTL ? 'مؤكد' : 'Confirmed', 'confirmed')}
-        {renderFilterButton(isRTL ? 'قيد الانتظار' : 'Pending', 'pending')}
-        {renderFilterButton(isRTL ? 'ملغي' : 'Cancelled', 'cancelled')}
-      </ScrollView>
-
-      {/* Table Header */}
-      <View style={styles.tableHeader}>
-        <Text style={[styles.tableHeaderText, styles.dateColumn]}>
-          {isRTL ? 'التاريخ' : 'Date'}
-        </Text>
-        <Text style={[styles.tableHeaderText, styles.occasionColumn]}>
-          {isRTL ? 'المناسبة' : 'Occasion'}
-        </Text>
-        <Text style={[styles.tableHeaderText, styles.actionColumn]}>
-          {isRTL ? 'الإجراء' : 'Action'}
-        </Text>
-      </View>
-
-      {/* Events List */}
-      {filteredEvents.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>
-            {isRTL ? 'لا توجد فعاليات' : 'No events found'}
-          </Text>
-        </View>
-      ) : (
-        <FlatList
-          data={filteredEvents}
-          renderItem={renderEventItem}
-          keyExtractor={item => item._id}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
-
-      {/* Custom Alert */}
-      <CustomAlert
-        visible={alertVisible}
-        title={alertTitle}
-        message={alertMessage}
-        buttons={[
-          {
-            text: 'OK',
-            onPress: () => setAlertVisible(false),
-          },
-        ]}
-        onClose={() => setAlertVisible(false)}
-      />
-
-      {/* Date Picker Modal */}
-      {showDatePicker && (
-        <DateTimePicker
-          value={selectedDate || new Date()}
-          mode="date"
-          display="default"
-          onChange={handleDateChange}
-        />
-      )}
-
-      {/* Occasion Picker Modal */}
-      <Modal
-        visible={showOccasionPicker}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowOccasionPicker(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowOccasionPicker(false)}
-        >
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>
-              {isRTL ? 'اختر المناسبة' : 'Select Occasion'}
+            <Text style={styles.headerTitle}>
+              {isRTL ? 'فعالياتي' : 'My Events'}
             </Text>
-            <ScrollView style={styles.occasionList}>
-              {occasions.map(occasion => (
-                <TouchableOpacity
-                  key={occasion._id}
-                  style={styles.occasionItem}
-                  onPress={() => {
-                    setSelectedOccasion(
-                      isRTL ? occasion.nameAr : occasion.name,
-                    );
-                    setShowOccasionPicker(false);
-                  }}
-                >
-                  <Text style={styles.occasionItemText}>
-                    {isRTL ? occasion.nameAr : occasion.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            <View style={styles.placeholder} />
+          </View>
+
+          {/* Date and Occasion Filters */}
+          <View style={styles.filterSection}>
             <TouchableOpacity
-              style={styles.modalCloseButton}
-              onPress={() => setShowOccasionPicker(false)}
+              style={styles.dateFilterButton}
+              onPress={() => setShowDatePicker(true)}
             >
-              <Text style={styles.modalCloseButtonText}>
-                {isRTL ? 'إغلاق' : 'Close'}
+              <Text style={styles.dateFilterText} numberOfLines={1}>
+                {selectedDate
+                  ? selectedDate.toLocaleDateString('en-US', {
+                    month: '2-digit',
+                    day: '2-digit',
+                    year: 'numeric',
+                  })
+                  : 'mm/dd/yyyy'}
               </Text>
+              {selectedDate && (
+                <TouchableOpacity
+                  onPress={clearDateFilter}
+                  style={styles.clearButton}
+                >
+                  <Text style={styles.clearButtonText}>✕</Text>
+                </TouchableOpacity>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.occasionFilterButton}
+              onPress={() => setShowOccasionPicker(true)}
+            >
+              <Text
+                style={styles.occasionFilterText}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {selectedOccasion || (isRTL ? 'اختر المناسبة' : 'Select Occasion')}
+              </Text>
+              {selectedOccasion && (
+                <TouchableOpacity
+                  onPress={clearOccasionFilter}
+                  style={styles.clearButton}
+                >
+                  <Text style={styles.clearButtonText}>✕</Text>
+                </TouchableOpacity>
+              )}
             </TouchableOpacity>
           </View>
-        </TouchableOpacity>
-      </Modal>
+
+          {/* Status Filter */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.filterContainer}
+            contentContainerStyle={styles.filterContent}
+          >
+            {renderFilterButton(isRTL ? 'الكل' : 'All', 'all')}
+            {renderFilterButton(isRTL ? 'مؤكد' : 'Confirmed', 'confirmed')}
+            {renderFilterButton(isRTL ? 'قيد الانتظار' : 'Pending', 'pending')}
+            {renderFilterButton(isRTL ? 'ملغي' : 'Cancelled', 'cancelled')}
+          </ScrollView>
+
+          {/* Table Header */}
+          <View style={styles.tableHeader}>
+            <Text style={[styles.tableHeaderText, styles.dateColumn]}>
+              {isRTL ? 'التاريخ' : 'Date'}
+            </Text>
+            <Text style={[styles.tableHeaderText, styles.occasionColumn]}>
+              {isRTL ? 'المناسبة' : 'Occasion'}
+            </Text>
+            <Text style={[styles.tableHeaderText, styles.actionColumn]}>
+              {isRTL ? 'الإجراء' : 'Action'}
+            </Text>
+          </View>
+
+          {/* Events List */}
+          {filteredEvents.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>
+                {isRTL ? 'لا توجد فعاليات' : 'No events found'}
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              data={filteredEvents}
+              renderItem={renderEventItem}
+              keyExtractor={item => item._id}
+              contentContainerStyle={styles.listContent}
+              showsVerticalScrollIndicator={false}
+            />
+          )}
+
+          {/* Custom Alert */}
+          <CustomAlert
+            visible={alertVisible}
+            title={alertTitle}
+            message={alertMessage}
+            buttons={[
+              {
+                text: 'OK',
+                onPress: () => setAlertVisible(false),
+              },
+            ]}
+            onClose={() => setAlertVisible(false)}
+          />
+
+          {/* Date Picker Modal */}
+          {showDatePicker && (
+            <DateTimePicker
+              value={selectedDate || new Date()}
+              mode="date"
+              display="default"
+              onChange={handleDateChange}
+            />
+          )}
+
+          {/* Occasion Picker Modal */}
+          <Modal
+            visible={showOccasionPicker}
+            transparent
+            animationType="slide"
+            onRequestClose={() => setShowOccasionPicker(false)}
+          >
+            <TouchableOpacity
+              style={styles.modalOverlay}
+              activeOpacity={1}
+              onPress={() => setShowOccasionPicker(false)}
+            >
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>
+                  {isRTL ? 'اختر المناسبة' : 'Select Occasion'}
+                </Text>
+                <ScrollView style={styles.occasionList}>
+                  {occasions.map(occasion => (
+                    <TouchableOpacity
+                      key={occasion._id}
+                      style={styles.occasionItem}
+                      onPress={() => {
+                        setSelectedOccasion(
+                          isRTL ? occasion.nameAr : occasion.name,
+                        );
+                        setShowOccasionPicker(false);
+                      }}
+                    >
+                      <Text style={styles.occasionItemText}>
+                        {isRTL ? occasion.nameAr : occasion.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+                <TouchableOpacity
+                  style={styles.modalCloseButton}
+                  onPress={() => setShowOccasionPicker(false)}
+                >
+                  <Text style={styles.modalCloseButtonText}>
+                    {isRTL ? 'إغلاق' : 'Close'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          </Modal>
         </View>
       </View>
     </>

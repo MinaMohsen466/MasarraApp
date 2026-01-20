@@ -10,7 +10,7 @@ import DateSelector from './DateSelector';
 
 interface SearchSectionProps {
   onSearch?: () => void;
-  onSelectOccasion?: (occasion: Occasion) => void;
+  onSelectOccasion?: (occasion: Occasion, selectedDate?: Date) => void;
 }
 
 const SearchSection: React.FC<SearchSectionProps> = ({
@@ -84,8 +84,8 @@ const SearchSection: React.FC<SearchSectionProps> = ({
               ? selectedOccasion.nameAr
               : selectedOccasion.name
             : isRTL
-            ? 'اختر المناسبة'
-            : 'Select Occasion'}
+              ? 'اختر المناسبة'
+              : 'Select Occasion'}
         </Text>
         <View style={styles.arrowIcon}>
           <Text style={styles.arrowText}>{isRTL ? '‹' : '›'}</Text>
@@ -96,9 +96,9 @@ const SearchSection: React.FC<SearchSectionProps> = ({
       <TouchableOpacity
         style={styles.searchButton}
         onPress={() => {
-          // Call onSelectOccasion here when search button is pressed
+          // Call onSelectOccasion with both occasion and selected date
           if (selectedOccasion && onSelectOccasion) {
-            onSelectOccasion(selectedOccasion);
+            onSelectOccasion(selectedOccasion, selectedDate);
           }
           if (onSearch) {
             onSearch();

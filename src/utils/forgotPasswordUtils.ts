@@ -10,12 +10,25 @@ export const sendForgotPasswordCode = async (email: string) => {
       body: JSON.stringify({ email }),
     });
 
-    const data = await response.json();
+    // Safely parse response
+    const responseText = await response.text();
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      if (!response.ok) {
+        return {
+          success: false,
+          error: responseText || 'Failed to send reset code',
+        };
+      }
+      return { success: true, userId: null };
+    }
 
     if (!response.ok) {
       return {
         success: false,
-        error: data.message || 'Failed to send reset code',
+        error: data.message || data.error || 'Failed to send reset code',
       };
     }
 
@@ -49,12 +62,25 @@ export const resetPasswordWithCode = async (
       }),
     });
 
-    const data = await response.json();
+    // Safely parse response
+    const responseText = await response.text();
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      if (!response.ok) {
+        return {
+          success: false,
+          error: responseText || 'Failed to reset password',
+        };
+      }
+      return { success: true };
+    }
 
     if (!response.ok) {
       return {
         success: false,
-        error: data.message || 'Failed to reset password',
+        error: data.message || data.error || 'Failed to reset password',
       };
     }
 

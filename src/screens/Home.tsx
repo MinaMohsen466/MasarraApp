@@ -26,7 +26,7 @@ interface HomeProps {
   onNavigate?: (route: string) => void;
   currentRoute?: string;
   onSelectService?: (serviceId: string) => void;
-  onSelectOccasion?: (occasion: any) => void;
+  onSelectOccasion?: (occasion: any, selectedDate?: Date) => void;
 }
 
 const Home: React.FC<HomeProps> = ({
@@ -211,8 +211,8 @@ const Home: React.FC<HomeProps> = ({
             }}
           />
           <SearchSection
-            onSelectOccasion={occasion => {
-              if (onSelectOccasion) onSelectOccasion(occasion);
+            onSelectOccasion={(occasion, selectedDate) => {
+              if (onSelectOccasion) onSelectOccasion(occasion, selectedDate);
             }}
           />
         </>

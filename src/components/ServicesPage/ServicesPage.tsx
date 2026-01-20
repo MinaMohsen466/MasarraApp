@@ -32,6 +32,7 @@ interface ServicesPageProps {
   vendorName?: string; // Optional vendor name for display
   occasionId?: string; // Optional occasion filter
   occasionName?: string; // Optional occasion name for display
+  preSelectedDate?: Date; // Pre-selected date from search (for filtering availability)
 }
 
 const ServicesPage: React.FC<ServicesPageProps> = ({
@@ -42,6 +43,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
   vendorName,
   occasionId,
   occasionName,
+  preSelectedDate,
 }) => {
   const { width: screenWidth } = useWindowDimensions();
   const isTablet = screenWidth >= 600;
@@ -480,7 +482,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
               >
                 {Math.round(
                   ((item.totalPrice - item.discountPrice) / item.totalPrice) *
-                    100,
+                  100,
                 )}
                 % OFF
               </Text>
@@ -591,8 +593,8 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
           <VendorHeader
             vendor={vendor}
             occasions={vendorOccasions}
-            onFilterPress={() => {}}
-            onSortPress={() => {}}
+            onFilterPress={() => { }}
+            onSortPress={() => { }}
             overrideRating={vendorRating.rating}
             overrideTotalReviews={vendorRating.totalReviews}
           />
@@ -797,8 +799,8 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
                   ? 'لا توجد خدمات أو باقات لهذا المورد'
                   : 'No services or packages for this vendor'
                 : isRTL
-                ? 'لا توجد خدمات متاحة'
-                : 'No services available'}
+                  ? 'لا توجد خدمات متاحة'
+                  : 'No services available'}
             </Text>
           </View>
         }

@@ -59,6 +59,7 @@ function App() {
   const [selectedOccasionId, setSelectedOccasionId] = useState<string | undefined>(undefined);
   const [selectedOccasionName, setSelectedOccasionName] = useState<string | undefined>(undefined);
   const [selectedOccasionOrigin, setSelectedOccasionOrigin] = useState<'home' | 'occasions' | undefined>(undefined);
+  const [selectedSearchDate, setSelectedSearchDate] = useState<Date | undefined>(undefined);
 
   const handleNavigation = (route: string) => {
     setCurrentRoute(route);
@@ -135,11 +136,12 @@ function App() {
     setCurrentRoute('package-details');
   };
 
-  const handleOccasionSelect = (occasionId: string, occasionName: string, origin?: 'home' | 'occasions') => {
+  const handleOccasionSelect = (occasionId: string, occasionName: string, origin?: 'home' | 'occasions', searchDate?: Date) => {
     if (!occasionId) return;
     setSelectedOccasionId(occasionId);
     setSelectedOccasionName(occasionName);
     setSelectedOccasionOrigin(origin);
+    setSelectedSearchDate(searchDate);
     setCurrentRoute('occasion-services');
   };
 
@@ -153,7 +155,7 @@ function App() {
             onNavigate={handleNavigation}
             currentRoute={currentRoute}
             onSelectService={(serviceId) => handleServiceSelect(serviceId, 'home')}
-            onSelectOccasion={(occasion) => handleOccasionSelect(occasion._id, occasion.name || occasion.nameAr, 'home')}
+            onSelectOccasion={(occasion, searchDate) => handleOccasionSelect(occasion._id, occasion.name || occasion.nameAr, 'home', searchDate)}
           />
         );
       case 'search':
@@ -181,6 +183,7 @@ function App() {
             onBack={handleBack}
             occasionId={selectedOccasionId}
             occasionName={selectedOccasionName}
+            preSelectedDate={selectedSearchDate}
           />
         );
       case 'services':

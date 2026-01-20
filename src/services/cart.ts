@@ -346,9 +346,9 @@ export async function checkCartAvailability(): Promise<{
     }
 
     const cartItems = await getCart();
-    const unavailableItems: Array<{ item: CartItem; reason: string }> = [];
 
-    for (const item of cartItems) {
+    // Check all items in PARALLEL for faster performance
+    const checkPromises = cartItems.map(async (item) => {
       try {
         // Parse selected date
         const selectedDate = new Date(item.selectedDate);
@@ -359,11 +359,7 @@ export async function checkCartAvailability(): Promise<{
           selectedDate <
           new Date(now.getFullYear(), now.getMonth(), now.getDate())
         ) {
-          unavailableItems.push({
-            item,
-            reason: 'Date is in the past',
-          });
-          continue;
+          return { item, reason: 'Date is in the past' };
         }
 
         // For packages, check the main service availability, for regular services check the service itself
@@ -386,27 +382,26 @@ export async function checkCartAvailability(): Promise<{
         );
 
         if (!matchingSlot) {
-          unavailableItems.push({
-            item,
-            reason: 'Time slot no longer available',
-          });
-          continue;
+          return { item, reason: 'Time slot no longer available' };
         }
 
         if (!matchingSlot.available) {
-          unavailableItems.push({
-            item,
-            reason: `Time slot fully booked (${matchingSlot.bookingsCount} bookings)`,
-          });
-          continue;
+          return { item, reason: `Time slot fully booked (${matchingSlot.bookingsCount} bookings)` };
         }
+
+        return null; // Item is available
       } catch (error) {
-        unavailableItems.push({
-          item,
-          reason: 'Error checking availability',
-        });
+        return { item, reason: 'Error checking availability' };
       }
-    }
+    });
+
+    // Wait for all checks to complete in parallel
+    const results = await Promise.all(checkPromises);
+
+    // Filter out null results (available items) to get only unavailable ones
+    const unavailableItems = results.filter(
+      (result): result is { item: CartItem; reason: string } => result !== null
+    );
 
     const allAvailable = unavailableItems.length === 0;
 

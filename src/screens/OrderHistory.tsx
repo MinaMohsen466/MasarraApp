@@ -107,23 +107,27 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
       setBookings(sortedBookings);
       setFilteredBookings(sortedBookings);
 
-      // Check which bookings are allowed for QR code (in parallel)
-      // Note: settings is used for background images, not for validation anymore
+      // End loading immediately so user sees bookings right away
+      setLoading(false);
+
+      // Check which bookings are allowed for QR code (in background, non-blocking)
+      // This way the user sees their bookings immediately, QR buttons appear when ready
       const promises = sortedBookings.map(booking =>
         canCreateQRCode(booking, settings, token)
           .then(canCreate => (canCreate ? booking._id : null))
           .catch(() => null),
       );
 
-      const results = await Promise.all(promises);
-      const allowed = new Set(results.filter(Boolean) as string[]);
-      setQrAllowedBookings(allowed);
+      // Run in background - don't await
+      Promise.all(promises).then(results => {
+        const allowed = new Set(results.filter(Boolean) as string[]);
+        setQrAllowedBookings(allowed);
+      });
     } catch (error) {
       setAlertTitle(isRTL ? 'خطأ' : 'Error');
       setAlertMessage(isRTL ? 'فشل تحميل الحجوزات' : 'Failed to load bookings');
       setAlertButtons([{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }]);
       setAlertVisible(true);
-    } finally {
       setLoading(false);
     }
   };

@@ -81,12 +81,27 @@ export const getQRCodeSettings = async (
       });
       if (settingsResponse.ok) {
         const fullSettings = await settingsResponse.json();
-        // If we got full settings with background images, return it
-        if (
-          fullSettings.backgroundImages &&
-          fullSettings.backgroundImages.length > 0
-        ) {
-          return fullSettings;
+        // Return full settings - even if no background images, we need allowedOccasions!
+        if (fullSettings) {
+          return {
+            displaySettings: fullSettings.displaySettings || {
+              showCustomerInfo: false,
+              showContactInfo: true,
+              showEventTime: true,
+              showEventDate: true,
+              showLocation: true,
+              showServices: true,
+              showSpecialRequests: false,
+              showPrice: false,
+            },
+            qrCodeStyle: fullSettings.qrCodeStyle || {
+              size: 300,
+              errorCorrectionLevel: 'M',
+              margin: 4,
+            },
+            backgroundImages: fullSettings.backgroundImages || [],
+            allowedOccasions: fullSettings.allowedOccasions || [],
+          };
         }
       }
     } catch (settingsError) {
@@ -103,6 +118,7 @@ export const getQRCodeSettings = async (
         const backgroundImages = await publicResponse.json();
         if (backgroundImages?.length > 0) {
           // Return settings with background images
+          // Note: allowedOccasions will be empty - QR buttons won't show without proper settings
           return {
             displaySettings: {
               showCustomerInfo: false,
@@ -128,26 +144,8 @@ export const getQRCodeSettings = async (
       }
     } catch (publicError) {
     }
-    // Return minimal settings
-    return {
-      displaySettings: {
-        showCustomerInfo: false,
-        showContactInfo: true,
-        showEventTime: true,
-        showEventDate: true,
-        showLocation: true,
-        showServices: true,
-        showSpecialRequests: false,
-        showPrice: false,
-      },
-      qrCodeStyle: {
-        size: 300,
-        errorCorrectionLevel: 'M',
-        margin: 4,
-      },
-      backgroundImages: [],
-      allowedOccasions: [],
-    };
+    // Return null if we couldn't get settings - this will prevent false positives
+    return null;
   } catch (error) {
     return null;
   }
@@ -314,9 +312,9 @@ export const canCreateQRCode = async (
     return hasAllowedOccasion;
   }
 
-  // Fallback: if no settings available, allow QR code creation
-  // Backend will validate properly when actually generating
-  return true;
+  // If no settings or no allowedOccasions available, don't allow QR code creation
+  // This prevents false positives - backend will validate anyway
+  return false;
 };
 
 export const getDefaultBackgroundImage = (settings: QRCodeSettings) => {

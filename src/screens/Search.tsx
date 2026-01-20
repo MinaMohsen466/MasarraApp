@@ -9,9 +9,10 @@ import {
   ActivityIndicator,
   StyleSheet,
   Dimensions,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, Circle } from 'react-native-svg';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useServices } from '../hooks/useServices';
 import { useOccasions } from '../hooks/useOccasions';
@@ -23,6 +24,9 @@ interface SearchProps {
   onSelectService?: (serviceId: string) => void;
   onSelectOccasion?: (occasion: any) => void;
 }
+
+const { width } = Dimensions.get('window');
+const isTablet = width >= 600;
 
 const Search: React.FC<SearchProps> = ({
   onBack,
@@ -102,7 +106,6 @@ const Search: React.FC<SearchProps> = ({
     if (item.type === 'service' && onSelectService) {
       onSelectService(item._id);
     } else if (item.type === 'occasion' && onSelectOccasion) {
-      // Pass the full occasion object with both name and nameAr
       onSelectOccasion({
         ...item,
         name: item.name,
@@ -114,17 +117,12 @@ const Search: React.FC<SearchProps> = ({
 
   const renderSearchResult = ({ item }: { item: any }) => (
     <TouchableOpacity
-      style={[styles.resultItem, isRTL && styles.resultItemRTL]}
+      style={[styles.resultCard, isRTL && styles.resultCardRTL]}
       onPress={() => handleResultPress(item)}
       activeOpacity={0.7}
     >
       {/* Image */}
-      <View
-        style={[
-          styles.resultImageContainer,
-          isRTL && styles.resultImageContainerRTL,
-        ]}
-      >
+      <View style={styles.resultImageWrapper}>
         {item.image ? (
           <Image
             source={{
@@ -137,27 +135,31 @@ const Search: React.FC<SearchProps> = ({
           />
         ) : (
           <View style={styles.resultImagePlaceholder}>
-            <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+            <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
               <Path
                 d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"
                 stroke={colors.primary}
-                strokeWidth={2}
+                strokeWidth={1.5}
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
             </Svg>
           </View>
         )}
+        {/* Type Badge */}
+        <View style={[styles.typeBadge, item.type === 'occasion' && styles.occasionBadge]}>
+          <Text style={styles.typeBadgeText}>
+            {item.type === 'service' ? (isRTL ? 'خدمة' : 'Service') : (isRTL ? 'مناسبة' : 'Occasion')}
+          </Text>
+        </View>
       </View>
 
       {/* Content */}
       <View style={[styles.resultContent, isRTL && styles.resultContentRTL]}>
-        <Text style={[styles.resultName, isRTL && styles.resultNameRTL]}>
+        <Text style={[styles.resultName, isRTL && styles.textRTL]} numberOfLines={1}>
           {item.displayName}
         </Text>
-        <Text
-          style={[styles.resultSubtitle, isRTL && styles.resultSubtitleRTL]}
-        >
+        <Text style={[styles.resultSubtitle, isRTL && styles.textRTL]} numberOfLines={1}>
           {item.displaySubtitle}
         </Text>
         {item.price && (
@@ -168,176 +170,155 @@ const Search: React.FC<SearchProps> = ({
       </View>
 
       {/* Arrow */}
-      <Svg
-        width={20}
-        height={20}
-        viewBox="0 0 24 24"
-        fill="none"
-        style={{ marginLeft: 8 }}
-      >
-        <Path
-          d={isRTL ? 'M15 18l-6-6 6-6' : 'M9 18l6-6-6-6'}
-          stroke={colors.primary}
-          strokeWidth={2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </Svg>
+      <View style={styles.arrowContainer}>
+        <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+          <Path
+            d={isRTL ? 'M15 18l-6-6 6-6' : 'M9 18l6-6-6-6'}
+            stroke="#BDBDBD"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </Svg>
+      </View>
     </TouchableOpacity>
   );
 
   const isLoading = servicesLoading || occasionsLoading;
 
+  const filterTabs = [
+    { key: 'all', labelAr: 'الكل', labelEn: 'All' },
+    { key: 'services', labelAr: 'الخدمات', labelEn: 'Services' },
+    { key: 'occasions', labelAr: 'المناسبات', labelEn: 'Occasions' },
+  ];
+
   return (
-    <View style={{ flex: 1, backgroundColor: colors.backgroundHome }}>
-      <SafeAreaView
-        style={{ flex: 1, backgroundColor: 'transparent' }}
-        edges={['top', 'bottom']}
-      >
-        <View style={{ flex: 1, backgroundColor: 'transparent' }}>
-          {/* Header */}
-          <View style={[styles.header, isRTL && styles.headerRTL]}>
-            <TouchableOpacity
-              onPress={onBack}
-              style={[styles.backButton, isRTL && styles.backButtonRTL]}
-            >
-              <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-                <Path
-                  d={isRTL ? 'M9 18l6-6-6-6' : 'M15 18l-6-6 6-6'}
-                  stroke={colors.primary}
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </Svg>
-            </TouchableOpacity>
-
-            <View style={styles.searchInputContainer}>
-              <Svg
-                width={20}
-                height={20}
-                viewBox="0 0 24 24"
-                fill="none"
-                style={styles.searchIcon}
-              >
-                <Path
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  stroke="#9E9E9E"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </Svg>
-              <TextInput
-                style={[styles.searchInput, isRTL && styles.searchInputRTL]}
-                placeholder={
-                  isRTL
-                    ? 'ابحث عن خدمات، مناسبات...'
-                    : 'Search services, occasions...'
-                }
-                placeholderTextColor="#9E9E9E"
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                autoFocus
+    <View style={styles.container}>
+      <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        {/* Header with Search */}
+        <View style={[styles.header, isRTL && styles.headerRTL]}>
+          <TouchableOpacity
+            onPress={onBack}
+            style={styles.backButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+              <Path
+                d={isRTL ? 'M9 18l6-6-6-6' : 'M15 18l-6-6 6-6'}
+                stroke="#212121"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
               />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity
-                  onPress={() => setSearchQuery('')}
-                  style={styles.clearButton}
-                >
-                  <Text style={styles.clearButtonText}>✕</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
+            </Svg>
+          </TouchableOpacity>
 
-          {/* Filter Tabs */}
-          <View style={styles.filterContainer}>
-            <TouchableOpacity
-              style={[
-                styles.filterTab,
-                searchType === 'all' && styles.filterTabActive,
-              ]}
-              onPress={() => setSearchType('all')}
-            >
-              <Text
-                style={[
-                  styles.filterTabText,
-                  searchType === 'all' && styles.filterTabTextActive,
-                ]}
+          <View style={styles.searchContainer}>
+            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" style={styles.searchIcon}>
+              <Circle cx="11" cy="11" r="7" stroke="#9E9E9E" strokeWidth={2} />
+              <Path d="M21 21L16.5 16.5" stroke="#9E9E9E" strokeWidth={2} strokeLinecap="round" />
+            </Svg>
+            <TextInput
+              style={[styles.searchInput, isRTL && styles.searchInputRTL]}
+              placeholder={isRTL ? 'ابحث عن خدمات، مناسبات...' : 'Search services, occasions...'}
+              placeholderTextColor="#9E9E9E"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoFocus
+              returnKeyType="search"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity
+                onPress={() => setSearchQuery('')}
+                style={styles.clearButton}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                {isRTL ? 'الكل' : 'All'}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.filterTab,
-                searchType === 'services' && styles.filterTabActive,
-              ]}
-              onPress={() => setSearchType('services')}
-            >
-              <Text
-                style={[
-                  styles.filterTabText,
-                  searchType === 'services' && styles.filterTabTextActive,
-                ]}
-              >
-                {isRTL ? 'الخدمات' : 'Services'}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.filterTab,
-                searchType === 'occasions' && styles.filterTabActive,
-              ]}
-              onPress={() => setSearchType('occasions')}
-            >
-              <Text
-                style={[
-                  styles.filterTabText,
-                  searchType === 'occasions' && styles.filterTabTextActive,
-                ]}
-              >
-                {isRTL ? 'المناسبات' : 'Occasions'}
-              </Text>
-            </TouchableOpacity>
+                <View style={styles.clearButtonInner}>
+                  <Text style={styles.clearButtonText}>×</Text>
+                </View>
+              </TouchableOpacity>
+            )}
           </View>
+        </View>
 
-          {/* Results */}
+        {/* Filter Tabs */}
+        <View style={[styles.filtersWrapper, isRTL && styles.filtersWrapperRTL]}>
+          {filterTabs.map(tab => (
+            <TouchableOpacity
+              key={tab.key}
+              style={[
+                styles.filterChip,
+                searchType === tab.key && styles.filterChipActive,
+              ]}
+              onPress={() => setSearchType(tab.key as any)}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.filterChipText,
+                  searchType === tab.key && styles.filterChipTextActive,
+                ]}
+              >
+                {isRTL ? tab.labelAr : tab.labelEn}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Divider */}
+        <View style={styles.divider} />
+
+        {/* Results Area */}
+        <View style={styles.resultsContainer}>
           {isLoading ? (
-            <View style={styles.centerContainer}>
+            <View style={styles.centerContent}>
               <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={styles.loadingText}>
+                {isRTL ? 'جاري البحث...' : 'Searching...'}
+              </Text>
             </View>
           ) : searchQuery.trim() === '' ? (
-            <View style={styles.centerContainer}>
-              <Text style={styles.emptyText}>
-                {isRTL ? 'ابدأ البحث...' : 'Start searching...'}
+            <View style={styles.centerContent}>
+              <Text style={styles.emptyTitle}>
+                {isRTL ? 'ابدأ البحث' : 'Start Searching'}
               </Text>
-              <Text style={styles.emptySubtext}>
+              <Text style={styles.emptySubtitle}>
                 {isRTL
                   ? 'ابحث عن خدمات، مناسبات، أو مقدمي خدمات'
                   : 'Search for services, occasions, or vendors'}
               </Text>
             </View>
           ) : filteredResults.length === 0 ? (
-            <View style={styles.centerContainer}>
-              <Text style={styles.emptyText}>
-                {isRTL ? 'لا توجد نتائج' : 'No results found'}
+            <View style={styles.centerContent}>
+              <Text style={styles.emptyTitle}>
+                {isRTL ? 'لا توجد نتائج' : 'No Results Found'}
               </Text>
-              <Text style={styles.emptySubtext}>
+              <Text style={styles.emptySubtitle}>
                 {isRTL
                   ? `لم نجد أي نتائج لـ "${searchQuery}"`
                   : `We couldn't find any results for "${searchQuery}"`}
               </Text>
             </View>
           ) : (
-            <FlatList
-              data={filteredResults}
-              renderItem={renderSearchResult}
-              keyExtractor={item => `${item.type}-${item._id}`}
-              contentContainerStyle={styles.resultsList}
-              showsVerticalScrollIndicator={false}
-            />
+            <>
+              {/* Results Count */}
+              <View style={styles.resultsHeader}>
+                <Text style={[styles.resultsCount, isRTL && styles.textRTL]}>
+                  {isRTL
+                    ? `${filteredResults.length} نتيجة`
+                    : `${filteredResults.length} result${filteredResults.length > 1 ? 's' : ''}`}
+                </Text>
+              </View>
+              <FlatList
+                data={filteredResults}
+                renderItem={renderSearchResult}
+                keyExtractor={item => `${item.type}-${item._id}`}
+                contentContainerStyle={styles.resultsList}
+                showsVerticalScrollIndicator={false}
+                ItemSeparatorComponent={() => <View style={styles.separator} />}
+              />
+            </>
           )}
         </View>
       </SafeAreaView>
@@ -348,15 +329,18 @@ const Search: React.FC<SearchProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundHome,
+    backgroundColor: '#FFFFFF',
+  },
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 8,
-    backgroundColor: colors.backgroundHome,
+    paddingVertical: 12,
+    gap: 12,
   },
   headerRTL: {
     flexDirection: 'row-reverse',
@@ -366,134 +350,179 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8,
   },
-  backButtonRTL: {
-    marginRight: 0,
-    marginLeft: 8,
-  },
-  searchInputContainer: {
+  searchContainer: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F5F5F5',
-    borderRadius: 24,
-    paddingHorizontal: 16,
-    height: 44,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    height: 48,
   },
   searchIcon: {
-    marginRight: 8,
+    marginRight: 10,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
     color: '#212121',
     padding: 0,
+    fontWeight: '400',
   },
   searchInputRTL: {
     textAlign: 'right',
   },
   clearButton: {
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
     marginLeft: 8,
   },
-  clearButtonText: {
-    fontSize: 18,
-    color: '#9E9E9E',
+  clearButtonInner: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#BDBDBD',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  filterContainer: {
+  clearButtonText: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    fontWeight: '600',
+    marginTop: -1,
+  },
+  filtersWrapper: {
     flexDirection: 'row',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingBottom: 12,
     gap: 8,
-    backgroundColor: colors.backgroundHome,
   },
-  filterTab: {
+  filtersWrapperRTL: {
+    flexDirection: 'row-reverse',
+  },
+  filterChip: {
     paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
     borderRadius: 20,
     backgroundColor: '#F5F5F5',
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
-  filterTabActive: {
+  filterChipActive: {
     backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
-  filterTabText: {
+  filterChipText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#757575',
   },
-  filterTabTextActive: {
-    color: '#fff',
+  filterChipTextActive: {
+    color: '#FFFFFF',
   },
-  centerContainer: {
+  divider: {
+    height: 1,
+    backgroundColor: '#F0F0F0',
+  },
+  resultsContainer: {
+    flex: 1,
+  },
+  centerContent: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 40,
   },
-  emptyText: {
-    fontSize: 18,
+  illustrationContainer: {
+    marginBottom: 20,
+  },
+  emptyTitle: {
+    fontSize: 20,
     fontWeight: '600',
-    color: '#424242',
-    marginTop: 16,
+    color: '#212121',
     marginBottom: 8,
     textAlign: 'center',
   },
-  emptySubtext: {
-    fontSize: 14,
+  emptySubtitle: {
+    fontSize: 15,
     color: '#757575',
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 22,
   },
-  noResultsIcon: {
-    fontSize: 64,
-    marginBottom: 8,
+  loadingText: {
+    marginTop: 12,
+    fontSize: 15,
+    color: '#757575',
+  },
+  resultsHeader: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  resultsCount: {
+    fontSize: 14,
+    color: '#9E9E9E',
+    fontWeight: '500',
   },
   resultsList: {
-    paddingVertical: 8,
-    paddingBottom: Dimensions.get('window').width >= 600 ? 120 : 80,
+    paddingBottom: isTablet ? 120 : 100,
   },
-  resultItem: {
+  separator: {
+    height: 1,
+    backgroundColor: '#F5F5F5',
+    marginHorizontal: 16,
+  },
+  resultCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F5F5F5',
   },
-  resultItemRTL: {
+  resultCardRTL: {
     flexDirection: 'row-reverse',
   },
-  resultImageContainer: {
-    marginRight: 12,
-  },
-  resultImageContainerRTL: {
-    marginRight: 0,
-    marginLeft: 12,
+  resultImageWrapper: {
+    position: 'relative',
   },
   resultImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
+    width: 70,
+    height: 70,
+    borderRadius: 12,
   },
   resultImagePlaceholder: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
+    width: 70,
+    height: 70,
+    borderRadius: 12,
     backgroundColor: '#F5F5F5',
     justifyContent: 'center',
     alignItems: 'center',
   },
+  typeBadge: {
+    position: 'absolute',
+    bottom: -4,
+    left: 4,
+    right: 4,
+    backgroundColor: colors.primary,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 4,
+    alignItems: 'center',
+  },
+  occasionBadge: {
+    backgroundColor: '#FF6B6B',
+  },
+  typeBadgeText: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textTransform: 'uppercase',
+  },
   resultContent: {
     flex: 1,
-    marginRight: 12,
+    marginLeft: 14,
+    marginRight: 8,
   },
   resultContentRTL: {
-    marginRight: 0,
-    marginLeft: 12,
+    marginLeft: 8,
+    marginRight: 14,
   },
   resultName: {
     fontSize: 16,
@@ -501,21 +530,24 @@ const styles = StyleSheet.create({
     color: '#212121',
     marginBottom: 4,
   },
-  resultNameRTL: {
-    textAlign: 'right',
-  },
   resultSubtitle: {
     fontSize: 14,
     color: '#757575',
     marginBottom: 4,
   },
-  resultSubtitleRTL: {
+  resultPrice: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  textRTL: {
     textAlign: 'right',
   },
-  resultPrice: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.primary,
+  arrowContainer: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

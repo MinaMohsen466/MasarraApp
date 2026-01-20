@@ -1,7 +1,7 @@
 import { StyleSheet, Dimensions } from 'react-native';
 import { colors } from '../constants/colors';
 
-const {} = Dimensions.get('window');
+const { } = Dimensions.get('window');
 
 export const myEventsStyles = StyleSheet.create({
   container: {
@@ -482,5 +482,27 @@ export const myEventsStyles = StyleSheet.create({
   emptyGuestsText: {
     fontSize: 16,
     color: colors.textSecondary,
+  },
+  // Simple action buttons styles
+  actionButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+  simpleActionButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: 6,
+  },
+  simpleActionButtonText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.primary,
+    textAlign: 'center',
   },
 });

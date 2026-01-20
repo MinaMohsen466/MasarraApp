@@ -8,11 +8,11 @@ const isTablet = SCREEN_WIDTH >= 600;
 export const styles = StyleSheet.create({
   container: {
     paddingHorizontal: isTablet ? 40 : 24,
-    paddingVertical: isTablet ? 28 : 20,
+    paddingVertical: isTablet ? 12 : 8,
     borderRadius: isTablet ? 24 : 20,
     marginHorizontal: 2,
-    marginTop: 8,
-    marginBottom: 8,
+    marginTop: 0,
+    marginBottom: 0,
   },
   inputContainer: {
     flexDirection: 'row',

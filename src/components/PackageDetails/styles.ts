@@ -10,7 +10,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       flex: 1,
       backgroundColor: colors.background,
     },
-    
+
     // Loading & Error
     loadingContainer: {
       flex: 1,
@@ -40,7 +40,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       fontSize: 16,
       fontWeight: '600',
     },
-    
+
     // Header Actions
     header: {
       position: 'absolute',
@@ -76,7 +76,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       justifyContent: 'center',
       alignItems: 'center',
     },
-    
+
     // ScrollView Content
     scrollView: {
       flex: 1,
@@ -84,7 +84,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
     scrollContent: {
       paddingTop: 56,
     },
-    
+
     // Image Gallery
     imageGalleryContainer: {
       position: 'relative',
@@ -128,7 +128,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       width: 24,
       backgroundColor: colors.primary,
     },
-    
+
     // Package Info Section
     infoSection: {
       padding: 20,
@@ -216,7 +216,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       color: colors.primary,
       fontWeight: '500',
     },
-    
+
     // Date & Time Selection
     dateTimeSection: {
       backgroundColor: colors.backgroundCard,
@@ -296,14 +296,14 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       fontSize: 14,
       marginTop: 8,
     },
-    
+
     // Divider
     divider: {
       height: 1,
       backgroundColor: '#e0e0e0',
       marginVertical: 20,
     },
-    
+
     // Section Title
     sectionTitle: {
       fontSize: 16,
@@ -311,7 +311,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       color: colors.textPrimary,
       marginBottom: 12,
     },
-    
+
     // Description Section
     descriptionText: {
       fontSize: 14,
@@ -319,7 +319,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       lineHeight: 22,
       marginBottom: 20,
     },
-    
+
     // Service Card
     serviceCard: {
       backgroundColor: colors.backgroundCard,
@@ -363,7 +363,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       borderRadius: 8,
       marginRight: 8,
     },
-    
+
     // Main Service specific
     mainServiceCard: {
       backgroundColor: colors.backgroundCard,
@@ -371,7 +371,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       borderRadius: 12,
       marginBottom: 20,
     },
-    
+
     // Reviews Section
     reviewsContainer: {
       marginTop: 20,
@@ -580,7 +580,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
     showMoreIcon: {
       marginLeft: 8,
     },
-    
+
     // Bottom Actions
     bottomActions: {
       position: 'absolute',
@@ -588,15 +588,18 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       left: 0,
       right: 0,
       backgroundColor: colors.backgroundLight,
-      paddingHorizontal: isTablet ? 40 : 20,
+      paddingHorizontal: isTablet ? 60 : 20,
       paddingTop: 16,
       borderTopWidth: 1,
       borderTopColor: '#e0e0e0',
       flexDirection: 'row',
-      gap: 12,
+      gap: isTablet ? 20 : 12,
+      justifyContent: 'center',
     },
     addToCartButton: {
-      flex: isTablet ? 2 : 1,
+      flex: isTablet ? 0 : 1,
+      width: isTablet ? 220 : undefined,
+      maxWidth: isTablet ? 220 : undefined,
       backgroundColor: colors.primary,
       borderRadius: 12,
       paddingVertical: isTablet ? 16 : 14,
@@ -619,7 +622,9 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       marginRight: 8,
     },
     backButton: {
-      flex: isTablet ? 1 : 1,
+      flex: isTablet ? 0 : 1,
+      width: isTablet ? 160 : undefined,
+      maxWidth: isTablet ? 160 : undefined,
       backgroundColor: 'transparent',
       borderRadius: 12,
       paddingVertical: isTablet ? 16 : 14,
