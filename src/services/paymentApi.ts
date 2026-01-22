@@ -174,7 +174,10 @@ export const sendPayment = async (
   data?: {
     invoiceId: string;
     invoiceURL: string;
+    paymentURL?: string;
     customerReference?: string;
+    sessionId?: string;
+    encryptionKey?: string;
   };
   message?: string;
 }> => {
@@ -184,31 +187,141 @@ export const sendPayment = async (
       throw new Error('Authentication required');
     }
 
-    console.log('Sending payment request with data:', JSON.stringify(paymentData, null, 2));
+    console.log('Initiating payment session for booking:', paymentData.bookingId);
 
-    const response = await fetch(`${API_URL}/payment/send`, {
+    // Use initiate-session endpoint which uses email (no mobile required)
+    const response = await fetch(`${API_URL}/payment/initiate-session`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(paymentData),
+      body: JSON.stringify({
+        customerIdentifier: paymentData.customerEmail || '',
+        amount: paymentData.invoiceValue,
+        bookingId: paymentData.bookingId,
+        language: paymentData.language || 'en',
+      }),
     });
 
-    const data = await response.json();
-    console.log('Send payment response:', JSON.stringify(data, null, 2));
-
-    if (!response.ok) {
-      console.error('Send payment failed:', data);
-      throw new Error(data.message || 'Failed to send payment link');
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      console.error('Non-JSON response:', text.substring(0, 200));
+      throw new Error('Server returned an invalid response');
     }
 
-    return data;
+    const data = await response.json();
+    console.log('Initiate session response:', JSON.stringify(data, null, 2));
+
+    if (!response.ok || !data.success) {
+      console.error('Initiate session failed:', data);
+      throw new Error(data.message || 'Failed to initiate payment session');
+    }
+
+    if (!data.data?.sessionId) {
+      throw new Error('No session ID returned from server');
+    }
+
+    const sessionId = data.data.sessionId;
+    const encryptionKey = data.data.encryptionKey;
+    const language = paymentData.language || 'en';
+    const isTestMode = true;
+
+    // Create HTML content for embedded payment
+    const htmlContent = createEmbeddedPaymentHTML(sessionId, language, isTestMode);
+
+    return {
+      success: true,
+      data: {
+        invoiceId: sessionId,
+        invoiceURL: htmlContent,
+        paymentURL: htmlContent,
+        customerReference: paymentData.bookingId,
+        sessionId: sessionId,
+        encryptionKey: encryptionKey,
+      },
+      message: 'Payment session created successfully',
+    };
   } catch (error: any) {
-    console.error('Error sending payment link:', error);
+    console.error('Error initiating payment session:', error);
     throw error;
   }
 };
+
+/**
+ * Create HTML content for embedded MyFatoorah payment
+ */
+function createEmbeddedPaymentHTML(sessionId: string, language: string, isTestMode: boolean): string {
+  const scriptSrc = isTestMode
+    ? 'https://demo.myfatoorah.com/sessions/v1/session.js'
+    : 'https://portal.myfatoorah.com/sessions/v1/session.js';
+  const dir = language === 'ar' ? 'rtl' : 'ltr';
+  const headerText = language === 'ar' ? 'الدفع الآمن' : 'Secure Payment';
+  const loadingText = language === 'ar' ? 'جاري تحميل خيارات الدفع...' : 'Loading payment options...';
+  const errorText = language === 'ar' ? 'فشل تحميل صفحة الدفع' : 'Failed to load payment page';
+
+  return `<!DOCTYPE html>
+<html lang="${language}" dir="${dir}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Payment</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f5f5f5; min-height: 100vh; padding: 16px; }
+    .container { max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .header { text-align: center; margin-bottom: 20px; color: #2A9D8F; font-size: 18px; font-weight: 600; }
+    #embedded-sessions { min-height: 400px; }
+    .loading { text-align: center; padding: 40px; color: #666; }
+    .spinner { width: 40px; height: 40px; border: 3px solid #f3f3f3; border-top: 3px solid #2A9D8F; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .error { text-align: center; padding: 40px; color: #e74c3c; display: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">${headerText}</div>
+    <div id="loading" class="loading"><div class="spinner"></div><p>${loadingText}</p></div>
+    <div id="embedded-sessions"></div>
+    <div id="error" class="error"><p>${errorText}</p></div>
+  </div>
+  <script src="${scriptSrc}"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var loadingEl = document.getElementById('loading');
+      var errorEl = document.getElementById('error');
+      var paymentStarted = false;
+      function initPayment() {
+        if (typeof window.myfatoorah === 'undefined') { setTimeout(initPayment, 100); return; }
+        loadingEl.style.display = 'none';
+        try {
+          window.myfatoorah.init({
+            sessionId: '${sessionId}',
+            containerId: 'embedded-sessions',
+            shouldHandlePaymentUrl: true,
+            language: '${language}',
+            callback: function(response) {
+              console.log('Payment callback:', JSON.stringify(response));
+              if (response.paymentType) { paymentStarted = true; }
+              if (response.isSuccess) {
+                if (response.redirectionUrl) { window.location.href = response.redirectionUrl; }
+                else if (response.paymentCompleted) {
+                  window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'PAYMENT_SUCCESS', data: response }));
+                }
+              } else if (paymentStarted && response.message) {
+                window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'PAYMENT_ERROR', message: response.message }));
+              }
+            }
+          });
+        } catch (err) { console.error('Init error:', err); loadingEl.style.display = 'none'; errorEl.style.display = 'block'; }
+      }
+      setTimeout(initPayment, 500);
+    });
+  </script>
+</body>
+</html>`;
+}
 
 /**
  * Get payment status by payment ID
@@ -342,7 +455,7 @@ export const getActiveSuppliers = async (): Promise<{
     const contentType = response.headers.get('content-type');
     if (!contentType || !contentType.includes('application/json')) {
       console.warn('Suppliers API returned non-JSON response, returning empty array');
-      return [];
+      return { success: true, data: [] };
     }
 
     const data = await response.json();
@@ -351,11 +464,11 @@ export const getActiveSuppliers = async (): Promise<{
       throw new Error(data.message || 'Failed to get suppliers');
     }
 
-    return data;
+    return { success: true, data: data.data || data };
   } catch (error: any) {
     console.error('Error getting suppliers:', error);
     // Return empty array instead of throwing to prevent cart from breaking
-    return [];
+    return { success: true, data: [] };
   }
 };
 

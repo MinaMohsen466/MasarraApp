@@ -48,17 +48,23 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
     if (url.includes('/payment/callback') || url.includes('/payment/success')) {
       console.log('Payment callback detected! Verifying payment status...');
 
-      // Extract paymentId from URL query parameters
+      // Extract paymentId from URL query parameters (manual parsing for React Native compatibility)
       try {
-        const urlObj = new URL(url);
-        const paymentId = urlObj.searchParams.get('paymentId') || urlObj.searchParams.get('Id');
+        // Parse query string manually since URL/URLSearchParams may not work in React Native
+        const queryString = url.split('?')[1] || '';
+        const params: Record<string, string> = {};
+        queryString.split('&').forEach((pair) => {
+          const [key, value] = pair.split('=');
+          if (key) params[key] = decodeURIComponent(value || '');
+        });
+        const paymentId = params['paymentId'] || params['Id'] || null;
 
         if (paymentId) {
           console.log('Payment ID extracted:', paymentId);
           setVerifyingPayment(true);
 
           // Wait a moment for server to process
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise<void>((resolve) => setTimeout(resolve, 2000));
 
           // Verify payment status with backend
           try {
@@ -170,13 +176,31 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
             <>
               <WebView
                 ref={webViewRef}
-                source={{ uri: paymentUrl }}
+                // Check if paymentUrl is HTML content or a URL
+                source={paymentUrl.startsWith('<!DOCTYPE') || paymentUrl.startsWith('<html')
+                  ? { html: paymentUrl, baseUrl: 'https://demo.myfatoorah.com' }
+                  : { uri: paymentUrl }
+                }
                 style={styles.webView}
                 onLoadStart={() => setLoading(true)}
                 onLoadEnd={() => setLoading(false)}
                 onNavigationStateChange={handleNavigationStateChange}
                 onError={handleError}
                 onHttpError={handleHttpError}
+                onMessage={(event) => {
+                  // Handle messages from embedded payment form
+                  try {
+                    const message = JSON.parse(event.nativeEvent.data);
+                    console.log('WebView message:', message);
+                    if (message.type === 'PAYMENT_SUCCESS') {
+                      onPaymentSuccess();
+                    } else if (message.type === 'PAYMENT_ERROR') {
+                      onPaymentError(message.message || 'Payment failed');
+                    }
+                  } catch (e) {
+                    console.log('Non-JSON message from WebView:', event.nativeEvent.data);
+                  }
+                }}
                 javaScriptEnabled={true}
                 domStorageEnabled={true}
                 startInLoadingState={true}
@@ -210,7 +234,7 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
                 })}
               />
               {(loading || verifyingPayment) && (
-                <View style={styles.loadingOverlay}>
+                <View style={[styles.loadingOverlay, { backgroundColor: '#fff' }]}>
                   <ActivityIndicator size="large" color={colors.primary} />
                   <Text style={[styles.loadingText, isRTL && styles.rtlText]}>
                     {verifyingPayment
