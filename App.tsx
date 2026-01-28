@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { LanguageProvider } from "./src/contexts/LanguageContext";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
 import { SocketProvider } from "./src/contexts/SocketContext";
+import { DateProvider } from "./src/contexts/DateContext";
 import colors from './src/constants/colors';
 
 // Components
@@ -264,42 +265,44 @@ function App() {
       <SafeAreaProvider>
         <StatusBar backgroundColor={colors.backgroundHome} barStyle="dark-content" translucent={false} />
         <LanguageProvider>
-          <AuthProvider onLogout={() => setCurrentRoute('home')}>
-            <SocketProvider>
-              {showSplash ? (
-                <SplashScreen onFinish={() => setShowSplash(false)} />
-              ) : shouldRenderWithoutSafeArea ? (
-                <View style={{ flex: 1, paddingTop: currentRoute === 'search' ? 40 : 0 }}>
-                  {renderScreen()}
-                  {showBottomNav && (
-                    <>
-                      <BottomNavigation
-                        activeRoute={currentRoute}
-                        onNavigate={handleNavigation}
-                      />
-                      <View style={{ height: 20, backgroundColor: colors.backgroundHome }} />
-                    </>
-                  )}
-                </View>
-              ) : (
-                <SafeAreaView style={{ flex: 1, backgroundColor: colors.backgroundHome }}>
-                  {shouldShowHeader && <Header onNavigate={handleNavigation} />}
-                  <View style={{ flex: 1 }}>
+          <DateProvider>
+            <AuthProvider onLogout={() => setCurrentRoute('home')}>
+              <SocketProvider>
+                {showSplash ? (
+                  <SplashScreen onFinish={() => setShowSplash(false)} />
+                ) : shouldRenderWithoutSafeArea ? (
+                  <View style={{ flex: 1, paddingTop: currentRoute === 'search' ? 40 : 0 }}>
                     {renderScreen()}
+                    {showBottomNav && (
+                      <>
+                        <BottomNavigation
+                          activeRoute={currentRoute}
+                          onNavigate={handleNavigation}
+                        />
+                        <View style={{ height: 20, backgroundColor: colors.backgroundHome }} />
+                      </>
+                    )}
                   </View>
-                  {showBottomNav && (
-                    <>
-                      <BottomNavigation
-                        activeRoute={currentRoute}
-                        onNavigate={handleNavigation}
-                      />
-                      <View style={{ height: 20, backgroundColor: '#ffffff' }} />
-                    </>
-                  )}
-                </SafeAreaView>
-              )}
-            </SocketProvider>
-          </AuthProvider>
+                ) : (
+                  <SafeAreaView style={{ flex: 1, backgroundColor: colors.backgroundHome }}>
+                    {shouldShowHeader && <Header onNavigate={handleNavigation} />}
+                    <View style={{ flex: 1 }}>
+                      {renderScreen()}
+                    </View>
+                    {showBottomNav && (
+                      <>
+                        <BottomNavigation
+                          activeRoute={currentRoute}
+                          onNavigate={handleNavigation}
+                        />
+                        <View style={{ height: 20, backgroundColor: '#ffffff' }} />
+                      </>
+                    )}
+                  </SafeAreaView>
+                )}
+              </SocketProvider>
+            </AuthProvider>
+          </DateProvider>
         </LanguageProvider>
       </SafeAreaProvider>
     </QueryClientProvider>

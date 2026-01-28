@@ -23,6 +23,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createStyles } from './styles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useGlobalDate } from '../../contexts/DateContext';
 import { getServiceImageUrl, fetchServices } from '../../services/servicesApi';
 import { getImageUrl, checkTimeSlotAvailability } from '../../services/api';
 import {
@@ -56,14 +57,15 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
   const { width: SCREEN_WIDTH } = useWindowDimensions();
   const styles = createStyles(SCREEN_WIDTH);
   const { isRTL } = useLanguage();
+  const { globalSelectedDate, setGlobalSelectedDate } = useGlobalDate();
   const insets = useSafeAreaInsets();
   const fixedHeight = insets.top + 46; // 22 (ACTIONS_BAR_HEIGHT) + 24 (EXTRA_HEIGHT)
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
-  // Date/Time picker state
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  // Date/Time picker state - initialize with global date if available
+  const [selectedDate, setSelectedDate] = useState<Date | null>(globalSelectedDate || null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -1492,15 +1494,17 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
             // Check if user is logged in
             const token = await AsyncStorage.getItem('userToken');
             if (!token) {
-              Alert.alert(
-                isRTL ? 'تسجيل الدخول مطلوب' : 'Login Required',
-                isRTL
+              setAlertConfig({
+                visible: true,
+                title: isRTL ? 'تسجيل الدخول مطلوب' : 'Login Required',
+                message: isRTL
                   ? 'يجب تسجيل الدخول أولاً لإضافة خدمات إلى السلة'
                   : 'Please login first to add services to cart',
-                [{ text: isRTL ? 'حسناً' : 'OK' }],
-              );
+                buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
+              });
               return;
             }
+
 
             // Validate required selections
             if (!selectedDate || !selectedTime) {
@@ -1711,7 +1715,9 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                 },
                 availabilityStatus: service.availabilityStatus,
                 maxBookingsPerSlot: service.maxBookingsPerSlot, // Pass maxBookingsPerSlot to cart
+                deliveryFee: service.deliveryFee || 0, // Pass delivery fee from service
               };
+
 
               // Add to local storage cart
               await addToCart(cartItem);
@@ -1804,6 +1810,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
           onClose={() => setShowDatePicker(false)}
           onSelectDate={date => {
             setSelectedDate(date);
+            setGlobalSelectedDate(date); // Sync globally so all services use the same date
             setSelectedTime(null); // Reset time when date changes
             // Automatically open time picker after selecting date
             setShowDatePicker(false);

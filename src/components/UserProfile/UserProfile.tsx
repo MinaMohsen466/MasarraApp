@@ -201,13 +201,13 @@ const UserProfile: React.FC<UserProfileProps> = ({
     return (
       <View style={styles.fullPageContainer}>
         {/* Header background that extends into the notch/status bar */}
-        <View style={[styles.headerBackground, { height: insets.top + 77 }]} />
+        <View style={[styles.headerBackground, { height: insets.top + 56 }]} />
 
         {/* Header with Back Button */}
         <View
           style={[
             styles.headerBar,
-            { paddingTop: insets.top + 22, paddingBottom: 22 },
+            { paddingTop: insets.top + 12, paddingBottom: 12 },
           ]}
         >
           {onBack && (
@@ -275,13 +275,13 @@ const UserProfile: React.FC<UserProfileProps> = ({
   return (
     <View style={styles.fullPageContainer}>
       {/* Header background that extends into the notch/status bar */}
-      <View style={[styles.headerBackground, { height: insets.top + 78 }]} />
+      <View style={[styles.headerBackground, { height: insets.top + 56 }]} />
 
       {/* Header with Back Button */}
       <View
         style={[
           styles.headerBar,
-          { paddingTop: insets.top + 22, paddingBottom: 22 },
+          { paddingTop: insets.top + 12, paddingBottom: 12 },
         ]}
       >
         {onBack && (

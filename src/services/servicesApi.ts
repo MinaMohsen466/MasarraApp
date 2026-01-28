@@ -61,7 +61,9 @@ export interface Service {
   workingDays?: number[];
   availabilityStatus?: 'available_now' | 'pending_confirmation';
   maxBookingsPerSlot?: number; // -1 means unlimited bookings per slot
+  deliveryFee?: number; // Delivery fee from database
 }
+
 
 /**
  * Fetch all services

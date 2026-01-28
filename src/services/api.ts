@@ -43,6 +43,9 @@ export interface SiteSettings {
   updatedAt: string;
   __v: number;
   footerTextAr?: string;
+  bannerEnabled?: boolean;
+  bannerText?: string;
+  bannerTextAr?: string;
 }
 
 export interface Occasion {

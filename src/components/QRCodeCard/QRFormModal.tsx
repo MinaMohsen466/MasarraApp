@@ -6,13 +6,11 @@ import {
   TouchableOpacity,
   Text,
   ImageBackground,
-  Alert,
   ActivityIndicator,
   TextInput,
   Modal,
   Image,
   FlatList,
-  Dimensions,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -25,6 +23,7 @@ import {
   getBackgroundImageUrl,
 } from '../../services/qrCodeApi';
 import { QRCodeResultModal } from './QRCodeResultModal';
+import { CustomAlert } from '../CustomAlert/CustomAlert';
 import type {
   QRCodeCustomDetails,
   QRCodeSettings,
@@ -68,6 +67,13 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
   const [originalBackgroundId, setOriginalBackgroundId] = useState<
     string | null
   >(null);
+  const [originalGuestCount, setOriginalGuestCount] = useState<string>('1');
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    buttons: Array<{ text: string; style?: 'default' | 'cancel' | 'destructive'; onPress?: () => void }>;
+  }>({ visible: false, title: '', message: '', buttons: [] });
 
   const [formData, setFormData] = useState<QRCodeCustomDetails>({
     name1: '',
@@ -107,6 +113,7 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
         // Store original data for change detection
         setOriginalFormData(existingQRCode.customDetails);
         setOriginalBackgroundId(backgroundId);
+        setOriginalGuestCount(existingQRCode.guestCount?.toString() || guestCount);
         setHasChanges(false);
 
         // Show result modal directly
@@ -203,14 +210,17 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
       const formDataChanged =
         JSON.stringify(formData) !== JSON.stringify(originalFormData);
       const backgroundChanged = selectedBackgroundId !== originalBackgroundId;
-      setHasChanges(formDataChanged || backgroundChanged);
+      const guestCountChanged = guestCount !== originalGuestCount;
+      setHasChanges(formDataChanged || backgroundChanged || guestCountChanged);
     }
   }, [
     formData,
     selectedBackgroundId,
+    guestCount,
     existingQRCode,
     originalFormData,
     originalBackgroundId,
+    originalGuestCount,
   ]);
 
   const handleSubmit = async () => {
@@ -220,38 +230,48 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
 
     // Validate required fields based on display settings
     if (display.showEventDate && !formData.eventDate) {
-      Alert.alert(
-        isRTL ? 'خطأ' : 'Error',
-        isRTL ? 'الرجاء اختيار التاريخ' : 'Please select event date',
-      );
+      setAlertConfig({
+        visible: true,
+        title: isRTL ? 'خطأ' : 'Error',
+        message: isRTL ? 'الرجاء اختيار التاريخ' : 'Please select event date',
+        buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
+      });
       return;
     }
     if (display.showEventTime && !formData.eventTime) {
-      Alert.alert(
-        isRTL ? 'خطأ' : 'Error',
-        isRTL ? 'الرجاء اختيار الوقت' : 'Please select event time',
-      );
+      setAlertConfig({
+        visible: true,
+        title: isRTL ? 'خطأ' : 'Error',
+        message: isRTL ? 'الرجاء اختيار الوقت' : 'Please select event time',
+        buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
+      });
       return;
     }
     if (display.showLocation && !formData.location?.trim()) {
-      Alert.alert(
-        isRTL ? 'خطأ' : 'Error',
-        isRTL ? 'الرجاء إدخال الموقع' : 'Please enter location',
-      );
+      setAlertConfig({
+        visible: true,
+        title: isRTL ? 'خطأ' : 'Error',
+        message: isRTL ? 'الرجاء إدخال الموقع' : 'Please enter location',
+        buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
+      });
       return;
     }
     if (display.showContactInfo && !formData.contact?.trim()) {
-      Alert.alert(
-        isRTL ? 'خطأ' : 'Error',
-        isRTL ? 'الرجاء إدخال رقم الاتصال' : 'Please enter contact',
-      );
+      setAlertConfig({
+        visible: true,
+        title: isRTL ? 'خطأ' : 'Error',
+        message: isRTL ? 'الرجاء إدخال رقم الاتصال' : 'Please enter contact',
+        buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
+      });
       return;
     }
     if (!selectedBackgroundId) {
-      Alert.alert(
-        isRTL ? 'خطأ' : 'Error',
-        isRTL ? 'الرجاء اختيار تصميم البطاقة' : 'Please select a card design',
-      );
+      setAlertConfig({
+        visible: true,
+        title: isRTL ? 'خطأ' : 'Error',
+        message: isRTL ? 'الرجاء اختيار تصميم البطاقة' : 'Please select a card design',
+        buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
+      });
       return;
     }
 
@@ -273,9 +293,17 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
       );
 
       // Store the generated QR code data
-      setGeneratedQRCode(result);
+      // If updating and API doesn't return qrCodeImage, preserve it from generatedQRCode (set at initial load)
+      const previousQRImage = generatedQRCode?.qrCode || generatedQRCode?.qrCodeImage || existingQRCode?.qrCode || existingQRCode?.qrCodeImage;
+      const qrCodeData = {
+        ...result,
+        qrCode: result.qrCode || result.qrCodeImage || previousQRImage,
+        qrCodeImage: result.qrCodeImage || result.qrCode || previousQRImage,
+      };
+      setGeneratedQRCode(qrCodeData);
       setShowResultModal(true);
       setIsPreviewMode(false);
+
 
       // If this is an update, mark as updated and reset changes
       if (existingQRCode) {
@@ -285,11 +313,13 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
         setOriginalBackgroundId(selectedBackgroundId);
       }
     } catch (error: any) {
-      Alert.alert(
-        isRTL ? 'خطأ' : 'Error',
-        error.message ||
+      setAlertConfig({
+        visible: true,
+        title: isRTL ? 'خطأ' : 'Error',
+        message: error.message ||
           (isRTL ? 'فشل إنشاء QR Code' : 'Failed to generate QR code'),
-      );
+        buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
+      });
     } finally {
       setSubmitting(false);
     }
@@ -297,10 +327,12 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
 
   const handlePreview = () => {
     if (!selectedBackgroundId) {
-      Alert.alert(
-        isRTL ? 'خطأ' : 'Error',
-        isRTL ? 'الرجاء اختيار تصميم البطاقة' : 'Please select a card design',
-      );
+      setAlertConfig({
+        visible: true,
+        title: isRTL ? 'خطأ' : 'Error',
+        message: isRTL ? 'الرجاء اختيار تصميم البطاقة' : 'Please select a card design',
+        buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
+      });
       return;
     }
 
@@ -389,7 +421,7 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
                             style={[
                               styles.imageThumbnail,
                               selectedBackgroundId === item._id &&
-                                styles.imageThumbnailActive,
+                              styles.imageThumbnailActive,
                             ]}
                             onPress={() => {
                               setSelectedBackgroundId(item._id);
@@ -552,7 +584,7 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
                   styles.generateButton,
                   (submitting ||
                     (existingQRCode && (!hasChanges || isUpdated))) &&
-                    styles.disabledButton,
+                  styles.disabledButton,
                 ]}
                 onPress={() => {
                   handleSubmit().then(() => {
@@ -622,6 +654,15 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
           setShowResultModal(false);
           setIsPreviewMode(false);
         }}
+      />
+
+      {/* Custom Alert */}
+      <CustomAlert
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttons={alertConfig.buttons}
+        onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
       />
     </Modal>
   );

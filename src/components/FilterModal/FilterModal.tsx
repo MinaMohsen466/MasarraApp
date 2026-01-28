@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, TextInput } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, TouchableOpacity, Modal, TextInput, PanResponder, LayoutChangeEvent } from 'react-native';
 import { styles } from './styles';
 import { useLanguage } from '../../contexts/LanguageContext';
 
@@ -14,6 +14,9 @@ interface FilterModalProps {
   }) => void;
 }
 
+const MAX_PRICE = 20000;
+const MIN_PRICE = 0;
+
 const FilterModal: React.FC<FilterModalProps> = ({
   visible,
   onClose,
@@ -24,6 +27,48 @@ const FilterModal: React.FC<FilterModalProps> = ({
   const [maxPrice, setMaxPrice] = useState(20000);
   const [bookingType, setBookingType] = useState<string>('all');
   const [onSale, setOnSale] = useState<boolean>(false);
+  const [sliderWidth, setSliderWidth] = useState(300);
+  const sliderRef = useRef<View>(null);
+
+  // Calculate thumb positions
+  const minThumbPosition = (minPrice / MAX_PRICE) * sliderWidth;
+  const maxThumbPosition = (maxPrice / MAX_PRICE) * sliderWidth;
+
+  // PanResponder for min thumb
+  const minPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderMove: (_, gestureState) => {
+        const newPosition = Math.max(0, Math.min(gestureState.moveX - 32, sliderWidth));
+        const newPrice = Math.round((newPosition / sliderWidth) * MAX_PRICE);
+        // Don't let min exceed max - 100
+        if (newPrice < maxPrice - 100) {
+          setMinPrice(Math.max(MIN_PRICE, newPrice));
+        }
+      },
+    })
+  ).current;
+
+  // PanResponder for max thumb
+  const maxPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderMove: (_, gestureState) => {
+        const newPosition = Math.max(0, Math.min(gestureState.moveX - 32, sliderWidth));
+        const newPrice = Math.round((newPosition / sliderWidth) * MAX_PRICE);
+        // Don't let max go below min + 100
+        if (newPrice > minPrice + 100) {
+          setMaxPrice(Math.min(MAX_PRICE, newPrice));
+        }
+      },
+    })
+  ).current;
+
+  const handleSliderLayout = (event: LayoutChangeEvent) => {
+    setSliderWidth(event.nativeEvent.layout.width);
+  };
 
   const handleApplyFilter = () => {
     onApplyFilter({
@@ -90,19 +135,43 @@ const FilterModal: React.FC<FilterModalProps> = ({
                 </View>
               </View>
 
-              {/* Range track */}
-              <View style={styles.rangeTrackContainer}>
+              {/* Draggable Range Slider */}
+              <View
+                style={styles.sliderContainer}
+                ref={sliderRef}
+                onLayout={handleSliderLayout}
+              >
+                {/* Background Track */}
                 <View style={styles.rangeTrack}>
+                  {/* Active Track Fill */}
                   <View
                     style={[
                       styles.rangeTrackFill,
                       {
-                        left: `${(minPrice / 20000) * 100}%`,
-                        right: `${100 - (maxPrice / 20000) * 100}%`,
+                        left: minThumbPosition,
+                        width: maxThumbPosition - minThumbPosition,
                       },
                     ]}
                   />
                 </View>
+
+                {/* Min Thumb */}
+                <View
+                  {...minPanResponder.panHandlers}
+                  style={[
+                    styles.sliderThumb,
+                    { left: minThumbPosition - 12 },
+                  ]}
+                />
+
+                {/* Max Thumb */}
+                <View
+                  {...maxPanResponder.panHandlers}
+                  style={[
+                    styles.sliderThumb,
+                    { left: maxThumbPosition - 12 },
+                  ]}
+                />
               </View>
 
               {/* Min/Max labels */}
@@ -124,7 +193,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
                   value={minPrice.toFixed(0)}
                   onChangeText={val =>
                     setMinPrice(
-                      Math.max(0, Math.min(20000, parseFloat(val) || 0)),
+                      Math.max(0, Math.min(maxPrice - 100, parseFloat(val) || 0)),
                     )
                   }
                   keyboardType="decimal-pad"
@@ -138,7 +207,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
                   ]}
                   value={maxPrice.toFixed(0)}
                   onChangeText={val =>
-                    setMaxPrice(Math.min(20000, parseFloat(val) || 20000))
+                    setMaxPrice(Math.max(minPrice + 100, Math.min(20000, parseFloat(val) || 20000)))
                   }
                   keyboardType="decimal-pad"
                   placeholder="20000"
@@ -184,7 +253,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
                     isRTL && styles.textRTL,
                   ]}
                 >
-                  {isRTL ? 'بمواعيد محددة' : 'Limited'}
+                  {isRTL ? 'محدود' : 'Limited'}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -253,3 +322,4 @@ const FilterModal: React.FC<FilterModalProps> = ({
 };
 
 export default FilterModal;
+

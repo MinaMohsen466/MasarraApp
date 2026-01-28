@@ -47,8 +47,8 @@ export const styles = StyleSheet.create({
   headerBackIcon: {
     color: colors.primary,
     // smaller font and explicit lineHeight to center the chevron glyph exactly inside the 40x40 circle
-    fontSize: 28,
-    lineHeight: 20,
+    fontSize: 24,
+    lineHeight: 18,
     textAlign: 'center',
     fontWeight: '700',
   },
@@ -56,7 +56,7 @@ export const styles = StyleSheet.create({
     fontFamily: 'System',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.textWhite,
     flex: 1,

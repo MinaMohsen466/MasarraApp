@@ -29,7 +29,9 @@ export type CartItem = {
   mainServiceId?: string; // For packages: ID of the main limited service to check availability
   packageName?: string; // Package name in English
   packageNameAr?: string; // Package name in Arabic
+  deliveryFee?: number; // Delivery fee from service
 };
+
 
 // In-memory cache to avoid reading from AsyncStorage repeatedly
 let cartCache: CartItem[] | null = null;
@@ -480,7 +482,7 @@ export async function createBookingsFromCart(
     try {
       // Build services array with all cart items
       const servicesArray = cartItems.map(item => {
-        const itemDelivery = item.maxBookingsPerSlot === -1 ? 5 : 0;
+        const itemDelivery = item.maxBookingsPerSlot === -1 ? (item.deliveryFee || 0) : 0;
         const itemTotal = (item.totalPrice || item.price) + itemDelivery;
         return {
           service: item.serviceId,
@@ -505,9 +507,10 @@ export async function createBookingsFromCart(
 
       // Calculate total price for the combined booking
       let combinedTotalPrice = cartItems.reduce((total, item) => {
-        const itemDelivery = item.maxBookingsPerSlot === -1 ? 5 : 0;
+        const itemDelivery = item.maxBookingsPerSlot === -1 ? (item.deliveryFee || 0) : 0;
         return total + (item.totalPrice || item.price) + itemDelivery;
       }, 0);
+
 
       // Use the first item's date/time for the booking
       const firstItem = cartItems[0];

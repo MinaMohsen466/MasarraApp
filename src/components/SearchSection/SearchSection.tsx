@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import Svg, { Path, Circle } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useGlobalDate } from '../../contexts/DateContext';
 import { styles } from './styles';
-import { colors } from '../../constants/colors';
 import { Occasion } from '../../services/api';
 import OccasionSelector from './OccasionSelector';
 import DateSelector from './DateSelector';
@@ -18,12 +18,18 @@ const SearchSection: React.FC<SearchSectionProps> = ({
   onSelectOccasion,
 }) => {
   const { isRTL } = useLanguage();
+  const { globalSelectedDate, setGlobalSelectedDate } = useGlobalDate();
   const [showOccasionModal, setShowOccasionModal] = useState(false);
   const [showDateModal, setShowDateModal] = useState(false);
   const [selectedOccasion, setSelectedOccasion] = useState<
     Occasion | undefined
   >();
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(globalSelectedDate);
+
+  // Sync local date with global date
+  useEffect(() => {
+    setSelectedDate(globalSelectedDate);
+  }, [globalSelectedDate]);
 
   const handleOccasionSelect = (occasion: Occasion) => {
     setSelectedOccasion(occasion);
@@ -33,6 +39,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
+    setGlobalSelectedDate(date); // Sync globally so all services use the same date
   };
 
   const formatDate = (dateObj: Date) => {
@@ -70,11 +77,28 @@ const SearchSection: React.FC<SearchSectionProps> = ({
         onPress={() => setShowOccasionModal(true)}
       >
         <View style={styles.iconWrapper}>
-          <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
-            {/* Clean Grid Icon - 2x2 squares with proper spacing */}
+          <Svg width={20} height={20} viewBox="0 0 120 120" fill="none">
+            {/* Top Left */}
             <Path
-              d="M4 4h6v6H4V4zM14 4h6v6h-6V4zM4 14h6v6H4v-6zM14 14h6v6h-6v-6z"
-              fill={colors.textWhite}
+              d="M6 18C6 11.373 11.373 6 18 6H42C48.627 6 54 11.373 54 18V42C54 48.627 48.627 54 42 54H18C11.373 54 6 48.627 6 42V18Z"
+              fill="#FFFFFF"
+            />
+            {/* Top Right */}
+            <Path
+              d="M66 18C66 11.373 71.373 6 78 6H102C108.627 6 114 11.373 114 18V42C114 48.627 108.627 54 102 54H78C71.373 54 66 48.627 66 42V18Z"
+              fill="#FFFFFF"
+              opacity={0.6}
+            />
+            {/* Bottom Left */}
+            <Path
+              d="M6 78C6 71.373 11.373 66 18 66H42C48.627 66 54 71.373 54 78V102C54 108.627 48.627 114 42 114H18C11.373 114 6 108.627 6 102V78Z"
+              fill="#FFFFFF"
+              opacity={0.6}
+            />
+            {/* Bottom Right */}
+            <Path
+              d="M66 78C66 71.373 71.373 66 78 66H102C108.627 66 114 71.373 114 78V102C114 108.627 108.627 114 102 114H78C71.373 114 66 108.627 66 102V78Z"
+              fill="#FFFFFF"
             />
           </Svg>
         </View>

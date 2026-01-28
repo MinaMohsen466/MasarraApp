@@ -262,11 +262,18 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
       });
     }
 
-    // Apply booking type filter
+    // Apply booking type filter based on maxBookingsPerSlot
+    // -1 = unlimited, positive number = limited
     if (filters.bookingType) {
-      result = result.filter(
-        service => service.bookingType === filters.bookingType,
-      );
+      result = result.filter(service => {
+        const maxSlots = service.maxBookingsPerSlot;
+        if (filters.bookingType === 'unlimited') {
+          return maxSlots === -1;
+        } else if (filters.bookingType === 'limited') {
+          return maxSlots !== undefined && maxSlots !== -1 && maxSlots > 0;
+        }
+        return true;
+      });
     }
 
     // Apply discount filter

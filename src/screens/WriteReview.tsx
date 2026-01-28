@@ -62,25 +62,25 @@ const WriteReview: React.FC<WriteReviewProps> = ({
       return;
     }
 
-    if (comment.trim().length < 10) {
+    if (comment.trim().length < 1) {
       setAlertConfig({
         visible: true,
         title: isRTL ? 'خطأ' : 'Error',
         message: isRTL
-          ? 'الرجاء كتابة تعليق لا يقل عن 10 أحرف'
-          : 'Please write a comment with at least 10 characters',
+          ? 'الرجاء كتابة تعليق'
+          : 'Please write a comment',
         buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
       });
       return;
     }
 
-    if (comment.length > 1000) {
+    if (comment.length > 300) {
       setAlertConfig({
         visible: true,
         title: isRTL ? 'خطأ' : 'Error',
         message: isRTL
-          ? 'التعليق طويل جداً (الحد الأقصى 1000 حرف)'
-          : 'Comment is too long (max 1000 characters)',
+          ? 'التعليق طويل جداً (الحد الأقصى 300 حرف)'
+          : 'Comment is too long (max 300 characters)',
         buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
       });
       return;
@@ -224,12 +224,12 @@ const WriteReview: React.FC<WriteReviewProps> = ({
             placeholderTextColor="#999"
             multiline
             numberOfLines={6}
-            maxLength={1000}
+            maxLength={300}
             textAlignVertical="top"
             editable={!isSubmitting}
           />
           <Text style={[styles.characterCount, isRTL && styles.textRTL]}>
-            {comment.length} / 1000
+            {comment.length} / 300
           </Text>
         </View>
 

@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Text,
   ImageBackground,
-  Alert,
   ActivityIndicator,
   Modal,
   Image,
@@ -16,6 +15,7 @@ import {
 import { useLanguage } from '../../contexts/LanguageContext';
 import { colors } from '../../constants/colors';
 import { getBackgroundImageUrl } from '../../services/qrCodeApi';
+import { CustomAlert } from '../CustomAlert/CustomAlert';
 import type { QRCodeData, QRCodeCustomDetails } from '../../services/qrCodeApi';
 
 interface QRCodeResultModalProps {
@@ -39,21 +39,31 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
 
   const { width: winWidth, height: winHeight } = useWindowDimensions();
   const [cardAspectRatio, setCardAspectRatio] = useState<number | null>(null);
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    buttons: Array<{ text: string; style?: 'default' | 'cancel' | 'destructive'; onPress?: () => void }>;
+  }>({ visible: false, title: '', message: '', buttons: [] });
   const maxCardWidth = Math.min(420, Math.floor(winWidth * 0.88));
   const maxCardHeight = Math.floor(winHeight * 0.78);
 
   const handleDownloadCard = async () => {
     setDownloadingCard(true);
     try {
-      Alert.alert(
-        isRTL ? 'نجح' : 'Success',
-        isRTL ? 'تم تنزيل البطاقة بنجاح' : 'Card downloaded successfully',
-      );
+      setAlertConfig({
+        visible: true,
+        title: isRTL ? 'نجح' : 'Success',
+        message: isRTL ? 'تم تنزيل البطاقة بنجاح' : 'Card downloaded successfully',
+        buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
+      });
     } catch (error) {
-      Alert.alert(
-        isRTL ? 'خطأ' : 'Error',
-        isRTL ? 'فشل التنزيل' : 'Download failed',
-      );
+      setAlertConfig({
+        visible: true,
+        title: isRTL ? 'خطأ' : 'Error',
+        message: isRTL ? 'فشل التنزيل' : 'Download failed',
+        buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
+      });
     } finally {
       setDownloadingCard(false);
     }
@@ -64,19 +74,27 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
     try {
       if (qrCode?.qrUrl) {
         Clipboard.setString(qrCode.qrUrl);
-        Alert.alert(
-          isRTL ? 'نجح' : 'Success',
-          isRTL ? 'تم نسخ الرابط بنجاح' : 'Link copied successfully',
-          [{ text: 'OK' }],
-        );
+        setAlertConfig({
+          visible: true,
+          title: isRTL ? 'نجح' : 'Success',
+          message: isRTL ? 'تم نسخ الرابط بنجاح' : 'Link copied successfully',
+          buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
+        });
       } else {
-        Alert.alert(
-          isRTL ? 'خطأ' : 'Error',
-          isRTL ? 'الرابط غير متوفر' : 'Link not available',
-        );
+        setAlertConfig({
+          visible: true,
+          title: isRTL ? 'خطأ' : 'Error',
+          message: isRTL ? 'الرابط غير متوفر' : 'Link not available',
+          buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
+        });
       }
     } catch (error) {
-      Alert.alert(isRTL ? 'خطأ' : 'Error', isRTL ? 'فشل النسخ' : 'Copy failed');
+      setAlertConfig({
+        visible: true,
+        title: isRTL ? 'خطأ' : 'Error',
+        message: isRTL ? 'فشل النسخ' : 'Copy failed',
+        buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
+      });
     } finally {
       setCopyingLink(false);
     }
@@ -448,6 +466,15 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
           </ScrollView>
         </View>
       </View>
+
+      {/* Custom Alert */}
+      <CustomAlert
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttons={alertConfig.buttons}
+        onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+      />
     </Modal>
   );
 };

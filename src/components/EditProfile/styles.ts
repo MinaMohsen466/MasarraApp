@@ -16,12 +16,14 @@ export const styles = StyleSheet.create({
     zIndex: 0,
   },
   header: {
-    backgroundColor: 'transparent',
-    paddingHorizontal: 22,
-    paddingTop: 22,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    backgroundColor: colors.primary,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   backButton: {
     // width: 40,
@@ -33,8 +35,8 @@ export const styles = StyleSheet.create({
     marginRight: 8,
   },
   backButtonText: {
-    fontSize: 37,
-    lineHeight: 37,
+    fontSize: 32,
+    lineHeight: 32,
     color: colors.textWhite,
     fontWeight: '700',
     textAlign: 'center',
@@ -43,7 +45,7 @@ export const styles = StyleSheet.create({
     fontFamily: 'System',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.textWhite,
     flex: 1,

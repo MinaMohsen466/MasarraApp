@@ -142,8 +142,8 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
   // Render empty-state similar to screenshot when no addresses
   if (loading) {
     return (
-      <View style={styles.addressesContainer}>
-        <ActivityIndicator size="large" color="#1677FF" />
+      <View style={[styles.addressesContainer, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#00897B" />
       </View>
     );
   }

@@ -8,6 +8,7 @@ import {
 import Svg, { Path } from 'react-native-svg';
 import { styles, imageStyles } from './Styles';
 import Drawer from '../Drawer';
+import Banner from './Banner';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { colors } from '../../constants/colors';
@@ -53,6 +54,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
 
   return (
     <>
+      <Banner />
       <View
         style={[styles.headerContainer, isRTL && styles.headerContainerRTL]}
       >
@@ -114,7 +116,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
               }}
               style={imageStyles.profileIcon}
               resizeMode="cover"
-              onError={() => {}}
+              onError={() => { }}
             />
           ) : (
             <Image

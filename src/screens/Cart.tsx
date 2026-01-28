@@ -655,19 +655,20 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onNavigate }) => {
 
   const calculateDeliveryCharges = () => {
     // Calculate delivery charges for EACH cart item that requires delivery
-    // Each item with maxBookingsPerSlot === -1 gets 5 KD delivery charge
-    let deliveryCount = 0;
+    // Each item with maxBookingsPerSlot === -1 gets its deliveryFee from database
+    let totalDelivery = 0;
     cartItems.forEach(item => {
       if (
         (!item.availabilityStatus ||
           item.availabilityStatus === 'available_now') &&
         item.maxBookingsPerSlot === -1
       ) {
-        deliveryCount++;
+        totalDelivery += item.deliveryFee || 0;
       }
     });
-    return deliveryCount * 5;
+    return totalDelivery;
   };
+
 
   const calculateTotalBeforeDiscount = () => {
     return calculateSubTotal() + calculateDeliveryCharges();
