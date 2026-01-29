@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, Modal, TextInput, PanResponder, LayoutChangeEvent } from 'react-native';
+import React, { useState, useRef, useCallback } from 'react';
+import { View, Text, TouchableOpacity, Modal, TextInput, PanResponder, LayoutChangeEvent, GestureResponderEvent, PanResponderGestureState } from 'react-native';
 import { styles } from './styles';
 import { useLanguage } from '../../contexts/LanguageContext';
 
@@ -25,26 +25,43 @@ const FilterModal: React.FC<FilterModalProps> = ({
   const { isRTL } = useLanguage();
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(20000);
+  const [minPriceInput, setMinPriceInput] = useState('0');
+  const [maxPriceInput, setMaxPriceInput] = useState('20000');
   const [bookingType, setBookingType] = useState<string>('all');
   const [onSale, setOnSale] = useState<boolean>(false);
   const [sliderWidth, setSliderWidth] = useState(300);
   const sliderRef = useRef<View>(null);
+  const sliderLeftOffset = useRef<number>(0);
 
   // Calculate thumb positions
   const minThumbPosition = (minPrice / MAX_PRICE) * sliderWidth;
   const maxThumbPosition = (maxPrice / MAX_PRICE) * sliderWidth;
+
+  // Helper function to calculate price from gesture
+  const calculatePriceFromGesture = useCallback((moveX: number): number => {
+    const relativeX = moveX - sliderLeftOffset.current;
+    const clampedX = Math.max(0, Math.min(relativeX, sliderWidth));
+    return Math.round((clampedX / sliderWidth) * MAX_PRICE);
+  }, [sliderWidth]);
 
   // PanResponder for min thumb
   const minPanResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        // Measure slider position when touch starts
+        sliderRef.current?.measure((x, y, width, height, pageX, pageY) => {
+          sliderLeftOffset.current = pageX;
+        });
+      },
       onPanResponderMove: (_, gestureState) => {
-        const newPosition = Math.max(0, Math.min(gestureState.moveX - 32, sliderWidth));
-        const newPrice = Math.round((newPosition / sliderWidth) * MAX_PRICE);
+        const newPrice = calculatePriceFromGesture(gestureState.moveX);
         // Don't let min exceed max - 100
         if (newPrice < maxPrice - 100) {
-          setMinPrice(Math.max(MIN_PRICE, newPrice));
+          const validPrice = Math.max(MIN_PRICE, newPrice);
+          setMinPrice(validPrice);
+          setMinPriceInput(validPrice.toFixed(0));
         }
       },
     })
@@ -55,12 +72,19 @@ const FilterModal: React.FC<FilterModalProps> = ({
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        // Measure slider position when touch starts
+        sliderRef.current?.measure((x, y, width, height, pageX, pageY) => {
+          sliderLeftOffset.current = pageX;
+        });
+      },
       onPanResponderMove: (_, gestureState) => {
-        const newPosition = Math.max(0, Math.min(gestureState.moveX - 32, sliderWidth));
-        const newPrice = Math.round((newPosition / sliderWidth) * MAX_PRICE);
+        const newPrice = calculatePriceFromGesture(gestureState.moveX);
         // Don't let max go below min + 100
         if (newPrice > minPrice + 100) {
-          setMaxPrice(Math.min(MAX_PRICE, newPrice));
+          const validPrice = Math.min(MAX_PRICE, newPrice);
+          setMaxPrice(validPrice);
+          setMaxPriceInput(validPrice.toFixed(0));
         }
       },
     })
@@ -68,6 +92,10 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
   const handleSliderLayout = (event: LayoutChangeEvent) => {
     setSliderWidth(event.nativeEvent.layout.width);
+    // Also measure the slider's position on screen
+    sliderRef.current?.measure((x, y, width, height, pageX, pageY) => {
+      sliderLeftOffset.current = pageX;
+    });
   };
 
   const handleApplyFilter = () => {
@@ -83,8 +111,26 @@ const FilterModal: React.FC<FilterModalProps> = ({
   const handleResetFilter = () => {
     setMinPrice(0);
     setMaxPrice(20000);
+    setMinPriceInput('0');
+    setMaxPriceInput('20000');
     setBookingType('all');
     setOnSale(false);
+  };
+
+  // Handle min price input blur - validate on blur instead of every keystroke
+  const handleMinPriceBlur = () => {
+    const parsed = parseFloat(minPriceInput) || 0;
+    const validated = Math.max(0, Math.min(maxPrice - 100, parsed));
+    setMinPrice(validated);
+    setMinPriceInput(validated.toFixed(0));
+  };
+
+  // Handle max price input blur - validate on blur instead of every keystroke
+  const handleMaxPriceBlur = () => {
+    const parsed = parseFloat(maxPriceInput) || 20000;
+    const validated = Math.max(minPrice + 100, Math.min(20000, parsed));
+    setMaxPrice(validated);
+    setMaxPriceInput(validated.toFixed(0));
   };
 
   return (
@@ -190,12 +236,9 @@ const FilterModal: React.FC<FilterModalProps> = ({
                     styles.priceInputField,
                     isRTL && styles.priceInputFieldRTL,
                   ]}
-                  value={minPrice.toFixed(0)}
-                  onChangeText={val =>
-                    setMinPrice(
-                      Math.max(0, Math.min(maxPrice - 100, parseFloat(val) || 0)),
-                    )
-                  }
+                  value={minPriceInput}
+                  onChangeText={setMinPriceInput}
+                  onBlur={handleMinPriceBlur}
                   keyboardType="decimal-pad"
                   placeholder="0"
                 />
@@ -205,10 +248,9 @@ const FilterModal: React.FC<FilterModalProps> = ({
                     styles.priceInputField,
                     isRTL && styles.priceInputFieldRTL,
                   ]}
-                  value={maxPrice.toFixed(0)}
-                  onChangeText={val =>
-                    setMaxPrice(Math.max(minPrice + 100, Math.min(20000, parseFloat(val) || 20000)))
-                  }
+                  value={maxPriceInput}
+                  onChangeText={setMaxPriceInput}
+                  onBlur={handleMaxPriceBlur}
                   keyboardType="decimal-pad"
                   placeholder="20000"
                 />
@@ -322,4 +364,3 @@ const FilterModal: React.FC<FilterModalProps> = ({
 };
 
 export default FilterModal;
-

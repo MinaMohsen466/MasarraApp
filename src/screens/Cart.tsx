@@ -43,10 +43,11 @@ import {
 interface CartProps {
   onBack?: () => void;
   onViewDetails?: (serviceId: string) => void;
+  onViewPackageDetails?: (packageId: string) => void;
   onNavigate?: (route: string) => void;
 }
 
-const Cart: React.FC<CartProps> = ({ onViewDetails, onNavigate }) => {
+const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavigate }) => {
   const { isRTL, t } = useLanguage();
   const { user, isLoggedIn, token } = useAuth();
   const insets = useSafeAreaInsets();
@@ -1318,9 +1319,13 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onNavigate }) => {
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.viewDetailsButton}
-                      onPress={() =>
-                        onViewDetails && onViewDetails(item.serviceId)
-                      }
+                      onPress={() => {
+                        if (item.isPackage && onViewPackageDetails) {
+                          onViewPackageDetails(item.serviceId);
+                        } else if (onViewDetails) {
+                          onViewDetails(item.serviceId);
+                        }
+                      }}
                     >
                       <Text style={styles.viewDetailsText}>
                         {t('viewDetails')}

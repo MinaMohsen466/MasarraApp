@@ -7,6 +7,8 @@ export type WishlistItem = {
   name?: string;
   image?: string;
   price?: number;
+  vendorName?: string;
+  description?: string;
 };
 
 // Get the current user ID from AsyncStorage

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,33 +12,9 @@ import Svg, { Path } from 'react-native-svg';
 import { createStyles } from './styles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { usePackages } from '../../hooks/usePackages';
+import { useInfinitePackages, flattenPackages, Package } from '../../hooks/usePackages';
 import { getImageUrl } from '../../services/api';
 import { getServiceReviews } from '../../services/reviewsApi';
-
-export interface Package {
-  _id: string;
-  name: string;
-  nameAr: string;
-  description: string;
-  descriptionAr: string;
-  occasion: string;
-  vendor: any;
-  service: any;
-  customPrice: number;
-  additionalServices: Array<{
-    service: string;
-    customPrice: number;
-    _id: string;
-  }>;
-  totalPrice: number;
-  discountPrice: number;
-  isActive: boolean;
-  images: string[];
-  rating: number;
-  totalReviews: number;
-  createdAt: string;
-}
 
 interface PackagesProps {
   onSelectPackage?: (pkg: Package) => void;
@@ -51,21 +27,37 @@ const Packages: React.FC<PackagesProps> = ({ onSelectPackage, onBack }) => {
   const numColumns = isTablet ? 3 : 2;
   const styles = createStyles(screenWidth);
   const { isRTL, t } = useLanguage();
-  const { data: packages, isLoading, error } = usePackages();
+
+  // Use infinite query for pagination
+  const {
+    data,
+    isLoading,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfinitePackages();
+
+  // Flatten paginated data
+  const packages = flattenPackages(data);
+
   const [packageRatings, setPackageRatings] = useState<{
     [key: string]: { rating: number; totalReviews: number };
   }>({});
 
-  // Load ratings for all packages
+  // Load ratings for loaded packages
   useEffect(() => {
     const loadRatings = async () => {
-      if (!packages) return;
+      if (!packages || packages.length === 0) return;
 
       const ratingsData: {
         [key: string]: { rating: number; totalReviews: number };
       } = {};
 
       for (const pkg of packages) {
+        // Skip if already loaded
+        if (packageRatings[pkg._id]) continue;
+
         if (pkg.service?._id) {
           try {
             const reviewsData = await getServiceReviews(pkg.service._id, 1, 1);
@@ -79,19 +71,39 @@ const Packages: React.FC<PackagesProps> = ({ onSelectPackage, onBack }) => {
         }
       }
 
-      setPackageRatings(ratingsData);
+      if (Object.keys(ratingsData).length > 0) {
+        setPackageRatings(prev => ({ ...prev, ...ratingsData }));
+      }
     };
 
     loadRatings();
   }, [packages]);
 
+  // Handle load more when reaching end of list
+  const handleLoadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  // Footer component showing loading indicator when fetching more
+  const renderFooter = () => {
+    if (!isFetchingNextPage) return null;
+    return (
+      <View style={{ padding: 20, alignItems: 'center' }}>
+        <ActivityIndicator size="small" color={colors.primary} />
+      </View>
+    );
+  };
+
   const renderPackageCard = ({ item }: { item: Package }) => {
     const displayName = isRTL ? item.nameAr : item.name;
     const displayDescription = isRTL ? item.descriptionAr : item.description;
+    // discountPrice is the discount amount (e.g., 20 KD off), not the final price
+    // Final price = totalPrice - discountPrice
     const displayPrice =
-      item.discountPrice > 0 ? item.discountPrice : item.totalPrice;
+      item.discountPrice > 0 ? (item.totalPrice - item.discountPrice) : item.totalPrice;
 
-    // Get rating from loaded data
     const rating = packageRatings[item._id]?.rating || 0;
     const totalReviews = packageRatings[item._id]?.totalReviews || 0;
 
@@ -115,8 +127,8 @@ const Packages: React.FC<PackagesProps> = ({ onSelectPackage, onBack }) => {
             <View style={styles.discountBadge}>
               <Text style={styles.discountText}>
                 {Math.round(
-                  ((item.totalPrice - item.discountPrice) / item.totalPrice) *
-                    100,
+                  (item.discountPrice / item.totalPrice) *
+                  100,
                 )}
                 % OFF
               </Text>
@@ -263,6 +275,9 @@ const Packages: React.FC<PackagesProps> = ({ onSelectPackage, onBack }) => {
         numColumns={numColumns}
         columnWrapperStyle={styles.row}
         showsVerticalScrollIndicator={false}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={renderFooter}
       />
     </View>
   );

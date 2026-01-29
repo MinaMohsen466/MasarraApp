@@ -383,19 +383,89 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
             {/* ADDRESSES LIST BELOW FORM */}
             {addresses.map(addr => (
               <View key={addr._id} style={styles.addressCard}>
-                <View style={styles.addressInfoContainer}>
-                  <Text style={styles.addressName}>{addr.name}</Text>
-                  <Text style={styles.addressLine}>
-                    {addr.street} {addr.houseNumber}
-                  </Text>
-                  <Text style={styles.addressLine}>{addr.city}</Text>
+                <View style={styles.addressCardInner}>
+                  <View style={styles.addressCardHeader}>
+                    {/* Location Icon */}
+                    <View style={styles.addressIconContainer}>
+                      <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+                        <Path
+                          d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
+                          fill="#00897B"
+                        />
+                      </Svg>
+                    </View>
+                    <View style={styles.addressInfoContainer}>
+                      <Text style={styles.addressName}>{addr.name}</Text>
+                      <Text style={styles.addressSubtitle}>
+                        {isRTL ? 'عنوان التوصيل' : 'Delivery Address'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.addressDetailsContainer}>
+                    <View style={styles.addressLineWithIcon}>
+                      <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+                        <Path
+                          d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                          stroke="#9E9E9E"
+                          strokeWidth={2}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </Svg>
+                      <Text style={styles.addressLineText}>
+                        {addr.street} {addr.houseNumber}
+                      </Text>
+                    </View>
+                    <View style={styles.addressLineWithIcon}>
+                      <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+                        <Path
+                          d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1118 0z"
+                          stroke="#9E9E9E"
+                          strokeWidth={2}
+                        />
+                        <Path
+                          d="M12 13a3 3 0 100-6 3 3 0 000 6z"
+                          stroke="#9E9E9E"
+                          strokeWidth={2}
+                        />
+                      </Svg>
+                      <Text style={styles.addressLineText}>{addr.city}</Text>
+                    </View>
+                  </View>
                 </View>
+
                 <View
                   style={[
                     styles.actionsRow,
-                    { flexDirection: isRTL ? 'row' : 'row-reverse' },
+                    { flexDirection: isRTL ? 'row-reverse' : 'row' },
                   ]}
                 >
+                  <TouchableOpacity
+                    onPress={() => confirmDelete(addr)}
+                    style={styles.deleteButton}
+                  >
+                    <Svg
+                      width={18}
+                      height={18}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#EF4444"
+                      strokeWidth={2}
+                    >
+                      <Path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h16zM10 11v6M14 11v6" />
+                    </Svg>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => startEdit(addr)}
+                    style={styles.actionButton}
+                  >
+                    <Text style={styles.actionButtonText}>
+                      {isRTL ? 'تعديل' : 'Edit'}
+                    </Text>
+                  </TouchableOpacity>
+
                   {addr.isDefault ? (
                     <View style={styles.defaultBadge}>
                       <Text style={styles.defaultBadgeText}>
@@ -408,35 +478,10 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
                       style={styles.setDefaultLink}
                     >
                       <Text style={styles.setDefaultLinkText}>
-                        {isRTL ? 'اجعله الافتراضي' : 'Set as Default'}
+                        {isRTL ? 'جعله افتراضي' : 'Set Default'}
                       </Text>
                     </TouchableOpacity>
                   )}
-
-                  <TouchableOpacity
-                    onPress={() => startEdit(addr)}
-                    style={styles.actionButton}
-                  >
-                    <Text style={styles.actionButtonText}>
-                      {isRTL ? 'تعديل' : 'Edit'}
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onPress={() => confirmDelete(addr)}
-                    style={styles.deleteButton}
-                  >
-                    <Svg
-                      width={20}
-                      height={20}
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#EF4444"
-                      strokeWidth={2}
-                    >
-                      <Path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h16zM10 11v6M14 11v6" />
-                    </Svg>
-                  </TouchableOpacity>
                 </View>
               </View>
             ))}

@@ -105,3 +105,58 @@ export const getServiceImageUrl = (imagePath: string): string => {
   // Use the centralized getImageUrl function
   return getImageUrl(imagePath);
 };
+
+/**
+ * Paginated services response from server
+ */
+export interface PaginatedServicesResponse {
+  services: Service[];
+  total: number;
+  pages: number;
+  currentPage: number;
+}
+
+/**
+ * Filters for fetching services
+ */
+export interface ServiceFilters {
+  page?: number;
+  limit?: number;
+  occasionId?: string;
+  categoryId?: string;
+  search?: string;
+  isOnSale?: boolean;
+  minPrice?: number;
+  maxPrice?: number;
+}
+
+/**
+ * Fetch services with pagination and filters
+ */
+export const fetchServicesWithPagination = async (
+  filters: ServiceFilters = {},
+): Promise<PaginatedServicesResponse> => {
+  try {
+    const params = new URLSearchParams();
+
+    if (filters.page) params.append('page', String(filters.page));
+    if (filters.limit) params.append('limit', String(filters.limit));
+    if (filters.occasionId) params.append('occasionId', filters.occasionId);
+    if (filters.categoryId) params.append('categoryId', filters.categoryId);
+    if (filters.search) params.append('search', filters.search);
+    if (filters.isOnSale) params.append('isOnSale', 'true');
+    if (filters.minPrice) params.append('minPrice', String(filters.minPrice));
+    if (filters.maxPrice) params.append('maxPrice', String(filters.maxPrice));
+    params.append('isActive', 'true');
+
+    const response = await fetch(`${API_BASE_URL}/services?${params.toString()}`);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+};

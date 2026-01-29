@@ -558,14 +558,12 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
             style={[styles.actionButton, styles.actionButtonLarge]}
             accessibilityLabel="Wishlist"
           >
-            <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+            <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
               <Path
-                d="M20.8 7.6a4.8 4.8 0 0 0-6.8 0L12 9.6l-2-2a4.8 4.8 0 1 0-6.8 6.8L12 22l8.8-7.6a4.8 4.8 0 0 0 0-6.8z"
-                stroke={isSaved ? colors.primary : '#7FBFB6'}
-                strokeWidth={1.8}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                fill={isSaved ? colors.primary : 'none'}
+                d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                fill={isSaved ? '#E8837A' : 'none'}
+                stroke={isSaved ? '#E8837A' : '#7FBFB6'}
+                strokeWidth={isSaved ? 0 : 2}
               />
             </Svg>
           </TouchableOpacity>
@@ -624,23 +622,30 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
           >
             <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
               <Path
-                d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"
+                d="M18 8a3 3 0 100-6 3 3 0 000 6z"
                 stroke={colors.primary}
-                strokeWidth={1.8}
+                strokeWidth={2}
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
               <Path
-                d="M16 6l-4-4-4 4"
+                d="M6 15a3 3 0 100-6 3 3 0 000 6z"
                 stroke={colors.primary}
-                strokeWidth={1.8}
+                strokeWidth={2}
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
               <Path
-                d="M12 2v14"
+                d="M18 22a3 3 0 100-6 3 3 0 000 6z"
                 stroke={colors.primary}
-                strokeWidth={1.8}
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <Path
+                d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"
+                stroke={colors.primary}
+                strokeWidth={2}
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />

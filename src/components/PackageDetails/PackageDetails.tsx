@@ -39,7 +39,8 @@ import {
   ReviewStats,
   ReviewsResponse,
 } from '../../services/reviewsApi';
-import { Package } from '../Packages/Packages';
+import { Package } from '../../hooks/usePackages';
+import { CustomAlert } from '../CustomAlert/CustomAlert';
 
 interface PackageDetailsProps {
   packageId: string;
@@ -78,6 +79,28 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
   const [reviewStats, setReviewStats] = useState<ReviewStats | null>(null);
   const [showAllReviewsModal, setShowAllReviewsModal] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+
+  // CustomAlert state
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    buttons: Array<{ text: string; onPress?: () => void; style?: 'default' | 'cancel' | 'destructive' }>;
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    buttons: [],
+  });
+
+  const showAlert = (title: string, message: string, buttons?: Array<{ text: string; onPress?: () => void; style?: 'default' | 'cancel' | 'destructive' }>) => {
+    setAlertConfig({
+      visible: true,
+      title,
+      message,
+      buttons: buttons || [{ text: isRTL ? 'حسناً' : 'OK', onPress: () => setAlertConfig(prev => ({ ...prev, visible: false })) }],
+    });
+  };
 
   // Animation for add to cart
   const [showFlyingIcon, setShowFlyingIcon] = useState(false);
@@ -165,29 +188,29 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 
   const handleAddToCart = async () => {
     if (!userToken) {
-      Alert.alert(
+      showAlert(
         isRTL ? 'تسجيل الدخول مطلوب' : 'Login Required',
         isRTL
           ? 'يرجى تسجيل الدخول لإضافة العناصر إلى السلة'
-          : 'Please login to add items to cart',
+          : 'Please login to add items to cart'
       );
       return;
     }
 
     if (!selectedDate || !selectedTime) {
-      Alert.alert(
+      showAlert(
         isRTL ? 'اختر التاريخ والوقت' : 'Select Date & Time',
         isRTL
           ? 'يرجى اختيار التاريخ والوقت أولاً'
-          : 'Please select date and time first',
+          : 'Please select date and time first'
       );
       return;
     }
 
     if (!isTimeSlotAvailable) {
-      Alert.alert(
+      showAlert(
         isRTL ? 'غير متاح' : 'Not Available',
-        isRTL ? 'هذا الوقت محجوز بالفعل' : 'This time slot is already booked',
+        isRTL ? 'هذا الوقت محجوز بالفعل' : 'This time slot is already booked'
       );
       return;
     }
@@ -246,7 +269,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
         timeSlot: { start: slotStart, end: slotEnd }, // Use parsed Date objects
         price:
           packageData!.discountPrice > 0
-            ? packageData!.discountPrice
+            ? (packageData!.totalPrice - packageData!.discountPrice)
             : packageData!.totalPrice,
         image: packageData!.images?.[0] || '',
         vendorName: packageData!.vendor?.displayName || '',
@@ -260,10 +283,10 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
       // Show success animation
       triggerAddToCartAnimation();
     } catch (err: any) {
-      Alert.alert(
+      showAlert(
         isRTL ? 'خطأ' : 'Error',
         err.message ||
-        (isRTL ? 'فشل في إضافة الباقة' : 'Failed to add package'),
+        (isRTL ? 'فشل في إضافة الباقة' : 'Failed to add package')
       );
     } finally {
       setIsAddingToCart(false);
@@ -281,29 +304,38 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
           // Get actual screen dimensions
           const screenHeight = Dimensions.get('window').height;
           const screenWidth = Dimensions.get('window').width;
+          const isTabletDevice = screenWidth >= 600;
 
-          // Bottom tab bar configuration
-          // Tab bar is approximately 60px + safe area bottom
-          const tabBarBaseHeight = 60;
-          const bottomInset = insets.bottom || 0;
-          const totalTabBarHeight = tabBarBaseHeight + bottomInset;
+          // Bottom navigation bar height calculation (from styles.ts)
+          // paddingBottom: 18 (mobile) or 24 (tablet)
+          // navItem paddingVertical: 8 (mobile) or 12 (tablet)
+          // iconSize: 28 (mobile) or 36 (tablet)
+          // Plus View under BottomNav: 20px
+          const paddingBottom = isTabletDevice ? 24 : 18;
+          const navItemPaddingVertical = isTabletDevice ? 12 : 8;
+          const navIconSize = isTabletDevice ? 36 : 28;
+          const bottomViewHeight = 20;
+
+          // Distance from screen bottom to icon center
+          // Icon center is at: bottomViewHeight + paddingBottom + navItemPaddingVertical + (navIconSize/2)
+          const iconCenterFromBottom = bottomViewHeight + paddingBottom + navItemPaddingVertical + (navIconSize / 2);
 
           // Cart icon is the LAST item in bottom nav (5th item, index 4)
-          // Bottom nav has 5 items evenly distributed
+          // Bottom nav has 5 items evenly distributed using space-around
           const navItemWidth = screenWidth / 5;
           const cartIconIndex = 4; // 0-based index (5th item)
 
-          // In RTL, cart moves to the beginning
+          // In RTL, the container uses flexDirection: row-reverse, so cart appears first
           const cartPosition = isRTL ? 0 : cartIconIndex;
 
           // Calculate X position: center of the nav item
           const targetX = (cartPosition * navItemWidth) + (navItemWidth / 2);
 
-          // Calculate Y position: icon center should be in middle of tab bar
-          const targetY = screenHeight - (totalTabBarHeight / 2) - 5;
+          // Calculate Y position: screen height minus distance from bottom to icon center
+          const targetY = screenHeight - iconCenterFromBottom;
 
-          // Calculate icon size (30x30)
-          const iconSize = 30;
+          // Calculate icon size (60x60)
+          const iconSize = 60;
 
           // Calculate translation needed from start position
           const translateX = targetX - startX;
@@ -314,12 +346,11 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
             x: startX - iconSize / 2,
             y: startY - iconSize / 2,
           });
+          setShowFlyingIcon(true);
 
           // Reset animations
           flyingIconTranslate.setValue({ x: 0, y: 0 });
           flyingIconScale.setValue(1);
-
-          setShowFlyingIcon(true);
 
           // Animate icon flying to cart
           Animated.parallel([
@@ -342,9 +373,8 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
               }),
             ]),
           ]).start(() => {
+            // Hide flying icon
             setShowFlyingIcon(false);
-            flyingIconTranslate.setValue({ x: 0, y: 0 });
-            flyingIconScale.setValue(1);
           });
         },
       );
@@ -385,9 +415,11 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
   const displayDescription = isRTL
     ? packageData.descriptionAr
     : packageData.description;
+  // discountPrice is the discount amount (e.g., 20 KD off), not the final price
+  // Final price = totalPrice - discountPrice
   const displayPrice =
     packageData.discountPrice > 0
-      ? packageData.discountPrice
+      ? (packageData.totalPrice - packageData.discountPrice)
       : packageData.totalPrice;
 
   const handleShare = async () => {
@@ -456,14 +488,12 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                 onPress={handleToggleWishlist}
                 style={styles.headerButton}
               >
-                <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+                <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
                   <Path
-                    d="M20.8 7.6a4.8 4.8 0 0 0-6.8 0L12 9.6l-2-2a4.8 4.8 0 1 0-6.8 6.8L12 22l8.8-7.6a4.8 4.8 0 0 0 0-6.8z"
-                    stroke={isSaved ? colors.primary : colors.textSecondary}
-                    strokeWidth={1.8}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    fill={isSaved ? colors.primary : 'none'}
+                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                    fill={isSaved ? '#E8837A' : 'none'}
+                    stroke={isSaved ? '#E8837A' : colors.textSecondary}
+                    strokeWidth={isSaved ? 0 : 2}
                   />
                 </Svg>
               </TouchableOpacity>
@@ -475,23 +505,30 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
               >
                 <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
                   <Path
-                    d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"
+                    d="M18 8a3 3 0 100-6 3 3 0 000 6z"
                     stroke={colors.primary}
-                    strokeWidth={1.8}
+                    strokeWidth={2}
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
                   <Path
-                    d="M16 6l-4-4-4 4"
+                    d="M6 15a3 3 0 100-6 3 3 0 000 6z"
                     stroke={colors.primary}
-                    strokeWidth={1.8}
+                    strokeWidth={2}
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
                   <Path
-                    d="M12 2v14"
+                    d="M18 22a3 3 0 100-6 3 3 0 000 6z"
                     stroke={colors.primary}
-                    strokeWidth={1.8}
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <Path
+                    d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"
+                    stroke={colors.primary}
+                    strokeWidth={2}
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
@@ -528,14 +565,12 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                 onPress={handleToggleWishlist}
                 style={styles.headerButton}
               >
-                <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+                <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
                   <Path
-                    d="M20.8 7.6a4.8 4.8 0 0 0-6.8 0L12 9.6l-2-2a4.8 4.8 0 1 0-6.8 6.8L12 22l8.8-7.6a4.8 4.8 0 0 0 0-6.8z"
-                    stroke={isSaved ? colors.primary : colors.textSecondary}
-                    strokeWidth={1.8}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    fill={isSaved ? colors.primary : 'none'}
+                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                    fill={isSaved ? '#E8837A' : 'none'}
+                    stroke={isSaved ? '#E8837A' : colors.textSecondary}
+                    strokeWidth={isSaved ? 0 : 2}
                   />
                 </Svg>
               </TouchableOpacity>
@@ -547,23 +582,30 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
               >
                 <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
                   <Path
-                    d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"
+                    d="M18 8a3 3 0 100-6 3 3 0 000 6z"
                     stroke={colors.primary}
-                    strokeWidth={1.8}
+                    strokeWidth={2}
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
                   <Path
-                    d="M16 6l-4-4-4 4"
+                    d="M6 15a3 3 0 100-6 3 3 0 000 6z"
                     stroke={colors.primary}
-                    strokeWidth={1.8}
+                    strokeWidth={2}
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
                   <Path
-                    d="M12 2v14"
+                    d="M18 22a3 3 0 100-6 3 3 0 000 6z"
                     stroke={colors.primary}
-                    strokeWidth={1.8}
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <Path
+                    d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"
+                    stroke={colors.primary}
+                    strokeWidth={2}
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
@@ -603,9 +645,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                   style={styles.discountText}
                 >
                   {Math.round(
-                    ((packageData.totalPrice - packageData.discountPrice) /
-                      packageData.totalPrice) *
-                    100,
+                    (packageData.discountPrice / packageData.totalPrice) * 100
                   )}
                   % OFF
                 </Text>
@@ -1439,67 +1479,69 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
           { paddingBottom: Math.max(insets.bottom + 34, 10) },
         ]}
       >
-        <TouchableOpacity
-          ref={addToCartButtonRef}
-          onPress={handleAddToCart}
-          disabled={
-            isAddingToCart ||
-            !selectedDate ||
-            !selectedTime ||
-            !isTimeSlotAvailable
-          }
-          style={[
-            styles.addToCartButton,
-            (!selectedDate || !selectedTime || !isTimeSlotAvailable) &&
-            styles.addToCartButtonDisabled,
-          ]}
-          activeOpacity={0.8}
-        >
-          {isAddingToCart ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <>
-              <Svg
-                width={22}
-                height={22}
-                viewBox="0 0 24 24"
-                fill="none"
-                style={styles.addToCartIcon}
-              >
-                <Path
-                  d="M9 2L7 6M17 6L15 2M2 6h20l-2 14H4L2 6z"
-                  stroke="#fff"
-                  strokeWidth={1.8}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </Svg>
-              <Text
-                style={styles.addToCartButtonText}
-              >
-                {isAddingToCart
-                  ? isRTL
-                    ? 'جاري الإضافة...'
-                    : 'ADDING...'
-                  : isRTL
-                    ? 'أضف إلى السلة'
-                    : 'ADD TO CART'}
-              </Text>
-            </>
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.backButton}
-          activeOpacity={0.85}
-          onPress={onBack}
-        >
-          <Text
-            style={styles.backButtonText}
+        <View style={styles.bottomActionsInner}>
+          <TouchableOpacity
+            ref={addToCartButtonRef}
+            onPress={handleAddToCart}
+            disabled={
+              isAddingToCart ||
+              !selectedDate ||
+              !selectedTime ||
+              !isTimeSlotAvailable
+            }
+            style={[
+              styles.addToCartButton,
+              (!selectedDate || !selectedTime || !isTimeSlotAvailable) &&
+              styles.addToCartButtonDisabled,
+            ]}
+            activeOpacity={0.8}
           >
-            {isRTL ? 'رجوع' : 'BACK'}
-          </Text>
-        </TouchableOpacity>
+            {isAddingToCart ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <>
+                <Svg
+                  width={22}
+                  height={22}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  style={styles.addToCartIcon}
+                >
+                  <Path
+                    d="M9 2L7 6M17 6L15 2M2 6h20l-2 14H4L2 6z"
+                    stroke="#fff"
+                    strokeWidth={1.8}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+                <Text
+                  style={styles.addToCartButtonText}
+                >
+                  {isAddingToCart
+                    ? isRTL
+                      ? 'جاري الإضافة...'
+                      : 'ADDING...'
+                    : isRTL
+                      ? 'أضف إلى السلة'
+                      : 'ADD TO CART'}
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.backButton}
+            activeOpacity={0.85}
+            onPress={onBack}
+          >
+            <Text
+              style={styles.backButtonText}
+            >
+              {isRTL ? 'رجوع' : 'BACK'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Date Picker Modal */}
@@ -1537,27 +1579,59 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
       {/* Flying Cart Icon Animation */}
       {showFlyingIcon && (
         <Animated.View
-          style={[
-            styles.flyingIconContainer,
-            {
-              left: iconStartPosition.x,
-              top: iconStartPosition.y,
-              transform: [
-                { translateX: flyingIconTranslate.x },
-                { translateY: flyingIconTranslate.y },
-                { scale: flyingIconScale },
-              ],
-            },
-          ]}
+          style={{
+            position: 'absolute',
+            width: 60,
+            height: 60,
+            left: iconStartPosition.x,
+            top: iconStartPosition.y,
+            transform: [
+              { translateX: flyingIconTranslate.x },
+              { translateY: flyingIconTranslate.y },
+              { scale: flyingIconScale },
+            ],
+            zIndex: 9999,
+          }}
         >
-          <Svg width={30} height={30} viewBox="0 0 24 24" fill="none">
-            <Path
-              d="M9 2L7 4H3v2h18V4h-4l-2-2H9zM3 8v13a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V8H3z"
-              fill={colors.primary}
-            />
-          </Svg>
+          <View
+            style={{
+              width: 60,
+              height: 60,
+              backgroundColor: colors.primary,
+              borderRadius: 30,
+              justifyContent: 'center',
+              alignItems: 'center',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.35,
+              shadowRadius: 16,
+              elevation: 20,
+              borderWidth: 2,
+              borderColor: '#FFFFFF',
+            }}
+          >
+            <Svg width={32} height={32} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="M9 2L7 6M17 6L15 2M2 6h20l-2 14H4L2 6z"
+                stroke="#FFFFFF"
+                strokeWidth={2.2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+              />
+            </Svg>
+          </View>
         </Animated.View>
       )}
+
+      {/* Custom Alert */}
+      <CustomAlert
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttons={alertConfig.buttons}
+        onClose={() => setAlertConfig({ ...alertConfig, visible: false })}
+      />
     </View>
   );
 };

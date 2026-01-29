@@ -231,6 +231,7 @@ function App() {
             onBack={handleBack}
             onNavigate={handleNavigation}
             onViewDetails={(serviceId) => handleServiceSelect(serviceId, 'services')}
+            onViewPackageDetails={(packageId) => handlePackageSelect(packageId, 'packages')}
           />
         );
       case 'about':
