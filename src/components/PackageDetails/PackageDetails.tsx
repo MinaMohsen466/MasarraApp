@@ -45,11 +45,13 @@ import { CustomAlert } from '../CustomAlert/CustomAlert';
 interface PackageDetailsProps {
   packageId: string;
   onBack?: () => void;
+  onNavigate?: (route: string) => void;
 }
 
 const PackageDetails: React.FC<PackageDetailsProps> = ({
   packageId,
   onBack,
+  onNavigate,
 }) => {
   const { width: SCREEN_WIDTH } = useWindowDimensions();
   const styles = createStyles(SCREEN_WIDTH);
@@ -192,7 +194,20 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
         isRTL ? 'تسجيل الدخول مطلوب' : 'Login Required',
         isRTL
           ? 'يرجى تسجيل الدخول لإضافة العناصر إلى السلة'
-          : 'Please login to add items to cart'
+          : 'Please login to add items to cart',
+        [
+          {
+            text: isRTL ? 'تسجيل الدخول' : 'Login',
+            style: 'default',
+            onPress: () => {
+              if (onNavigate) onNavigate('auth');
+            },
+          },
+          {
+            text: isRTL ? 'إلغاء' : 'Cancel',
+            style: 'cancel',
+          },
+        ]
       );
       return;
     }

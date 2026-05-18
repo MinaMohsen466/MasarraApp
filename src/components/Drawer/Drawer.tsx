@@ -233,8 +233,8 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
                     <ActivityIndicator size="small" color={colors.primary} />
                   ) : siteSettings?.footerLogo ? (
                     <Image
-                      key={siteSettings.headerLogo}
-                      source={{ uri: getImageUrl(siteSettings.headerLogo) }}
+                      key={siteSettings.footerLogo}
+                      source={{ uri: getImageUrl(siteSettings.footerLogo) }}
                       style={styles.logoImage}
                       resizeMode="contain"
                     />

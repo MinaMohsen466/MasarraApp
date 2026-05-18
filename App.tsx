@@ -216,6 +216,7 @@ function App() {
           <ServiceDetails
             serviceId={selectedServiceId!}
             onBack={handleBack}
+            onNavigate={handleNavigation}
           />
         );
       case 'package-details':
@@ -223,6 +224,7 @@ function App() {
           <PackageDetails
             packageId={selectedPackageId!}
             onBack={handleBack}
+            onNavigate={handleNavigation}
           />
         );
       case 'cart':

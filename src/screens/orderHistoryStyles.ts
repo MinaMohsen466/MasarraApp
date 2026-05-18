@@ -57,7 +57,7 @@ export const orderHistoryStyles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   scrollContent: {
-    paddingBottom: isTablet ? 120 : 50,
+    paddingBottom: isTablet ? 180 : 140,
   },
   emptyContainer: {
     flex: 1,

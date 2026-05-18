@@ -98,6 +98,18 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
       // Login
       try {
         const response = await login({ email, password });
+
+        // Block admin and vendor from logging in via the app
+        if (response.user.role === 'admin' || response.user.role === 'vendor') {
+          showAlert(
+            isRTL ? 'غير مسموح' : 'Access Denied',
+            isRTL
+              ? 'هذا الحساب مخصص للإدارة فقط. يرجى تسجيل الدخول عبر المتصفح.'
+              : 'This account is for administration only. Please log in via the web browser.',
+          );
+          return;
+        }
+
         // Store user data in AuthContext
         await saveLogin(response.user, response.token);
         // Navigate based on user role

@@ -62,7 +62,7 @@ export const chatStyles = StyleSheet.create({
     textAlign: 'center',
   },
   listContent: {
-    paddingBottom: 20,
+    paddingBottom: 140,
   },
   chatItem: {
     flexDirection: 'row',

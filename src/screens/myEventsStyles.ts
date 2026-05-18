@@ -147,7 +147,7 @@ export const myEventsStyles = StyleSheet.create({
     textAlign: 'right',
   },
   listContent: {
-    paddingBottom: 20,
+    paddingBottom: 140,
   },
   eventCard: {
     backgroundColor: colors.backgroundLight,

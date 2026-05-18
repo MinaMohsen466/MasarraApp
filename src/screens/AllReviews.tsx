@@ -132,7 +132,7 @@ const AllReviews: React.FC<AllReviewsProps> = ({
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingBottom: Dimensions.get('window').width >= 600 ? 120 : 20,
+          paddingBottom: 140,
         }}
       >
         {/* Service Name */}

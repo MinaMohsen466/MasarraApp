@@ -6,7 +6,6 @@ import {
   Image,
   TouchableOpacity,
   ActivityIndicator,
-  Dimensions,
   TextInput,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -58,10 +57,7 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
   const [showSuccessScreen, setShowSuccessScreen] = useState(false);
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
   const [showAddressSelection, setShowAddressSelection] = useState(false);
-  const [SelectedAddress, setSelectedAddress] = useState<any>(null);
   const [userToken, setUserToken] = useState<string>('');
-  // measured height of the bottom summary (used to reserve scroll space)
-  const [summaryHeight, setSummaryHeight] = useState<number>(300);
   // Custom Alert state
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
@@ -292,7 +288,6 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
 
   const handleAddressSelected = async (address: any) => {
     try {
-      setSelectedAddress(address);
       setShowAddressSelection(false);
       setIsProcessingCheckout(true);
 
@@ -922,12 +917,7 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
         <>
           <ScrollView
             style={styles.scrollView}
-            contentContainerStyle={{
-              paddingBottom:
-                Dimensions.get('window').width >= 600
-                  ? summaryHeight + (insets.bottom ?? 0) + 50
-                  : summaryHeight + (insets.bottom ?? 0) + 20,
-            }}
+            contentContainerStyle={styles.scrollViewContent}
             showsVerticalScrollIndicator={false}
           >
             {cartItems.map((item) => {
@@ -1338,15 +1328,11 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
           </ScrollView>
 
           <View
-            onLayout={e => setSummaryHeight(e.nativeEvent.layout.height)}
             style={[
               styles.bottomSummary,
               {
                 bottom: (insets.bottom ?? 0) + 8,
-                paddingBottom:
-                  Dimensions.get('window').width >= 600
-                    ? (insets.bottom ?? 0) + 105
-                    : (insets.bottom ?? 0) + 20,
+                paddingBottom: (insets.bottom ?? 0) + 20,
               },
             ]}
           >

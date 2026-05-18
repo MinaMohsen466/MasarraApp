@@ -51,6 +51,7 @@ export const createStyles = (screenWidth: number, numColumns: number) => {
   listContent: {
     paddingHorizontal: isTablet ? 40 : 16,
     paddingVertical: isTablet ? 28 : 20,
+    paddingBottom: isTablet ? 200 : 140,
   },
   row: {
     justifyContent: 'center',

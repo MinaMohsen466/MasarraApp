@@ -1,4 +1,4 @@
-import { StyleSheet, Dimensions } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { colors } from '../constants/colors';
 
 export const styles = StyleSheet.create({
@@ -67,7 +67,10 @@ export const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: Dimensions.get('window').width >= 600 ? 320 : 16,
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+    paddingBottom: 400,
   },
   cartCard: {
     backgroundColor: colors.backgroundLight,
@@ -294,7 +297,6 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.backgroundLight,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    paddingBottom: Dimensions.get('window').width >= 600 ? 140 : 14,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     shadowColor: 'transparent',

@@ -48,11 +48,13 @@ import { CustomAlert } from '../../screens/../components/CustomAlert/CustomAlert
 interface ServiceDetailsProps {
   serviceId: string;
   onBack?: () => void;
+  onNavigate?: (route: string) => void;
 }
 
 const ServiceDetails: React.FC<ServiceDetailsProps> = ({
   serviceId,
   onBack,
+  onNavigate,
 }) => {
   const { width: SCREEN_WIDTH } = useWindowDimensions();
   const styles = createStyles(SCREEN_WIDTH);
@@ -1505,7 +1507,19 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                 message: isRTL
                   ? 'يجب تسجيل الدخول أولاً لإضافة خدمات إلى السلة'
                   : 'Please login first to add services to cart',
-                buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
+                buttons: [
+                  {
+                    text: isRTL ? 'تسجيل الدخول' : 'Login',
+                    style: 'default',
+                    onPress: () => {
+                      if (onNavigate) onNavigate('auth');
+                    },
+                  },
+                  {
+                    text: isRTL ? 'إلغاء' : 'Cancel',
+                    style: 'cancel',
+                  },
+                ],
               });
               return;
             }
