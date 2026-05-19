@@ -275,7 +275,9 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
                     onPress={() => setShowCurrentPassword(!showCurrentPassword)}
                   >
                     <Icon
-                      name={showCurrentPassword ? 'eye-outline' : 'eye-off-outline'}
+                      name={
+                        showCurrentPassword ? 'eye-outline' : 'eye-off-outline'
+                      }
                       size={22}
                       color="#666"
                     />
@@ -393,7 +395,9 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
                   onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                 >
                   <Icon
-                    name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'}
+                    name={
+                      showConfirmPassword ? 'eye-outline' : 'eye-off-outline'
+                    }
                     size={22}
                     color="#666"
                   />

@@ -18,6 +18,7 @@ import { orderHistoryStyles as styles } from './orderHistoryStyles';
 import { QRFormModal } from '../components/QRCodeCard/QRFormModal';
 import { CustomAlert } from '../components/CustomAlert';
 import PaymentWebView from '../components/PaymentWebView';
+import PaymentReceiptModal from '../components/PaymentReceiptModal/PaymentReceiptModal';
 import {
   getQRCodeByBooking,
   canCreateQRCode,
@@ -50,7 +51,9 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
   );
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
   const [timeLeftMap, setTimeLeftMap] = useState<{ [key: string]: number }>({});
-  const [cancellingBookings, setCancellingBookings] = useState<Set<string>>(new Set());
+  const [cancellingBookings, setCancellingBookings] = useState<Set<string>>(
+    new Set(),
+  );
   const [payingBookings, setPayingBookings] = useState<Set<string>>(new Set());
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -58,16 +61,24 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
-  const [alertButtons, setAlertButtons] = useState<Array<{
-    text: string;
-    onPress?: () => void;
-    style?: 'default' | 'cancel' | 'destructive';
-  }>>([]);
+  const [alertButtons, setAlertButtons] = useState<
+    Array<{
+      text: string;
+      onPress?: () => void;
+      style?: 'default' | 'cancel' | 'destructive';
+    }>
+  >([]);
 
   // PaymentWebView state
   const [showPaymentWebView, setShowPaymentWebView] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState('');
-  const [currentPayingBooking, setCurrentPayingBooking] = useState<string | null>(null);
+  const [currentPayingBooking, setCurrentPayingBooking] = useState<
+    string | null
+  >(null);
+
+  // Receipt Modal state
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [selectedReceiptBooking, setSelectedReceiptBooking] = useState<any>(null);
 
   // Payment timeout in milliseconds (10 minutes)
   const PAYMENT_TIMEOUT = 10 * 60 * 1000;
@@ -83,14 +94,18 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
 
       if (!token) {
         setAlertTitle(isRTL ? 'خطأ' : 'Error');
-        setAlertMessage(isRTL ? 'يرجى تسجيل الدخول أولاً' : 'Please login first');
-        setAlertButtons([{
-          text: isRTL ? 'حسناً' : 'OK',
-          style: 'default',
-          onPress: () => {
-            if (onBack) onBack();
+        setAlertMessage(
+          isRTL ? 'يرجى تسجيل الدخول أولاً' : 'Please login first',
+        );
+        setAlertButtons([
+          {
+            text: isRTL ? 'حسناً' : 'OK',
+            style: 'default',
+            onPress: () => {
+              if (onBack) onBack();
+            },
           },
-        }]);
+        ]);
         setAlertVisible(true);
         return;
       }
@@ -134,40 +149,46 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
   };
 
   // Calculate time left for payment pending bookings
-  const calculateTimeLeft = useCallback((booking: Booking): number => {
-    // Don't calculate time for cancelled bookings
-    if (booking.status === 'cancelled') {
-      return 0;
-    }
+  const calculateTimeLeft = useCallback(
+    (booking: Booking): number => {
+      // Don't calculate time for cancelled bookings
+      if (booking.status === 'cancelled') {
+        return 0;
+      }
 
-    // Only calculate time if booking payment is pending and booking is confirmed
-    if (booking.paymentStatus !== 'pending' || booking.status !== 'confirmed') {
-      return 0;
-    }
+      // Only calculate time if booking payment is pending and booking is confirmed
+      if (
+        booking.paymentStatus !== 'pending' ||
+        booking.status !== 'confirmed'
+      ) {
+        return 0;
+      }
 
-    // Check if there are any services that are confirmed by vendor (have confirmedAt)
-    const confirmedServices = booking.services?.filter(
-      (s: any) => s.status === 'confirmed' && s.confirmedAt
-    );
+      // Check if there are any services that are confirmed by vendor (have confirmedAt)
+      const confirmedServices = booking.services?.filter(
+        (s: any) => s.status === 'confirmed' && s.confirmedAt,
+      );
 
-    if (!confirmedServices || confirmedServices.length === 0) {
-      return 0;
-    }
+      if (!confirmedServices || confirmedServices.length === 0) {
+        return 0;
+      }
 
-    // Get the earliest confirmation time from services
-    const confirmedDates = confirmedServices
-      .map((s: any) => s.confirmedAt)
-      .filter(Boolean)
-      .map((d: string) => new Date(d).getTime());
+      // Get the earliest confirmation time from services
+      const confirmedDates = confirmedServices
+        .map((s: any) => s.confirmedAt)
+        .filter(Boolean)
+        .map((d: string) => new Date(d).getTime());
 
-    if (confirmedDates.length === 0) return 0;
+      if (confirmedDates.length === 0) return 0;
 
-    const earliestConfirmed = Math.min(...confirmedDates);
-    const expiryTime = earliestConfirmed + PAYMENT_TIMEOUT;
-    const now = Date.now();
+      const earliestConfirmed = Math.min(...confirmedDates);
+      const expiryTime = earliestConfirmed + PAYMENT_TIMEOUT;
+      const now = Date.now();
 
-    return Math.max(0, expiryTime - now);
-  }, [PAYMENT_TIMEOUT]);
+      return Math.max(0, expiryTime - now);
+    },
+    [PAYMENT_TIMEOUT],
+  );
 
   // Start timer for pending payments
   useEffect(() => {
@@ -176,7 +197,10 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
 
       bookings.forEach(booking => {
         // Always calculate time left for bookings with pending payment and confirmed status
-        if (booking.paymentStatus === 'pending' && booking.status === 'confirmed') {
+        if (
+          booking.paymentStatus === 'pending' &&
+          booking.status === 'confirmed'
+        ) {
           const timeLeft = calculateTimeLeft(booking);
           // Store the time even if it's 0 - it means the timer has expired but payment is still needed
           newTimeLeftMap[booking._id] = timeLeft;
@@ -207,7 +231,11 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
   // Cancel booking
   const handleCancelBooking = async (bookingId: string) => {
     setAlertTitle(isRTL ? 'تأكيد الإلغاء' : 'Confirm Cancellation');
-    setAlertMessage(isRTL ? 'هل أنت متأكد من إلغاء هذا الطلب؟' : 'Are you sure you want to cancel this order?');
+    setAlertMessage(
+      isRTL
+        ? 'هل أنت متأكد من إلغاء هذا الطلب؟'
+        : 'Are you sure you want to cancel this order?',
+    );
     setAlertButtons([
       { text: isRTL ? 'لا' : 'NO', style: 'cancel' },
       {
@@ -221,37 +249,50 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
             if (!token) {
               setAlertTitle(isRTL ? 'خطأ' : 'Error');
               setAlertMessage(isRTL ? 'يرجى تسجيل الدخول' : 'Please login');
-              setAlertButtons([{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }]);
+              setAlertButtons([
+                { text: isRTL ? 'حسناً' : 'OK', style: 'default' },
+              ]);
               setAlertVisible(true);
               return;
             }
 
-            const response = await fetch(`${API_URL}/bookings/${bookingId}/cancel`, {
-              method: 'PUT',
-              headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json',
+            const response = await fetch(
+              `${API_URL}/bookings/${bookingId}/cancel`,
+              {
+                method: 'PUT',
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  'Content-Type': 'application/json',
+                },
               },
-            });
+            );
 
             if (response.ok) {
               setAlertTitle(isRTL ? 'تم الإلغاء' : 'Cancelled');
-              setAlertMessage(isRTL ? 'تم إلغاء الطلب بنجاح' : 'Order cancelled successfully');
-              setAlertButtons([{
-                text: isRTL ? 'حسناً' : 'OK',
-                style: 'default',
-                onPress: () => {
-                  loadBookings();
+              setAlertMessage(
+                isRTL ? 'تم إلغاء الطلب بنجاح' : 'Order cancelled successfully',
+              );
+              setAlertButtons([
+                {
+                  text: isRTL ? 'حسناً' : 'OK',
+                  style: 'default',
+                  onPress: () => {
+                    loadBookings();
+                  },
                 },
-              }]);
+              ]);
               setAlertVisible(true);
             } else {
               throw new Error('Failed to cancel');
             }
           } catch (error) {
             setAlertTitle(isRTL ? 'خطأ' : 'Error');
-            setAlertMessage(isRTL ? 'فشل إلغاء الطلب' : 'Failed to cancel order');
-            setAlertButtons([{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }]);
+            setAlertMessage(
+              isRTL ? 'فشل إلغاء الطلب' : 'Failed to cancel order',
+            );
+            setAlertButtons([
+              { text: isRTL ? 'حسناً' : 'OK', style: 'default' },
+            ]);
             setAlertVisible(true);
           } finally {
             setCancellingBookings(prev => {
@@ -282,21 +323,27 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
 
       // Calculate pending total from all confirmed services (vendor approved)
       // If booking payment is pending, calculate from all confirmed services
-      const pendingServices = booking.services?.filter(
-        (s: any) => s.status === 'confirmed' && s.confirmedAt
-      ) || [];
+      const pendingServices =
+        booking.services?.filter(
+          (s: any) => s.status === 'confirmed' && s.confirmedAt,
+        ) || [];
 
       const pendingTotal = pendingServices.reduce(
-        (sum: number, s: any) => sum + s.price * (s.quantity || 1), 0
+        (sum: number, s: any) => sum + s.price * (s.quantity || 1),
+        0,
       );
 
       if (pendingTotal <= 0) {
         setAlertTitle(isRTL ? 'تنبيه' : 'Info');
-        setAlertMessage(isRTL ? 'لا يوجد مبلغ مستحق للدفع' : 'No pending amount to pay');
-        setAlertButtons([{
-          text: isRTL ? 'حسناً' : 'OK',
-          style: 'default',
-        }]);
+        setAlertMessage(
+          isRTL ? 'لا يوجد مبلغ مستحق للدفع' : 'No pending amount to pay',
+        );
+        setAlertButtons([
+          {
+            text: isRTL ? 'حسناً' : 'OK',
+            style: 'default',
+          },
+        ]);
         setAlertVisible(true);
         return;
       }
@@ -307,7 +354,10 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
 
       // Prepare invoice items
       const invoiceItems = pendingServices.map((s: any) => ({
-        ItemName: isRTL && s.service?.nameAr ? s.service.nameAr : s.service?.name || 'Service',
+        ItemName:
+          isRTL && s.service?.nameAr
+            ? s.service.nameAr
+            : s.service?.name || 'Service',
         Quantity: s.quantity || 1,
         UnitPrice: s.price,
       }));
@@ -317,7 +367,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
         invoiceValue: pendingTotal,
         customerName: user?.name || user?.firstName || 'Customer',
         customerEmail: user?.email || '',
-        customerMobile: user?.phoneNumber?.replace(/^\+965/, '').replace(/\s/g, '') || '',
+        customerMobile:
+          user?.phoneNumber?.replace(/^\+965/, '').replace(/\s/g, '') || '',
         mobileCountryCode: '965',
         displayCurrencyIso: 'KWD',
         language: isRTL ? 'ar' : 'en',
@@ -335,7 +386,10 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
       }
     } catch (error: any) {
       setAlertTitle(isRTL ? 'خطأ' : 'Error');
-      setAlertMessage(error.message || (isRTL ? 'فشل إنشاء رابط الدفع' : 'Failed to create payment link'));
+      setAlertMessage(
+        error.message ||
+          (isRTL ? 'فشل إنشاء رابط الدفع' : 'Failed to create payment link'),
+      );
       setAlertButtons([{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }]);
       setAlertVisible(true);
     } finally {
@@ -363,17 +417,22 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
     // Wait longer for the server to process the callback (increased to 3 seconds)
     await new Promise<void>(resolve => setTimeout(resolve, 3000));
 
-
     // Reload bookings to get updated status
     await loadBookings();
 
     // Show success alert
     setAlertTitle(isRTL ? 'نجح الدفع' : 'Payment Success');
-    setAlertMessage(isRTL ? 'تم الدفع بنجاح! تم تحديث حالة طلبك.' : 'Payment completed successfully! Your order status has been updated.');
-    setAlertButtons([{
-      text: isRTL ? 'حسناً' : 'OK',
-      style: 'default',
-    }]);
+    setAlertMessage(
+      isRTL
+        ? 'تم الدفع بنجاح! تم تحديث حالة طلبك.'
+        : 'Payment completed successfully! Your order status has been updated.',
+    );
+    setAlertButtons([
+      {
+        text: isRTL ? 'حسناً' : 'OK',
+        style: 'default',
+      },
+    ]);
     setAlertVisible(true);
   };
 
@@ -392,11 +451,18 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
 
     // Show error alert
     setAlertTitle(isRTL ? 'فشل الدفع' : 'Payment Failed');
-    setAlertMessage(error || (isRTL ? 'لم يتم إكمال الدفع. يرجى المحاولة مرة أخرى.' : 'Payment was not completed. Please try again.'));
-    setAlertButtons([{
-      text: isRTL ? 'حسناً' : 'OK',
-      style: 'default',
-    }]);
+    setAlertMessage(
+      error ||
+        (isRTL
+          ? 'لم يتم إكمال الدفع. يرجى المحاولة مرة أخرى.'
+          : 'Payment was not completed. Please try again.'),
+    );
+    setAlertButtons([
+      {
+        text: isRTL ? 'حسناً' : 'OK',
+        style: 'default',
+      },
+    ]);
     setAlertVisible(true);
   };
 
@@ -467,15 +533,11 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
       return isRTL ? 'مقدم الخدمة' : 'Vendor';
     return isRTL
       ? vendor?.nameAr ||
-      vendor?.vendorProfile?.businessName_ar ||
-      vendor?.name ||
-      'مقدم الخدمة'
-      : vendor?.name ||
-      vendor?.vendorProfile?.businessName ||
-      'Vendor';
+          vendor?.vendorProfile?.businessName_ar ||
+          vendor?.name ||
+          'مقدم الخدمة'
+      : vendor?.name || vendor?.vendorProfile?.businessName || 'Vendor';
   };
-
-
 
   const getDescription = (booking: Booking) => {
     const service = booking.services[0]?.service;
@@ -483,8 +545,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
       return isRTL ? 'لا يوجد وصف' : 'No description';
     return isRTL
       ? (service as any)?.descriptionAr ||
-      (service as any)?.description ||
-      'لا يوجد وصف'
+          (service as any)?.description ||
+          'لا يوجد وصف'
       : (service as any)?.description || 'No description';
   };
 
@@ -531,7 +593,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
       text: isRTL
         ? labels[statusLower]?.ar || status
         : labels[statusLower]?.en ||
-        status.charAt(0).toUpperCase() + status.slice(1),
+          status.charAt(0).toUpperCase() + status.slice(1),
     };
   };
 
@@ -546,7 +608,9 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
       const token = await AsyncStorage.getItem('userToken');
       if (!token) {
         setAlertTitle(isRTL ? 'خطأ' : 'Error');
-        setAlertMessage(isRTL ? 'لم يتم العثور على رمز التوثيق' : 'Authentication required');
+        setAlertMessage(
+          isRTL ? 'لم يتم العثور على رمز التوثيق' : 'Authentication required',
+        );
         setAlertButtons([{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }]);
         setAlertVisible(true);
         return;
@@ -574,7 +638,9 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
           translucent={false}
         />
         <View style={{ flex: 1, backgroundColor: colors.primary }}>
-          <View style={{ height: insets.top, backgroundColor: colors.primary }} />
+          <View
+            style={{ height: insets.top, backgroundColor: colors.primary }}
+          />
           <View style={styles.container}>
             <View style={styles.header}>
               <TouchableOpacity onPress={onBack} style={styles.backButton}>
@@ -648,7 +714,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                 <Text
                   style={[
                     styles.filterButtonText,
-                    selectedFilter === 'confirmed' && styles.filterButtonTextActive,
+                    selectedFilter === 'confirmed' &&
+                      styles.filterButtonTextActive,
                   ]}
                 >
                   {isRTL ? 'مؤكد' : 'Confirmed'}
@@ -664,7 +731,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                 <Text
                   style={[
                     styles.filterButtonText,
-                    selectedFilter === 'pending' && styles.filterButtonTextActive,
+                    selectedFilter === 'pending' &&
+                      styles.filterButtonTextActive,
                   ]}
                 >
                   {isRTL ? 'قيد' : 'Pending'}
@@ -680,7 +748,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                 <Text
                   style={[
                     styles.filterButtonText,
-                    selectedFilter === 'completed' && styles.filterButtonTextActive,
+                    selectedFilter === 'completed' &&
+                      styles.filterButtonTextActive,
                   ]}
                 >
                   {isRTL ? 'مكتمل' : 'Completed'}
@@ -696,7 +765,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                 <Text
                   style={[
                     styles.filterButtonText,
-                    selectedFilter === 'cancelled' && styles.filterButtonTextActive,
+                    selectedFilter === 'cancelled' &&
+                      styles.filterButtonTextActive,
                   ]}
                 >
                   {isRTL ? 'ملغي' : 'Cancelled'}
@@ -718,8 +788,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                       ? 'لا توجد حجوزات بعد'
                       : 'No bookings yet'
                     : isRTL
-                      ? 'لا توجد حجوزات في هذه الفئة'
-                      : 'No bookings in this category'}
+                    ? 'لا توجد حجوزات في هذه الفئة'
+                    : 'No bookings in this category'}
                 </Text>
               </View>
             ) : (
@@ -732,36 +802,70 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                         {getServiceName(booking)}
                       </Text>
                     </View>
-                    <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                    <View
+                      style={{
+                        flexDirection: 'column',
+                        alignItems: 'flex-end',
+                        gap: 4,
+                      }}
+                    >
                       <View
                         style={[
                           styles.statusBadge,
                           {
                             backgroundColor: 'rgba(255, 255, 255, 0.7)',
                             borderWidth: 1,
-                            borderColor: getStatusStyle(booking.status).color
+                            borderColor: getStatusStyle(booking.status).color,
                           },
                         ]}
                       >
-                        <Text style={[styles.statusText, { color: getStatusStyle(booking.status).color }]}>
+                        <Text
+                          style={[
+                            styles.statusText,
+                            { color: getStatusStyle(booking.status).color },
+                          ]}
+                        >
                           {getStatusStyle(booking.status).text}
                         </Text>
                       </View>
                       {/* Payment Status Badge */}
                       {booking.paymentStatus === 'paid' && (
-                        <View style={[styles.statusBadge, { backgroundColor: 'rgba(255, 255, 255, 0.7)', borderWidth: 1, borderColor: '#4CAF50' }]}>
-                          <Text style={[styles.statusText, { color: '#4CAF50' }]}>
+                        <View
+                          style={[
+                            styles.statusBadge,
+                            {
+                              backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                              borderWidth: 1,
+                              borderColor: '#4CAF50',
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[styles.statusText, { color: '#4CAF50' }]}
+                          >
                             {isRTL ? 'مدفوع' : 'Paid'}
                           </Text>
                         </View>
                       )}
-                      {booking.paymentStatus === 'pending' && booking.status !== 'pending' && (
-                        <View style={[styles.statusBadge, { backgroundColor: 'rgba(255, 255, 255, 0.7)', borderWidth: 1, borderColor: '#FF9800' }]}>
-                          <Text style={[styles.statusText, { color: '#FF9800' }]}>
-                            {isRTL ? 'بانتظار الدفع' : 'Payment Pending'}
-                          </Text>
-                        </View>
-                      )}
+                      {booking.paymentStatus === 'pending' &&
+                        booking.status !== 'pending' && (
+                          <View
+                            style={[
+                              styles.statusBadge,
+                              {
+                                backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                                borderWidth: 1,
+                                borderColor: '#FF9800',
+                              },
+                            ]}
+                          >
+                            <Text
+                              style={[styles.statusText, { color: '#FF9800' }]}
+                            >
+                              {isRTL ? 'بانتظار الدفع' : 'Payment Pending'}
+                            </Text>
+                          </View>
+                        )}
                     </View>
                   </View>
 
@@ -783,7 +887,11 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                         const minutes = date.getMinutes();
                         const ampm = hours >= 12 ? 'PM' : 'AM';
                         const displayHours = hours % 12 || 12;
-                        return `${day}/${month}/${year} - ${displayHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+                        return `${day}/${month}/${year} - ${displayHours
+                          .toString()
+                          .padStart(2, '0')}:${minutes
+                          .toString()
+                          .padStart(2, '0')} ${ampm}`;
                       })()}
                     </Text>
                   </View>
@@ -801,189 +909,428 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                       <Text style={styles.customInputsTitle}>
                         {isRTL ? 'الخدمات المحجوزة:' : 'Booked Services:'}
                       </Text>
-                      {booking.services.map((serviceEntry: any, serviceIndex: number) => {
-                        const serviceId = typeof serviceEntry.service === 'string'
-                          ? serviceEntry.service
-                          : serviceEntry.service?._id;
-                        const serviceName = getSingleServiceName(serviceEntry.service);
-                        const serviceStatus = serviceEntry.status || booking.status;
-                        const isPaid = serviceEntry.paymentStatus === 'paid' || booking.paymentStatus === 'paid';
+                      {booking.services.map(
+                        (serviceEntry: any, serviceIndex: number) => {
+                          const serviceId =
+                            typeof serviceEntry.service === 'string'
+                              ? serviceEntry.service
+                              : serviceEntry.service?._id;
+                          const serviceName = getSingleServiceName(
+                            serviceEntry.service,
+                          );
+                          const serviceStatus =
+                            serviceEntry.status || booking.status;
+                          const isPaid =
+                            serviceEntry.paymentStatus === 'paid' ||
+                            booking.paymentStatus === 'paid';
 
-                        return (
-                          <View key={serviceIndex} style={{ marginBottom: serviceIndex < booking.services.length - 1 ? 16 : 0, paddingBottom: serviceIndex < booking.services.length - 1 ? 16 : 0, borderBottomWidth: serviceIndex < booking.services.length - 1 ? 1 : 0, borderBottomColor: '#E0E0E0' }}>
-                            {/* Service Name with Status Badge */}
-                            <View style={[styles.customInputRow, { alignItems: 'flex-start' }]}>
-                              <View style={{ flex: 1 }}>
-                                <Text style={[styles.customInputLabel, { fontWeight: '600', fontSize: 14 }]}>
-                                  {serviceIndex + 1}. {serviceName}
-                                </Text>
-                                {/* Pending Confirmation Badge under service name */}
-                                {(serviceEntry.availabilityStatus === 'pending_confirmation' ||
-                                  (serviceStatus === 'pending' && !isPaid)) && (
-                                    <View style={{ backgroundColor: '#FF9800', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4, marginTop: 6, alignSelf: 'flex-start' }}>
-                                      <Text style={{ color: '#fff', fontSize: 10, fontWeight: '600' }}>
-                                        {isRTL ? 'في انتظار الموافقة' : 'Pending Confirmation'}
+                          return (
+                            <View
+                              key={serviceIndex}
+                              style={{
+                                marginBottom:
+                                  serviceIndex < booking.services.length - 1
+                                    ? 16
+                                    : 0,
+                                paddingBottom:
+                                  serviceIndex < booking.services.length - 1
+                                    ? 16
+                                    : 0,
+                                borderBottomWidth:
+                                  serviceIndex < booking.services.length - 1
+                                    ? 1
+                                    : 0,
+                                borderBottomColor: '#E0E0E0',
+                              }}
+                            >
+                              {/* Service Name with Status Badge */}
+                              <View
+                                style={[
+                                  styles.customInputRow,
+                                  { alignItems: 'flex-start' },
+                                ]}
+                              >
+                                <View style={{ flex: 1 }}>
+                                  <Text
+                                    style={[
+                                      styles.customInputLabel,
+                                      { fontWeight: '600', fontSize: 14 },
+                                    ]}
+                                  >
+                                    {serviceIndex + 1}. {serviceName}
+                                  </Text>
+                                  {/* Pending Confirmation Badge under service name */}
+                                  {(serviceEntry.availabilityStatus ===
+                                    'pending_confirmation' ||
+                                    (serviceStatus === 'pending' &&
+                                      !isPaid)) && (
+                                    <View
+                                      style={{
+                                        backgroundColor: '#FF9800',
+                                        paddingHorizontal: 8,
+                                        paddingVertical: 3,
+                                        borderRadius: 4,
+                                        marginTop: 6,
+                                        alignSelf: 'flex-start',
+                                      }}
+                                    >
+                                      <Text
+                                        style={{
+                                          color: '#fff',
+                                          fontSize: 10,
+                                          fontWeight: '600',
+                                        }}
+                                      >
+                                        {isRTL
+                                          ? 'في انتظار الموافقة'
+                                          : 'Pending Confirmation'}
                                       </Text>
                                     </View>
                                   )}
-                              </View>
-                              <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-                                <Text style={[styles.customInputValue, { color: colors.primary, fontWeight: '600' }]}>
-                                  {serviceEntry.price?.toFixed(3) || '0.000'} {isRTL ? 'د.ك' : 'KWD'}
-                                </Text>
-                                {/* Payment Status Badge for this service */}
-                                <View style={[styles.statusBadge, { backgroundColor: 'rgba(255, 255, 255, 0.7)', borderWidth: 1, borderColor: isPaid ? '#4CAF50' : '#FF9800', paddingHorizontal: 8, paddingVertical: 2 }]}>
-                                  <Text style={[styles.statusText, { fontSize: 10, color: isPaid ? '#4CAF50' : '#FF9800' }]}>
-                                    {isPaid ? (isRTL ? 'مدفوع' : 'Paid') : (isRTL ? 'غير مدفوع' : 'Unpaid')}
+                                </View>
+                                <View
+                                  style={{
+                                    flexDirection: 'column',
+                                    alignItems: 'flex-end',
+                                    gap: 4,
+                                  }}
+                                >
+                                  <Text
+                                    style={[
+                                      styles.customInputValue,
+                                      {
+                                        color: colors.primary,
+                                        fontWeight: '600',
+                                      },
+                                    ]}
+                                  >
+                                    {serviceEntry.price?.toFixed(3) || '0.000'}{' '}
+                                    {isRTL ? 'د.ك' : 'KWD'}
                                   </Text>
+                                  {/* Payment Status Badge for this service */}
+                                  <View
+                                    style={[
+                                      styles.statusBadge,
+                                      {
+                                        backgroundColor:
+                                          'rgba(255, 255, 255, 0.7)',
+                                        borderWidth: 1,
+                                        borderColor: isPaid
+                                          ? '#4CAF50'
+                                          : '#FF9800',
+                                        paddingHorizontal: 8,
+                                        paddingVertical: 2,
+                                      },
+                                    ]}
+                                  >
+                                    <Text
+                                      style={[
+                                        styles.statusText,
+                                        {
+                                          fontSize: 10,
+                                          color: isPaid ? '#4CAF50' : '#FF9800',
+                                        },
+                                      ]}
+                                    >
+                                      {isPaid
+                                        ? isRTL
+                                          ? 'مدفوع'
+                                          : 'Paid'
+                                        : isRTL
+                                        ? 'غير مدفوع'
+                                        : 'Unpaid'}
+                                    </Text>
+                                  </View>
                                 </View>
                               </View>
-                            </View>
 
-                            {/* Event Date and Time for this service */}
-                            <View style={[styles.customInputRow, { marginTop: 6 }]}>
-                              <Text style={[styles.customInputLabel, { fontSize: 12, color: '#666' }]}>
-                                {isRTL ? 'موعد الخدمة:' : 'Service Date:'}
-                              </Text>
-                              <Text style={[styles.customInputValue, { fontSize: 12, color: '#666' }]}>
-                                {/* Use service's timeSlot if available, otherwise fall back to booking's eventDate/eventTime */}
-                                {formatDateTime(serviceEntry.timeSlot?.start || serviceEntry.eventDate || booking.eventDate)} | {formatDateTime(serviceEntry.timeSlot?.start || booking.eventTime?.start, true)} - {formatDateTime(serviceEntry.timeSlot?.end || booking.eventTime?.end, true)}
-                              </Text>
-                            </View>
-
-                            {/* Vendor Name */}
-                            <View style={[styles.customInputRow, { marginTop: 4 }]}>
-                              <Text style={[styles.customInputLabel, { fontSize: 12, color: '#666' }]}>
-                                {isRTL ? 'مقدم الخدمة:' : 'Vendor:'}
-                              </Text>
-                              <Text style={[styles.customInputValue, { fontSize: 12, color: '#666' }]}>
-                                {getServiceVendorName(serviceEntry)}
-                              </Text>
-                            </View>
-
-                            {/* Quantity if > 1 */}
-                            {serviceEntry.quantity > 1 && (
-                              <View style={[styles.customInputRow, { marginTop: 4 }]}>
-                                <Text style={[styles.customInputLabel, { fontSize: 12, color: '#666' }]}>
-                                  {isRTL ? 'الكمية:' : 'Quantity:'}
+                              {/* Event Date and Time for this service */}
+                              <View
+                                style={[
+                                  styles.customInputRow,
+                                  { marginTop: 6 },
+                                ]}
+                              >
+                                <Text
+                                  style={[
+                                    styles.customInputLabel,
+                                    { fontSize: 12, color: '#666' },
+                                  ]}
+                                >
+                                  {isRTL ? 'موعد الخدمة:' : 'Service Date:'}
                                 </Text>
-                                <Text style={[styles.customInputValue, { fontSize: 12, color: '#666' }]}>
-                                  {serviceEntry.quantity}
+                                <Text
+                                  style={[
+                                    styles.customInputValue,
+                                    { fontSize: 12, color: '#666' },
+                                  ]}
+                                >
+                                  {/* Use service's timeSlot if available, otherwise fall back to booking's eventDate/eventTime */}
+                                  {formatDateTime(
+                                    serviceEntry.timeSlot?.start ||
+                                      serviceEntry.eventDate ||
+                                      booking.eventDate,
+                                  )}{' '}
+                                  |{' '}
+                                  {formatDateTime(
+                                    serviceEntry.timeSlot?.start ||
+                                      booking.eventTime?.start,
+                                    true,
+                                  )}{' '}
+                                  -{' '}
+                                  {formatDateTime(
+                                    serviceEntry.timeSlot?.end ||
+                                      booking.eventTime?.end,
+                                    true,
+                                  )}
                                 </Text>
                               </View>
-                            )}
 
-                            {/* Custom Inputs / Add-ons for this service */}
-                            {serviceEntry.customInputs && (() => {
-                              // Handle both object format {label: value} and array format
-                              const inputs = serviceEntry.customInputs;
-                              const entries: Array<[string, any]> = [];
+                              {/* Vendor Name */}
+                              <View
+                                style={[
+                                  styles.customInputRow,
+                                  { marginTop: 4 },
+                                ]}
+                              >
+                                <Text
+                                  style={[
+                                    styles.customInputLabel,
+                                    { fontSize: 12, color: '#666' },
+                                  ]}
+                                >
+                                  {isRTL ? 'مقدم الخدمة:' : 'Vendor:'}
+                                </Text>
+                                <Text
+                                  style={[
+                                    styles.customInputValue,
+                                    { fontSize: 12, color: '#666' },
+                                  ]}
+                                >
+                                  {getServiceVendorName(serviceEntry)}
+                                </Text>
+                              </View>
 
-                              if (Array.isArray(inputs)) {
-                                // Array format: [{label, value, price}]
-                                inputs.forEach((input: any) => {
-                                  if (input && input.label !== undefined) {
-                                    entries.push([String(input.label), input.value]);
-                                  }
-                                });
-                              } else if (typeof inputs === 'object' && inputs !== null) {
-                                // Object format
-                                Object.entries(inputs).forEach(([key, val]: [string, any]) => {
-                                  // Check if value is an object with label property
-                                  if (val && typeof val === 'object' && 'label' in val) {
-                                    // Format: {0: {label: "X", value: "Y"}}
-                                    entries.push([String(val.label), val.value]);
-                                  } else if (val !== undefined && val !== null) {
-                                    // Simple key-value format: {"Color": "Red"}
-                                    // Skip numeric keys with no label (malformed data)
-                                    if (key !== '0' || typeof val !== 'object') {
-                                      entries.push([key, val]);
-                                    }
-                                  }
-                                });
-                              }
-
-                              // Filter out entries with numeric-only keys that look like indices
-                              const filteredEntries = entries.filter(([label]) => {
-                                return label && isNaN(Number(label));
-                              });
-
-                              if (filteredEntries.length === 0) return null;
-
-                              return (
-                                <View style={{ marginTop: 8, paddingLeft: 12 }}>
-                                  <Text style={[styles.customInputLabel, { fontSize: 12, color: '#888', marginBottom: 4 }]}>
-                                    {isRTL ? 'الإضافات:' : 'Add-ons:'}
+                              {/* Quantity if > 1 */}
+                              {serviceEntry.quantity > 1 && (
+                                <View
+                                  style={[
+                                    styles.customInputRow,
+                                    { marginTop: 4 },
+                                  ]}
+                                >
+                                  <Text
+                                    style={[
+                                      styles.customInputLabel,
+                                      { fontSize: 12, color: '#666' },
+                                    ]}
+                                  >
+                                    {isRTL ? 'الكمية:' : 'Quantity:'}
                                   </Text>
-                                  {filteredEntries.map(([label, value], inputIndex) => (
-                                    <View key={inputIndex} style={styles.customInputRow}>
-                                      <Text style={[styles.customInputLabel, { fontSize: 11 }]}>
-                                        {label}:
+                                  <Text
+                                    style={[
+                                      styles.customInputValue,
+                                      { fontSize: 12, color: '#666' },
+                                    ]}
+                                  >
+                                    {serviceEntry.quantity}
+                                  </Text>
+                                </View>
+                              )}
+
+                              {/* Custom Inputs / Add-ons for this service */}
+                              {serviceEntry.customInputs &&
+                                (() => {
+                                  // Handle both object format {label: value} and array format
+                                  const inputs = serviceEntry.customInputs;
+                                  const entries: Array<[string, any]> = [];
+
+                                  if (Array.isArray(inputs)) {
+                                    // Array format: [{label, value, price}]
+                                    inputs.forEach((input: any) => {
+                                      if (input && input.label !== undefined) {
+                                        entries.push([
+                                          String(input.label),
+                                          input.value,
+                                        ]);
+                                      }
+                                    });
+                                  } else if (
+                                    typeof inputs === 'object' &&
+                                    inputs !== null
+                                  ) {
+                                    // Object format
+                                    Object.entries(inputs).forEach(
+                                      ([key, val]: [string, any]) => {
+                                        // Check if value is an object with label property
+                                        if (
+                                          val &&
+                                          typeof val === 'object' &&
+                                          'label' in val
+                                        ) {
+                                          // Format: {0: {label: "X", value: "Y"}}
+                                          entries.push([
+                                            String(val.label),
+                                            val.value,
+                                          ]);
+                                        } else if (
+                                          val !== undefined &&
+                                          val !== null
+                                        ) {
+                                          // Simple key-value format: {"Color": "Red"}
+                                          // Skip numeric keys with no label (malformed data)
+                                          if (
+                                            key !== '0' ||
+                                            typeof val !== 'object'
+                                          ) {
+                                            entries.push([key, val]);
+                                          }
+                                        }
+                                      },
+                                    );
+                                  }
+
+                                  // Filter out entries with numeric-only keys that look like indices
+                                  const filteredEntries = entries.filter(
+                                    ([label]) => {
+                                      return label && isNaN(Number(label));
+                                    },
+                                  );
+
+                                  if (filteredEntries.length === 0) return null;
+
+                                  return (
+                                    <View
+                                      style={{ marginTop: 8, paddingLeft: 12 }}
+                                    >
+                                      <Text
+                                        style={[
+                                          styles.customInputLabel,
+                                          {
+                                            fontSize: 12,
+                                            color: '#888',
+                                            marginBottom: 4,
+                                          },
+                                        ]}
+                                      >
+                                        {isRTL ? 'الإضافات:' : 'Add-ons:'}
                                       </Text>
-                                      <Text style={[styles.customInputValue, { fontSize: 11 }]}>
-                                        {Array.isArray(value)
-                                          ? value.join(', ')
-                                          : typeof value === 'number'
-                                            ? value
-                                            : value !== undefined && value !== null
-                                              ? String(value)
-                                              : '-'}
-                                      </Text>
+                                      {filteredEntries.map(
+                                        ([label, value], inputIndex) => (
+                                          <View
+                                            key={inputIndex}
+                                            style={styles.customInputRow}
+                                          >
+                                            <Text
+                                              style={[
+                                                styles.customInputLabel,
+                                                { fontSize: 11 },
+                                              ]}
+                                            >
+                                              {label}:
+                                            </Text>
+                                            <Text
+                                              style={[
+                                                styles.customInputValue,
+                                                { fontSize: 11 },
+                                              ]}
+                                            >
+                                              {Array.isArray(value)
+                                                ? value.join(', ')
+                                                : typeof value === 'number'
+                                                ? value
+                                                : value !== undefined &&
+                                                  value !== null
+                                                ? String(value)
+                                                : '-'}
+                                            </Text>
+                                          </View>
+                                        ),
+                                      )}
                                     </View>
-                                  ))}
-                                </View>
-                              );
-                            })()}
+                                  );
+                                })()}
 
-                            {/* Action Buttons for this service (Review & QR) */}
-                            {isPaid && serviceStatus === 'confirmed' && serviceId && (
-                              <View style={{ flexDirection: 'row', marginTop: 10, gap: 8 }}>
-                                {/* Write Review Button */}
-                                {onWriteReview && (
-                                  <TouchableOpacity
+                              {/* Action Buttons for this service (Review & QR) */}
+                              {isPaid &&
+                                serviceStatus === 'confirmed' &&
+                                serviceId && (
+                                  <View
                                     style={{
-                                      flex: 1,
-                                      backgroundColor: 'rgba(255, 255, 255, 0.7)',
-                                      paddingVertical: 8,
-                                      paddingHorizontal: 12,
-                                      borderRadius: 6,
-                                      alignItems: 'center',
-                                      borderWidth: 1,
-                                      borderColor: colors.primary,
+                                      flexDirection: 'row',
+                                      marginTop: 10,
+                                      gap: 8,
                                     }}
-                                    onPress={() => onWriteReview(booking._id, serviceId, serviceName)}
                                   >
-                                    <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '600' }}>
-                                      {isRTL ? 'كتابة تقييم' : 'Write Review'}
-                                    </Text>
-                                  </TouchableOpacity>
-                                )}
+                                    {/* Write Review Button */}
+                                    {onWriteReview && (
+                                      <TouchableOpacity
+                                        style={{
+                                          flex: 1,
+                                          backgroundColor:
+                                            'rgba(255, 255, 255, 0.7)',
+                                          paddingVertical: 8,
+                                          paddingHorizontal: 12,
+                                          borderRadius: 6,
+                                          alignItems: 'center',
+                                          borderWidth: 1,
+                                          borderColor: colors.primary,
+                                        }}
+                                        onPress={() =>
+                                          onWriteReview(
+                                            booking._id,
+                                            serviceId,
+                                            serviceName,
+                                          )
+                                        }
+                                      >
+                                        <Text
+                                          style={{
+                                            color: colors.primary,
+                                            fontSize: 12,
+                                            fontWeight: '600',
+                                          }}
+                                        >
+                                          {isRTL
+                                            ? 'كتابة تقييم'
+                                            : 'Write Review'}
+                                        </Text>
+                                      </TouchableOpacity>
+                                    )}
 
-                                {/* Create QR Code Button */}
-                                {qrAllowedBookings.has(booking._id) && (
-                                  <TouchableOpacity
-                                    style={{
-                                      flex: 1,
-                                      backgroundColor: 'rgba(255, 255, 255, 0.7)',
-                                      paddingVertical: 8,
-                                      paddingHorizontal: 12,
-                                      borderRadius: 6,
-                                      alignItems: 'center',
-                                      borderWidth: 1,
-                                      borderColor: '#00695C',
-                                    }}
-                                    onPress={() => handleQRCode(booking)}
-                                  >
-                                    <Text style={{ color: '#00695C', fontSize: 12, fontWeight: '600' }}>
-                                      {isRTL ? 'إنشاء QR' : 'Create QR'}
-                                    </Text>
-                                  </TouchableOpacity>
+                                    {/* Create QR Code Button */}
+                                    {qrAllowedBookings.has(booking._id) && (
+                                      <TouchableOpacity
+                                        style={{
+                                          flex: 1,
+                                          backgroundColor:
+                                            'rgba(255, 255, 255, 0.7)',
+                                          paddingVertical: 8,
+                                          paddingHorizontal: 12,
+                                          borderRadius: 6,
+                                          alignItems: 'center',
+                                          borderWidth: 1,
+                                          borderColor: '#00695C',
+                                        }}
+                                        onPress={() => handleQRCode(booking)}
+                                      >
+                                        <Text
+                                          style={{
+                                            color: '#00695C',
+                                            fontSize: 12,
+                                            fontWeight: '600',
+                                          }}
+                                        >
+                                          {isRTL ? 'إنشاء QR' : 'Create QR'}
+                                        </Text>
+                                      </TouchableOpacity>
+                                    )}
+                                  </View>
                                 )}
-                              </View>
-                            )}
-                          </View>
-                        );
-                      })}
+                            </View>
+                          );
+                        },
+                      )}
                     </View>
                   )}
 
@@ -1023,7 +1370,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                               { fontSize: 12, color: '#4CAF50' },
                             ]}
                           >
-                            {isRTL ? 'الخصم' : 'Discount'} ({booking.coupon.code}):
+                            {isRTL ? 'الخصم' : 'Discount'} (
+                            {booking.coupon.code}):
                           </Text>
                           <Text
                             style={[
@@ -1070,11 +1418,13 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                   {/* Payment Pending Banner with Timer - Only for confirmed services that need payment */}
                   {(() => {
                     // Check if booking payment is pending and status is confirmed (vendor approved)
-                    const isPaymentPending = booking.paymentStatus === 'pending' && booking.status === 'confirmed';
+                    const isPaymentPending =
+                      booking.paymentStatus === 'pending' &&
+                      booking.status === 'confirmed';
 
                     // Check if there are confirmed services (vendor approved with confirmedAt)
                     const hasConfirmedServices = booking.services?.some(
-                      (s: any) => s.status === 'confirmed' && s.confirmedAt
+                      (s: any) => s.status === 'confirmed' && s.confirmedAt,
                     );
 
                     const bookingTimeLeft = timeLeftMap[booking._id];
@@ -1082,47 +1432,84 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                     return isPaymentPending &&
                       hasConfirmedServices &&
                       bookingTimeLeft !== undefined ? (
-                      <View style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        backgroundColor: bookingTimeLeft > 0 ? '#FFF3E0' : '#FFEBEE',
-                        borderWidth: 1,
-                        borderColor: bookingTimeLeft > 0 ? '#FFCC80' : '#EF9A9A',
-                        borderRadius: 8,
-                        padding: 12,
-                        marginTop: 12,
-                      }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                          <Text style={{ fontSize: 16, marginRight: 8 }}>💳</Text>
-                          <Text style={{ color: bookingTimeLeft > 0 ? '#E65100' : '#C62828', fontSize: 13, flex: 1 }}>
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          backgroundColor:
+                            bookingTimeLeft > 0 ? '#FFF3E0' : '#FFEBEE',
+                          borderWidth: 1,
+                          borderColor:
+                            bookingTimeLeft > 0 ? '#FFCC80' : '#EF9A9A',
+                          borderRadius: 8,
+                          padding: 12,
+                          marginTop: 12,
+                        }}
+                      >
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            flex: 1,
+                          }}
+                        >
+                          <Text style={{ fontSize: 16, marginRight: 8 }}>
+                            💳
+                          </Text>
+                          <Text
+                            style={{
+                              color:
+                                bookingTimeLeft > 0 ? '#E65100' : '#C62828',
+                              fontSize: 13,
+                              flex: 1,
+                            }}
+                          >
                             {isRTL ? 'الدفع معلق' : 'Payment Pending'}
                           </Text>
                         </View>
                         {bookingTimeLeft > 0 ? (
-                          <View style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            backgroundColor: '#FFCC80',
-                            paddingHorizontal: 10,
-                            paddingVertical: 4,
-                            borderRadius: 12,
-                          }}>
-                            <Text style={{ fontSize: 12, marginRight: 4 }}>⏱</Text>
-                            <Text style={{ color: '#E65100', fontSize: 12, fontWeight: '600' }}>
+                          <View
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              backgroundColor: '#FFCC80',
+                              paddingHorizontal: 10,
+                              paddingVertical: 4,
+                              borderRadius: 12,
+                            }}
+                          >
+                            <Text style={{ fontSize: 12, marginRight: 4 }}>
+                              ⏱
+                            </Text>
+                            <Text
+                              style={{
+                                color: '#E65100',
+                                fontSize: 12,
+                                fontWeight: '600',
+                              }}
+                            >
                               {formatTimeLeft(bookingTimeLeft)}
                             </Text>
                           </View>
                         ) : (
-                          <View style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            backgroundColor: '#EF9A9A',
-                            paddingHorizontal: 10,
-                            paddingVertical: 4,
-                            borderRadius: 12,
-                          }}>
-                            <Text style={{ fontSize: 12, color: '#C62828', fontWeight: '600' }}>
+                          <View
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              backgroundColor: '#EF9A9A',
+                              paddingHorizontal: 10,
+                              paddingVertical: 4,
+                              borderRadius: 12,
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 12,
+                                color: '#C62828',
+                                fontWeight: '600',
+                              }}
+                            >
                               {isRTL ? 'انتهى الوقت' : 'Expired'}
                             </Text>
                           </View>
@@ -1132,72 +1519,131 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                   })()}
 
                   {/* Awaiting Vendor Confirmation Banner */}
-                  {(booking.services?.some((s: any) => s.status !== 'confirmed' || !s.confirmedAt)) &&
-                    booking.status !== 'cancelled' && (booking.status === 'pending' || booking.paymentStatus === 'awaiting_confirmation') && (
-                      <View style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        backgroundColor: '#E3F2FD',
-                        borderWidth: 1,
-                        borderColor: '#90CAF9',
-                        borderRadius: 8,
-                        padding: 12,
-                        marginTop: 12,
-                      }}>
+                  {booking.services?.some(
+                    (s: any) => s.status !== 'confirmed' || !s.confirmedAt,
+                  ) &&
+                    booking.status !== 'cancelled' &&
+                    (booking.status === 'pending' ||
+                      booking.paymentStatus === 'awaiting_confirmation') && (
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          backgroundColor: '#E3F2FD',
+                          borderWidth: 1,
+                          borderColor: '#90CAF9',
+                          borderRadius: 8,
+                          padding: 12,
+                          marginTop: 12,
+                        }}
+                      >
                         <Text style={{ fontSize: 16, marginRight: 8 }}>⏳</Text>
-                        <Text style={{ color: '#1565C0', fontSize: 13, flex: 1 }}>
-                          {isRTL ? 'في انتظار موافقة مقدم الخدمة' : 'Awaiting vendor confirmation'}
+                        <Text
+                          style={{ color: '#1565C0', fontSize: 13, flex: 1 }}
+                        >
+                          {isRTL
+                            ? 'في انتظار موافقة مقدم الخدمة'
+                            : 'Awaiting vendor confirmation'}
                         </Text>
                       </View>
                     )}
 
-                  {/* Pay Now and Cancel Buttons for Payment Pending ONLY */}
+                  {/* Pay Now, Cancel, and Receipt Buttons */}
                   {(() => {
-                    // Only show buttons if paymentStatus is pending (NOT paid)
-                    if (booking.paymentStatus === 'paid' || booking.status === 'cancelled') {
+                    // Only return early if booking is cancelled
+                    if (booking.status === 'cancelled') {
                       return null;
                     }
 
                     // Check if booking payment is pending and confirmed (vendor approved)
-                    const isPaymentPending = booking.paymentStatus === 'pending' && booking.status === 'confirmed';
+                    const isPaymentPending =
+                      booking.paymentStatus === 'pending' &&
+                      booking.status === 'confirmed';
 
                     // Check if any service is still awaiting vendor confirmation (not confirmed yet)
                     const isAwaitingVendorConfirmation = booking.services?.some(
-                      (s: any) => s.status !== 'confirmed' || !s.confirmedAt
+                      (s: any) => s.status !== 'confirmed' || !s.confirmedAt,
                     );
 
                     // Check if there are services ready for payment (vendor confirmed with confirmedAt)
                     const hasServicesReadyForPayment = booking.services?.some(
-                      (s: any) => s.status === 'confirmed' && s.confirmedAt
+                      (s: any) => s.status === 'confirmed' && s.confirmedAt,
                     );
 
                     // Calculate total from confirmed services only
-                    const totalAmount = booking.services
-                      ?.filter((s: any) => s.status === 'confirmed' && s.confirmedAt)
-                      .reduce((sum: number, s: any) => sum + s.price * (s.quantity || 1), 0) || 0;
+                    const totalAmount =
+                      booking.services
+                        ?.filter(
+                          (s: any) => s.status === 'confirmed' && s.confirmedAt,
+                        )
+                        .reduce(
+                          (sum: number, s: any) =>
+                            sum + s.price * (s.quantity || 1),
+                          0,
+                        ) || 0;
 
                     // Show pay button only if:
                     // 1. Booking payment is pending and status is confirmed
                     // 2. There are services ready for payment (not awaiting confirmation)
                     // 3. Payment timer exists and has not expired (timeLeft > 0)
-                    const showPayButton = isPaymentPending &&
+                    const showPayButton =
+                      isPaymentPending &&
                       hasServicesReadyForPayment &&
                       timeLeftMap[booking._id] !== undefined &&
                       timeLeftMap[booking._id] > 0 &&
                       totalAmount > 0;
 
                     // Show cancel button if booking is pending payment or any service is awaiting confirmation
-                    const showCancelButton = isPaymentPending || isAwaitingVendorConfirmation;
+                    const showCancelButton =
+                      isPaymentPending || isAwaitingVendorConfirmation;
 
-                    if (!showPayButton && !showCancelButton) return null;
+                    const showReceiptButton = booking.paymentStatus === 'paid' || booking.totalPrice === 0;
+
+                    if (!showPayButton && !showCancelButton && !showReceiptButton) return null;
 
                     return (
-                      <View style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        marginTop: 12,
-                        gap: 12,
-                      }}>
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                          marginTop: 12,
+                          gap: 12,
+                        }}
+                      >
+                        {/* View Receipt Button */}
+                        {showReceiptButton && (
+                          <TouchableOpacity
+                            style={{
+                              flex: showPayButton ? 0.5 : 1,
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              backgroundColor: '#fff',
+                              borderWidth: 1,
+                              borderColor: colors.primary,
+                              paddingVertical: 12,
+                              paddingHorizontal: 16,
+                              borderRadius: 8,
+                              gap: 8,
+                            }}
+                            onPress={() => {
+                              setSelectedReceiptBooking(booking);
+                              setShowReceiptModal(true);
+                            }}
+                          >
+                            <Text style={{ fontSize: 16 }}>📄</Text>
+                            <Text
+                              style={{
+                                color: colors.primary,
+                                fontSize: 14,
+                                fontWeight: '600',
+                              }}
+                            >
+                              {isRTL ? 'الفاتورة' : 'Receipt'}
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+
                         {/* Pay Now Button */}
                         {showPayButton && (
                           <TouchableOpacity
@@ -1220,8 +1666,15 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                             ) : (
                               <>
                                 <Text style={{ fontSize: 16 }}>💳</Text>
-                                <Text style={{ color: '#fff', fontSize: 14, fontWeight: '600' }}>
-                                  {isRTL ? 'ادفع الآن' : 'Pay Now'} ({totalAmount.toFixed(3)} KWD)
+                                <Text
+                                  style={{
+                                    color: '#fff',
+                                    fontSize: 14,
+                                    fontWeight: '600',
+                                  }}
+                                >
+                                  {isRTL ? 'ادفع الآن' : 'Pay Now'} (
+                                  {totalAmount.toFixed(3)} KWD)
                                 </Text>
                               </>
                             )}
@@ -1232,7 +1685,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                         {showCancelButton && (
                           <TouchableOpacity
                             style={{
-                              flex: showPayButton ? 0.5 : 1,
+                              flex: (showPayButton || showReceiptButton) ? 0.5 : 1,
                               flexDirection: 'row',
                               alignItems: 'center',
                               justifyContent: 'center',
@@ -1252,7 +1705,13 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                             ) : (
                               <>
                                 <Text style={{ fontSize: 16 }}>✕</Text>
-                                <Text style={{ color: '#dc3545', fontSize: 14, fontWeight: '600' }}>
+                                <Text
+                                  style={{
+                                    color: '#dc3545',
+                                    fontSize: 14,
+                                    fontWeight: '600',
+                                  }}
+                                >
                                   {isRTL ? 'إلغاء الطلب' : 'Cancel Order'}
                                 </Text>
                               </>
@@ -1302,6 +1761,48 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
             onPaymentSuccess={handlePaymentSuccess}
             onPaymentError={handlePaymentError}
           />
+
+          {/* Payment Receipt Modal */}
+          <PaymentReceiptModal
+            visible={showReceiptModal}
+            receiptData={
+              selectedReceiptBooking
+                ? {
+                    status: 'success',
+                    bookingId: selectedReceiptBooking._id,
+                    amount: selectedReceiptBooking.totalPrice,
+                    currency: 'KWD',
+                    paymentMethod:
+                      selectedReceiptBooking.myFatoorahPayment?.paymentMethod,
+                    transactionId:
+                      selectedReceiptBooking.myFatoorahPayment?.transactionId,
+                    invoiceId:
+                      selectedReceiptBooking.myFatoorahPayment?.invoiceId,
+                    referenceId:
+                      selectedReceiptBooking.myFatoorahPayment?.referenceId,
+                    services: (selectedReceiptBooking.services || []).map(
+                      (s: any) => ({
+                        name:
+                          s.service?.name ||
+                          s.service?.nameAr ||
+                          (isRTL ? 'خدمة' : 'Service'),
+                        quantity: s.quantity || 1,
+                        total: s.price * (s.quantity || 1),
+                      }),
+                    ),
+                    paidAt:
+                      selectedReceiptBooking.services?.find((s: any) => s.paidAt)
+                        ?.paidAt ||
+                      selectedReceiptBooking.updatedAt ||
+                      selectedReceiptBooking.createdAt,
+                  }
+                : null
+            }
+            onClose={() => {
+              setShowReceiptModal(false);
+              setSelectedReceiptBooking(null);
+            }}
+          />
         </View>
       </View>
     </>
@@ -1309,4 +1810,3 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
 };
 
 export default OrderHistory;
-

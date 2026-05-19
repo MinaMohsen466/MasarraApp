@@ -126,62 +126,65 @@ const VerifyEmail: React.FC<VerifyEmailProps> = ({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}
       >
-      <View style={styles.content}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Text style={styles.backButtonText}>
-            {isRTL ? '→ رجوع' : '← Back'}
-          </Text>
-        </TouchableOpacity>
-
-        <Text style={styles.title}>
-          {isRTL ? 'التحقق من البريد الإلكتروني' : 'Verify Email'}
-        </Text>
-
-        <Text style={styles.description}>
-          {isRTL
-            ? `تم إرسال رمز مكون من 6 أرقام إلى\n${email}`
-            : `A 6-digit code has been sent to\n${email}`}
-        </Text>
-
-        <View style={[styles.otpContainer, isRTL && styles.otpContainerRTL]}>
-          {otp.map((digit, index) => (
-            <TextInput
-              key={index}
-              ref={ref => {
-                inputRefs.current[index] = ref;
-              }}
-              style={styles.otpInput}
-              value={digit}
-              onChangeText={value => handleOtpChange(value, index)}
-              onKeyPress={e => handleKeyPress(e, index)}
-              keyboardType="number-pad"
-              maxLength={1}
-              selectTextOnFocus
-            />
-          ))}
-        </View>
-
-        <TouchableOpacity
-          style={[styles.verifyButton, loading && styles.verifyButtonDisabled]}
-          onPress={handleVerify}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.verifyButtonText}>
-              {isRTL ? 'تحقق' : 'Verify'}
+        <View style={styles.content}>
+          <TouchableOpacity style={styles.backButton} onPress={onBack}>
+            <Text style={styles.backButtonText}>
+              {isRTL ? '→ رجوع' : '← Back'}
             </Text>
-          )}
-        </TouchableOpacity>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.backToSignupButton} onPress={onBack}>
-          <Text style={styles.backToSignupText}>
-            {isRTL ? 'العودة إلى التسجيل' : 'Back to Signup'}
+          <Text style={styles.title}>
+            {isRTL ? 'التحقق من البريد الإلكتروني' : 'Verify Email'}
           </Text>
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+
+          <Text style={styles.description}>
+            {isRTL
+              ? `تم إرسال رمز مكون من 6 أرقام إلى\n${email}`
+              : `A 6-digit code has been sent to\n${email}`}
+          </Text>
+
+          <View style={[styles.otpContainer, isRTL && styles.otpContainerRTL]}>
+            {otp.map((digit, index) => (
+              <TextInput
+                key={index}
+                ref={ref => {
+                  inputRefs.current[index] = ref;
+                }}
+                style={styles.otpInput}
+                value={digit}
+                onChangeText={value => handleOtpChange(value, index)}
+                onKeyPress={e => handleKeyPress(e, index)}
+                keyboardType="number-pad"
+                maxLength={1}
+                selectTextOnFocus
+              />
+            ))}
+          </View>
+
+          <TouchableOpacity
+            style={[
+              styles.verifyButton,
+              loading && styles.verifyButtonDisabled,
+            ]}
+            onPress={handleVerify}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.verifyButtonText}>
+                {isRTL ? 'تحقق' : 'Verify'}
+              </Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.backToSignupButton} onPress={onBack}>
+            <Text style={styles.backToSignupText}>
+              {isRTL ? 'العودة إلى التسجيل' : 'Back to Signup'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </>
   );
 };

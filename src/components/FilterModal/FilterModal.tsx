@@ -1,5 +1,15 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, Modal, TextInput, PanResponder, LayoutChangeEvent, GestureResponderEvent, PanResponderGestureState } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Modal,
+  TextInput,
+  PanResponder,
+  LayoutChangeEvent,
+  GestureResponderEvent,
+  PanResponderGestureState,
+} from 'react-native';
 import { styles } from './styles';
 import { useLanguage } from '../../contexts/LanguageContext';
 
@@ -38,11 +48,14 @@ const FilterModal: React.FC<FilterModalProps> = ({
   const maxThumbPosition = (maxPrice / MAX_PRICE) * sliderWidth;
 
   // Helper function to calculate price from gesture
-  const calculatePriceFromGesture = useCallback((moveX: number): number => {
-    const relativeX = moveX - sliderLeftOffset.current;
-    const clampedX = Math.max(0, Math.min(relativeX, sliderWidth));
-    return Math.round((clampedX / sliderWidth) * MAX_PRICE);
-  }, [sliderWidth]);
+  const calculatePriceFromGesture = useCallback(
+    (moveX: number): number => {
+      const relativeX = moveX - sliderLeftOffset.current;
+      const clampedX = Math.max(0, Math.min(relativeX, sliderWidth));
+      return Math.round((clampedX / sliderWidth) * MAX_PRICE);
+    },
+    [sliderWidth],
+  );
 
   // PanResponder for min thumb
   const minPanResponder = useRef(
@@ -64,7 +77,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
           setMinPriceInput(validPrice.toFixed(0));
         }
       },
-    })
+    }),
   ).current;
 
   // PanResponder for max thumb
@@ -87,7 +100,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
           setMaxPriceInput(validPrice.toFixed(0));
         }
       },
-    })
+    }),
   ).current;
 
   const handleSliderLayout = (event: LayoutChangeEvent) => {
@@ -204,19 +217,13 @@ const FilterModal: React.FC<FilterModalProps> = ({
                 {/* Min Thumb */}
                 <View
                   {...minPanResponder.panHandlers}
-                  style={[
-                    styles.sliderThumb,
-                    { left: minThumbPosition - 12 },
-                  ]}
+                  style={[styles.sliderThumb, { left: minThumbPosition - 12 }]}
                 />
 
                 {/* Max Thumb */}
                 <View
                   {...maxPanResponder.panHandlers}
-                  style={[
-                    styles.sliderThumb,
-                    { left: maxThumbPosition - 12 },
-                  ]}
+                  style={[styles.sliderThumb, { left: maxThumbPosition - 12 }]}
                 />
               </View>
 

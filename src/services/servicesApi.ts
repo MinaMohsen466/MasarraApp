@@ -64,7 +64,6 @@ export interface Service {
   deliveryFee?: number; // Delivery fee from database
 }
 
-
 /**
  * Fetch all services
  */
@@ -149,7 +148,9 @@ export const fetchServicesWithPagination = async (
     if (filters.maxPrice) params.append('maxPrice', String(filters.maxPrice));
     params.append('isActive', 'true');
 
-    const response = await fetch(`${API_BASE_URL}/services?${params.toString()}`);
+    const response = await fetch(
+      `${API_BASE_URL}/services?${params.toString()}`,
+    );
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);

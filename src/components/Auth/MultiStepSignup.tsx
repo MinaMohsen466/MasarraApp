@@ -117,7 +117,12 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
     }
 
     // Check all password requirements without alerts
-    if (!password.trim() || !isPasswordValid || !confirmPassword.trim() || password !== confirmPassword) {
+    if (
+      !password.trim() ||
+      !isPasswordValid ||
+      !confirmPassword.trim() ||
+      password !== confirmPassword
+    ) {
       return false;
     }
 
@@ -141,7 +146,7 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
     try {
       // Format phone with space: +965 12345678
       const formattedPhone = `+${countryCode} ${phone}`;
-      
+
       const response = await signup({
         name,
         email,
@@ -443,7 +448,9 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
                     : multiStepStyles.requirementInvalid,
                 ]}
               >
-                {isRTL ? '• حرف كبير واحد على الأقل' : '• At least one uppercase letter'}
+                {isRTL
+                  ? '• حرف كبير واحد على الأقل'
+                  : '• At least one uppercase letter'}
               </Text>
               <Text
                 style={[
@@ -454,7 +461,9 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
                     : multiStepStyles.requirementInvalid,
                 ]}
               >
-                {isRTL ? '• حرف صغير واحد على الأقل' : '• At least one lowercase letter'}
+                {isRTL
+                  ? '• حرف صغير واحد على الأقل'
+                  : '• At least one lowercase letter'}
               </Text>
             </View>
           )}
@@ -473,7 +482,9 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
               style={[styles.input, isRTL && styles.inputRTL]}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
-              placeholder={isRTL ? 'أعد إدخال كلمة المرور' : 'Re-enter your password'}
+              placeholder={
+                isRTL ? 'أعد إدخال كلمة المرور' : 'Re-enter your password'
+              }
               placeholderTextColor="#999"
               secureTextEntry={!showConfirmPassword}
               textAlign={isRTL ? 'right' : 'left'}

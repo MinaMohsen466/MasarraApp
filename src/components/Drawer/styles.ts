@@ -9,7 +9,7 @@ export const createStyles = (screenWidth: number, screenHeight: number) => {
 
   // حساب حجم اللوجو حسب حجم الشاشة
   const logoSize = isSmallScreen
-    ? Math.min(drawerWidth * 0.30, 65)
+    ? Math.min(drawerWidth * 0.3, 65)
     : isMediumScreen
     ? Math.min(drawerWidth * 0.38, 85)
     : Math.min(drawerWidth * 0.45, 110);

@@ -127,8 +127,7 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ userId }),
             });
-          } catch (resendError) {
-          }
+          } catch (resendError) {}
           // Show verification screen directly without alert
           setShowVerifyEmail(true);
           return;

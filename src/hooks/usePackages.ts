@@ -130,7 +130,7 @@ export const useInfinitePackages = (
         limit: PAGE_SIZE,
       });
     },
-    getNextPageParam: (lastPage) => {
+    getNextPageParam: lastPage => {
       if (lastPage.currentPage < lastPage.pages) {
         return lastPage.currentPage + 1;
       }
@@ -148,5 +148,5 @@ export const useInfinitePackages = (
 export const flattenPackages = (
   data: { pages: PaginatedPackagesResponse[] } | undefined,
 ): Package[] => {
-  return data?.pages.flatMap((page) => page.packages) || [];
+  return data?.pages.flatMap(page => page.packages) || [];
 };

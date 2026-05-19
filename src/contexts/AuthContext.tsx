@@ -60,7 +60,7 @@ export const AuthProvider: React.FC<{
           Authorization: `Bearer ${storedToken}`,
         },
       });
-      
+
       if (response.ok) {
         const freshUserData = await response.json();
         await AsyncStorage.setItem('userData', JSON.stringify(freshUserData));
@@ -82,9 +82,9 @@ export const AuthProvider: React.FC<{
         const userData = JSON.parse(storedUser);
         console.log('📦 Cached user data loaded:', {
           name: userData.name,
-          profilePicture: userData.profilePicture
+          profilePicture: userData.profilePicture,
         });
-        
+
         // First set cached data for quick load
         setToken(storedToken);
         setUser(userData);
@@ -94,7 +94,7 @@ export const AuthProvider: React.FC<{
           const userId = userData._id || userData.id;
           await AsyncStorage.setItem('userId', userId);
         }
-        
+
         // Then fetch fresh user data from server to sync
         console.log('🔄 Refreshing user data from server...');
         await refreshUser();
@@ -144,8 +144,7 @@ export const AuthProvider: React.FC<{
       // call optional onLogout callback (e.g. to navigate to home)
       try {
         if (onLogout) onLogout();
-      } catch (err) {
-      }
+      } catch (err) {}
     } catch (error) {
       throw error;
     }
@@ -179,7 +178,6 @@ export const AuthProvider: React.FC<{
 
       // Update state - create new object to ensure React detects the change
       setUser({ ...updatedUser });
-
     } catch (error) {
       throw error;
     }
@@ -196,7 +194,6 @@ export const AuthProvider: React.FC<{
 
       // Call the API to change password
       await apiChangePassword(token, currentPassword, newPassword);
-
 
       // After changing password, log out locally so user must re-authenticate
       try {
@@ -228,8 +225,7 @@ export const AuthProvider: React.FC<{
       // navigate to home if provided
       try {
         if (onLogout) onLogout();
-      } catch (err) {
-      }
+      } catch (err) {}
     } catch (error) {
       throw error;
     }

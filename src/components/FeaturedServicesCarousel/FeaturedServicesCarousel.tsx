@@ -170,7 +170,7 @@ const FeaturedServicesCarousel: React.FC<FeaturedServicesCarouselProps> = ({
           {featuredServices.map((_, index) => {
             const isActive = index === currentIndex;
             const animValue = dotAnimations[index] || new Animated.Value(0);
-            
+
             const width = animValue.interpolate({
               inputRange: [0, 1],
               outputRange: [8, 20],

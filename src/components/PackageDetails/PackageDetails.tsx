@@ -57,7 +57,11 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
   const styles = createStyles(SCREEN_WIDTH);
   const { isRTL } = useLanguage();
   const insets = useSafeAreaInsets();
-  const { data: packageData, isLoading, error } = usePackageDetails(packageId) as {
+  const {
+    data: packageData,
+    isLoading,
+    error,
+  } = usePackageDetails(packageId) as {
     data: Package | undefined;
     isLoading: boolean;
     error: any;
@@ -87,7 +91,11 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
     visible: boolean;
     title: string;
     message: string;
-    buttons: Array<{ text: string; onPress?: () => void; style?: 'default' | 'cancel' | 'destructive' }>;
+    buttons: Array<{
+      text: string;
+      onPress?: () => void;
+      style?: 'default' | 'cancel' | 'destructive';
+    }>;
   }>({
     visible: false,
     title: '',
@@ -95,12 +103,25 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
     buttons: [],
   });
 
-  const showAlert = (title: string, message: string, buttons?: Array<{ text: string; onPress?: () => void; style?: 'default' | 'cancel' | 'destructive' }>) => {
+  const showAlert = (
+    title: string,
+    message: string,
+    buttons?: Array<{
+      text: string;
+      onPress?: () => void;
+      style?: 'default' | 'cancel' | 'destructive';
+    }>,
+  ) => {
     setAlertConfig({
       visible: true,
       title,
       message,
-      buttons: buttons || [{ text: isRTL ? 'حسناً' : 'OK', onPress: () => setAlertConfig(prev => ({ ...prev, visible: false })) }],
+      buttons: buttons || [
+        {
+          text: isRTL ? 'حسناً' : 'OK',
+          onPress: () => setAlertConfig(prev => ({ ...prev, visible: false })),
+        },
+      ],
     });
   };
 
@@ -207,7 +228,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
             text: isRTL ? 'إلغاء' : 'Cancel',
             style: 'cancel',
           },
-        ]
+        ],
       );
       return;
     }
@@ -217,7 +238,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
         isRTL ? 'اختر التاريخ والوقت' : 'Select Date & Time',
         isRTL
           ? 'يرجى اختيار التاريخ والوقت أولاً'
-          : 'Please select date and time first'
+          : 'Please select date and time first',
       );
       return;
     }
@@ -225,7 +246,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
     if (!isTimeSlotAvailable) {
       showAlert(
         isRTL ? 'غير متاح' : 'Not Available',
-        isRTL ? 'هذا الوقت محجوز بالفعل' : 'This time slot is already booked'
+        isRTL ? 'هذا الوقت محجوز بالفعل' : 'This time slot is already booked',
       );
       return;
     }
@@ -284,7 +305,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
         timeSlot: { start: slotStart, end: slotEnd }, // Use parsed Date objects
         price:
           packageData!.discountPrice > 0
-            ? (packageData!.totalPrice - packageData!.discountPrice)
+            ? packageData!.totalPrice - packageData!.discountPrice
             : packageData!.totalPrice,
         image: packageData!.images?.[0] || '',
         vendorName: packageData!.vendor?.displayName || '',
@@ -301,7 +322,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
       showAlert(
         isRTL ? 'خطأ' : 'Error',
         err.message ||
-        (isRTL ? 'فشل في إضافة الباقة' : 'Failed to add package')
+          (isRTL ? 'فشل في إضافة الباقة' : 'Failed to add package'),
       );
     } finally {
       setIsAddingToCart(false);
@@ -333,7 +354,11 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 
           // Distance from screen bottom to icon center
           // Icon center is at: bottomViewHeight + paddingBottom + navItemPaddingVertical + (navIconSize/2)
-          const iconCenterFromBottom = bottomViewHeight + paddingBottom + navItemPaddingVertical + (navIconSize / 2);
+          const iconCenterFromBottom =
+            bottomViewHeight +
+            paddingBottom +
+            navItemPaddingVertical +
+            navIconSize / 2;
 
           // Cart icon is the LAST item in bottom nav (5th item, index 4)
           // Bottom nav has 5 items evenly distributed using space-around
@@ -344,7 +369,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
           const cartPosition = isRTL ? 0 : cartIconIndex;
 
           // Calculate X position: center of the nav item
-          const targetX = (cartPosition * navItemWidth) + (navItemWidth / 2);
+          const targetX = cartPosition * navItemWidth + navItemWidth / 2;
 
           // Calculate Y position: screen height minus distance from bottom to icon center
           const targetY = screenHeight - iconCenterFromBottom;
@@ -413,10 +438,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
             : 'Failed to load package details'}
         </Text>
         {onBack && (
-          <TouchableOpacity
-            onPress={onBack}
-            style={styles.errorButton}
-          >
+          <TouchableOpacity onPress={onBack} style={styles.errorButton}>
             <Text style={styles.errorButtonText}>
               {isRTL ? 'رجوع' : 'Go Back'}
             </Text>
@@ -434,7 +456,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
   // Final price = totalPrice - discountPrice
   const displayPrice =
     packageData.discountPrice > 0
-      ? (packageData.totalPrice - packageData.discountPrice)
+      ? packageData.totalPrice - packageData.discountPrice
       : packageData.totalPrice;
 
   const handleShare = async () => {
@@ -653,23 +675,17 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
               resizeMode="cover"
             />
             {packageData.discountPrice > 0 && (
-              <View
-                style={styles.discountBadge}
-              >
-                <Text
-                  style={styles.discountText}
-                >
+              <View style={styles.discountBadge}>
+                <Text style={styles.discountText}>
                   {Math.round(
-                    (packageData.discountPrice / packageData.totalPrice) * 100
+                    (packageData.discountPrice / packageData.totalPrice) * 100,
                   )}
                   % OFF
                 </Text>
               </View>
             )}
             {packageData.images.length > 1 && (
-              <View
-                style={styles.paginationContainer}
-              >
+              <View style={styles.paginationContainer}>
                 {packageData.images.map((_: any, index: number) => (
                   <TouchableOpacity
                     key={index}
@@ -705,12 +721,8 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
               {displayName}
             </Text>
 
-            <View
-              style={styles.packageBadgeContainer}
-            >
-              <Text
-                style={styles.packageBadgeText}
-              >
+            <View style={styles.packageBadgeContainer}>
+              <Text style={styles.packageBadgeText}>
                 {isRTL ? 'باقة' : 'PACKAGE'}
               </Text>
             </View>
@@ -777,15 +789,11 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
               ]}
             >
               {packageData.discountPrice > 0 && (
-                <Text
-                  style={styles.originalPrice}
-                >
+                <Text style={styles.originalPrice}>
                   {packageData.totalPrice.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
                 </Text>
               )}
-              <Text
-                style={styles.currentPrice}
-              >
+              <Text style={styles.currentPrice}>
                 {displayPrice.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
               </Text>
             </View>
@@ -795,33 +803,23 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                 isRTL && { flexDirection: 'row-reverse' },
               ]}
             >
-              <Text
-                style={styles.ratingValue}
-              >
+              <Text style={styles.ratingValue}>
                 {reviewStats ? reviewStats.averageRating.toFixed(1) : '0.0'}
               </Text>
               <Text style={styles.ratingStar}>★</Text>
-              <Text
-                style={styles.ratingCount}
-              >
+              <Text style={styles.ratingCount}>
                 ({reviewStats ? reviewStats.totalRatings : 0})
               </Text>
             </View>
           </View>
 
           {/* Date & Time Selection */}
-          <View
-            style={styles.dateTimeSection}
-          >
-            <Text
-              style={styles.dateTimeTitle}
-            >
+          <View style={styles.dateTimeSection}>
+            <Text style={styles.dateTimeTitle}>
               {isRTL ? 'اختر اليوم والوقت' : 'SELECT EVENT DAY & TIME'}
             </Text>
 
-            <View
-              style={styles.dateTimeInputsContainer}
-            >
+            <View style={styles.dateTimeInputsContainer}>
               <TouchableOpacity
                 onPress={() => setShowDatePicker(true)}
                 activeOpacity={0.8}
@@ -836,9 +834,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                     isRTL && { marginRight: 0, marginLeft: 14 },
                   ]}
                 >
-                  <View
-                    style={styles.dateTimeIcon}
-                  >
+                  <View style={styles.dateTimeIcon}>
                     <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
                       <Path
                         d="M7 11h10M7 7h10M7 3h10"
@@ -865,16 +861,16 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                 >
                   {selectedDate
                     ? selectedDate.toLocaleDateString(
-                      isRTL ? 'ar-KW' : 'en-US',
-                      {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                      },
-                    )
+                        isRTL ? 'ar-KW' : 'en-US',
+                        {
+                          year: 'numeric',
+                          month: '2-digit',
+                          day: '2-digit',
+                        },
+                      )
                     : isRTL
-                      ? 'اختر التاريخ'
-                      : 'Select Date'}
+                    ? 'اختر التاريخ'
+                    : 'Select Date'}
                 </Text>
               </TouchableOpacity>
 
@@ -894,9 +890,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                     isRTL && { marginRight: 0, marginLeft: 14 },
                   ]}
                 >
-                  <View
-                    style={styles.dateTimeIcon}
-                  >
+                  <View style={styles.dateTimeIcon}>
                     <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
                       <Path
                         d="M12 7v6l4 2"
@@ -940,24 +934,22 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                   !selectedDate || !selectedTime || !isTimeSlotAvailable
                 }
               >
-                <Text
-                  style={styles.availabilityText}
-                >
+                <Text style={styles.availabilityText}>
                   {checkingAvailability
                     ? isRTL
                       ? 'جاري التحقق...'
                       : 'Checking...'
                     : !isTimeSlotAvailable && selectedDate && selectedTime
-                      ? isRTL
-                        ? '✗ غير متاح'
-                        : '✗ Not Available'
-                      : selectedDate && selectedTime
-                        ? isRTL
-                          ? '✓ متاح'
-                          : '✓ Available'
-                        : isRTL
-                          ? 'اختر التاريخ والوقت'
-                          : 'Select Date & Time'}
+                    ? isRTL
+                      ? '✗ غير متاح'
+                      : '✗ Not Available'
+                    : selectedDate && selectedTime
+                    ? isRTL
+                      ? '✓ متاح'
+                      : '✓ Available'
+                    : isRTL
+                    ? 'اختر التاريخ والوقت'
+                    : 'Select Date & Time'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -977,9 +969,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
           )}
 
           {/* Divider */}
-          <View
-            style={styles.divider}
-          />
+          <View style={styles.divider} />
 
           {/* Description */}
           {displayDescription && (
@@ -1057,9 +1047,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                 </View>
 
                 {expandedMainService && (
-                  <View
-                    style={styles.serviceCardExpanded}
-                  >
+                  <View style={styles.serviceCardExpanded}>
                     {packageData.service.description && (
                       <Text
                         style={[
@@ -1163,9 +1151,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                       </View>
 
                       {expandedAdditionalServices[index] && (
-                        <View
-                          style={styles.serviceCardExpanded}
-                        >
+                        <View style={styles.serviceCardExpanded}>
                           {item.service?.description && (
                             <Text
                               style={[
@@ -1232,14 +1218,10 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                     },
                   ]}
                 >
-                  <Text
-                    style={styles.reviewStatsAverageRating}
-                  >
+                  <Text style={styles.reviewStatsAverageRating}>
                     {reviewStats.averageRating.toFixed(1)}
                   </Text>
-                  <Text
-                    style={styles.reviewStatsStars}
-                  >
+                  <Text style={styles.reviewStatsStars}>
                     {'★'.repeat(Math.round(reviewStats.averageRating))}
                     {'☆'.repeat(5 - Math.round(reviewStats.averageRating))}
                   </Text>
@@ -1258,7 +1240,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                   {[5, 4, 3, 2, 1].map(star => {
                     const count =
                       reviewStats.ratingDistribution[
-                      star as keyof typeof reviewStats.ratingDistribution
+                        star as keyof typeof reviewStats.ratingDistribution
                       ] || 0;
                     const percentage =
                       reviewStats.totalRatings > 0
@@ -1280,9 +1262,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                         >
                           {star}★
                         </Text>
-                        <View
-                          style={styles.reviewRatingBar}
-                        >
+                        <View style={styles.reviewRatingBar}>
                           <View
                             style={[
                               styles.reviewRatingFill,
@@ -1290,11 +1270,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                             ]}
                           />
                         </View>
-                        <Text
-                          style={styles.reviewRatingLabel}
-                        >
-                          {count}
-                        </Text>
+                        <Text style={styles.reviewRatingLabel}>{count}</Text>
                       </View>
                     );
                   })}
@@ -1305,10 +1281,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
               {reviews.length > 0 && (
                 <View>
                   {reviews.slice(0, 2).map(review => (
-                    <View
-                      key={review._id}
-                      style={styles.reviewCard}
-                    >
+                    <View key={review._id} style={styles.reviewCard}>
                       <View
                         style={[
                           styles.reviewHeader,
@@ -1338,28 +1311,17 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                                 isRTL && { marginRight: 0, marginLeft: 12 },
                               ]}
                             >
-                              <Text
-                                style={styles.userAvatarText}
-                              >
+                              <Text style={styles.userAvatarText}>
                                 {review.user.name.charAt(0).toUpperCase()}
                               </Text>
                             </View>
                           )}
                           <View style={styles.serviceCardContent}>
-                            <View
-                              style={styles.userInfoRow}
-                            >
-                              <Text
-                                style={styles.userName}
-                                numberOfLines={1}
-                              >
+                            <View style={styles.userInfoRow}>
+                              <Text style={styles.userName} numberOfLines={1}>
                                 {review.user.name}
                               </Text>
-                              <Text
-                                style={styles.dateSeparator}
-                              >
-                                •
-                              </Text>
+                              <Text style={styles.dateSeparator}>•</Text>
                               <Text style={styles.reviewDateText}>
                                 {new Date(review.createdAt).toLocaleDateString(
                                   isRTL ? 'ar-EG' : 'en-US',
@@ -1368,22 +1330,15 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                               </Text>
                             </View>
                             {review.isVerifiedPurchase && (
-                              <Text
-                                style={styles.verifiedBadge}
-                              >
+                              <Text style={styles.verifiedBadge}>
                                 ✓ {isRTL ? 'مشترٍ موثق' : 'Verified'}
                               </Text>
                             )}
                           </View>
                         </View>
-                        <View
-                          style={styles.ratingContainer}
-                        >
+                        <View style={styles.ratingContainer}>
                           <Text
-                            style={[
-                              styles.reviewRatingValue,
-                              { fontSize: 13 },
-                            ]}
+                            style={[styles.reviewRatingValue, { fontSize: 13 }]}
                           >
                             {review.rating.toFixed(1)} ★
                           </Text>
@@ -1398,9 +1353,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                         {review.comment}
                       </Text>
                       {review.vendorReply && (
-                        <View
-                          style={styles.vendorReplyContainer}
-                        >
+                        <View style={styles.vendorReplyContainer}>
                           <Text
                             style={[
                               styles.vendorReplyTitle,
@@ -1432,9 +1385,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                       activeOpacity={0.7}
                       onPress={() => setShowAllReviewsModal(true)}
                     >
-                      <Text
-                        style={styles.showMoreText}
-                      >
+                      <Text style={styles.showMoreText}>
                         {isRTL
                           ? `عرض جميع التقييمات (${reviews.length})`
                           : `Show All Reviews (${reviews.length})`}
@@ -1507,7 +1458,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
             style={[
               styles.addToCartButton,
               (!selectedDate || !selectedTime || !isTimeSlotAvailable) &&
-              styles.addToCartButtonDisabled,
+                styles.addToCartButtonDisabled,
             ]}
             activeOpacity={0.8}
           >
@@ -1530,16 +1481,14 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                     strokeLinejoin="round"
                   />
                 </Svg>
-                <Text
-                  style={styles.addToCartButtonText}
-                >
+                <Text style={styles.addToCartButtonText}>
                   {isAddingToCart
                     ? isRTL
                       ? 'جاري الإضافة...'
                       : 'ADDING...'
                     : isRTL
-                      ? 'أضف إلى السلة'
-                      : 'ADD TO CART'}
+                    ? 'أضف إلى السلة'
+                    : 'ADD TO CART'}
                 </Text>
               </>
             )}
@@ -1550,11 +1499,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
             activeOpacity={0.85}
             onPress={onBack}
           >
-            <Text
-              style={styles.backButtonText}
-            >
-              {isRTL ? 'رجوع' : 'BACK'}
-            </Text>
+            <Text style={styles.backButtonText}>{isRTL ? 'رجوع' : 'BACK'}</Text>
           </TouchableOpacity>
         </View>
       </View>

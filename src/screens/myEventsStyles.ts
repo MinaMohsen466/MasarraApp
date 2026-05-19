@@ -23,7 +23,7 @@ export const myEventsStyles = StyleSheet.create({
     alignItems: 'center',
   },
   backIcon: {
-    fontSize: 32,
+    fontSize: 37,
     color: colors.textWhite,
     fontWeight: '700',
     lineHeight: 32,

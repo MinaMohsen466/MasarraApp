@@ -1,10 +1,5 @@
 import React, { useState } from 'react';
-import {
-  View,
-  TouchableOpacity,
-  Image,
-  ActivityIndicator,
-} from 'react-native';
+import { View, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { styles, imageStyles } from './Styles';
 import Drawer from '../Drawer';
@@ -116,7 +111,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
               }}
               style={imageStyles.profileIcon}
               resizeMode="cover"
-              onError={() => { }}
+              onError={() => {}}
             />
           ) : (
             <Image

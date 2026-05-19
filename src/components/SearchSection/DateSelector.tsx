@@ -26,10 +26,38 @@ const DateSelector: React.FC<DateSelectorProps> = ({
   }, [selectedDate]);
 
   const monthNames = isRTL
-    ? ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر']
-    : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    ? [
+        'يناير',
+        'فبراير',
+        'مارس',
+        'أبريل',
+        'مايو',
+        'يونيو',
+        'يوليو',
+        'أغسطس',
+        'سبتمبر',
+        'أكتوبر',
+        'نوفمبر',
+        'ديسمبر',
+      ]
+    : [
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December',
+      ];
 
-  const weekDays = isRTL ? ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'] : ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  const weekDays = isRTL
+    ? ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س']
+    : ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
   const getDaysInMonth = (year: number, month: number) => {
     return new Date(year, month + 1, 0).getDate();
@@ -67,10 +95,10 @@ const DateSelector: React.FC<DateSelectorProps> = ({
     const month = date.getMonth();
     const daysInMonth = getDaysInMonth(year, month);
     const firstDay = getFirstDayOfMonth(year, month);
-    
+
     const days = [];
     const totalCells = Math.ceil((daysInMonth + firstDay) / 7) * 7;
-    
+
     // Get today's date at midnight for comparison
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -78,13 +106,17 @@ const DateSelector: React.FC<DateSelectorProps> = ({
     for (let i = 0; i < totalCells; i++) {
       const day = i - firstDay + 1;
       const isValidDay = day > 0 && day <= daysInMonth;
-      
+
       // Check if this is a past date
       const dayDate = new Date(year, month, day);
       dayDate.setHours(0, 0, 0, 0);
       const isPastDate = dayDate < today;
-      
-      const isSelected = isValidDay && day === date.getDate() && month === date.getMonth() && year === date.getFullYear();
+
+      const isSelected =
+        isValidDay &&
+        day === date.getDate() &&
+        month === date.getMonth() &&
+        year === date.getFullYear();
       const isDisabled = !isValidDay || isPastDate;
 
       days.push(
@@ -100,15 +132,17 @@ const DateSelector: React.FC<DateSelectorProps> = ({
           activeOpacity={0.7}
         >
           {isValidDay && (
-            <Text style={[
-              styles.dayText,
-              isSelected && styles.selectedDayText,
-              isPastDate && styles.pastDayText,
-            ]}>
+            <Text
+              style={[
+                styles.dayText,
+                isSelected && styles.selectedDayText,
+                isPastDate && styles.pastDayText,
+              ]}
+            >
               {day}
             </Text>
           )}
-        </TouchableOpacity>
+        </TouchableOpacity>,
       );
     }
 
@@ -119,8 +153,10 @@ const DateSelector: React.FC<DateSelectorProps> = ({
     return null;
   }
 
-  const weekDayName = isRTL 
-    ? ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'][date.getDay()]
+  const weekDayName = isRTL
+    ? ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'][
+        date.getDay()
+      ]
     : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()];
 
   const monthName = monthNames[date.getMonth()];
@@ -147,13 +183,19 @@ const DateSelector: React.FC<DateSelectorProps> = ({
           <View style={styles.calendarContainer}>
             {/* Month Navigation */}
             <View style={styles.monthHeader}>
-              <TouchableOpacity onPress={handlePrevMonth} style={styles.navButton}>
+              <TouchableOpacity
+                onPress={handlePrevMonth}
+                style={styles.navButton}
+              >
                 <Text style={styles.navText}>{isRTL ? '›' : '‹'}</Text>
               </TouchableOpacity>
               <Text style={styles.monthText}>
                 {`${monthNames[date.getMonth()]} ${date.getFullYear()}`}
               </Text>
-              <TouchableOpacity onPress={handleNextMonth} style={styles.navButton}>
+              <TouchableOpacity
+                onPress={handleNextMonth}
+                style={styles.navButton}
+              >
                 <Text style={styles.navText}>{isRTL ? '‹' : '›'}</Text>
               </TouchableOpacity>
             </View>
@@ -168,9 +210,7 @@ const DateSelector: React.FC<DateSelectorProps> = ({
             </View>
 
             {/* Calendar Days Grid */}
-            <View style={styles.daysGrid}>
-              {renderCalendar()}
-            </View>
+            <View style={styles.daysGrid}>{renderCalendar()}</View>
           </View>
 
           {/* Action Buttons */}
@@ -181,9 +221,7 @@ const DateSelector: React.FC<DateSelectorProps> = ({
               </Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={handleOK} style={styles.okButton}>
-              <Text style={styles.okButtonText}>
-                {isRTL ? 'موافق' : 'OK'}
-              </Text>
+              <Text style={styles.okButtonText}>{isRTL ? 'موافق' : 'OK'}</Text>
             </TouchableOpacity>
           </View>
         </View>

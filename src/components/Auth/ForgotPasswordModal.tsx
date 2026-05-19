@@ -53,13 +53,13 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
       text: string;
       onPress?: () => void;
       style?: 'default' | 'cancel' | 'destructive';
-    }> = [{text: isRTL ? 'حسناً' : 'OK'}],
+    }> = [{ text: isRTL ? 'حسناً' : 'OK' }],
   ) => {
-    setAlertConfig({visible: true, title, message, buttons});
+    setAlertConfig({ visible: true, title, message, buttons });
   };
 
   const hideAlert = () => {
-    setAlertConfig(prev => ({...prev, visible: false}));
+    setAlertConfig(prev => ({ ...prev, visible: false }));
   };
 
   const handleSendCode = async () => {
@@ -104,7 +104,9 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
     }
   };
 
-  const validatePassword = (password: string): { valid: boolean; message: string } => {
+  const validatePassword = (
+    password: string,
+  ): { valid: boolean; message: string } => {
     if (password.length < 8) {
       return {
         valid: false,
@@ -151,10 +153,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
 
     const passwordValidation = validatePassword(newPassword);
     if (!passwordValidation.valid) {
-      showAlert(
-        isRTL ? 'خطأ' : 'Error',
-        passwordValidation.message,
-      );
+      showAlert(isRTL ? 'خطأ' : 'Error', passwordValidation.message);
       return;
     }
 
@@ -180,10 +179,12 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
           isRTL
             ? 'تم إعادة تعيين كلمة المرور بنجاح'
             : 'Password reset successfully',
-          [{
-            text: isRTL ? 'حسناً' : 'OK',
-            onPress: handleClose,
-          }],
+          [
+            {
+              text: isRTL ? 'حسناً' : 'OK',
+              onPress: handleClose,
+            },
+          ],
         );
       } else {
         showAlert(
@@ -327,53 +328,100 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
                       disabled={isLoading}
                     >
                       <Icon
-                        name={showNewPassword ? 'eye-outline' : 'eye-off-outline'}
+                        name={
+                          showNewPassword ? 'eye-outline' : 'eye-off-outline'
+                        }
                         size={22}
                         color="#666"
                       />
                     </TouchableOpacity>
                   </View>
                   <View style={modalStyles.passwordRequirements}>
-                    <Text style={[modalStyles.requirementsTitle, isRTL && modalStyles.requirementsTitleRTL]}>
+                    <Text
+                      style={[
+                        modalStyles.requirementsTitle,
+                        isRTL && modalStyles.requirementsTitleRTL,
+                      ]}
+                    >
                       {isRTL ? 'شروط كلمة المرور:' : 'Password Requirements:'}
                     </Text>
                     <View style={modalStyles.requirement}>
                       <Icon
-                        name={newPassword.length >= 8 ? 'checkmark-circle' : 'ellipse-outline'}
+                        name={
+                          newPassword.length >= 8
+                            ? 'checkmark-circle'
+                            : 'ellipse-outline'
+                        }
                         size={16}
                         color={newPassword.length >= 8 ? '#10b981' : '#999'}
                       />
-                      <Text style={[modalStyles.requirementText, isRTL && modalStyles.requirementTextRTL]}>
+                      <Text
+                        style={[
+                          modalStyles.requirementText,
+                          isRTL && modalStyles.requirementTextRTL,
+                        ]}
+                      >
                         {isRTL ? '8 أحرف على الأقل' : 'At least 8 characters'}
                       </Text>
                     </View>
                     <View style={modalStyles.requirement}>
                       <Icon
-                        name={/[A-Z]/.test(newPassword) ? 'checkmark-circle' : 'ellipse-outline'}
+                        name={
+                          /[A-Z]/.test(newPassword)
+                            ? 'checkmark-circle'
+                            : 'ellipse-outline'
+                        }
                         size={16}
                         color={/[A-Z]/.test(newPassword) ? '#10b981' : '#999'}
                       />
-                      <Text style={[modalStyles.requirementText, isRTL && modalStyles.requirementTextRTL]}>
-                        {isRTL ? 'حرف كبير واحد على الأقل' : 'One uppercase letter'}
+                      <Text
+                        style={[
+                          modalStyles.requirementText,
+                          isRTL && modalStyles.requirementTextRTL,
+                        ]}
+                      >
+                        {isRTL
+                          ? 'حرف كبير واحد على الأقل'
+                          : 'One uppercase letter'}
                       </Text>
                     </View>
                     <View style={modalStyles.requirement}>
                       <Icon
-                        name={/[a-z]/.test(newPassword) ? 'checkmark-circle' : 'ellipse-outline'}
+                        name={
+                          /[a-z]/.test(newPassword)
+                            ? 'checkmark-circle'
+                            : 'ellipse-outline'
+                        }
                         size={16}
                         color={/[a-z]/.test(newPassword) ? '#10b981' : '#999'}
                       />
-                      <Text style={[modalStyles.requirementText, isRTL && modalStyles.requirementTextRTL]}>
-                        {isRTL ? 'حرف صغير واحد على الأقل' : 'One lowercase letter'}
+                      <Text
+                        style={[
+                          modalStyles.requirementText,
+                          isRTL && modalStyles.requirementTextRTL,
+                        ]}
+                      >
+                        {isRTL
+                          ? 'حرف صغير واحد على الأقل'
+                          : 'One lowercase letter'}
                       </Text>
                     </View>
                     <View style={modalStyles.requirement}>
                       <Icon
-                        name={/[0-9]/.test(newPassword) ? 'checkmark-circle' : 'ellipse-outline'}
+                        name={
+                          /[0-9]/.test(newPassword)
+                            ? 'checkmark-circle'
+                            : 'ellipse-outline'
+                        }
                         size={16}
                         color={/[0-9]/.test(newPassword) ? '#10b981' : '#999'}
                       />
-                      <Text style={[modalStyles.requirementText, isRTL && modalStyles.requirementTextRTL]}>
+                      <Text
+                        style={[
+                          modalStyles.requirementText,
+                          isRTL && modalStyles.requirementTextRTL,
+                        ]}
+                      >
                         {isRTL ? 'رقم واحد على الأقل' : 'One number'}
                       </Text>
                     </View>
@@ -409,7 +457,11 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
                       disabled={isLoading}
                     >
                       <Icon
-                        name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'}
+                        name={
+                          showConfirmPassword
+                            ? 'eye-outline'
+                            : 'eye-off-outline'
+                        }
                         size={22}
                         color="#666"
                       />

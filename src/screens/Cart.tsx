@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   TextInput,
+  Dimensions,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -27,6 +28,7 @@ import { getServiceImageUrl } from '../services/servicesApi';
 import { styles } from './cartStyles';
 import Drawer from '../components/Drawer';
 import OrderSuccess from './OrderSuccess';
+import PaymentReceiptModal from '../components/PaymentReceiptModal/PaymentReceiptModal';
 import AddressSelection from '../components/AddressSelection/AddressSelection';
 import { CustomAlert } from '../components/CustomAlert';
 import { validateCoupon, Coupon } from '../services/couponApi';
@@ -39,6 +41,9 @@ import {
   Supplier,
 } from '../services/paymentApi';
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const isTablet = SCREEN_WIDTH >= 600;
+
 interface CartProps {
   onBack?: () => void;
   onViewDetails?: (serviceId: string) => void;
@@ -46,7 +51,11 @@ interface CartProps {
   onNavigate?: (route: string) => void;
 }
 
-const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavigate }) => {
+const Cart: React.FC<CartProps> = ({
+  onViewDetails,
+  onViewPackageDetails,
+  onNavigate,
+}) => {
   const { isRTL, t } = useLanguage();
   const { user, isLoggedIn, token } = useAuth();
   const insets = useSafeAreaInsets();
@@ -73,7 +82,10 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
   const [showPaymentWebView, setShowPaymentWebView] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState('');
   const [createdBookingIds, setCreatedBookingIds] = useState<string[]>([]);
-  const [successfullyBookedItemIds, setSuccessfullyBookedItemIds] = useState<string[]>([]);
+  const [successfullyBookedItemIds, setSuccessfullyBookedItemIds] = useState<
+    string[]
+  >([]);
+  const [successReceiptData, setSuccessReceiptData] = useState<any>(null);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   // Coupon state
   const [couponCode, setCouponCode] = useState('');
@@ -315,11 +327,11 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
       const couponData =
         appliedCoupon && couponDiscount > 0
           ? {
-            code: appliedCoupon.code,
-            discountAmount: couponDiscount,
-            originalPrice: calculateTotalBeforeDiscount(),
-            deductFrom: appliedCoupon.deductFrom || 'vendor',
-          }
+              code: appliedCoupon.code,
+              discountAmount: couponDiscount,
+              originalPrice: calculateTotalBeforeDiscount(),
+              deductFrom: appliedCoupon.deductFrom || 'vendor',
+            }
           : undefined;
 
       // Step 1: Create ONE booking for all items (payment status will be 'pending')
@@ -342,9 +354,11 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
           .join('\n\n');
 
         // Check if error is about pending payment
-        const hasPendingPaymentError = errors.some(({ error }) =>
-          error && typeof error === 'string' &&
-          error.toLowerCase().includes('pending payment')
+        const hasPendingPaymentError = errors.some(
+          ({ error }) =>
+            error &&
+            typeof error === 'string' &&
+            error.toLowerCase().includes('pending payment'),
         );
 
         let message;
@@ -370,7 +384,7 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
       console.log('Created booking:', {
         id: bookingId,
         requiresPaymentNow: booking._requiresPaymentNow,
-        hasItemsNeedingConfirmation: booking._hasItemsNeedingConfirmation
+        hasItemsNeedingConfirmation: booking._hasItemsNeedingConfirmation,
       });
 
       setCreatedBookingIds([bookingId]);
@@ -391,7 +405,7 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
         setAlertMessage(
           isRTL
             ? 'تم إنشاء حجزك بنجاح. سيتم إشعارك عندما يؤكد مقدم الخدمة الحجز ويمكنك الدفع.'
-            : 'Your booking has been created successfully. You will be notified when the vendor confirms and you can proceed with payment.'
+            : 'Your booking has been created successfully. You will be notified when the vendor confirms and you can proceed with payment.',
         );
         setAlertButtons([
           {
@@ -403,36 +417,39 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
               if (onNavigate) {
                 onNavigate('profile');
               }
-            }
+            },
           },
-          { text: t('ok'), style: 'cancel' }
+          { text: t('ok'), style: 'cancel' },
         ]);
         setAlertVisible(true);
         return;
       }
 
-
       // Step 3: Calculate total amount for payment
       const successfullyBookedItems = cartItems.filter(item =>
-        successfullyBookedItemIds.includes(item._id)
+        successfullyBookedItemIds.includes(item._id),
       );
 
       // Calculate total for items
       const payableSubTotal = successfullyBookedItems.reduce((total, item) => {
-        const itemTotal = item.totalPrice ?? (item.price * item.quantity);
+        const itemTotal = item.totalPrice ?? item.price * item.quantity;
         return total + itemTotal;
       }, 0);
 
       // Calculate delivery charges
-      const payableDeliveryCharges = successfullyBookedItems.reduce((total, item) => {
-        if (item.maxBookingsPerSlot === -1) {
-          return total + 5;
-        }
-        return total;
-      }, 0);
+      const payableDeliveryCharges = successfullyBookedItems.reduce(
+        (total, item) => {
+          if (item.maxBookingsPerSlot === -1) {
+            return total + 5;
+          }
+          return total;
+        },
+        0,
+      );
 
       // Total = subtotal + delivery - discount
-      const payableTotal = payableSubTotal + payableDeliveryCharges - couponDiscount;
+      const payableTotal =
+        payableSubTotal + payableDeliveryCharges - couponDiscount;
 
       // Round to 3 decimal places
       const totalAmount = parseFloat(Math.max(0, payableTotal).toFixed(3));
@@ -456,7 +473,7 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
 
       // Step 4: Prepare invoice items
       const invoiceItems = successfullyBookedItems.map(item => {
-        const itemTotal = item.totalPrice ?? (item.price * item.quantity);
+        const itemTotal = item.totalPrice ?? item.price * item.quantity;
         const unitPrice = itemTotal / item.quantity;
         return {
           ItemName: isRTL && item.nameAr ? item.nameAr : item.name,
@@ -475,26 +492,31 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
       }
 
       // Step 5: Calculate supplier shares for commission tracking
-      const supplierShares = suppliers.length > 0
-        ? calculateSupplierShares(
-          successfullyBookedItems.map(item => ({
-            vendorId: item.vendorId,
-            totalPrice: item.totalPrice || item.price,
-            price: item.price,
-            quantity: item.quantity,
-          })),
-          suppliers,
-        )
-        : undefined;
+      const supplierShares =
+        suppliers.length > 0
+          ? calculateSupplierShares(
+              successfullyBookedItems.map(item => ({
+                vendorId: item.vendorId,
+                totalPrice: item.totalPrice || item.price,
+                price: item.price,
+                quantity: item.quantity,
+              })),
+              suppliers,
+            )
+          : undefined;
 
       // Step 6: Prepare customer info for payment
       const customerName = user?.name || 'Customer';
       const customerEmail = user?.email || '';
-      const customerMobile = user?.phone?.replace(/^\+965/, '').replace(/\s/g, '') || '';
+      const customerMobile =
+        user?.phone?.replace(/^\+965/, '').replace(/\s/g, '') || '';
 
       // Validate: MyFatoorah requires either email or mobile
       if (!customerEmail && !customerMobile) {
-        throw new Error(t('emailOrPhoneRequired') || 'Email or phone number is required for payment');
+        throw new Error(
+          t('emailOrPhoneRequired') ||
+            'Email or phone number is required for payment',
+        );
       }
 
       console.log('Payment data:', {
@@ -521,7 +543,9 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
           Block: '',
           Street: address.street || '',
           HouseBuildingNo: address.houseNumber || '',
-          AddressInstructions: address.floorNumber ? `Floor: ${address.floorNumber}` : '',
+          AddressInstructions: address.floorNumber
+            ? `Floor: ${address.floorNumber}`
+            : '',
         },
         invoiceItems,
         suppliers: supplierShares,
@@ -531,7 +555,9 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
       console.log('Payment response:', paymentResponse);
 
       if (!paymentResponse.success || !paymentResponse.data) {
-        throw new Error(paymentResponse.message || 'Failed to create payment link');
+        throw new Error(
+          paymentResponse.message || 'Failed to create payment link',
+        );
       }
 
       setIsProcessingCheckout(false);
@@ -557,6 +583,25 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
   // Handle payment success from WebView
   const handlePaymentSuccess = async () => {
     setShowPaymentWebView(false);
+
+    // Save receipt data BEFORE removing items from cart
+    const successfullyBookedItems = cartItems.filter(item =>
+        successfullyBookedItemIds.includes(item._id),
+    );
+    const amount = successfullyBookedItems.reduce((total, item) => total + (item.totalPrice ?? item.price * item.quantity), 0) + calculateDeliveryCharges() - couponDiscount;
+
+    setSuccessReceiptData({
+      status: 'success',
+      bookingId: createdBookingIds[0] || '',
+      amount: parseFloat(Math.max(0, amount).toFixed(3)) || 0,
+      currency: 'KWD',
+      services: successfullyBookedItems.length > 0 ? successfullyBookedItems.map(item => ({
+        name: isRTL ? (item.nameAr || item.name) : item.name,
+        quantity: item.quantity,
+        total: item.totalPrice ?? item.price * item.quantity
+      })) : [{ name: isRTL ? 'الطلب الخاص بك' : 'Your Order', quantity: 1, total: 0 }],
+      paidAt: new Date()
+    });
 
     // Remove only the successfully booked items from cart
     if (successfullyBookedItemIds.length > 0) {
@@ -584,7 +629,9 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
   const handlePaymentError = (error: string) => {
     setShowPaymentWebView(false);
     setAlertTitle(t('paymentError') || 'Payment Error');
-    setAlertMessage(error || t('paymentFailed') || 'Payment failed. Please try again.');
+    setAlertMessage(
+      error || t('paymentFailed') || 'Payment failed. Please try again.',
+    );
     setAlertButtons([{ text: t('ok'), style: 'default' }]);
     setAlertVisible(true);
   };
@@ -603,17 +650,24 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
           console.log('Attempting to cancel booking:', bookingId);
 
           // Cancel the booking (this changes booking.status to 'cancelled')
-          const cancelResponse = await fetch(`${API_URL}/bookings/${bookingId}/cancel`, {
-            method: 'PUT',
-            headers: {
-              'Authorization': `Bearer ${userToken}`,
-              'Content-Type': 'application/json',
+          const cancelResponse = await fetch(
+            `${API_URL}/bookings/${bookingId}/cancel`,
+            {
+              method: 'PUT',
+              headers: {
+                Authorization: `Bearer ${userToken}`,
+                'Content-Type': 'application/json',
+              },
             },
-          });
+          );
 
           if (cancelResponse.ok) {
             const cancelData = await cancelResponse.json();
-            console.log('Booking cancelled successfully:', bookingId, cancelData);
+            console.log(
+              'Booking cancelled successfully:',
+              bookingId,
+              cancelData,
+            );
           } else {
             console.log('Cancel booking failed:', cancelResponse.status);
           }
@@ -629,7 +683,10 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
 
     // Don't clear cart - user might want to try again
     setAlertTitle(t('paymentCancelled') || 'Payment Cancelled');
-    setAlertMessage(t('paymentCancelledMessage') || 'Payment was cancelled. Your cart items are still saved.');
+    setAlertMessage(
+      t('paymentCancelledMessage') ||
+        'Payment was cancelled. Your cart items are still saved.',
+    );
     setAlertButtons([{ text: t('ok'), style: 'default' }]);
     setAlertVisible(true);
   };
@@ -642,7 +699,7 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
       ) {
         // item.totalPrice already includes quantity (calculated as: (basePrice + options) * quantity)
         // item.price is the base price per unit, so we multiply by quantity
-        const itemTotal = item.totalPrice ?? (item.price * item.quantity);
+        const itemTotal = item.totalPrice ?? item.price * item.quantity;
         return total + itemTotal;
       }
       return total;
@@ -664,7 +721,6 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
     });
     return totalDelivery;
   };
-
 
   const calculateTotalBeforeDiscount = () => {
     return calculateSubTotal() + calculateDeliveryCharges();
@@ -718,7 +774,6 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
         token,
       );
 
-
       if (
         result.valid &&
         result.coupon &&
@@ -728,14 +783,16 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
         setCouponDiscount(result.discountAmount);
         setCouponMessage(
           isRTL
-            ? `تم تطبيق الخصم بنجاح! توفير ${result.coupon.discountType === 'percentage'
-              ? result.coupon.discountValue + '%'
-              : result.coupon.discountValue + ' د.ك'
-            }`
-            : `Coupon applied successfully! Discount ${result.coupon.discountType === 'percentage'
-              ? result.coupon.discountValue + '%'
-              : 'KD ' + result.coupon.discountValue
-            }`,
+            ? `تم تطبيق الخصم بنجاح! توفير ${
+                result.coupon.discountType === 'percentage'
+                  ? result.coupon.discountValue + '%'
+                  : result.coupon.discountValue + ' د.ك'
+              }`
+            : `Coupon applied successfully! Discount ${
+                result.coupon.discountType === 'percentage'
+                  ? result.coupon.discountValue + '%'
+                  : 'KD ' + result.coupon.discountValue
+              }`,
         );
       } else {
         setCouponError(
@@ -743,9 +800,7 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
         );
       }
     } catch (error) {
-      setCouponError(
-        isRTL ? 'خطأ في تطبيق الكوبون' : 'Error applying coupon',
-      );
+      setCouponError(isRTL ? 'خطأ في تطبيق الكوبون' : 'Error applying coupon');
     } finally {
       setIsApplyingCoupon(false);
     }
@@ -759,14 +814,15 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
     setCouponError('');
   };
 
-
-
   // If success screen should be shown
-  if (showSuccessScreen) {
+  if (showSuccessScreen && successReceiptData) {
     return (
-      <OrderSuccess
-        onDone={() => {
+      <PaymentReceiptModal
+        visible={showSuccessScreen}
+        receiptData={successReceiptData}
+        onClose={() => {
           setShowSuccessScreen(false);
+          setSuccessReceiptData(null);
           if (onNavigate) {
             onNavigate('home');
           }
@@ -920,13 +976,13 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
             contentContainerStyle={styles.scrollViewContent}
             showsVerticalScrollIndicator={false}
           >
-            {cartItems.map((item) => {
+            {cartItems.map(item => {
               const now = new Date();
               const isItemOld = item.timeSlot?.start
                 ? new Date(item.timeSlot.start) < now
                 : item.selectedDate &&
-                new Date(item.selectedDate).toDateString() <
-                now.toDateString();
+                  new Date(item.selectedDate).toDateString() <
+                    now.toDateString();
 
               return (
                 <View key={item._id} style={styles.cartCard}>
@@ -972,7 +1028,6 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
                         </Text>
                       )}
 
-
                       {/* Quantity Selector - Only show for unlimited services (maxBookingsPerSlot === -1) */}
                       {item.maxBookingsPerSlot === -1 && (
                         <View
@@ -995,15 +1050,19 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
                             onPress={async () => {
                               if (item.quantity > 1) {
                                 try {
-                                  const updatedCart = await updateCartItemQuantity(
-                                    item._id,
-                                    item.quantity - 1,
-                                  );
+                                  const updatedCart =
+                                    await updateCartItemQuantity(
+                                      item._id,
+                                      item.quantity - 1,
+                                    );
                                   if (updatedCart) {
                                     setCartItems([...updatedCart]);
                                   }
                                 } catch (error) {
-                                  console.error('Error updating quantity:', error);
+                                  console.error(
+                                    'Error updating quantity:',
+                                    error,
+                                  );
                                 }
                               }
                             }}
@@ -1043,15 +1102,19 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
                             }}
                             onPress={async () => {
                               try {
-                                const updatedCart = await updateCartItemQuantity(
-                                  item._id,
-                                  item.quantity + 1,
-                                );
+                                const updatedCart =
+                                  await updateCartItemQuantity(
+                                    item._id,
+                                    item.quantity + 1,
+                                  );
                                 if (updatedCart) {
                                   setCartItems([...updatedCart]);
                                 }
                               } catch (error) {
-                                console.error('Error updating quantity:', error);
+                                console.error(
+                                  'Error updating quantity:',
+                                  error,
+                                );
                               }
                             }}
                             activeOpacity={0.7}
@@ -1088,13 +1151,13 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
                         <Text style={styles.dateTimeText}>
                           {item.selectedDate
                             ? new Date(item.selectedDate).toLocaleDateString(
-                              isRTL ? 'ar-KW' : 'en-US',
-                              {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: 'numeric',
-                              },
-                            )
+                                isRTL ? 'ar-KW' : 'en-US',
+                                {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric',
+                                },
+                              )
                             : '-'}
                         </Text>
                       )}
@@ -1116,13 +1179,13 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
                         <Text style={styles.dateTimeText}>
                           {item.selectedDate
                             ? new Date(item.selectedDate).toLocaleDateString(
-                              isRTL ? 'ar-KW' : 'en-US',
-                              {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: 'numeric',
-                              },
-                            )
+                                isRTL ? 'ar-KW' : 'en-US',
+                                {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric',
+                                },
+                              )
                             : '-'}
                         </Text>
                       )}
@@ -1168,19 +1231,43 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
                       <View style={styles.priceRow}>
                         {isRTL ? (
                           <>
-                            <Text style={[styles.priceValue, { fontSize: 12, color: colors.textSecondary }]}>
+                            <Text
+                              style={[
+                                styles.priceValue,
+                                { fontSize: 12, color: colors.textSecondary },
+                              ]}
+                            >
                               {item.price.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
                             </Text>
-                            <Text style={[styles.priceLabel, { marginLeft: 'auto', fontSize: 12, color: colors.textSecondary }]}>
+                            <Text
+                              style={[
+                                styles.priceLabel,
+                                {
+                                  marginLeft: 'auto',
+                                  fontSize: 12,
+                                  color: colors.textSecondary,
+                                },
+                              ]}
+                            >
                               {isRTL ? 'سعر الوحدة' : 'Unit Price'}
                             </Text>
                           </>
                         ) : (
                           <>
-                            <Text style={[styles.priceLabel, { fontSize: 12, color: colors.textSecondary }]}>
+                            <Text
+                              style={[
+                                styles.priceLabel,
+                                { fontSize: 12, color: colors.textSecondary },
+                              ]}
+                            >
                               {isRTL ? 'سعر الوحدة' : 'Unit Price'}
                             </Text>
-                            <Text style={[styles.priceValue, { fontSize: 12, color: colors.textSecondary }]}>
+                            <Text
+                              style={[
+                                styles.priceValue,
+                                { fontSize: 12, color: colors.textSecondary },
+                              ]}
+                            >
                               {item.price.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
                             </Text>
                           </>
@@ -1191,15 +1278,27 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
                     <View style={styles.priceRow}>
                       {isRTL ? (
                         <>
-                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                          <View
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                            }}
+                          >
                             <Text style={styles.priceValue}>
                               {(
-                                item.totalPrice ?? (item.price * item.quantity)
+                                item.totalPrice ?? item.price * item.quantity
                               ).toFixed(3)}
                               {isRTL ? 'د.ك' : 'KD'}
                             </Text>
-                            {item.availabilityStatus === 'pending_confirmation' && (
-                              <Text style={{ fontSize: 10, color: '#FF9800', marginRight: 6 }}>
+                            {item.availabilityStatus ===
+                              'pending_confirmation' && (
+                              <Text
+                                style={{
+                                  fontSize: 10,
+                                  color: '#FF9800',
+                                  marginRight: 6,
+                                }}
+                              >
                                 ({t('afterConfirmation')})
                               </Text>
                             )}
@@ -1213,15 +1312,27 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
                       ) : (
                         <>
                           <Text style={styles.priceLabel}>{t('amount')}</Text>
-                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                          <View
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                            }}
+                          >
                             <Text style={styles.priceValue}>
                               {(
-                                item.totalPrice ?? (item.price * item.quantity)
+                                item.totalPrice ?? item.price * item.quantity
                               ).toFixed(3)}
                               {isRTL ? 'د.ك' : 'KD'}
                             </Text>
-                            {item.availabilityStatus === 'pending_confirmation' && (
-                              <Text style={{ fontSize: 10, color: '#FF9800', marginLeft: 6 }}>
+                            {item.availabilityStatus ===
+                              'pending_confirmation' && (
+                              <Text
+                                style={{
+                                  fontSize: 10,
+                                  color: '#FF9800',
+                                  marginLeft: 6,
+                                }}
+                              >
                                 ({t('afterConfirmation')})
                               </Text>
                             )}
@@ -1233,7 +1344,7 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
                       {isRTL ? (
                         <>
                           {item.availabilityStatus ===
-                            'pending_confirmation' ? (
+                          'pending_confirmation' ? (
                             <Text
                               style={[
                                 styles.deliveryChargeValue,
@@ -1263,7 +1374,7 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
                             {t('deliveryCharges')}
                           </Text>
                           {item.availabilityStatus ===
-                            'pending_confirmation' ? (
+                          'pending_confirmation' ? (
                             <Text
                               style={[
                                 styles.deliveryChargeValue,
@@ -1332,7 +1443,7 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
               styles.bottomSummary,
               {
                 bottom: (insets.bottom ?? 0) + 8,
-                paddingBottom: (insets.bottom ?? 0) + 20,
+                paddingBottom: (insets.bottom ?? 0) + (isTablet ? 100 : 20),
               },
             ]}
           >
@@ -1385,7 +1496,7 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
                     style={[
                       styles.applyButton,
                       (isApplyingCoupon || !couponCode.trim()) &&
-                      styles.applyButtonDisabled,
+                        styles.applyButtonDisabled,
                     ]}
                     onPress={handleApplyCoupon}
                     disabled={isApplyingCoupon || !couponCode.trim()}
@@ -1409,7 +1520,8 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>{t('subTotal')}</Text>
               <Text style={styles.summaryValue}>
-                {calculateSubTotal().toFixed(3)}{isRTL ? 'د.ك' : 'KD'}
+                {calculateSubTotal().toFixed(3)}
+                {isRTL ? 'د.ك' : 'KD'}
               </Text>
             </View>
 
@@ -1440,8 +1552,6 @@ const Cart: React.FC<CartProps> = ({ onViewDetails, onViewPackageDetails, onNavi
                 {isRTL ? ' د.ك ' : 'KD'}{' '}
               </Text>
             </View>
-
-
 
             {/* Action Buttons */}
             <TouchableOpacity

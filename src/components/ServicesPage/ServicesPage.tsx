@@ -133,8 +133,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
         });
 
         setServiceRatings(ratingsData);
-      } catch (error) {
-      }
+      } catch (error) {}
     };
 
     loadRatings();
@@ -178,8 +177,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
           rating: averageRating,
           totalReviews: totalReviewsCount,
         });
-      } catch (error) {
-      }
+      } catch (error) {}
     };
 
     fetchAllReviews();
@@ -489,7 +487,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
               >
                 {Math.round(
                   ((item.totalPrice - item.discountPrice) / item.totalPrice) *
-                  100,
+                    100,
                 )}
                 % OFF
               </Text>
@@ -600,8 +598,8 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
           <VendorHeader
             vendor={vendor}
             occasions={vendorOccasions}
-            onFilterPress={() => { }}
-            onSortPress={() => { }}
+            onFilterPress={() => {}}
+            onSortPress={() => {}}
             overrideRating={vendorRating.rating}
             overrideTotalReviews={vendorRating.totalReviews}
           />
@@ -789,7 +787,14 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
                   }}
                 >
                   {packages.map(pkg => (
-                    <View key={pkg._id} style={{ width: '50%', paddingHorizontal: 4, paddingVertical: 8 }}>
+                    <View
+                      key={pkg._id}
+                      style={{
+                        width: '50%',
+                        paddingHorizontal: 4,
+                        paddingVertical: 8,
+                      }}
+                    >
                       {renderPackageCard({ item: pkg })}
                     </View>
                   ))}
@@ -806,8 +811,8 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
                   ? 'لا توجد خدمات أو باقات لهذا المورد'
                   : 'No services or packages for this vendor'
                 : isRTL
-                  ? 'لا توجد خدمات متاحة'
-                  : 'No services available'}
+                ? 'لا توجد خدمات متاحة'
+                : 'No services available'}
             </Text>
           </View>
         }

@@ -4,6 +4,15 @@ import { colors } from '../constants/colors';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const isTablet = SCREEN_WIDTH >= 600;
 
+const getCardSize = () => {
+  if (SCREEN_WIDTH >= 1024) return Math.min((SCREEN_WIDTH - 160) / 6, 160);
+  if (SCREEN_WIDTH >= 768) return Math.min((SCREEN_WIDTH - 140) / 5, 160);
+  if (isTablet) return Math.min((SCREEN_WIDTH - 120) / 4, 160);
+  return (SCREEN_WIDTH - 48) / 3.3;
+};
+
+const cardSize = getCardSize();
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -55,13 +64,13 @@ const styles = StyleSheet.create({
     paddingRight: isTablet ? 30 : 16,
   },
   occasionCard: {
-    width: isTablet ? (SCREEN_WIDTH - 120) / 4 : (SCREEN_WIDTH - 48) / 3.3,
+    width: cardSize,
     alignItems: 'center',
     marginRight: isTablet ? 20 : 12,
   },
   iconContainer: {
-    width: isTablet ? (SCREEN_WIDTH - 120) / 4 : (SCREEN_WIDTH - 48) / 3.3,
-    height: isTablet ? (SCREEN_WIDTH - 120) / 4 : (SCREEN_WIDTH - 48) / 3.3,
+    width: cardSize,
+    height: cardSize,
     backgroundColor: colors.primary,
     borderRadius: isTablet ? 24 : 16,
     alignItems: 'center',

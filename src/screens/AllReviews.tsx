@@ -60,8 +60,6 @@ const AllReviews: React.FC<AllReviewsProps> = ({
     getUserId();
   }, []);
 
-
-
   const handleDeleteReview = (review: Review) => {
     setAlertConfig({
       visible: true,
@@ -81,22 +79,28 @@ const AllReviews: React.FC<AllReviewsProps> = ({
               setAlertConfig({
                 visible: true,
                 title: isRTL ? 'تم الحذف' : 'Deleted',
-                message: isRTL ? 'تم حذف تقييمك بنجاح' : 'Your review has been deleted successfully',
-                buttons: [{
-                  text: isRTL ? 'حسناً' : 'OK',
-                  style: 'default',
-                  onPress: () => {
-                    if (onReviewDeleted) {
-                      onReviewDeleted();
-                    }
-                  }
-                }],
+                message: isRTL
+                  ? 'تم حذف تقييمك بنجاح'
+                  : 'Your review has been deleted successfully',
+                buttons: [
+                  {
+                    text: isRTL ? 'حسناً' : 'OK',
+                    style: 'default',
+                    onPress: () => {
+                      if (onReviewDeleted) {
+                        onReviewDeleted();
+                      }
+                    },
+                  },
+                ],
               });
             } catch (error: any) {
               setAlertConfig({
                 visible: true,
                 title: isRTL ? 'خطأ' : 'Error',
-                message: error.message || (isRTL ? 'فشل حذف التقييم' : 'Failed to delete review'),
+                message:
+                  error.message ||
+                  (isRTL ? 'فشل حذف التقييم' : 'Failed to delete review'),
                 buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
               });
             } finally {
@@ -162,7 +166,7 @@ const AllReviews: React.FC<AllReviewsProps> = ({
             {[5, 4, 3, 2, 1].map(star => {
               const count =
                 reviewStats.ratingDistribution[
-                star as keyof typeof reviewStats.ratingDistribution
+                  star as keyof typeof reviewStats.ratingDistribution
                 ] || 0;
               const percentage =
                 reviewStats.totalRatings > 0
@@ -194,7 +198,7 @@ const AllReviews: React.FC<AllReviewsProps> = ({
               <View style={styles.reviewHeader}>
                 <View style={styles.reviewUserSection}>
                   {review.user.profilePicture &&
-                    !imageErrors.has(review._id) ? (
+                  !imageErrors.has(review._id) ? (
                     <Image
                       source={{ uri: getImageUrl(review.user.profilePicture) }}
                       style={styles.avatar}
@@ -240,8 +244,20 @@ const AllReviews: React.FC<AllReviewsProps> = ({
               </View>
 
               {/* Comment with Delete Button in same row */}
-              <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                <Text style={[styles.comment, isRTL && styles.commentRTL, { flex: 1 }]}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <Text
+                  style={[
+                    styles.comment,
+                    isRTL && styles.commentRTL,
+                    { flex: 1 },
+                  ]}
+                >
                   {review.comment}
                 </Text>
 
@@ -255,7 +271,12 @@ const AllReviews: React.FC<AllReviewsProps> = ({
                     {isDeleting ? (
                       <ActivityIndicator size="small" color="#e57373" />
                     ) : (
-                      <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                      <Svg
+                        width={16}
+                        height={16}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                      >
                         <Path
                           d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"
                           stroke="#e57373"
@@ -301,8 +322,6 @@ const AllReviews: React.FC<AllReviewsProps> = ({
     </SafeAreaView>
   );
 };
-
-
 
 const styles = StyleSheet.create({
   container: {

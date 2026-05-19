@@ -19,7 +19,7 @@ export const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 24,
-    fontWeight: '700'
+    fontWeight: '700',
   },
   // Prominent Add button - now matches back button color
   addButton: {
@@ -185,7 +185,7 @@ export const styles = StyleSheet.create({
   actionButtonText: {
     color: colors.textWhite,
     fontWeight: '600',
-    fontSize: 13
+    fontSize: 13,
   },
   deleteButton: {
     padding: 8,
@@ -197,7 +197,7 @@ export const styles = StyleSheet.create({
     height: 34,
   },
   deleteButtonText: {
-    color: colors.error
+    color: colors.error,
   },
   defaultBadge: {
     paddingHorizontal: 14,
@@ -210,7 +210,7 @@ export const styles = StyleSheet.create({
   defaultBadgeText: {
     color: colors.success || '#10B981',
     fontSize: 12,
-    fontWeight: '600'
+    fontWeight: '600',
   },
   setDefaultLink: {
     paddingHorizontal: 14,
@@ -223,7 +223,7 @@ export const styles = StyleSheet.create({
   setDefaultLinkText: {
     color: colors.primary,
     fontWeight: '600',
-    fontSize: 12
+    fontSize: 12,
   },
   headerLeftRow: { flexDirection: 'row', alignItems: 'center' },
   // Bigger back icon/button with colored background
@@ -239,9 +239,90 @@ export const styles = StyleSheet.create({
   },
   backButtonTextInline: {
     color: colors.textWhite,
-    fontSize: 22,
+    fontSize: 28,
     fontWeight: '700',
-    lineHeight: 22,
+    lineHeight: 28,
+    textAlign: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: colors.overlay,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    width: '90%',
+    maxWidth: 400,
+    shadowColor: colors.shadow,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.textWhite,
+  },
+  modalBody: {
+    padding: 20,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 15,
+    color: colors.textDark,
+    backgroundColor: colors.backgroundLight,
+    marginBottom: 12,
+  },
+  modalButtonsRow: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    padding: 16,
+    gap: 12,
+  },
+  modalSecondaryButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F5F5F5',
+    borderWidth: 1.5,
+    borderColor: colors.borderMedium,
+  },
+  modalSecondaryButtonText: {
+    color: colors.textDark,
+    fontWeight: '600',
+  },
+  modalPrimaryButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+  },
+  modalPrimaryButtonText: {
+    color: colors.textWhite,
+    fontWeight: '700',
   },
 });
 

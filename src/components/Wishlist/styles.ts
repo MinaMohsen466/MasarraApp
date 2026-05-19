@@ -7,10 +7,15 @@ export const createStyles = (screenWidth: number) => {
   const horizontalPadding = 12;
   const gap = 10;
   const totalGap = (numColumns - 1) * gap;
-  const cardWidth = (screenWidth - (horizontalPadding * 2) - totalGap) / numColumns;
+  const cardWidth =
+    (screenWidth - horizontalPadding * 2 - totalGap) / numColumns;
 
   return StyleSheet.create({
-    container: { flex: 1, padding: horizontalPadding, backgroundColor: colors.background },
+    container: {
+      flex: 1,
+      padding: horizontalPadding,
+      backgroundColor: colors.background,
+    },
     list: { flex: 1 },
     listContent: { paddingBottom: 96 },
     row: {
@@ -47,7 +52,7 @@ export const createStyles = (screenWidth: number) => {
     },
     backIcon: {
       color: colors.textWhite,
-      fontSize: 28,
+      fontSize: 32,
       lineHeight: 20,
       fontWeight: '700',
     },

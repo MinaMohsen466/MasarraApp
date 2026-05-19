@@ -32,7 +32,7 @@ export const orderHistoryStyles = StyleSheet.create({
     alignItems: 'center',
   },
   backButtonText: {
-    fontSize: 32,
+    fontSize: 37,
     lineHeight: 32,
     color: colors.textWhite,
     fontWeight: '700',

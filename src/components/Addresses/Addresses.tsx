@@ -11,6 +11,7 @@ import {
   Platform,
   Keyboard,
   TouchableWithoutFeedback,
+  Modal,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { styles } from './styles';
@@ -142,7 +143,12 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
   // Render empty-state similar to screenshot when no addresses
   if (loading) {
     return (
-      <View style={[styles.addressesContainer, { justifyContent: 'center', alignItems: 'center' }]}>
+      <View
+        style={[
+          styles.addressesContainer,
+          { justifyContent: 'center', alignItems: 'center' },
+        ]}
+      >
         <ActivityIndicator size="large" color="#00897B" />
       </View>
     );
@@ -175,7 +181,17 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
                 </View>
                 <TouchableOpacity
                   style={styles.addButton}
-                  onPress={() => setShowForm(true)}
+                  onPress={() => {
+                    setForm({
+                      name: '',
+                      street: '',
+                      houseNumber: '',
+                      floorNumber: '',
+                      city: '',
+                    });
+                    setEditingId(null);
+                    setShowForm(true);
+                  }}
                 >
                   <Text style={styles.addButtonText}>
                     {isRTL ? '+ إضافة عنوان' : '+ Add Address'}
@@ -220,63 +236,100 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
                   </Text>
                 </TouchableOpacity>
               </View>
-
-              {showForm && (
-                <View style={styles.formContainer}>
-                  <TextInput
-                    placeholder={isRTL ? 'الاسم' : 'Name'}
-                    value={form.name}
-                    onChangeText={t => setForm(s => ({ ...s, name: t }))}
-                    style={styles.input}
-                  />
-                  <TextInput
-                    placeholder={isRTL ? 'الشارع' : 'Street'}
-                    value={form.street}
-                    onChangeText={t => setForm(s => ({ ...s, street: t }))}
-                    style={styles.input}
-                  />
-                  <TextInput
-                    placeholder={isRTL ? 'رقم المنزل' : 'House Number'}
-                    value={form.houseNumber}
-                    onChangeText={t => setForm(s => ({ ...s, houseNumber: t }))}
-                    style={styles.input}
-                  />
-                  <TextInput
-                    placeholder={isRTL ? 'رقم الطابق' : 'Floor Number'}
-                    value={form.floorNumber}
-                    onChangeText={t => setForm(s => ({ ...s, floorNumber: t }))}
-                    style={styles.input}
-                  />
-                  <TextInput
-                    placeholder={isRTL ? 'المدينة' : 'City'}
-                    value={form.city}
-                    onChangeText={t => setForm(s => ({ ...s, city: t }))}
-                    style={styles.input}
-                  />
-
-                  <View style={styles.formButtonsRow}>
-                    <TouchableOpacity
-                      style={styles.secondaryButton}
-                      onPress={() => setShowForm(false)}
-                    >
-                      <Text style={styles.secondaryButtonText}>
-                        {isRTL ? 'إلغاء' : 'Cancel'}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.primaryButtonSmall}
-                      onPress={handleSubmit}
-                    >
-                      <Text style={styles.primaryButtonTextSmall}>
-                        {isRTL ? 'إضافة عنوان' : 'Add Address'}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              )}
             </View>
           </ScrollView>
         </TouchableWithoutFeedback>
+
+        {/* Form Modal */}
+        <Modal
+          visible={showForm}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => {
+            setShowForm(false);
+            setEditingId(null);
+          }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>
+                  {isRTL
+                    ? editingId
+                      ? 'تعديل العنوان'
+                      : 'إضافة عنوان جديد'
+                    : editingId
+                    ? 'Edit Address'
+                    : 'Add New Address'}
+                </Text>
+              </View>
+              <View style={styles.modalBody}>
+                <TextInput
+                  placeholder={isRTL ? 'الاسم (مثل: المنزل، العمل)' : 'Name (e.g. Home, Work)'}
+                  value={form.name}
+                  onChangeText={t => setForm(s => ({ ...s, name: t }))}
+                  style={styles.modalInput}
+                  placeholderTextColor="#999"
+                />
+                <TextInput
+                  placeholder={isRTL ? 'الشارع' : 'Street'}
+                  value={form.street}
+                  onChangeText={t => setForm(s => ({ ...s, street: t }))}
+                  style={styles.modalInput}
+                  placeholderTextColor="#999"
+                />
+                <TextInput
+                  placeholder={isRTL ? 'رقم المنزل' : 'House Number'}
+                  value={form.houseNumber}
+                  onChangeText={t => setForm(s => ({ ...s, houseNumber: t }))}
+                  style={styles.modalInput}
+                  placeholderTextColor="#999"
+                />
+                <TextInput
+                  placeholder={isRTL ? 'رقم الطابق' : 'Floor Number'}
+                  value={form.floorNumber}
+                  onChangeText={t => setForm(s => ({ ...s, floorNumber: t }))}
+                  style={styles.modalInput}
+                  placeholderTextColor="#999"
+                />
+                <TextInput
+                  placeholder={isRTL ? 'المدينة' : 'City'}
+                  value={form.city}
+                  onChangeText={t => setForm(s => ({ ...s, city: t }))}
+                  style={styles.modalInput}
+                  placeholderTextColor="#999"
+                />
+              </View>
+              <View style={styles.modalButtonsRow}>
+                <TouchableOpacity
+                  style={styles.modalSecondaryButton}
+                  onPress={() => {
+                    setShowForm(false);
+                    setEditingId(null);
+                  }}
+                >
+                  <Text style={styles.modalSecondaryButtonText}>
+                    {isRTL ? 'إلغاء' : 'Cancel'}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.modalPrimaryButton}
+                  onPress={handleSubmit}
+                >
+                  <Text style={styles.modalPrimaryButtonText}>
+                    {isRTL
+                      ? editingId
+                        ? 'حفظ التعديلات'
+                        : 'إضافة'
+                      : editingId
+                      ? 'Save'
+                      : 'Add'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </KeyboardAvoidingView>
     );
   }
@@ -325,69 +378,18 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
               </TouchableOpacity>
             </View>
 
-            {/* FORM AT TOP */}
-            {showForm && (
-              <View style={styles.formContainer}>
-                <TextInput
-                  placeholder={isRTL ? 'الاسم' : 'Name'}
-                  value={form.name}
-                  onChangeText={t => setForm(s => ({ ...s, name: t }))}
-                  style={styles.input}
-                />
-                <TextInput
-                  placeholder={isRTL ? 'الشارع' : 'Street'}
-                  value={form.street}
-                  onChangeText={t => setForm(s => ({ ...s, street: t }))}
-                  style={styles.input}
-                />
-                <TextInput
-                  placeholder={isRTL ? 'رقم المنزل' : 'House Number'}
-                  value={form.houseNumber}
-                  onChangeText={t => setForm(s => ({ ...s, houseNumber: t }))}
-                  style={styles.input}
-                />
-                <TextInput
-                  placeholder={isRTL ? 'رقم الطابق' : 'Floor Number'}
-                  value={form.floorNumber}
-                  onChangeText={t => setForm(s => ({ ...s, floorNumber: t }))}
-                  style={styles.input}
-                />
-                <TextInput
-                  placeholder={isRTL ? 'المدينة' : 'City'}
-                  value={form.city}
-                  onChangeText={t => setForm(s => ({ ...s, city: t }))}
-                  style={styles.input}
-                />
-
-                <View style={styles.formButtonsRow}>
-                  <TouchableOpacity
-                    style={styles.secondaryButton}
-                    onPress={() => setShowForm(false)}
-                  >
-                    <Text style={styles.secondaryButtonText}>
-                      {isRTL ? 'إلغاء' : 'Cancel'}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.primaryButtonSmall}
-                    onPress={handleSubmit}
-                  >
-                    <Text style={styles.primaryButtonTextSmall}>
-                      {isRTL ? 'إضافة عنوان' : 'Add Address'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
-
-            {/* ADDRESSES LIST BELOW FORM */}
             {addresses.map(addr => (
               <View key={addr._id} style={styles.addressCard}>
                 <View style={styles.addressCardInner}>
                   <View style={styles.addressCardHeader}>
                     {/* Location Icon */}
                     <View style={styles.addressIconContainer}>
-                      <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+                      <Svg
+                        width={22}
+                        height={22}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                      >
                         <Path
                           d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
                           fill="#00897B"
@@ -404,7 +406,12 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
 
                   <View style={styles.addressDetailsContainer}>
                     <View style={styles.addressLineWithIcon}>
-                      <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+                      <Svg
+                        width={14}
+                        height={14}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                      >
                         <Path
                           d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
                           stroke="#9E9E9E"
@@ -418,7 +425,12 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
                       </Text>
                     </View>
                     <View style={styles.addressLineWithIcon}>
-                      <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+                      <Svg
+                        width={14}
+                        height={14}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                      >
                         <Path
                           d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1118 0z"
                           stroke="#9E9E9E"
@@ -488,6 +500,97 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
           </View>
         </ScrollView>
       </TouchableWithoutFeedback>
+
+      {/* Form Modal */}
+      <Modal
+        visible={showForm}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => {
+          setShowForm(false);
+          setEditingId(null);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {isRTL
+                  ? editingId
+                    ? 'تعديل العنوان'
+                    : 'إضافة عنوان جديد'
+                  : editingId
+                  ? 'Edit Address'
+                  : 'Add New Address'}
+              </Text>
+            </View>
+            <View style={styles.modalBody}>
+              <TextInput
+                placeholder={isRTL ? 'الاسم (مثل: المنزل، العمل)' : 'Name (e.g. Home, Work)'}
+                value={form.name}
+                onChangeText={t => setForm(s => ({ ...s, name: t }))}
+                style={styles.modalInput}
+                placeholderTextColor="#999"
+              />
+              <TextInput
+                placeholder={isRTL ? 'الشارع' : 'Street'}
+                value={form.street}
+                onChangeText={t => setForm(s => ({ ...s, street: t }))}
+                style={styles.modalInput}
+                placeholderTextColor="#999"
+              />
+              <TextInput
+                placeholder={isRTL ? 'رقم المنزل' : 'House Number'}
+                value={form.houseNumber}
+                onChangeText={t => setForm(s => ({ ...s, houseNumber: t }))}
+                style={styles.modalInput}
+                placeholderTextColor="#999"
+              />
+              <TextInput
+                placeholder={isRTL ? 'رقم الطابق' : 'Floor Number'}
+                value={form.floorNumber}
+                onChangeText={t => setForm(s => ({ ...s, floorNumber: t }))}
+                style={styles.modalInput}
+                placeholderTextColor="#999"
+              />
+              <TextInput
+                placeholder={isRTL ? 'المدينة' : 'City'}
+                value={form.city}
+                onChangeText={t => setForm(s => ({ ...s, city: t }))}
+                style={styles.modalInput}
+                placeholderTextColor="#999"
+              />
+            </View>
+            <View style={styles.modalButtonsRow}>
+              <TouchableOpacity
+                style={styles.modalSecondaryButton}
+                onPress={() => {
+                  setShowForm(false);
+                  setEditingId(null);
+                }}
+              >
+                <Text style={styles.modalSecondaryButtonText}>
+                  {isRTL ? 'إلغاء' : 'Cancel'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalPrimaryButton}
+                onPress={handleSubmit}
+              >
+                <Text style={styles.modalPrimaryButtonText}>
+                  {isRTL
+                    ? editingId
+                      ? 'حفظ التعديلات'
+                      : 'إضافة'
+                    : editingId
+                    ? 'Save'
+                    : 'Add'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <CustomAlert
         visible={showDeleteAlert}

@@ -25,7 +25,11 @@ interface ContactProps {
   onHideChat?: () => void;
 }
 
-const Contact: React.FC<ContactProps> = ({ onBack, onShowChat, onHideChat }) => {
+const Contact: React.FC<ContactProps> = ({
+  onBack,
+  onShowChat,
+  onHideChat,
+}) => {
   const { isRTL } = useLanguage();
   const insets = useSafeAreaInsets();
   const { user, token, isLoggedIn } = useAuth();
@@ -63,7 +67,9 @@ const Contact: React.FC<ContactProps> = ({ onBack, onShowChat, onHideChat }) => 
   ) => {
     setAlertTitle(title);
     setAlertMessage(msg);
-    setAlertButtons(buttons || [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }]);
+    setAlertButtons(
+      buttons || [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
+    );
     setAlertVisible(true);
   };
 
@@ -151,7 +157,7 @@ const Contact: React.FC<ContactProps> = ({ onBack, onShowChat, onHideChat }) => 
       showAlert(
         isRTL ? 'خطأ' : 'Error',
         error.message ||
-        (isRTL ? 'فشل في إرسال الرسالة' : 'Failed to send message'),
+          (isRTL ? 'فشل في إرسال الرسالة' : 'Failed to send message'),
       );
     } finally {
       setIsSubmitting(false);
@@ -449,11 +455,23 @@ const Contact: React.FC<ContactProps> = ({ onBack, onShowChat, onHideChat }) => 
 
       {/* Chat Modal - Full screen overlay covering bottom nav */}
       {showChat && (
-        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000, backgroundColor: '#fff' }}>
-          <Chat onBack={() => {
-            setShowChat(false);
-            onHideChat?.();
-          }} />
+        <View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 1000,
+            backgroundColor: '#fff',
+          }}
+        >
+          <Chat
+            onBack={() => {
+              setShowChat(false);
+              onHideChat?.();
+            }}
+          />
         </View>
       )}
     </>

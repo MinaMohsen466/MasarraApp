@@ -109,7 +109,10 @@ export const executePayment = async (
       throw new Error('Authentication required');
     }
 
-    console.log('Executing payment with data:', JSON.stringify(paymentData, null, 2));
+    console.log(
+      'Executing payment with data:',
+      JSON.stringify(paymentData, null, 2),
+    );
 
     const response = await fetch(`${API_URL}/payment/execute`, {
       method: 'POST',
@@ -187,7 +190,10 @@ export const sendPayment = async (
       throw new Error('Authentication required');
     }
 
-    console.log('Initiating payment session for booking:', paymentData.bookingId);
+    console.log(
+      'Initiating payment session for booking:',
+      paymentData.bookingId,
+    );
 
     // Use initiate-session endpoint which uses email (no mobile required)
     const response = await fetch(`${API_URL}/payment/initiate-session`, {
@@ -229,7 +235,11 @@ export const sendPayment = async (
     const isTestMode = true;
 
     // Create HTML content for embedded payment
-    const htmlContent = createEmbeddedPaymentHTML(sessionId, language, isTestMode);
+    const htmlContent = createEmbeddedPaymentHTML(
+      sessionId,
+      language,
+      isTestMode,
+    );
 
     return {
       success: true,
@@ -252,14 +262,22 @@ export const sendPayment = async (
 /**
  * Create HTML content for embedded MyFatoorah payment
  */
-function createEmbeddedPaymentHTML(sessionId: string, language: string, isTestMode: boolean): string {
+function createEmbeddedPaymentHTML(
+  sessionId: string,
+  language: string,
+  isTestMode: boolean,
+): string {
   const scriptSrc = isTestMode
     ? 'https://demo.myfatoorah.com/sessions/v1/session.js'
     : 'https://portal.myfatoorah.com/sessions/v1/session.js';
   const dir = language === 'ar' ? 'rtl' : 'ltr';
   const headerText = language === 'ar' ? 'الدفع الآمن' : 'Secure Payment';
-  const loadingText = language === 'ar' ? 'جاري تحميل خيارات الدفع...' : 'Loading payment options...';
-  const errorText = language === 'ar' ? 'فشل تحميل صفحة الدفع' : 'Failed to load payment page';
+  const loadingText =
+    language === 'ar'
+      ? 'جاري تحميل خيارات الدفع...'
+      : 'Loading payment options...';
+  const errorText =
+    language === 'ar' ? 'فشل تحميل صفحة الدفع' : 'Failed to load payment page';
 
   return `<!DOCTYPE html>
 <html lang="${language}" dir="${dir}">
@@ -454,7 +472,9 @@ export const getActiveSuppliers = async (): Promise<{
     // Check if response is JSON before parsing
     const contentType = response.headers.get('content-type');
     if (!contentType || !contentType.includes('application/json')) {
-      console.warn('Suppliers API returned non-JSON response, returning empty array');
+      console.warn(
+        'Suppliers API returned non-JSON response, returning empty array',
+      );
       return { success: true, data: [] };
     }
 
@@ -520,7 +540,7 @@ export const calculateSupplierShares = (
     if (supplier) {
       // Calculate total for this vendor's items
       const vendorTotal = vendorItems.reduce((sum, item) => {
-        return sum + ((item.totalPrice ?? item.price) * item.quantity);
+        return sum + (item.totalPrice ?? item.price) * item.quantity;
       }, 0);
 
       // Calculate commission
@@ -543,9 +563,7 @@ export const calculateSupplierShares = (
 /**
  * Check if cart has multiple vendors
  */
-export const isMultiVendorCart = (
-  cartItems: CartItemForPayment[],
-): boolean => {
+export const isMultiVendorCart = (cartItems: CartItemForPayment[]): boolean => {
   const vendorIds = new Set(cartItems.map(item => item.vendorId));
   return vendorIds.size > 1;
 };

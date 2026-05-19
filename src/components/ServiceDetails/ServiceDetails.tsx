@@ -67,7 +67,9 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
   const flatListRef = useRef<FlatList>(null);
 
   // Date/Time picker state - initialize with global date if available
-  const [selectedDate, setSelectedDate] = useState<Date | null>(globalSelectedDate || null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(
+    globalSelectedDate || null,
+  );
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -172,10 +174,10 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
           const cartPosition = isRTL ? 0 : cartIconIndex;
 
           // Calculate X position: center of the nav item
-          const targetX = (cartPosition * navItemWidth) + (navItemWidth / 2);
+          const targetX = cartPosition * navItemWidth + navItemWidth / 2;
 
           // Calculate Y position: icon center should be in middle of tab bar
-          const targetY = screenHeight - (totalTabBarHeight / 2) - 5;
+          const targetY = screenHeight - totalTabBarHeight / 2 - 5;
 
           // Calculate icon size (60x60)
           const iconSize = 60;
@@ -289,14 +291,18 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
               setAlertConfig({
                 visible: true,
                 title: isRTL ? 'تم الحذف' : 'Deleted',
-                message: isRTL ? 'تم حذف تقييمك بنجاح' : 'Your review has been deleted successfully',
+                message: isRTL
+                  ? 'تم حذف تقييمك بنجاح'
+                  : 'Your review has been deleted successfully',
                 buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
               });
             } catch (error: any) {
               setAlertConfig({
                 visible: true,
                 title: isRTL ? 'خطأ' : 'Error',
-                message: error.message || (isRTL ? 'فشل حذف التقييم' : 'Failed to delete review'),
+                message:
+                  error.message ||
+                  (isRTL ? 'فشل حذف التقييم' : 'Failed to delete review'),
                 buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
               });
             } finally {
@@ -309,7 +315,6 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
   };
 
   const service = (services as any)?.find((s: any) => s._id === serviceId);
-
 
   // Debug: Log service discount info
   React.useEffect(() => {
@@ -617,7 +622,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                 Alert.alert(
                   isRTL ? 'خطأ' : 'Error',
                   error.message ||
-                  (isRTL ? 'فشلت المشاركة' : 'Failed to share'),
+                    (isRTL ? 'فشلت المشاركة' : 'Failed to share'),
                 );
               }
             }}
@@ -720,11 +725,11 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
               </Text>
 
               {service.isOnSale === true &&
-                ((service.salePrice &&
-                  service.salePrice > 0 &&
-                  service.salePrice < service.price) ||
-                  (service.discountPercentage &&
-                    service.discountPercentage > 0)) ? (
+              ((service.salePrice &&
+                service.salePrice > 0 &&
+                service.salePrice < service.price) ||
+                (service.discountPercentage &&
+                  service.discountPercentage > 0)) ? (
                 <View style={{ gap: 4 }}>
                   {/* Sale Price */}
                   <Text style={styles.priceValue}>
@@ -732,11 +737,11 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                       // Priority: use salePrice if available, otherwise calculate from discountPercentage
                       const finalPrice =
                         service.salePrice &&
-                          service.salePrice > 0 &&
-                          service.salePrice < service.price
+                        service.salePrice > 0 &&
+                        service.salePrice < service.price
                           ? service.salePrice
                           : service.price *
-                          (1 - (service.discountPercentage || 0) / 100);
+                            (1 - (service.discountPercentage || 0) / 100);
                       return `${finalPrice.toFixed(3)} ${isRTL ? 'د.ك' : 'KD'}`;
                     })()}{' '}
                     <Text style={styles.priceUnit}>
@@ -921,12 +926,12 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                 >
                   {selectedDate
                     ? selectedDate.toLocaleDateString(
-                      isRTL ? 'ar-KW' : 'en-US',
-                      { year: 'numeric', month: '2-digit', day: '2-digit' },
-                    )
+                        isRTL ? 'ar-KW' : 'en-US',
+                        { year: 'numeric', month: '2-digit', day: '2-digit' },
+                      )
                     : isRTL
-                      ? 'اختر التاريخ'
-                      : 'Select Date'}
+                    ? 'اختر التاريخ'
+                    : 'Select Date'}
                 </Text>
               </TouchableOpacity>
 
@@ -993,20 +998,20 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                       ? 'جاري التحقق...'
                       : 'Checking...'
                     : isTimeInPast()
-                      ? isRTL
-                        ? '⚠ وقت قديم'
-                        : '⚠ Past Time'
-                      : !isTimeSlotAvailable && selectedDate && selectedTime
-                        ? isRTL
-                          ? '✗ غير متاح'
-                          : '✗ Not Available'
-                        : selectedDate && selectedTime
-                          ? isRTL
-                            ? '✓ متاح'
-                            : '✓ Available'
-                          : isRTL
-                            ? 'اختر التاريخ والوقت'
-                            : 'Select Date & Time'}
+                    ? isRTL
+                      ? '⚠ وقت قديم'
+                      : '⚠ Past Time'
+                    : !isTimeSlotAvailable && selectedDate && selectedTime
+                    ? isRTL
+                      ? '✗ غير متاح'
+                      : '✗ Not Available'
+                    : selectedDate && selectedTime
+                    ? isRTL
+                      ? '✓ متاح'
+                      : '✓ Available'
+                    : isRTL
+                    ? 'اختر التاريخ والوقت'
+                    : 'Select Date & Time'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -1154,8 +1159,8 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                       const currentArray = selectedArray;
                                       const newArray = isSelected
                                         ? currentArray.filter(
-                                          idx => idx !== optIndex,
-                                        )
+                                            idx => idx !== optIndex,
+                                          )
                                         : [...currentArray, optIndex];
 
                                       if (newArray.length === 0) {
@@ -1269,7 +1274,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                   {[5, 4, 3, 2, 1].map(star => {
                     const count =
                       reviewStats.ratingDistribution[
-                      star as keyof typeof reviewStats.ratingDistribution
+                        star as keyof typeof reviewStats.ratingDistribution
                       ] || 0;
                     const percentage =
                       reviewStats.totalRatings > 0
@@ -1367,7 +1372,13 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                       </View>
 
                       {/* Comment with Delete Button in same row */}
-                      <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'flex-start',
+                          justifyContent: 'space-between',
+                        }}
+                      >
                         <Text
                           style={[
                             styles.reviewComment,
@@ -1394,7 +1405,12 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                             {isDeletingReview ? (
                               <ActivityIndicator size="small" color="#e57373" />
                             ) : (
-                              <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                              <Svg
+                                width={16}
+                                height={16}
+                                viewBox="0 0 24 24"
+                                fill="none"
+                              >
                                 <Path
                                   d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"
                                   stroke="#e57373"
@@ -1523,7 +1539,6 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
               });
               return;
             }
-
 
             // Validate required selections
             if (!selectedDate || !selectedTime) {
@@ -1655,8 +1670,8 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                     const selectedIndices = isMultiple
                       ? (selectedValue as number[]) || []
                       : selectedValue !== undefined
-                        ? [selectedValue as number]
-                        : [];
+                      ? [selectedValue as number]
+                      : [];
 
                     if (selectedIndices.length > 0) {
                       const selectedOptions = selectedIndices.map(
@@ -1737,7 +1752,6 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                 deliveryFee: service.deliveryFee || 0, // Pass delivery fee from service
               };
 
-
               // Add to local storage cart
               await addToCart(cartItem);
 
@@ -1804,12 +1818,12 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                 ? 'جاري التحقق...'
                 : 'CHECKING...'
               : isAddingToCart
-                ? isRTL
-                  ? 'جاري الإضافة...'
-                  : 'ADDING...'
-                : isRTL
-                  ? 'أضف إلى السلة'
-                  : 'ADD TO CART'}
+              ? isRTL
+                ? 'جاري الإضافة...'
+                : 'ADDING...'
+              : isRTL
+              ? 'أضف إلى السلة'
+              : 'ADD TO CART'}
           </Text>
         </TouchableOpacity>
 

@@ -35,8 +35,8 @@ export const styles = StyleSheet.create({
     marginRight: 8,
   },
   backButtonText: {
-    fontSize: 32,
-    lineHeight: 32,
+    fontSize: 37,
+    lineHeight: 28,
     color: colors.textWhite,
     fontWeight: '700',
     textAlign: 'center',
@@ -407,7 +407,6 @@ export const styles = StyleSheet.create({
   },
   deleteAccountButton: {
     backgroundColor: colors.error,
-
   },
   deleteAccountTitle: {
     color: colors.error,

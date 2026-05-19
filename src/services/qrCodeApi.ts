@@ -142,8 +142,7 @@ export const getQRCodeSettings = async (
           };
         }
       }
-    } catch (publicError) {
-    }
+    } catch (publicError) {}
     // Return null if we couldn't get settings - this will prevent false positives
     return null;
   } catch (error) {

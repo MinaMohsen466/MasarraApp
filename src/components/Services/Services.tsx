@@ -67,8 +67,7 @@ const Services: React.FC<ServicesProps> = ({ onSelectService, onViewAll }) => {
         });
 
         setServiceRatings(ratingsData);
-      } catch (error) {
-      }
+      } catch (error) {}
     };
 
     loadRatings();

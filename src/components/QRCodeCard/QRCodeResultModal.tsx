@@ -43,7 +43,11 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
     visible: boolean;
     title: string;
     message: string;
-    buttons: Array<{ text: string; style?: 'default' | 'cancel' | 'destructive'; onPress?: () => void }>;
+    buttons: Array<{
+      text: string;
+      style?: 'default' | 'cancel' | 'destructive';
+      onPress?: () => void;
+    }>;
   }>({ visible: false, title: '', message: '', buttons: [] });
   const maxCardWidth = Math.min(420, Math.floor(winWidth * 0.88));
   const maxCardHeight = Math.floor(winHeight * 0.78);
@@ -54,7 +58,9 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
       setAlertConfig({
         visible: true,
         title: isRTL ? 'نجح' : 'Success',
-        message: isRTL ? 'تم تنزيل البطاقة بنجاح' : 'Card downloaded successfully',
+        message: isRTL
+          ? 'تم تنزيل البطاقة بنجاح'
+          : 'Card downloaded successfully',
         buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
       });
     } catch (error) {
@@ -130,8 +136,7 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
             setCardAspectRatio(w / h);
           }
         },
-        error => {
-        },
+        error => {},
       );
     }
     return () => {
@@ -170,10 +175,8 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                     },
                   ]}
                   imageStyle={{ resizeMode: 'stretch' }}
-                  onError={error => {
-                  }}
-                  onLoad={() => {
-                  }}
+                  onError={error => {}}
+                  onLoad={() => {}}
                 >
                   {/* Semi-transparent overlay for better text visibility */}
                   <View style={styles.cardOverlay} />
@@ -356,10 +359,8 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                             source={{ uri: getQRCodeImageUri() }}
                             style={{ width: 120, height: 120 }}
                             resizeMode="contain"
-                            onError={error => {
-                            }}
-                            onLoad={() => {
-                            }}
+                            onError={error => {}}
+                            onLoad={() => {}}
                           />
                         </View>
                         <Text

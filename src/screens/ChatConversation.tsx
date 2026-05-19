@@ -12,7 +12,10 @@ import {
   Dimensions,
   Platform,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Svg, { Path } from 'react-native-svg';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -52,135 +55,157 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
   const isTablet = screenWidth >= 600;
 
   // Define loadMessages first with useCallback
-  const loadMessages = useCallback(async (silent = false) => {
-    try {
-      if (!silent) setLoading(true);
-      const token = await AsyncStorage.getItem('userToken');
-      if (!token) {
-        if (!silent) setLoading(false);
-        return;
-      }
-
-      // Get current user ID first if not set
-      let userId = currentUserId;
-      if (!userId) {
-        const userResponse = await fetch(`${API_URL}/auth/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (userResponse.ok) {
-          const userData = await userResponse.json();
-          userId = userData._id;
-          setCurrentUserId(userId);
-        }
-      }
-
-      // Only admin chat is supported - get all chats and find admin chat
-      const chatResponse = await fetch(`${API_URL}/chats`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!chatResponse.ok) {
-        if (!silent) setLoading(false);
-        return;
-      }
-
-      const chatsData = await chatResponse.json();
-      const chats = Array.isArray(chatsData) ? chatsData : chatsData.data || [];
-      console.log('[Chat] Found chats:', chats.length);
-
-      // Find admin chat - admin chat has vendor: null or undefined
-      let adminChat = chats.find((chat: any) => !chat.vendor);
-      console.log('[Chat] Admin chat found:', adminChat ? adminChat._id : 'none');
-
-      // If no admin chat exists, create one
-      if (!adminChat) {
-        console.log('[Chat] Creating new admin chat...');
-        try {
-          const createChatResponse = await fetch(`${API_URL}/chats/start`, {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              vendorId: null,
-              serviceId: null,
-            }),
-          });
-
-          console.log('[Chat] Create response status:', createChatResponse.status);
-
-          if (createChatResponse.ok) {
-            const createChatData = await createChatResponse.json();
-            console.log('[Chat] Create response data:', JSON.stringify(createChatData));
-            adminChat = createChatData.data || createChatData;
-          } else {
-            const errorText = await createChatResponse.text();
-            console.error('[Chat] Failed to create admin chat:', errorText);
-            if (!silent) setLoading(false);
-            return;
-          }
-        } catch (createError) {
-          console.error('[Chat] Error creating admin chat:', createError);
+  const loadMessages = useCallback(
+    async (silent = false) => {
+      try {
+        if (!silent) setLoading(true);
+        const token = await AsyncStorage.getItem('userToken');
+        if (!token) {
           if (!silent) setLoading(false);
           return;
         }
+
+        // Get current user ID first if not set
+        let userId = currentUserId;
+        if (!userId) {
+          const userResponse = await fetch(`${API_URL}/auth/me`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (userResponse.ok) {
+            const userData = await userResponse.json();
+            userId = userData._id;
+            setCurrentUserId(userId);
+          }
+        }
+
+        // Only admin chat is supported - get all chats and find admin chat
+        const chatResponse = await fetch(`${API_URL}/chats`, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!chatResponse.ok) {
+          if (!silent) setLoading(false);
+          return;
+        }
+
+        const chatsData = await chatResponse.json();
+        const chats = Array.isArray(chatsData)
+          ? chatsData
+          : chatsData.data || [];
+        console.log('[Chat] Found chats:', chats.length);
+
+        // Find admin chat - admin chat has vendor: null or undefined
+        let adminChat = chats.find((chat: any) => !chat.vendor);
+        console.log(
+          '[Chat] Admin chat found:',
+          adminChat ? adminChat._id : 'none',
+        );
+
+        // If no admin chat exists, create one
+        if (!adminChat) {
+          console.log('[Chat] Creating new admin chat...');
+          try {
+            const createChatResponse = await fetch(`${API_URL}/chats/start`, {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                vendorId: null,
+                serviceId: null,
+              }),
+            });
+
+            console.log(
+              '[Chat] Create response status:',
+              createChatResponse.status,
+            );
+
+            if (createChatResponse.ok) {
+              const createChatData = await createChatResponse.json();
+              console.log(
+                '[Chat] Create response data:',
+                JSON.stringify(createChatData),
+              );
+              adminChat = createChatData.data || createChatData;
+            } else {
+              const errorText = await createChatResponse.text();
+              console.error('[Chat] Failed to create admin chat:', errorText);
+              if (!silent) setLoading(false);
+              return;
+            }
+          } catch (createError) {
+            console.error('[Chat] Error creating admin chat:', createError);
+            if (!silent) setLoading(false);
+            return;
+          }
+        }
+
+        if (!adminChat || !adminChat._id) {
+          console.error('[Chat] No admin chat available');
+          if (!silent) setLoading(false);
+          return;
+        }
+        console.log('[Chat] Setting chatId to:', adminChat._id);
+        setChatId(adminChat._id);
+        markMessagesAsRead(token, adminChat._id);
+
+        // Fetch full conversation with all messages (not from list which may be truncated)
+        const fullChatResponse = await fetch(
+          `${API_URL}/chats/${adminChat._id}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
+
+        let messages: any[] = [];
+        if (fullChatResponse.ok) {
+          const fullChatData = await fullChatResponse.json();
+          messages =
+            fullChatData.data?.messages ||
+            fullChatData.messages ||
+            adminChat.messages ||
+            [];
+        } else {
+          // Fallback to messages from list if separate fetch fails
+          messages = adminChat.messages || [];
+        }
+
+        // Format messages with correct isMe flag
+        const messagesWithFlag = messages.map((msg: any, index: number) => {
+          const senderId = msg.sender?._id || msg.sender;
+          const messageIsMe = userId ? senderId === userId : false;
+          return {
+            _id: msg._id || `${String(Math.random())}-${index}-${Date.now()}`,
+            sender: msg.sender || { _id: '', name: 'Unknown' },
+            message: msg.content || msg.message || '',
+            createdAt:
+              msg.timestamp || msg.createdAt || new Date().toISOString(),
+            isMe: messageIsMe,
+          };
+        });
+
+        setMessages(messagesWithFlag);
+
+        // Scroll to bottom after messages load
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: false });
+        }, 100);
+      } catch (error) {
+        // Silent error - avoid console spam
+      } finally {
+        if (!silent) {
+          setLoading(false);
+        }
       }
-
-      if (!adminChat || !adminChat._id) {
-        console.error('[Chat] No admin chat available');
-        if (!silent) setLoading(false);
-        return;
-      }
-      console.log('[Chat] Setting chatId to:', adminChat._id);
-      setChatId(adminChat._id);
-      markMessagesAsRead(token, adminChat._id);
-
-      // Fetch full conversation with all messages (not from list which may be truncated)
-      const fullChatResponse = await fetch(`${API_URL}/chats/${adminChat._id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      let messages: any[] = [];
-      if (fullChatResponse.ok) {
-        const fullChatData = await fullChatResponse.json();
-        messages = fullChatData.data?.messages || fullChatData.messages || adminChat.messages || [];
-      } else {
-        // Fallback to messages from list if separate fetch fails
-        messages = adminChat.messages || [];
-      }
-
-      // Format messages with correct isMe flag
-      const messagesWithFlag = messages.map((msg: any, index: number) => {
-        const senderId = msg.sender?._id || msg.sender;
-        const messageIsMe = userId ? senderId === userId : false;
-        return {
-          _id: msg._id || `${String(Math.random())}-${index}-${Date.now()}`,
-          sender: msg.sender || { _id: '', name: 'Unknown' },
-          message: msg.content || msg.message || '',
-          createdAt: msg.timestamp || msg.createdAt || new Date().toISOString(),
-          isMe: messageIsMe,
-        };
-      });
-
-      setMessages(messagesWithFlag);
-
-      // Scroll to bottom after messages load
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: false });
-      }, 100);
-    } catch (error) {
-      // Silent error - avoid console spam
-    } finally {
-      if (!silent) {
-        setLoading(false);
-      }
-    }
-  }, [currentUserId]);
+    },
+    [currentUserId],
+  );
 
   // Load messages on mount
   useEffect(() => {
@@ -212,7 +237,10 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
             _id: messageId,
             sender: message.sender || { _id: '', name: 'Admin' },
             message: message.content || message.message || '',
-            createdAt: message.timestamp || message.createdAt || new Date().toISOString(),
+            createdAt:
+              message.timestamp ||
+              message.createdAt ||
+              new Date().toISOString(),
             isMe: false,
           };
           return [...prev, newMessage];
@@ -281,7 +309,7 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
           'Content-Type': 'application/json',
         },
       });
-    } catch { }
+    } catch {}
   };
 
   const handleTyping = (text: string) => {
@@ -342,26 +370,25 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
       }, 100);
 
       // Send message in background (non-blocking)
-      const response = await fetch(
-        `${API_URL}/chats/${chatId}/messages`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ content: messageToSend }),
+      const response = await fetch(`${API_URL}/chats/${chatId}/messages`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
-      );
+        body: JSON.stringify({ content: messageToSend }),
+      });
 
       if (response.ok) {
         // Update the temp message with the real ID from server
         const responseData = await response.json();
         const realMessage = responseData.data || responseData;
         if (realMessage && realMessage._id) {
-          setMessages(prev => prev.map(m =>
-            m._id === tempId ? { ...m, _id: realMessage._id } : m
-          ));
+          setMessages(prev =>
+            prev.map(m =>
+              m._id === tempId ? { ...m, _id: realMessage._id } : m,
+            ),
+          );
         }
         // No need to reload all messages - just update the ID
       } else {
@@ -391,7 +418,9 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
   const handleScroll = (event: any) => {
     const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
     const paddingToBottom = 20;
-    const isBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+    const isBottom =
+      layoutMeasurement.height + contentOffset.y >=
+      contentSize.height - paddingToBottom;
     setIsAtBottom(isBottom);
   };
 

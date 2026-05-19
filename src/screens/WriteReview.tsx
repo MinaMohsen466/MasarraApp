@@ -17,7 +17,6 @@ import { createReview } from '../services/reviewsApi';
 import { colors } from '../constants/colors';
 import { CustomAlert } from '../components/CustomAlert/CustomAlert';
 
-
 interface WriteReviewProps {
   bookingId: string;
   serviceId: string;
@@ -49,7 +48,6 @@ const WriteReview: React.FC<WriteReviewProps> = ({
     }>;
   }>({ visible: false, title: '', message: '', buttons: [] });
 
-
   const handleSubmit = async () => {
     // Validation
     if (rating === 0) {
@@ -66,9 +64,7 @@ const WriteReview: React.FC<WriteReviewProps> = ({
       setAlertConfig({
         visible: true,
         title: isRTL ? 'خطأ' : 'Error',
-        message: isRTL
-          ? 'الرجاء كتابة تعليق'
-          : 'Please write a comment',
+        message: isRTL ? 'الرجاء كتابة تعليق' : 'Please write a comment',
         buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
       });
       return;
@@ -88,11 +84,18 @@ const WriteReview: React.FC<WriteReviewProps> = ({
     setIsSubmitting(true);
 
     try {
-      console.log('[WriteReview] Submitting review:', { serviceId, bookingId, rating, comment: comment.substring(0, 50) });
+      console.log('[WriteReview] Submitting review:', {
+        serviceId,
+        bookingId,
+        rating,
+        comment: comment.substring(0, 50),
+      });
       await createReview(serviceId, rating, comment, bookingId);
 
       // Invalidate the reviews cache so ServiceDetails will refetch
-      queryClient.invalidateQueries({ queryKey: ['service-reviews', serviceId] });
+      queryClient.invalidateQueries({
+        queryKey: ['service-reviews', serviceId],
+      });
 
       setAlertConfig({
         visible: true,

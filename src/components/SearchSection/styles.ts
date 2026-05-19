@@ -112,7 +112,7 @@ export const styles = StyleSheet.create({
       width: 0,
       height: 3,
     },
-    shadowOpacity: isTablet ? 0.30 : 0.25,
+    shadowOpacity: isTablet ? 0.3 : 0.25,
     shadowRadius: isTablet ? 8 : 6,
     elevation: isTablet ? 5 : 4,
   },

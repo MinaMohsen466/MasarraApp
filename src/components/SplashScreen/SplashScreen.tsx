@@ -62,7 +62,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
-      ])
+      ]),
     );
 
     // Start animations
@@ -94,7 +94,14 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
       clearTimeout(timer);
       pulseAnimation.stop();
     };
-  }, [onFinish, logoScale, logoOpacity, logoRotate, pulseAnim, backgroundColorAnim]);
+  }, [
+    onFinish,
+    logoScale,
+    logoOpacity,
+    logoRotate,
+    pulseAnim,
+    backgroundColorAnim,
+  ]);
 
   // Interpolate background color
   const backgroundColor = backgroundColorAnim.interpolate({
@@ -108,7 +115,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
     outputRange: ['-10deg', '0deg'],
   });
 
-
   return (
     <Animated.View
       style={{
@@ -121,7 +127,14 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
       }}
     >
       {/* Decorative circles in background */}
-      <View style={{ position: 'absolute', width: '100%', height: '100%', overflow: 'hidden' }}>
+      <View
+        style={{
+          position: 'absolute',
+          width: '100%',
+          height: '100%',
+          overflow: 'hidden',
+        }}
+      >
         <Animated.View
           style={{
             position: 'absolute',
@@ -174,7 +187,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
 
       {/* Loading dots animation */}
       <View style={{ flexDirection: 'row', marginTop: 40, gap: 8 }}>
-        {[0, 1, 2].map((index) => (
+        {[0, 1, 2].map(index => (
           <Animated.View
             key={index}
             style={{
@@ -184,7 +197,8 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
               backgroundColor: 'rgba(255, 255, 255, 0.6)',
               opacity: pulseAnim.interpolate({
                 inputRange: [1, 1.05],
-                outputRange: index === 0 ? [0.4, 1] : index === 1 ? [0.6, 1] : [0.8, 0.4],
+                outputRange:
+                  index === 0 ? [0.4, 1] : index === 1 ? [0.6, 1] : [0.8, 0.4],
               }),
             }}
           />

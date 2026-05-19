@@ -6,7 +6,8 @@ export const createStyles = (screenWidth: number) => {
   const numColumns = isTablet ? 3 : 2;
   const horizontalPadding = 16;
   const totalGap = (numColumns - 1) * 16;
-  const cardWidth = (screenWidth - (horizontalPadding * 2) - totalGap) / numColumns;
+  const cardWidth =
+    (screenWidth - horizontalPadding * 2 - totalGap) / numColumns;
 
   return StyleSheet.create({
     pageContainer: {

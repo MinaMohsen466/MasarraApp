@@ -53,7 +53,10 @@ export const ADMIN_URL = `${API_BASE_URL}/admin`;
  * @param bustCache - If true, adds timestamp to URL to bypass cache (useful for profile pictures)
  * @returns Full URL to the image
  */
-export const getImageUrl = (imagePath: string, bustCache: boolean = false): string => {
+export const getImageUrl = (
+  imagePath: string,
+  bustCache: boolean = false,
+): string => {
   if (!imagePath) return '';
 
   let url = '';

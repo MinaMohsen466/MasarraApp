@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from 'react';
 import { io, Socket } from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
@@ -59,7 +65,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         // Use the API base URL for socket connection
         const serverUrl = API_BASE_URL.replace('/api', '');
 
-
         const newSocket = io(serverUrl, {
           auth: {
             token,
@@ -77,23 +82,20 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
           setIsConnected(true);
         });
 
-        newSocket.on('disconnect', (reason) => {
+        newSocket.on('disconnect', reason => {
           setIsConnected(false);
         });
 
-        newSocket.on('connect_error', (error) => {
+        newSocket.on('connect_error', error => {
           setIsConnected(false);
         });
 
-        newSocket.on('reconnect_failed', () => {
-        });
+        newSocket.on('reconnect_failed', () => {});
 
-        newSocket.on('error', (error) => {
-        });
+        newSocket.on('error', error => {});
 
         setSocket(newSocket);
-      } catch (error) {
-      }
+      } catch (error) {}
     };
 
     initSocket();
@@ -114,7 +116,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         socket.emit('join_chat', chatId);
       }
     },
-    [socket, isConnected]
+    [socket, isConnected],
   );
 
   // Leave a chat room
@@ -124,7 +126,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         socket.emit('leave_chat', chatId);
       }
     },
-    [socket, isConnected]
+    [socket, isConnected],
   );
 
   // Send typing indicator
@@ -134,7 +136,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         socket.emit('typing', { chatId, isTyping });
       }
     },
-    [socket, isConnected]
+    [socket, isConnected],
   );
 
   // Mark messages as read
@@ -144,7 +146,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         socket.emit('mark_read', { chatId });
       }
     },
-    [socket, isConnected]
+    [socket, isConnected],
   );
 
   const value: SocketContextType = {

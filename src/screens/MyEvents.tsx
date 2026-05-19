@@ -107,8 +107,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
     try {
       const data = await fetchOccasions();
       setOccasions(data);
-    } catch (error) {
-    }
+    } catch (error) {}
   };
 
   const loadEvents = async () => {
@@ -143,14 +142,14 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
 
       // Filter bookings that already have QR codes created (in parallel for speed)
       const qrChecks = await Promise.all(
-        allBookings.map(async (booking) => {
+        allBookings.map(async booking => {
           try {
             const qrData = await getQRCodeByBooking(token, booking._id);
             return { booking, hasQR: qrData !== null && qrData.qrUrl };
           } catch {
             return { booking, hasQR: false };
           }
-        })
+        }),
       );
 
       // Only keep bookings that have QR codes
@@ -159,8 +158,9 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
         .map(item => item.booking);
 
       // Sort by event date (newest first)
-      bookingsWithQR.sort((a, b) =>
-        new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime()
+      bookingsWithQR.sort(
+        (a, b) =>
+          new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime(),
       );
 
       setEvents(bookingsWithQR);
@@ -547,7 +547,9 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
           translucent={false}
         />
         <View style={{ flex: 1, backgroundColor: colors.primary }}>
-          <View style={{ height: insets.top, backgroundColor: colors.primary }} />
+          <View
+            style={{ height: insets.top, backgroundColor: colors.primary }}
+          />
           <View style={styles.container}>
             <View style={styles.header}>
               <TouchableOpacity onPress={onBack} style={styles.backButton}>
@@ -597,10 +599,10 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
               <Text style={styles.dateFilterText} numberOfLines={1}>
                 {selectedDate
                   ? selectedDate.toLocaleDateString('en-US', {
-                    month: '2-digit',
-                    day: '2-digit',
-                    year: 'numeric',
-                  })
+                      month: '2-digit',
+                      day: '2-digit',
+                      year: 'numeric',
+                    })
                   : 'mm/dd/yyyy'}
               </Text>
               {selectedDate && (
@@ -622,7 +624,8 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
                 numberOfLines={1}
                 ellipsizeMode="tail"
               >
-                {selectedOccasion || (isRTL ? 'اختر المناسبة' : 'Select Occasion')}
+                {selectedOccasion ||
+                  (isRTL ? 'اختر المناسبة' : 'Select Occasion')}
               </Text>
               {selectedOccasion && (
                 <TouchableOpacity

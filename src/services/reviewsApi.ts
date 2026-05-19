@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from './api';
 
-
 export interface Review {
   _id: string;
   user: {
@@ -99,7 +98,11 @@ export async function createReview(
 
     const url = `${API_BASE_URL}/reviews/service/${serviceId}`;
     console.log('[createReview] Sending to URL:', url);
-    console.log('[createReview] Data:', { rating, comment: comment.substring(0, 50), bookingId });
+    console.log('[createReview] Data:', {
+      rating,
+      comment: comment.substring(0, 50),
+      bookingId,
+    });
 
     const response = await fetch(url, {
       method: 'POST',
@@ -129,7 +132,9 @@ export async function createReview(
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error || error.message || 'Failed to create review');
+      throw new Error(
+        error.error || error.message || 'Failed to create review',
+      );
     }
 
     const result = await response.json();
@@ -187,7 +192,9 @@ export async function deleteReview(reviewId: string): Promise<void> {
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
         const error = await response.json();
-        throw new Error(error.error || error.message || 'Failed to delete review');
+        throw new Error(
+          error.error || error.message || 'Failed to delete review',
+        );
       }
       throw new Error('Failed to delete review');
     }

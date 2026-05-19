@@ -108,8 +108,8 @@ const SearchSection: React.FC<SearchSectionProps> = ({
               ? selectedOccasion.nameAr
               : selectedOccasion.name
             : isRTL
-              ? 'اختر المناسبة'
-              : 'Select Occasion'}
+            ? 'اختر المناسبة'
+            : 'Select Occasion'}
         </Text>
         <View style={styles.arrowIcon}>
           <Text style={styles.arrowText}>{isRTL ? '‹' : '›'}</Text>

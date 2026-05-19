@@ -29,7 +29,8 @@ interface EditProfileProps {
 
 const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
   const { isRTL } = useLanguage();
-  const { user, updateUserProfile, changeUserPassword, logout, refreshUser } = useAuth();
+  const { user, updateUserProfile, changeUserPassword, logout, refreshUser } =
+    useAuth();
   const insets = useSafeAreaInsets();
   const [isEditing, setIsEditing] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
@@ -197,7 +198,10 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
 
       if (result.errorCode) {
         // Handle specific error for missing photo picker
-        if (result.errorCode === 'others' || result.errorCode === 'camera_unavailable') {
+        if (
+          result.errorCode === 'others' ||
+          result.errorCode === 'camera_unavailable'
+        ) {
           // Try again with different options as fallback
           try {
             const fallbackResult = await launchImageLibrary({
@@ -222,9 +226,7 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
             isRTL
               ? 'لا يوجد تطبيق لاختيار الصور. يرجى تثبيت Google Photos أو تطبيق معرض آخر.'
               : 'No image picker app found. Please install Google Photos or another gallery app.',
-            [
-              { text: 'OK' },
-            ],
+            [{ text: 'OK' }],
           );
           return;
         }
@@ -232,7 +234,7 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
         showAlert(
           isRTL ? 'خطأ' : 'Error',
           result.errorMessage ||
-          (isRTL ? 'فشل اختيار الصورة' : 'Failed to pick image'),
+            (isRTL ? 'فشل اختيار الصورة' : 'Failed to pick image'),
           [{ text: 'OK' }],
         );
         return;
@@ -280,7 +282,12 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
         }
       }
 
-      await updateUserProfile(name.trim(), phone.trim(), imageToSend, shouldRemoveImage);
+      await updateUserProfile(
+        name.trim(),
+        phone.trim(),
+        imageToSend,
+        shouldRemoveImage,
+      );
 
       // Refresh user data in AuthContext to sync across all pages
       await refreshUser();
@@ -293,7 +300,8 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
     } catch (error: any) {
       showAlert(
         isRTL ? 'خطأ' : 'Error',
-        error?.message || (isRTL ? 'فشل تحديث الملف الشخصي' : 'Failed to update profile'),
+        error?.message ||
+          (isRTL ? 'فشل تحديث الملف الشخصي' : 'Failed to update profile'),
         [{ text: 'OK' }],
       );
     } finally {
@@ -369,8 +377,8 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
         error instanceof Error
           ? error.message
           : isRTL
-            ? 'فشل حذف الحساب'
-            : 'Failed to delete account',
+          ? 'فشل حذف الحساب'
+          : 'Failed to delete account',
         [{ text: 'OK' }],
       );
     }
@@ -413,7 +421,9 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
       />
       <View style={{ flex: 1, backgroundColor: colors.primary }}>
         <View style={{ height: insets.top, backgroundColor: colors.primary }} />
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View
+          style={[styles.container, { backgroundColor: colors.background }]}
+        >
           {/* Header */}
           <View style={styles.header}>
             {onBack && (
@@ -424,7 +434,10 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <Text
-                  style={[styles.backButtonText, isRTL && styles.backButtonTextRTL]}
+                  style={[
+                    styles.backButtonText,
+                    isRTL && styles.backButtonTextRTL,
+                  ]}
                 >
                   {isRTL ? '›' : '‹'}
                 </Text>
@@ -445,7 +458,10 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
               <View style={styles.sectionHeader}>
                 <View style={styles.sectionTitleContainer}>
                   <Text
-                    style={[styles.sectionTitle, isRTL && styles.sectionTitleRTL]}
+                    style={[
+                      styles.sectionTitle,
+                      isRTL && styles.sectionTitleRTL,
+                    ]}
                   >
                     {isRTL ? 'المعلومات الشخصية' : 'Personal Information'}
                   </Text>
@@ -474,30 +490,42 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
                   <View style={styles.fieldRow}>
                     <View style={styles.fieldColumn}>
                       <Text
-                        style={[styles.fieldLabel, isRTL && styles.fieldLabelRTL]}
+                        style={[
+                          styles.fieldLabel,
+                          isRTL && styles.fieldLabelRTL,
+                        ]}
                       >
                         {isRTL ? 'الاسم الكامل' : 'Full Name'}
                       </Text>
                       <Text
-                        style={[styles.fieldValue, isRTL && styles.fieldValueRTL]}
+                        style={[
+                          styles.fieldValue,
+                          isRTL && styles.fieldValueRTL,
+                        ]}
                       >
                         {user?.name || 'Not provided'}
                       </Text>
                     </View>
                     <View style={styles.fieldColumn}>
                       <Text
-                        style={[styles.fieldLabel, isRTL && styles.fieldLabelRTL]}
+                        style={[
+                          styles.fieldLabel,
+                          isRTL && styles.fieldLabelRTL,
+                        ]}
                       >
                         {isRTL ? 'رقم الهاتف' : 'Phone Number'}
                       </Text>
                       <Text
-                        style={[styles.fieldValue, isRTL && styles.fieldValueRTL]}
+                        style={[
+                          styles.fieldValue,
+                          isRTL && styles.fieldValueRTL,
+                        ]}
                       >
                         {user?.phone && user.phone.trim() !== ''
                           ? user.phone
                           : isRTL
-                            ? 'غير متوفر'
-                            : 'Not provided'}
+                          ? 'غير متوفر'
+                          : 'Not provided'}
                       </Text>
                     </View>
                   </View>
@@ -568,8 +596,12 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
                         </Text>
                       </TouchableOpacity>
                     </View>
-                    <Text style={[styles.photoHint, isRTL && styles.photoHintRTL]}>
-                      {isRTL ? 'JPG, PNG حتى 1 ميجابايت' : 'JPG, PNG up to 10MB'}
+                    <Text
+                      style={[styles.photoHint, isRTL && styles.photoHintRTL]}
+                    >
+                      {isRTL
+                        ? 'JPG, PNG حتى 1 ميجابايت'
+                        : 'JPG, PNG up to 10MB'}
                     </Text>
                   </View>
 
@@ -577,7 +609,10 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
                   <View style={styles.formRow}>
                     <View style={styles.formColumn}>
                       <Text
-                        style={[styles.inputLabel, isRTL && styles.inputLabelRTL]}
+                        style={[
+                          styles.inputLabel,
+                          isRTL && styles.inputLabelRTL,
+                        ]}
                       >
                         {isRTL ? 'الاسم الكامل' : 'Full Name'}
                       </Text>
@@ -591,7 +626,10 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
                     </View>
                     <View style={styles.formColumn}>
                       <Text
-                        style={[styles.inputLabel, isRTL && styles.inputLabelRTL]}
+                        style={[
+                          styles.inputLabel,
+                          isRTL && styles.inputLabelRTL,
+                        ]}
                       >
                         {isRTL ? 'رقم الهاتف' : 'Phone Number'}
                       </Text>
@@ -639,8 +677,8 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
                             ? 'جاري الحفظ...'
                             : 'Saving...'
                           : isRTL
-                            ? 'حفظ التغييرات'
-                            : 'Save Changes'}
+                          ? 'حفظ التغييرات'
+                          : 'Save Changes'}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -653,12 +691,18 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
               <View style={styles.passwordHeader}>
                 <View style={styles.passwordContent}>
                   <Text
-                    style={[styles.passwordTitle, isRTL && styles.passwordTitleRTL]}
+                    style={[
+                      styles.passwordTitle,
+                      isRTL && styles.passwordTitleRTL,
+                    ]}
                   >
                     {isRTL ? 'تغيير كلمة المرور' : 'Change Password'}
                   </Text>
                   <Text
-                    style={[styles.passwordHint, isRTL && styles.passwordHintRTL]}
+                    style={[
+                      styles.passwordHint,
+                      isRTL && styles.passwordHintRTL,
+                    ]}
                   >
                     {isRTL
                       ? 'كلمة المرور الخاصة بك آمنة ومشفرة.'
@@ -683,12 +727,7 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
             </View>
 
             {/* Delete Account Section */}
-            <View
-              style={[
-                styles.passwordSection,
-                styles.deleteAccountSection,
-              ]}
-            >
+            <View style={[styles.passwordSection, styles.deleteAccountSection]}>
               <View style={styles.passwordHeader}>
                 <View style={styles.passwordContent}>
                   <Text
@@ -701,7 +740,10 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
                     {isRTL ? 'حذف الحساب' : 'Delete Account'}
                   </Text>
                   <Text
-                    style={[styles.passwordHint, isRTL && styles.passwordHintRTL]}
+                    style={[
+                      styles.passwordHint,
+                      isRTL && styles.passwordHintRTL,
+                    ]}
                   >
                     {isRTL
                       ? 'حذف حسابك بشكل دائم. هذا الإجراء لا يمكن التراجع عنه'
@@ -764,4 +806,3 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
 };
 
 export default EditProfile;
-

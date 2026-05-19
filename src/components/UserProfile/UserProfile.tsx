@@ -81,7 +81,6 @@ const UserProfile: React.FC<UserProfileProps> = ({
     checkOpenOrderHistory();
   }, []);
 
-
   const handleEditProfile = () => {
     setShowEditProfile(true);
   };
@@ -316,9 +315,8 @@ const UserProfile: React.FC<UserProfileProps> = ({
                 <Image
                   source={{
                     uri:
-                      getImageUri(
-                        user.profilePicture || profilePicture,
-                      ) || undefined,
+                      getImageUri(user.profilePicture || profilePicture) ||
+                      undefined,
                   }}
                   style={styles.profileImage}
                   resizeMode="cover"

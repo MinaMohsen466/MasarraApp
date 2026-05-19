@@ -53,7 +53,7 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
         // Parse query string manually since URL/URLSearchParams may not work in React Native
         const queryString = url.split('?')[1] || '';
         const params: Record<string, string> = {};
-        queryString.split('&').forEach((pair) => {
+        queryString.split('&').forEach(pair => {
           const [key, value] = pair.split('=');
           if (key) params[key] = decodeURIComponent(value || '');
         });
@@ -64,7 +64,7 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
           setVerifyingPayment(true);
 
           // Wait a moment for server to process
-          await new Promise<void>((resolve) => setTimeout(resolve, 2000));
+          await new Promise<void>(resolve => setTimeout(resolve, 2000));
 
           // Verify payment status with backend
           try {
@@ -152,7 +152,8 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
                 {t('paymentError') || 'Payment Error'}
               </Text>
               <Text style={[styles.errorText, isRTL && styles.rtlText]}>
-                {t('paymentLoadError') || 'Failed to load payment page. Please try again.'}
+                {t('paymentLoadError') ||
+                  'Failed to load payment page. Please try again.'}
               </Text>
               <TouchableOpacity
                 style={styles.retryButton}
@@ -177,9 +178,14 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
               <WebView
                 ref={webViewRef}
                 // Check if paymentUrl is HTML content or a URL
-                source={paymentUrl.startsWith('<!DOCTYPE') || paymentUrl.startsWith('<html')
-                  ? { html: paymentUrl, baseUrl: 'https://demo.myfatoorah.com' }
-                  : { uri: paymentUrl }
+                source={
+                  paymentUrl.startsWith('<!DOCTYPE') ||
+                  paymentUrl.startsWith('<html')
+                    ? {
+                        html: paymentUrl,
+                        baseUrl: 'https://demo.myfatoorah.com',
+                      }
+                    : { uri: paymentUrl }
                 }
                 style={styles.webView}
                 onLoadStart={() => setLoading(true)}
@@ -187,7 +193,7 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
                 onNavigationStateChange={handleNavigationStateChange}
                 onError={handleError}
                 onHttpError={handleHttpError}
-                onMessage={(event) => {
+                onMessage={event => {
                   // Handle messages from embedded payment form
                   try {
                     const message = JSON.parse(event.nativeEvent.data);
@@ -198,7 +204,10 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
                       onPaymentError(message.message || 'Payment failed');
                     }
                   } catch (e) {
-                    console.log('Non-JSON message from WebView:', event.nativeEvent.data);
+                    console.log(
+                      'Non-JSON message from WebView:',
+                      event.nativeEvent.data,
+                    );
                   }
                 }}
                 javaScriptEnabled={true}
@@ -229,18 +238,22 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
                   true;
                 `}
                 userAgent={Platform.select({
-                  android: 'Mozilla/5.0 (Linux; Android 12; SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Mobile Safari/537.36',
+                  android:
+                    'Mozilla/5.0 (Linux; Android 12; SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Mobile Safari/537.36',
                   ios: 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.5 Mobile/15E148 Safari/604.1',
                 })}
               />
               {(loading || verifyingPayment) && (
-                <View style={[styles.loadingOverlay, { backgroundColor: '#fff' }]}>
+                <View
+                  style={[styles.loadingOverlay, { backgroundColor: '#fff' }]}
+                >
                   <ActivityIndicator size="large" color={colors.primary} />
                   <Text style={[styles.loadingText, isRTL && styles.rtlText]}>
                     {verifyingPayment
-                      ? (isRTL ? 'جاري التحقق من الدفع...' : 'Verifying payment...')
-                      : (t('loadingPayment') || 'Loading payment page...')
-                    }
+                      ? isRTL
+                        ? 'جاري التحقق من الدفع...'
+                        : 'Verifying payment...'
+                      : t('loadingPayment') || 'Loading payment page...'}
                   </Text>
                 </View>
               )}

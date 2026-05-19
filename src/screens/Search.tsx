@@ -147,19 +147,36 @@ const Search: React.FC<SearchProps> = ({
           </View>
         )}
         {/* Type Badge */}
-        <View style={[styles.typeBadge, item.type === 'occasion' && styles.occasionBadge]}>
+        <View
+          style={[
+            styles.typeBadge,
+            item.type === 'occasion' && styles.occasionBadge,
+          ]}
+        >
           <Text style={styles.typeBadgeText}>
-            {item.type === 'service' ? (isRTL ? 'خدمة' : 'Service') : (isRTL ? 'مناسبة' : 'Occasion')}
+            {item.type === 'service'
+              ? isRTL
+                ? 'خدمة'
+                : 'Service'
+              : isRTL
+              ? 'مناسبة'
+              : 'Occasion'}
           </Text>
         </View>
       </View>
 
       {/* Content */}
       <View style={[styles.resultContent, isRTL && styles.resultContentRTL]}>
-        <Text style={[styles.resultName, isRTL && styles.textRTL]} numberOfLines={1}>
+        <Text
+          style={[styles.resultName, isRTL && styles.textRTL]}
+          numberOfLines={1}
+        >
           {item.displayName}
         </Text>
-        <Text style={[styles.resultSubtitle, isRTL && styles.textRTL]} numberOfLines={1}>
+        <Text
+          style={[styles.resultSubtitle, isRTL && styles.textRTL]}
+          numberOfLines={1}
+        >
           {item.displaySubtitle}
         </Text>
         {item.price && (
@@ -215,13 +232,28 @@ const Search: React.FC<SearchProps> = ({
           </TouchableOpacity>
 
           <View style={styles.searchContainer}>
-            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" style={styles.searchIcon}>
+            <Svg
+              width={20}
+              height={20}
+              viewBox="0 0 24 24"
+              fill="none"
+              style={styles.searchIcon}
+            >
               <Circle cx="11" cy="11" r="7" stroke="#9E9E9E" strokeWidth={2} />
-              <Path d="M21 21L16.5 16.5" stroke="#9E9E9E" strokeWidth={2} strokeLinecap="round" />
+              <Path
+                d="M21 21L16.5 16.5"
+                stroke="#9E9E9E"
+                strokeWidth={2}
+                strokeLinecap="round"
+              />
             </Svg>
             <TextInput
               style={[styles.searchInput, isRTL && styles.searchInputRTL]}
-              placeholder={isRTL ? 'ابحث عن خدمات، مناسبات...' : 'Search services, occasions...'}
+              placeholder={
+                isRTL
+                  ? 'ابحث عن خدمات، مناسبات...'
+                  : 'Search services, occasions...'
+              }
               placeholderTextColor="#9E9E9E"
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -243,7 +275,9 @@ const Search: React.FC<SearchProps> = ({
         </View>
 
         {/* Filter Tabs */}
-        <View style={[styles.filtersWrapper, isRTL && styles.filtersWrapperRTL]}>
+        <View
+          style={[styles.filtersWrapper, isRTL && styles.filtersWrapperRTL]}
+        >
           {filterTabs.map(tab => (
             <TouchableOpacity
               key={tab.key}
@@ -307,7 +341,9 @@ const Search: React.FC<SearchProps> = ({
                 <Text style={[styles.resultsCount, isRTL && styles.textRTL]}>
                   {isRTL
                     ? `${filteredResults.length} نتيجة`
-                    : `${filteredResults.length} result${filteredResults.length > 1 ? 's' : ''}`}
+                    : `${filteredResults.length} result${
+                        filteredResults.length > 1 ? 's' : ''
+                      }`}
                 </Text>
               </View>
               <FlatList

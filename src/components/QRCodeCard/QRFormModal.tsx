@@ -72,7 +72,11 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
     visible: boolean;
     title: string;
     message: string;
-    buttons: Array<{ text: string; style?: 'default' | 'cancel' | 'destructive'; onPress?: () => void }>;
+    buttons: Array<{
+      text: string;
+      style?: 'default' | 'cancel' | 'destructive';
+      onPress?: () => void;
+    }>;
   }>({ visible: false, title: '', message: '', buttons: [] });
 
   const [formData, setFormData] = useState<QRCodeCustomDetails>({
@@ -113,7 +117,9 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
         // Store original data for change detection
         setOriginalFormData(existingQRCode.customDetails);
         setOriginalBackgroundId(backgroundId);
-        setOriginalGuestCount(existingQRCode.guestCount?.toString() || guestCount);
+        setOriginalGuestCount(
+          existingQRCode.guestCount?.toString() || guestCount,
+        );
         setHasChanges(false);
 
         // Show result modal directly
@@ -269,7 +275,9 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
       setAlertConfig({
         visible: true,
         title: isRTL ? 'خطأ' : 'Error',
-        message: isRTL ? 'الرجاء اختيار تصميم البطاقة' : 'Please select a card design',
+        message: isRTL
+          ? 'الرجاء اختيار تصميم البطاقة'
+          : 'Please select a card design',
         buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
       });
       return;
@@ -294,7 +302,11 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
 
       // Store the generated QR code data
       // If updating and API doesn't return qrCodeImage, preserve it from generatedQRCode (set at initial load)
-      const previousQRImage = generatedQRCode?.qrCode || generatedQRCode?.qrCodeImage || existingQRCode?.qrCode || existingQRCode?.qrCodeImage;
+      const previousQRImage =
+        generatedQRCode?.qrCode ||
+        generatedQRCode?.qrCodeImage ||
+        existingQRCode?.qrCode ||
+        existingQRCode?.qrCodeImage;
       const qrCodeData = {
         ...result,
         qrCode: result.qrCode || result.qrCodeImage || previousQRImage,
@@ -303,7 +315,6 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
       setGeneratedQRCode(qrCodeData);
       setShowResultModal(true);
       setIsPreviewMode(false);
-
 
       // If this is an update, mark as updated and reset changes
       if (existingQRCode) {
@@ -316,7 +327,8 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
       setAlertConfig({
         visible: true,
         title: isRTL ? 'خطأ' : 'Error',
-        message: error.message ||
+        message:
+          error.message ||
           (isRTL ? 'فشل إنشاء QR Code' : 'Failed to generate QR code'),
         buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
       });
@@ -330,7 +342,9 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
       setAlertConfig({
         visible: true,
         title: isRTL ? 'خطأ' : 'Error',
-        message: isRTL ? 'الرجاء اختيار تصميم البطاقة' : 'Please select a card design',
+        message: isRTL
+          ? 'الرجاء اختيار تصميم البطاقة'
+          : 'Please select a card design',
         buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
       });
       return;
@@ -389,10 +403,8 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
                       source={{ uri: selectedImage.url || selectedImage.path }}
                       style={styles.cardPreview}
                       resizeMode="cover"
-                      onError={error => {
-                      }}
-                      onLoad={() => {
-                      }}
+                      onError={error => {}}
+                      onLoad={() => {}}
                     >
                       <View style={styles.qrPlaceholder}>
                         <Text style={styles.qrPlaceholderText}>QR</Text>
@@ -421,7 +433,7 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
                             style={[
                               styles.imageThumbnail,
                               selectedBackgroundId === item._id &&
-                              styles.imageThumbnailActive,
+                                styles.imageThumbnailActive,
                             ]}
                             onPress={() => {
                               setSelectedBackgroundId(item._id);
@@ -431,8 +443,7 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
                               source={{ uri: item.url || item.path }}
                               style={styles.imageThumbnailImage}
                               resizeMode="cover"
-                              onError={error => {
-                              }}
+                              onError={error => {}}
                             />
                           </TouchableOpacity>
                         )}
@@ -584,7 +595,7 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
                   styles.generateButton,
                   (submitting ||
                     (existingQRCode && (!hasChanges || isUpdated))) &&
-                  styles.disabledButton,
+                    styles.disabledButton,
                 ]}
                 onPress={() => {
                   handleSubmit().then(() => {

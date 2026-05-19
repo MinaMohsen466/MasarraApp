@@ -12,7 +12,11 @@ import Svg, { Path } from 'react-native-svg';
 import { createStyles } from './styles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { useInfinitePackages, flattenPackages, Package } from '../../hooks/usePackages';
+import {
+  useInfinitePackages,
+  flattenPackages,
+  Package,
+} from '../../hooks/usePackages';
 import { getImageUrl } from '../../services/api';
 import { getServiceReviews } from '../../services/reviewsApi';
 
@@ -102,7 +106,9 @@ const Packages: React.FC<PackagesProps> = ({ onSelectPackage, onBack }) => {
     // discountPrice is the discount amount (e.g., 20 KD off), not the final price
     // Final price = totalPrice - discountPrice
     const displayPrice =
-      item.discountPrice > 0 ? (item.totalPrice - item.discountPrice) : item.totalPrice;
+      item.discountPrice > 0
+        ? item.totalPrice - item.discountPrice
+        : item.totalPrice;
 
     const rating = packageRatings[item._id]?.rating || 0;
     const totalReviews = packageRatings[item._id]?.totalReviews || 0;
@@ -126,11 +132,7 @@ const Packages: React.FC<PackagesProps> = ({ onSelectPackage, onBack }) => {
           {item.discountPrice > 0 && (
             <View style={styles.discountBadge}>
               <Text style={styles.discountText}>
-                {Math.round(
-                  (item.discountPrice / item.totalPrice) *
-                  100,
-                )}
-                % OFF
+                {Math.round((item.discountPrice / item.totalPrice) * 100)}% OFF
               </Text>
             </View>
           )}

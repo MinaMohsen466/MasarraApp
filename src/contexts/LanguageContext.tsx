@@ -97,13 +97,15 @@ const translations = {
     // Payment
     payment: 'Payment',
     completePayment: 'Complete Your Payment',
-    paymentRedirectMessage: 'You will be redirected to our secure payment page to complete your transaction.',
+    paymentRedirectMessage:
+      'You will be redirected to our secure payment page to complete your transaction.',
     proceedToPayment: 'Proceed to Payment',
     securePayment: 'Secured by MyFatoorah',
     paymentError: 'Payment Error',
     paymentFailed: 'Payment failed. Please try again.',
     paymentCancelled: 'Payment Cancelled',
-    paymentCancelledMessage: 'Payment was cancelled. Your cart items are still saved.',
+    paymentCancelledMessage:
+      'Payment was cancelled. Your cart items are still saved.',
     paymentSuccess: 'Payment completed successfully!',
     emailOrPhoneRequired: 'Email or phone number is required for payment',
     loadingPayment: 'Loading payment page...',
@@ -244,8 +246,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({
       setLanguageState(lang);
       await AsyncStorage.setItem('appLanguage', lang);
       // Note: For full RTL support, you may need to restart the app
-    } catch (error) {
-    }
+    } catch (error) {}
   };
 
   const t = (key: string): string => {

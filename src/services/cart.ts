@@ -32,7 +32,6 @@ export type CartItem = {
   deliveryFee?: number; // Delivery fee from service
 };
 
-
 // In-memory cache to avoid reading from AsyncStorage repeatedly
 let cartCache: CartItem[] | null = null;
 let cacheUserId: string | null = null;
@@ -350,7 +349,7 @@ export async function checkCartAvailability(): Promise<{
     const cartItems = await getCart();
 
     // Check all items in PARALLEL for faster performance
-    const checkPromises = cartItems.map(async (item) => {
+    const checkPromises = cartItems.map(async item => {
       try {
         // Parse selected date
         const selectedDate = new Date(item.selectedDate);
@@ -388,7 +387,10 @@ export async function checkCartAvailability(): Promise<{
         }
 
         if (!matchingSlot.available) {
-          return { item, reason: `Time slot fully booked (${matchingSlot.bookingsCount} bookings)` };
+          return {
+            item,
+            reason: `Time slot fully booked (${matchingSlot.bookingsCount} bookings)`,
+          };
         }
 
         return null; // Item is available
@@ -402,7 +404,7 @@ export async function checkCartAvailability(): Promise<{
 
     // Filter out null results (available items) to get only unavailable ones
     const unavailableItems = results.filter(
-      (result): result is { item: CartItem; reason: string } => result !== null
+      (result): result is { item: CartItem; reason: string } => result !== null,
     );
 
     const allAvailable = unavailableItems.length === 0;
@@ -444,7 +446,14 @@ export async function createBookingsFromCart(
     const errors: any[] = [];
 
     console.log('[createBookingsFromCart] Cart items count:', cartItems.length);
-    console.log('[createBookingsFromCart] Cart items:', cartItems.map(i => ({ name: i.name, serviceId: i.serviceId, availabilityStatus: i.availabilityStatus })));
+    console.log(
+      '[createBookingsFromCart] Cart items:',
+      cartItems.map(i => ({
+        name: i.name,
+        serviceId: i.serviceId,
+        availabilityStatus: i.availabilityStatus,
+      })),
+    );
 
     if (cartItems.length === 0) {
       return { success: true, bookings: [], errors: [] };
@@ -452,10 +461,13 @@ export async function createBookingsFromCart(
 
     // Check if ANY item requires vendor confirmation
     const hasItemsNeedingConfirmation = cartItems.some(
-      item => item.availabilityStatus === 'pending_confirmation'
+      item => item.availabilityStatus === 'pending_confirmation',
     );
 
-    console.log('[createBookingsFromCart] Has items needing confirmation:', hasItemsNeedingConfirmation);
+    console.log(
+      '[createBookingsFromCart] Has items needing confirmation:',
+      hasItemsNeedingConfirmation,
+    );
 
     // Helper function to convert customInputs
     const convertCustomInputs = (item: CartItem) => {
@@ -482,7 +494,8 @@ export async function createBookingsFromCart(
     try {
       // Build services array with all cart items
       const servicesArray = cartItems.map(item => {
-        const itemDelivery = item.maxBookingsPerSlot === -1 ? (item.deliveryFee || 0) : 0;
+        const itemDelivery =
+          item.maxBookingsPerSlot === -1 ? item.deliveryFee || 0 : 0;
         const itemTotal = (item.totalPrice || item.price) + itemDelivery;
         return {
           service: item.serviceId,
@@ -496,10 +509,12 @@ export async function createBookingsFromCart(
           _cartItemName: item.name,
           // Store the event date/time for this specific service (must match backend field names)
           eventDate: item.selectedDate,
-          timeSlot: item.timeSlot ? {
-            start: item.timeSlot.start,
-            end: item.timeSlot.end,
-          } : undefined,
+          timeSlot: item.timeSlot
+            ? {
+                start: item.timeSlot.start,
+                end: item.timeSlot.end,
+              }
+            : undefined,
           // Mark if this service needs vendor confirmation
           availabilityStatus: item.availabilityStatus || 'available_now',
         };
@@ -507,10 +522,10 @@ export async function createBookingsFromCart(
 
       // Calculate total price for the combined booking
       let combinedTotalPrice = cartItems.reduce((total, item) => {
-        const itemDelivery = item.maxBookingsPerSlot === -1 ? (item.deliveryFee || 0) : 0;
+        const itemDelivery =
+          item.maxBookingsPerSlot === -1 ? item.deliveryFee || 0 : 0;
         return total + (item.totalPrice || item.price) + itemDelivery;
       }, 0);
-
 
       // Use the first item's date/time for the booking
       const firstItem = cartItems[0];
@@ -532,7 +547,9 @@ export async function createBookingsFromCart(
 
       // Add coupon data if provided
       if (couponData) {
-        const discountShare = (combinedTotalPrice / couponData.originalPrice) * couponData.discountAmount;
+        const discountShare =
+          (combinedTotalPrice / couponData.originalPrice) *
+          couponData.discountAmount;
         bookingPayload.coupon = {
           code: couponData.code,
           discountAmount: discountShare,
@@ -568,12 +585,18 @@ export async function createBookingsFromCart(
         console.log('[createBookingsFromCart] Error for booking:', error);
         // Add error for each item
         cartItems.forEach(item => {
-          errors.push({ item, error: error.message || 'Failed to create booking' });
+          errors.push({
+            item,
+            error: error.message || 'Failed to create booking',
+          });
         });
       } else {
         const responseData = await response.json();
         const booking = responseData.booking || responseData;
-        console.log('[createBookingsFromCart] Success for booking, ID:', booking._id);
+        console.log(
+          '[createBookingsFromCart] Success for booking, ID:',
+          booking._id,
+        );
 
         // Mark if this booking requires payment now
         // Payment is required ONLY if NO items need vendor confirmation
@@ -589,13 +612,21 @@ export async function createBookingsFromCart(
         });
       }
     } catch (error: any) {
-      console.log('[createBookingsFromCart] Exception for booking:', error.message);
+      console.log(
+        '[createBookingsFromCart] Exception for booking:',
+        error.message,
+      );
       cartItems.forEach(item => {
         errors.push({ item, error: error.message || 'Network error' });
       });
     }
 
-    console.log('[createBookingsFromCart] Final result - Bookings:', bookings.length, 'Errors:', errors.length);
+    console.log(
+      '[createBookingsFromCart] Final result - Bookings:',
+      bookings.length,
+      'Errors:',
+      errors.length,
+    );
 
     return {
       success: errors.length === 0,
@@ -606,4 +637,3 @@ export async function createBookingsFromCart(
     throw e;
   }
 }
-

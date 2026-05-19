@@ -347,7 +347,9 @@ export const changePassword = async (
     }
 
     if (!response.ok) {
-      throw new Error(responseData.error || responseData.message || 'Password change failed');
+      throw new Error(
+        responseData.error || responseData.message || 'Password change failed',
+      );
     }
 
     return responseData;
@@ -659,22 +661,25 @@ export const checkBatchDateAvailability = async (
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
     try {
-      const response = await fetch(`${BASE_URL}/api/bookings/batch-availability`, {
-        method: 'POST',
-        headers: token
-          ? {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          }
-          : {
-            'Content-Type': 'application/json',
-          },
-        body: JSON.stringify({
-          serviceIds: [serviceId],
-          dates: dateStrings,
-        }),
-        signal: controller.signal,
-      });
+      const response = await fetch(
+        `${BASE_URL}/api/bookings/batch-availability`,
+        {
+          method: 'POST',
+          headers: token
+            ? {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              }
+            : {
+                'Content-Type': 'application/json',
+              },
+          body: JSON.stringify({
+            serviceIds: [serviceId],
+            dates: dateStrings,
+          }),
+          signal: controller.signal,
+        },
+      );
 
       clearTimeout(timeoutId);
 
@@ -692,11 +697,15 @@ export const checkBatchDateAvailability = async (
       if (data.availability && data.availability[serviceId]) {
         const serviceAvailability = data.availability[serviceId];
         for (const [dateStr, info] of Object.entries(serviceAvailability)) {
-          const availInfo = info as { hasSlots: boolean; availableSlots: number };
+          const availInfo = info as {
+            hasSlots: boolean;
+            availableSlots: number;
+          };
           availabilityMap.set(dateStr, {
             available: availInfo.hasSlots,
             bookingsCount: 0, // الـ backend لا يرجع هذه القيمة، لكنها غير مستخدمة في UI
-            slots: availInfo.availableSlots === -1 ? 99 : availInfo.availableSlots, // -1 يعني unlimited
+            slots:
+              availInfo.availableSlots === -1 ? 99 : availInfo.availableSlots, // -1 يعني unlimited
           });
         }
       }
@@ -705,7 +714,9 @@ export const checkBatchDateAvailability = async (
     } catch (error) {
       clearTimeout(timeoutId);
       // في حالة فشل الـ batch، نرجع إلى الطريقة القديمة كـ fallback
-      console.warn('Batch availability failed, falling back to individual requests');
+      console.warn(
+        'Batch availability failed, falling back to individual requests',
+      );
       throw error;
     }
   } catch (error) {
@@ -723,17 +734,17 @@ export const checkBatchDateAvailability = async (
             const dateKey = `${date.getUTCFullYear()}-${(date.getUTCMonth() + 1)
               .toString()
               .padStart(2, '0')}-${date
-                .getUTCDate()
-                .toString()
-                .padStart(2, '0')}`;
+              .getUTCDate()
+              .toString()
+              .padStart(2, '0')}`;
             return { dateKey, ...result };
           } catch (err) {
             const dateKey = `${date.getUTCFullYear()}-${(date.getUTCMonth() + 1)
               .toString()
               .padStart(2, '0')}-${date
-                .getUTCDate()
-                .toString()
-                .padStart(2, '0')}`;
+              .getUTCDate()
+              .toString()
+              .padStart(2, '0')}`;
             return { dateKey, available: false, bookingsCount: 0, slots: 0 };
           }
         }),
@@ -845,12 +856,12 @@ export const checkDateAvailability = async (
           signal: controller.signal,
           headers: token
             ? {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            }
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              }
             : {
-              'Content-Type': 'application/json',
-            },
+                'Content-Type': 'application/json',
+              },
         },
       );
 
@@ -938,12 +949,12 @@ export const checkTimeSlotAvailability = async (
         signal: controller.signal,
         headers: token
           ? {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          }
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            }
           : {
-            'Content-Type': 'application/json',
-          },
+              'Content-Type': 'application/json',
+            },
       },
     );
 
