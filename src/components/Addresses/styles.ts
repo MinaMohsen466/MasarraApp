@@ -226,6 +226,9 @@ export const styles = StyleSheet.create({
     fontSize: 12,
   },
   headerLeftRow: { flexDirection: 'row', alignItems: 'center' },
+  headerLeftRowRTL: {
+    flexDirection: 'row-reverse',
+  },
   // Bigger back icon/button with colored background
   backButtonInline: {
     marginRight: 12,
@@ -237,12 +240,43 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  backButtonInlineRTL: {
+    marginRight: 0,
+    marginLeft: 12,
+  },
   backButtonTextInline: {
     color: colors.textWhite,
     fontSize: 28,
     fontWeight: '700',
     lineHeight: 28,
     textAlign: 'center',
+  },
+  headerRowRTL: {
+    flexDirection: 'row-reverse',
+  },
+  addressCardHeaderRTL: {
+    flexDirection: 'row-reverse',
+  },
+  addressIconContainerRTL: {
+    marginRight: 0,
+    marginLeft: 10,
+  },
+  addressDetailsContainerRTL: {
+    alignItems: 'flex-end',
+  },
+  addressLineWithIconRTL: {
+    flexDirection: 'row-reverse',
+  },
+  addressLineTextRTL: {
+    marginLeft: 0,
+    marginRight: 6,
+    textAlign: 'right',
+  },
+  addressNameRTL: {
+    textAlign: 'right',
+  },
+  addressSubtitleRTL: {
+    textAlign: 'right',
   },
   modalOverlay: {
     flex: 1,

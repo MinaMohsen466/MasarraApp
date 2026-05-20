@@ -153,7 +153,7 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
 
   const renderAddAddressForm = () => (
     <View style={styles.formContainer}>
-      <View style={styles.formHeader}>
+      <View style={[styles.formHeader, isRTL && styles.formHeaderRTL]}>
         <TouchableOpacity
           onPress={() => setShowAddForm(false)}
           style={styles.backButton}
@@ -285,7 +285,7 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
             renderAddAddressForm()
           ) : (
             <>
-              <View style={styles.header}>
+              <View style={[styles.header, isRTL && styles.headerRTL]}>
                 <Text style={[styles.title, isRTL && styles.titleRTL]}>
                   {isRTL ? 'اختر عنوان التسليم' : 'Select Delivery Address'}
                 </Text>
@@ -325,12 +325,13 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
                         key={address._id}
                         style={[
                           styles.addressCard,
+                          isRTL && styles.addressCardRTL,
                           selectedAddressId === address._id &&
                             styles.addressCardSelected,
                         ]}
                         onPress={() => setSelectedAddressId(address._id)}
                       >
-                        <View style={styles.radioContainer}>
+                        <View style={[styles.radioContainer, isRTL && styles.radioContainerRTL]}>
                           <View
                             style={[
                               styles.radioOuter,
@@ -406,7 +407,7 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
                 </View>
               )}
 
-              <View style={styles.footer}>
+              <View style={[styles.footer, isRTL && styles.footerRTL]}>
                 <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
                   <Text style={styles.cancelButtonText}>
                     {isRTL ? 'إلغاء' : 'Cancel'}
@@ -455,6 +456,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
   },
+  headerRTL: {
+    flexDirection: 'row-reverse',
+  },
   title: { fontSize: 16, fontWeight: '700', color: colors.textDark },
   titleRTL: { textAlign: 'right' },
   closeButton: {
@@ -487,11 +491,18 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'transparent',
   },
+  addressCardRTL: {
+    flexDirection: 'row-reverse',
+  },
   addressCardSelected: {
     borderColor: colors.primary,
     backgroundColor: '#E8F5F4',
   },
   radioContainer: { marginRight: 12, paddingTop: 2 },
+  radioContainerRTL: {
+    marginRight: 0,
+    marginLeft: 12,
+  },
   radioOuter: {
     width: 22,
     height: 22,
@@ -550,6 +561,9 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#F0F0F0',
   },
+  footerRTL: {
+    flexDirection: 'row-reverse',
+  },
   cancelButton: {
     flex: 1,
     backgroundColor: '#F0F0F0',
@@ -579,6 +593,9 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
+  },
+  formHeaderRTL: {
+    flexDirection: 'row-reverse',
   },
   backButton: {
     width: 30,

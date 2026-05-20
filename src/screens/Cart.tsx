@@ -327,11 +327,11 @@ const Cart: React.FC<CartProps> = ({
       const couponData =
         appliedCoupon && couponDiscount > 0
           ? {
-              code: appliedCoupon.code,
-              discountAmount: couponDiscount,
-              originalPrice: calculateTotalBeforeDiscount(),
-              deductFrom: appliedCoupon.deductFrom || 'vendor',
-            }
+            code: appliedCoupon.code,
+            discountAmount: couponDiscount,
+            originalPrice: calculateTotalBeforeDiscount(),
+            deductFrom: appliedCoupon.deductFrom || 'vendor',
+          }
           : undefined;
 
       // Step 1: Create ONE booking for all items (payment status will be 'pending')
@@ -440,7 +440,7 @@ const Cart: React.FC<CartProps> = ({
       const payableDeliveryCharges = successfullyBookedItems.reduce(
         (total, item) => {
           if (item.maxBookingsPerSlot === -1) {
-            return total + 5;
+            return total + (item.deliveryFee ?? 0);
           }
           return total;
         },
@@ -495,14 +495,14 @@ const Cart: React.FC<CartProps> = ({
       const supplierShares =
         suppliers.length > 0
           ? calculateSupplierShares(
-              successfullyBookedItems.map(item => ({
-                vendorId: item.vendorId,
-                totalPrice: item.totalPrice || item.price,
-                price: item.price,
-                quantity: item.quantity,
-              })),
-              suppliers,
-            )
+            successfullyBookedItems.map(item => ({
+              vendorId: item.vendorId,
+              totalPrice: item.totalPrice || item.price,
+              price: item.price,
+              quantity: item.quantity,
+            })),
+            suppliers,
+          )
           : undefined;
 
       // Step 6: Prepare customer info for payment
@@ -515,7 +515,7 @@ const Cart: React.FC<CartProps> = ({
       if (!customerEmail && !customerMobile) {
         throw new Error(
           t('emailOrPhoneRequired') ||
-            'Email or phone number is required for payment',
+          'Email or phone number is required for payment',
         );
       }
 
@@ -586,7 +586,7 @@ const Cart: React.FC<CartProps> = ({
 
     // Save receipt data BEFORE removing items from cart
     const successfullyBookedItems = cartItems.filter(item =>
-        successfullyBookedItemIds.includes(item._id),
+      successfullyBookedItemIds.includes(item._id),
     );
     const amount = successfullyBookedItems.reduce((total, item) => total + (item.totalPrice ?? item.price * item.quantity), 0) + calculateDeliveryCharges() - couponDiscount;
 
@@ -685,7 +685,7 @@ const Cart: React.FC<CartProps> = ({
     setAlertTitle(t('paymentCancelled') || 'Payment Cancelled');
     setAlertMessage(
       t('paymentCancelledMessage') ||
-        'Payment was cancelled. Your cart items are still saved.',
+      'Payment was cancelled. Your cart items are still saved.',
     );
     setAlertButtons([{ text: t('ok'), style: 'default' }]);
     setAlertVisible(true);
@@ -783,16 +783,14 @@ const Cart: React.FC<CartProps> = ({
         setCouponDiscount(result.discountAmount);
         setCouponMessage(
           isRTL
-            ? `تم تطبيق الخصم بنجاح! توفير ${
-                result.coupon.discountType === 'percentage'
-                  ? result.coupon.discountValue + '%'
-                  : result.coupon.discountValue + ' د.ك'
-              }`
-            : `Coupon applied successfully! Discount ${
-                result.coupon.discountType === 'percentage'
-                  ? result.coupon.discountValue + '%'
-                  : 'KD ' + result.coupon.discountValue
-              }`,
+            ? `تم تطبيق الخصم بنجاح! توفير ${result.coupon.discountType === 'percentage'
+              ? result.coupon.discountValue + '%'
+              : result.coupon.discountValue + ' د.ك'
+            }`
+            : `Coupon applied successfully! Discount ${result.coupon.discountType === 'percentage'
+              ? result.coupon.discountValue + '%'
+              : 'KD ' + result.coupon.discountValue
+            }`,
         );
       } else {
         setCouponError(
@@ -911,7 +909,7 @@ const Cart: React.FC<CartProps> = ({
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.header, isRTL && styles.headerRTL, { paddingTop: insets.top + 8 }]}>
         {/* Menu Button - Left */}
         <TouchableOpacity
           onPress={() => toggleDrawer(true)}
@@ -919,7 +917,13 @@ const Cart: React.FC<CartProps> = ({
           activeOpacity={0.6}
           hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
         >
-          <Svg width={38} height={38} viewBox="0 0 24 24" fill="none">
+          <Svg
+            width={38}
+            height={38}
+            viewBox="0 0 24 24"
+            fill="none"
+            style={{ transform: [{ scaleX: isRTL ? -1 : 1 }] }}
+          >
             <Path
               d="M4 6H20M4 12H14M4 18H9"
               stroke={colors.primary}
@@ -981,8 +985,8 @@ const Cart: React.FC<CartProps> = ({
               const isItemOld = item.timeSlot?.start
                 ? new Date(item.timeSlot.start) < now
                 : item.selectedDate &&
-                  new Date(item.selectedDate).toDateString() <
-                    now.toDateString();
+                new Date(item.selectedDate).toDateString() <
+                now.toDateString();
 
               return (
                 <View key={item._id} style={styles.cartCard}>
@@ -1028,84 +1032,106 @@ const Cart: React.FC<CartProps> = ({
                         </Text>
                       )}
 
-                      {/* Quantity Selector - Only show for unlimited services (maxBookingsPerSlot === -1) */}
-                      {item.maxBookingsPerSlot === -1 && (
+                      {/* Selected Options / Custom Inputs */}
+                      {item.customInputs && item.customInputs.length > 0 && (
                         <View
-                          style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            marginTop: 8,
-                            gap: 8,
-                          }}
+                          style={[
+                            styles.optionsContainer,
+                            isRTL && styles.optionsContainerRTL,
+                          ]}
                         >
-                          <TouchableOpacity
-                            style={{
-                              width: 24,
-                              height: 24,
-                              borderRadius: 4,
-                              backgroundColor: colors.primary,
-                              justifyContent: 'center',
-                              alignItems: 'center',
-                            }}
-                            onPress={async () => {
-                              if (item.quantity > 1) {
-                                try {
-                                  const updatedCart =
-                                    await updateCartItemQuantity(
-                                      item._id,
-                                      item.quantity - 1,
-                                    );
-                                  if (updatedCart) {
-                                    setCartItems([...updatedCart]);
-                                  }
-                                } catch (error) {
-                                  console.error(
-                                    'Error updating quantity:',
-                                    error,
-                                  );
-                                }
-                              }
-                            }}
-                            activeOpacity={0.7}
-                          >
-                            <Text
-                              style={{
-                                color: colors.textWhite,
-                                fontSize: 14,
-                                fontWeight: 'bold',
-                              }}
-                            >
-                              -
-                            </Text>
-                          </TouchableOpacity>
+                          {item.customInputs.map((input, index) => {
+                            const renderOptionDetail = (
+                              opt: {
+                                label: string;
+                                labelAr?: string;
+                                value: string | number;
+                                valueAr?: string | number;
+                                price?: number;
+                              },
+                              optKey: string | number,
+                            ) => {
+                              const hasPrice = typeof opt.price === 'number' && opt.price > 0;
+                              return (
+                                <View
+                                  key={optKey}
+                                  style={[
+                                    styles.optionRow,
+                                    isRTL && styles.optionRowRTL,
+                                  ]}
+                                >
+                                  <Text
+                                    style={[
+                                      styles.optionBullet,
+                                      isRTL && styles.optionBulletRTL,
+                                    ]}
+                                  >
+                                    •
+                                  </Text>
+                                  <Text
+                                    style={[
+                                      styles.optionText,
+                                      isRTL && styles.optionTextRTL,
+                                    ]}
+                                  >
+                                    <Text style={styles.optionLabel}>
+                                      {isRTL && opt.labelAr ? opt.labelAr : opt.label}:{' '}
+                                    </Text>
+                                    <Text style={styles.optionValue}>
+                                      {isRTL && opt.valueAr ? opt.valueAr : opt.value}
+                                    </Text>
+                                    {hasPrice && (
+                                      <Text style={styles.optionPrice}>
+                                        {` (+${opt.price?.toFixed(3)} ${isRTL ? 'د.ك' : 'KD'
+                                          })`}
+                                      </Text>
+                                    )}
+                                  </Text>
+                                </View>
+                              );
+                            };
 
-                          <Text
-                            style={{
-                              fontSize: 14,
-                              fontWeight: '600',
-                              color: colors.textDark,
-                              minWidth: 30,
-                              textAlign: 'center',
-                            }}
-                          >
-                            {item.quantity}
-                          </Text>
+                            if (Array.isArray(input)) {
+                              return input.map((opt, subIndex) =>
+                                renderOptionDetail(opt, `${index}-${subIndex}`),
+                              );
+                            } else if (input && input.label) {
+                              return renderOptionDetail(input, index);
+                            }
+                            return null;
+                          })}
+                        </View>
+                      )}
+                    </View>
 
-                          <TouchableOpacity
-                            style={{
-                              width: 24,
-                              height: 24,
-                              borderRadius: 4,
-                              backgroundColor: colors.primary,
-                              justifyContent: 'center',
-                              alignItems: 'center',
-                            }}
-                            onPress={async () => {
+                    {/* Quantity Selector - Rendered on the opposite end next to the header info */}
+                    {item.maxBookingsPerSlot === -1 && (
+                      <View
+                        style={{
+                          flexDirection: isRTL ? 'row-reverse' : 'row',
+                          alignItems: 'center',
+                          alignSelf: 'center',
+                          marginLeft: isRTL ? 0 : 12,
+                          marginRight: isRTL ? 12 : 0,
+                          gap: 6,
+                        }}
+                      >
+                        <TouchableOpacity
+                          style={{
+                            width: 22,
+                            height: 22,
+                            borderRadius: 4,
+                            backgroundColor: colors.primary,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}
+                          onPress={async () => {
+                            if (item.quantity > 1) {
                               try {
                                 const updatedCart =
                                   await updateCartItemQuantity(
                                     item._id,
-                                    item.quantity + 1,
+                                    item.quantity - 1,
                                   );
                                 if (updatedCart) {
                                   setCartItems([...updatedCart]);
@@ -1116,22 +1142,75 @@ const Cart: React.FC<CartProps> = ({
                                   error,
                                 );
                               }
+                            }
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <Text
+                            style={{
+                              color: colors.textWhite,
+                              fontSize: 12,
+                              fontWeight: 'bold',
+                              lineHeight: 16,
                             }}
-                            activeOpacity={0.7}
                           >
-                            <Text
-                              style={{
-                                color: colors.textWhite,
-                                fontSize: 14,
-                                fontWeight: 'bold',
-                              }}
-                            >
-                              +
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
-                      )}
-                    </View>
+                            -
+                          </Text>
+                        </TouchableOpacity>
+
+                        <Text
+                          style={{
+                            fontSize: 13,
+                            fontWeight: '600',
+                            color: colors.textDark,
+                            minWidth: 18,
+                            textAlign: 'center',
+                          }}
+                        >
+                          {item.quantity}
+                        </Text>
+
+                        <TouchableOpacity
+                          style={{
+                            width: 22,
+                            height: 22,
+                            borderRadius: 4,
+                            backgroundColor: colors.primary,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}
+                          onPress={async () => {
+                            try {
+                              const updatedCart =
+                                await updateCartItemQuantity(
+                                  item._id,
+                                  item.quantity + 1,
+                                );
+                              if (updatedCart) {
+                                setCartItems([...updatedCart]);
+                              }
+                            } catch (error) {
+                              console.error(
+                                'Error updating quantity:',
+                                error,
+                              );
+                            }
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <Text
+                            style={{
+                              color: colors.textWhite,
+                              fontSize: 12,
+                              fontWeight: 'bold',
+                              lineHeight: 16,
+                            }}
+                          >
+                            +
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
                   </View>
 
                   {/* Date and Time */}
@@ -1151,13 +1230,13 @@ const Cart: React.FC<CartProps> = ({
                         <Text style={styles.dateTimeText}>
                           {item.selectedDate
                             ? new Date(item.selectedDate).toLocaleDateString(
-                                isRTL ? 'ar-KW' : 'en-US',
-                                {
-                                  day: '2-digit',
-                                  month: '2-digit',
-                                  year: 'numeric',
-                                },
-                              )
+                              isRTL ? 'ar-KW' : 'en-US',
+                              {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                              },
+                            )
                             : '-'}
                         </Text>
                       )}
@@ -1179,13 +1258,13 @@ const Cart: React.FC<CartProps> = ({
                         <Text style={styles.dateTimeText}>
                           {item.selectedDate
                             ? new Date(item.selectedDate).toLocaleDateString(
-                                isRTL ? 'ar-KW' : 'en-US',
-                                {
-                                  day: '2-digit',
-                                  month: '2-digit',
-                                  year: 'numeric',
-                                },
-                              )
+                              isRTL ? 'ar-KW' : 'en-US',
+                              {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                              },
+                            )
                             : '-'}
                         </Text>
                       )}
@@ -1228,171 +1307,96 @@ const Cart: React.FC<CartProps> = ({
                   <View style={styles.priceSection}>
                     {/* Unit Price Row - Show only for items with quantity support and quantity > 1 */}
                     {item.maxBookingsPerSlot === -1 && item.quantity > 1 && (
-                      <View style={styles.priceRow}>
-                        {isRTL ? (
-                          <>
-                            <Text
-                              style={[
-                                styles.priceValue,
-                                { fontSize: 12, color: colors.textSecondary },
-                              ]}
-                            >
-                              {item.price.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
-                            </Text>
-                            <Text
-                              style={[
-                                styles.priceLabel,
-                                {
-                                  marginLeft: 'auto',
-                                  fontSize: 12,
-                                  color: colors.textSecondary,
-                                },
-                              ]}
-                            >
-                              {isRTL ? 'سعر الوحدة' : 'Unit Price'}
-                            </Text>
-                          </>
-                        ) : (
-                          <>
-                            <Text
-                              style={[
-                                styles.priceLabel,
-                                { fontSize: 12, color: colors.textSecondary },
-                              ]}
-                            >
-                              {isRTL ? 'سعر الوحدة' : 'Unit Price'}
-                            </Text>
-                            <Text
-                              style={[
-                                styles.priceValue,
-                                { fontSize: 12, color: colors.textSecondary },
-                              ]}
-                            >
-                              {item.price.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
-                            </Text>
-                          </>
-                        )}
+                      <View
+                        style={[
+                          styles.priceRow,
+                          isRTL && styles.priceRowRTL,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.priceLabel,
+                            { fontSize: 11, color: colors.textSecondary },
+                          ]}
+                        >
+                          {isRTL ? 'سعر الوحدة' : 'Unit Price'}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.priceValue,
+                            { fontSize: 12, color: colors.textSecondary },
+                          ]}
+                        >
+                          {item.price.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
+                        </Text>
                       </View>
                     )}
+
                     {/* Total Amount Row */}
-                    <View style={styles.priceRow}>
-                      {isRTL ? (
-                        <>
-                          <View
-                            style={{
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                            }}
-                          >
-                            <Text style={styles.priceValue}>
-                              {(
-                                item.totalPrice ?? item.price * item.quantity
-                              ).toFixed(3)}
-                              {isRTL ? 'د.ك' : 'KD'}
+                    <View
+                      style={[
+                        styles.priceRow,
+                        isRTL && styles.priceRowRTL,
+                      ]}
+                    >
+                      <Text style={styles.priceLabel}>{t('amount')}</Text>
+                      <View
+                        style={{
+                          flexDirection: isRTL ? 'row-reverse' : 'row',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <Text style={styles.priceValue}>
+                          {(
+                            item.totalPrice ?? item.price * item.quantity
+                          ).toFixed(3)}{' '}
+                          {isRTL ? 'د.ك' : 'KD'}
+                        </Text>
+                        {item.availabilityStatus ===
+                          'pending_confirmation' && (
+                            <Text
+                              style={{
+                                fontSize: 10,
+                                color: '#FF9800',
+                                marginLeft: isRTL ? 0 : 6,
+                                marginRight: isRTL ? 6 : 0,
+                              }}
+                            >
+                              ({t('afterConfirmation')})
                             </Text>
-                            {item.availabilityStatus ===
-                              'pending_confirmation' && (
-                              <Text
-                                style={{
-                                  fontSize: 10,
-                                  color: '#FF9800',
-                                  marginRight: 6,
-                                }}
-                              >
-                                ({t('afterConfirmation')})
-                              </Text>
-                            )}
-                          </View>
-                          <Text
-                            style={[styles.priceLabel, { marginLeft: 'auto' }]}
-                          >
-                            {t('amount')}
-                          </Text>
-                        </>
-                      ) : (
-                        <>
-                          <Text style={styles.priceLabel}>{t('amount')}</Text>
-                          <View
-                            style={{
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                            }}
-                          >
-                            <Text style={styles.priceValue}>
-                              {(
-                                item.totalPrice ?? item.price * item.quantity
-                              ).toFixed(3)}
-                              {isRTL ? 'د.ك' : 'KD'}
-                            </Text>
-                            {item.availabilityStatus ===
-                              'pending_confirmation' && (
-                              <Text
-                                style={{
-                                  fontSize: 10,
-                                  color: '#FF9800',
-                                  marginLeft: 6,
-                                }}
-                              >
-                                ({t('afterConfirmation')})
-                              </Text>
-                            )}
-                          </View>
-                        </>
-                      )}
+                          )}
+                      </View>
                     </View>
-                    <View style={styles.priceRow}>
-                      {isRTL ? (
-                        <>
-                          {item.availabilityStatus ===
-                          'pending_confirmation' ? (
-                            <Text
-                              style={[
-                                styles.deliveryChargeValue,
-                                { color: colors.textSecondary, fontSize: 12 },
-                              ]}
-                            >
-                              {t('afterConfirmation')}
-                            </Text>
-                          ) : item.maxBookingsPerSlot === -1 ? (
-                            <Text style={styles.deliveryChargeValue}>
-                              {(5).toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
-                            </Text>
-                          ) : (
-                            <Text style={styles.deliveryChargeValue}>
-                              {(0).toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
-                            </Text>
-                          )}
-                          <Text
-                            style={[styles.priceLabel, { marginLeft: 'auto' }]}
-                          >
-                            {t('deliveryCharges')}
-                          </Text>
-                        </>
+
+                    {/* Delivery Charges Row */}
+                    <View
+                      style={[
+                        styles.priceRow,
+                        isRTL && styles.priceRowRTL,
+                      ]}
+                    >
+                      <Text style={styles.priceLabel}>
+                        {t('deliveryCharges')}
+                      </Text>
+                      {item.availabilityStatus ===
+                        'pending_confirmation' ? (
+                        <Text
+                          style={[
+                            styles.deliveryChargeValue,
+                            { color: colors.textSecondary, fontSize: 12 },
+                          ]}
+                        >
+                          {t('afterConfirmation')}
+                        </Text>
+                      ) : item.maxBookingsPerSlot === -1 ? (
+                        <Text style={styles.deliveryChargeValue}>
+                          {(item.deliveryFee ?? 0).toFixed(3)}{' '}
+                          {isRTL ? 'د.ك' : 'KD'}
+                        </Text>
                       ) : (
-                        <>
-                          <Text style={styles.priceLabel}>
-                            {t('deliveryCharges')}
-                          </Text>
-                          {item.availabilityStatus ===
-                          'pending_confirmation' ? (
-                            <Text
-                              style={[
-                                styles.deliveryChargeValue,
-                                { color: colors.textSecondary, fontSize: 12 },
-                              ]}
-                            >
-                              {t('afterConfirmation')}
-                            </Text>
-                          ) : item.maxBookingsPerSlot === -1 ? (
-                            <Text style={styles.deliveryChargeValue}>
-                              {(5).toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
-                            </Text>
-                          ) : (
-                            <Text style={styles.deliveryChargeValue}>
-                              {(0).toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
-                            </Text>
-                          )}
-                        </>
+                        <Text style={styles.deliveryChargeValue}>
+                          {(0).toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
+                        </Text>
                       )}
                     </View>
                   </View>
@@ -1496,7 +1500,7 @@ const Cart: React.FC<CartProps> = ({
                     style={[
                       styles.applyButton,
                       (isApplyingCoupon || !couponCode.trim()) &&
-                        styles.applyButtonDisabled,
+                      styles.applyButtonDisabled,
                     ]}
                     onPress={handleApplyCoupon}
                     disabled={isApplyingCoupon || !couponCode.trim()}

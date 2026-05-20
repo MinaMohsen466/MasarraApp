@@ -1280,100 +1280,112 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
               {/* Individual Reviews */}
               {reviews.length > 0 && (
                 <View>
-                  {reviews.slice(0, 2).map(review => (
-                    <View key={review._id} style={styles.reviewCard}>
-                      <View
-                        style={[
-                          styles.reviewHeader,
-                          isRTL && { flexDirection: 'row-reverse' },
-                        ]}
-                      >
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.reviewsListHorizontal}
+                  >
+                    {reviews.slice(0, 5).map(review => (
+                      <View key={review._id} style={styles.reviewCardHorizontal}>
                         <View
                           style={[
-                            styles.reviewerInfo,
+                            styles.reviewHeader,
                             isRTL && { flexDirection: 'row-reverse' },
                           ]}
                         >
-                          {review.user.profilePicture ? (
-                            <Image
-                              source={{
-                                uri: getImageUrl(review.user.profilePicture),
-                              }}
-                              style={[
-                                styles.userAvatar,
-                                isRTL && { marginRight: 0, marginLeft: 12 },
-                              ]}
-                            />
-                          ) : (
-                            <View
-                              style={[
-                                styles.userAvatarPlaceholder,
-                                isRTL && { marginRight: 0, marginLeft: 12 },
-                              ]}
-                            >
-                              <Text style={styles.userAvatarText}>
-                                {review.user.name.charAt(0).toUpperCase()}
-                              </Text>
-                            </View>
-                          )}
-                          <View style={styles.serviceCardContent}>
-                            <View style={styles.userInfoRow}>
-                              <Text style={styles.userName} numberOfLines={1}>
-                                {review.user.name}
-                              </Text>
-                              <Text style={styles.dateSeparator}>•</Text>
-                              <Text style={styles.reviewDateText}>
-                                {new Date(review.createdAt).toLocaleDateString(
-                                  isRTL ? 'ar-EG' : 'en-US',
-                                  { month: 'short', day: 'numeric' },
-                                )}
-                              </Text>
-                            </View>
-                            {review.isVerifiedPurchase && (
-                              <Text style={styles.verifiedBadge}>
-                                ✓ {isRTL ? 'مشترٍ موثق' : 'Verified'}
-                              </Text>
+                          <View
+                            style={[
+                              styles.reviewerInfo,
+                              isRTL && { flexDirection: 'row-reverse' },
+                            ]}
+                          >
+                            {review.user.profilePicture ? (
+                              <Image
+                                source={{
+                                  uri: getImageUrl(review.user.profilePicture),
+                                }}
+                                style={[
+                                  styles.userAvatar,
+                                  isRTL && { marginRight: 0, marginLeft: 12 },
+                                ]}
+                              />
+                            ) : (
+                              <View
+                                style={[
+                                  styles.userAvatarPlaceholder,
+                                  isRTL && { marginRight: 0, marginLeft: 12 },
+                                ]}
+                              >
+                                <Text style={styles.userAvatarText}>
+                                  {review.user.name.charAt(0).toUpperCase()}
+                                </Text>
+                              </View>
                             )}
+                            <View style={styles.serviceCardContent}>
+                              <View style={[styles.userInfoRow, isRTL && { flexDirection: 'row-reverse' }]}>
+                                <Text style={styles.userName} numberOfLines={1}>
+                                  {review.user.name}
+                                </Text>
+                              </View>
+                              <View style={[styles.userInfoRow, { marginTop: 2 }, isRTL && { flexDirection: 'row-reverse' }]}>
+                                <Text style={styles.reviewDateText}>
+                                  {new Date(review.createdAt).toLocaleDateString(
+                                    isRTL ? 'ar-EG' : 'en-US',
+                                    { month: 'short', day: 'numeric' },
+                                  )}
+                                </Text>
+                                {review.isVerifiedPurchase && (
+                                  <>
+                                    <Text style={styles.dateSeparator}>•</Text>
+                                    <Text style={styles.verifiedBadge}>
+                                      {isRTL ? 'موثق' : 'Verified'}
+                                    </Text>
+                                  </>
+                                )}
+                              </View>
+                            </View>
+                          </View>
+                          <View style={styles.ratingContainer}>
+                            <Text
+                              style={[styles.reviewRatingValue, { fontSize: 13 }]}
+                            >
+                              {review.rating.toFixed(1)} ★
+                            </Text>
                           </View>
                         </View>
-                        <View style={styles.ratingContainer}>
-                          <Text
-                            style={[styles.reviewRatingValue, { fontSize: 13 }]}
-                          >
-                            {review.rating.toFixed(1)} ★
-                          </Text>
-                        </View>
+                        <Text
+                          style={[
+                            styles.reviewComment,
+                            { textAlign: isRTL ? 'right' : 'left' },
+                          ]}
+                          numberOfLines={3}
+                        >
+                          {review.comment}
+                        </Text>
+                        {review.vendorReply && (
+                          <View style={styles.vendorReplyContainer}>
+                            <Text
+                              style={[
+                                styles.vendorReplyTitle,
+                                { textAlign: isRTL ? 'right' : 'left' },
+                              ]}
+                            >
+                              {isRTL ? 'رد البائع:' : 'Vendor Reply:'}
+                            </Text>
+                            <Text
+                              style={[
+                                styles.vendorReplyText,
+                                { textAlign: isRTL ? 'right' : 'left' },
+                              ]}
+                              numberOfLines={2}
+                            >
+                              {review.vendorReply.text}
+                            </Text>
+                          </View>
+                        )}
                       </View>
-                      <Text
-                        style={[
-                          styles.reviewComment,
-                          { textAlign: isRTL ? 'right' : 'left' },
-                        ]}
-                      >
-                        {review.comment}
-                      </Text>
-                      {review.vendorReply && (
-                        <View style={styles.vendorReplyContainer}>
-                          <Text
-                            style={[
-                              styles.vendorReplyTitle,
-                              { textAlign: isRTL ? 'right' : 'left' },
-                            ]}
-                          >
-                            {isRTL ? 'رد البائع:' : 'Vendor Reply:'}
-                          </Text>
-                          <Text
-                            style={[
-                              styles.vendorReplyText,
-                              { textAlign: isRTL ? 'right' : 'left' },
-                            ]}
-                          >
-                            {review.vendorReply.text}
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-                  ))}
+                    ))}
+                  </ScrollView>
 
                   {/* Show More Reviews Button */}
                   {reviews.length > 2 && (

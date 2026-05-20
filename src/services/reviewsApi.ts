@@ -147,23 +147,24 @@ export async function createReview(
 // Check if user already reviewed a service
 export async function checkUserReviewedService(
   serviceId: string,
-): Promise<boolean> {
+): Promise<Review | null> {
   try {
     const token = await AsyncStorage.getItem('userToken');
     if (!token) {
-      return false;
+      return null;
     }
 
     const userId = await AsyncStorage.getItem('userId');
     if (!userId) {
-      return false;
+      return null;
     }
 
     const reviewsResponse = await getServiceReviews(serviceId, 1, 100);
 
-    return reviewsResponse.reviews.some(review => review.user._id === userId);
+    const userReview = reviewsResponse.reviews.find(review => review.user?._id === userId);
+    return userReview || null;
   } catch (error) {
-    return false;
+    return null;
   }
 }
 

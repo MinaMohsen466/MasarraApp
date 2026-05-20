@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Image, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, Image, ScrollView, StatusBar } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from './styles';
+import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import EditProfile from '../EditProfile';
 import Wishlist from '../Wishlist/Wishlist';
 import OrderHistory from '../../screens/OrderHistory';
 import MyEvents from '../../screens/MyEvents';
-import WriteReview from '../../screens/WriteReview';
+
 import { API_URL } from '../../config/api.config';
 
 interface UserProfileProps {
@@ -40,12 +41,6 @@ const UserProfile: React.FC<UserProfileProps> = ({
   const [showWishlist, setShowWishlist] = useState(false);
   const [showOrderHistory, setShowOrderHistory] = useState(false);
   const [showMyEvents, setShowMyEvents] = useState(false);
-  const [showWriteReview, setShowWriteReview] = useState(false);
-  const [reviewData, setReviewData] = useState<{
-    bookingId: string;
-    serviceId: string;
-    serviceName: string;
-  } | null>(null);
 
   // Check for edit profile flag when component mounts
   useEffect(() => {
@@ -161,31 +156,6 @@ const UserProfile: React.FC<UserProfileProps> = ({
     return (
       <OrderHistory
         onBack={() => setShowOrderHistory(false)}
-        onWriteReview={(bookingId, serviceId, serviceName) => {
-          setReviewData({ bookingId, serviceId, serviceName });
-          setShowOrderHistory(false);
-          setShowWriteReview(true);
-        }}
-      />
-    );
-  }
-
-  if (showWriteReview && reviewData) {
-    return (
-      <WriteReview
-        bookingId={reviewData.bookingId}
-        serviceId={reviewData.serviceId}
-        serviceName={reviewData.serviceName}
-        onBack={() => {
-          setShowWriteReview(false);
-          setReviewData(null);
-          setShowOrderHistory(true);
-        }}
-        onSuccess={() => {
-          setShowWriteReview(false);
-          setReviewData(null);
-          setShowOrderHistory(true);
-        }}
       />
     );
   }
@@ -198,38 +168,41 @@ const UserProfile: React.FC<UserProfileProps> = ({
   // If user is not logged in, show login prompt
   if (!user) {
     return (
-      <View style={styles.fullPageContainer}>
-        {/* Header background that extends into the notch/status bar */}
-        <View style={[styles.headerBackground, { height: insets.top + 56 }]} />
+      <>
+        <StatusBar
+          barStyle="light-content"
+          backgroundColor={colors.primary}
+          translucent={false}
+        />
+        <View style={{ flex: 1, backgroundColor: colors.primary }}>
+          <View style={{ height: insets.top, backgroundColor: colors.primary }} />
+          <View style={styles.fullPageContainer}>
+            {/* Header background */}
+            <View style={[styles.headerBackground, { height: 56 }]} />
 
-        {/* Header with Back Button */}
-        <View
-          style={[
-            styles.headerBar,
-            { paddingTop: insets.top + 12, paddingBottom: 12 },
-          ]}
-        >
-          {onBack && (
-            <TouchableOpacity
-              style={[styles.headerBackButton, styles.headerBackInline]}
-              onPress={onBack}
-              activeOpacity={0.8}
-            >
-              <Text
-                style={[
-                  styles.headerBackIcon,
-                  isRTL && styles.headerBackTextRTL,
-                ]}
-              >
-                {'‹'}
+            {/* Header with Back Button */}
+            <View style={[styles.headerBar, isRTL && styles.headerBarRTL]}>
+              {onBack && (
+                <TouchableOpacity
+                  style={styles.headerBackButton}
+                  onPress={onBack}
+                  activeOpacity={0.8}
+                >
+                  <Text
+                    style={[
+                      styles.headerBackIcon,
+                      isRTL && styles.headerBackTextRTL,
+                    ]}
+                  >
+                    {isRTL ? '›' : '‹'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
+                {isRTL ? 'الملف الشخصي' : 'Profile'}
               </Text>
-            </TouchableOpacity>
-          )}
-          <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
-            {isRTL ? 'الملف الشخصي' : 'Profile'}
-          </Text>
-          <View style={styles.headerSpacer} />
-        </View>
+              <View style={styles.headerSpacer} />
+            </View>
 
         {/* Login Prompt */}
         <View style={styles.loginPromptContainer}>
@@ -268,39 +241,47 @@ const UserProfile: React.FC<UserProfileProps> = ({
           </TouchableOpacity>
         </View>
       </View>
+      </View>
+      </>
     );
   }
 
   return (
-    <View style={styles.fullPageContainer}>
-      {/* Header background that extends into the notch/status bar */}
-      <View style={[styles.headerBackground, { height: insets.top + 56 }]} />
+    <>
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={colors.primary}
+        translucent={false}
+      />
+      <View style={{ flex: 1, backgroundColor: colors.primary }}>
+        <View style={{ height: insets.top, backgroundColor: colors.primary }} />
+        <View style={styles.fullPageContainer}>
+          {/* Header background */}
+          <View style={[styles.headerBackground, { height: 56 }]} />
 
-      {/* Header with Back Button */}
-      <View
-        style={[
-          styles.headerBar,
-          { paddingTop: insets.top + 12, paddingBottom: 12 },
-        ]}
-      >
-        {onBack && (
-          <TouchableOpacity
-            style={[styles.headerBackButton, styles.headerBackInline]}
-            onPress={onBack}
-            activeOpacity={0.8}
-          >
-            <Text
-              style={[styles.headerBackIcon, isRTL && styles.headerBackTextRTL]}
-            >
-              {'‹'}
+          {/* Header with Back Button */}
+          <View style={[styles.headerBar, isRTL && styles.headerBarRTL]}>
+            {onBack && (
+              <TouchableOpacity
+                style={styles.headerBackButton}
+                onPress={onBack}
+                activeOpacity={0.8}
+              >
+                <Text
+                  style={[
+                    styles.headerBackIcon,
+                    isRTL && styles.headerBackTextRTL,
+                  ]}
+                >
+                  {isRTL ? '›' : '‹'}
+                </Text>
+              </TouchableOpacity>
+            )}
+            <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
+              {isRTL ? 'الملف الشخصي' : 'Profile'}
             </Text>
-          </TouchableOpacity>
-        )}
-        <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
-          {isRTL ? 'الملف الشخصي' : 'Profile'}
-        </Text>
-        <View style={styles.headerSpacer} />
-      </View>
+            <View style={styles.headerSpacer} />
+          </View>
 
       {/* Scrollable Content */}
       <ScrollView
@@ -423,6 +404,8 @@ const UserProfile: React.FC<UserProfileProps> = ({
         </View>
       </ScrollView>
     </View>
+    </View>
+    </>
   );
 };
 

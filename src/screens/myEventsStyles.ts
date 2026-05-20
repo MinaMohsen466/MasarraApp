@@ -18,6 +18,9 @@ export const myEventsStyles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  headerRTL: {
+    flexDirection: 'row-reverse',
+  },
   backButton: {
     justifyContent: 'center',
     alignItems: 'center',

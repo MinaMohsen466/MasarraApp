@@ -166,6 +166,41 @@ export const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.primary,
   },
+  detailRowRTL: {
+    flexDirection: 'row-reverse',
+  },
+  detailLabelRTL: {
+    textAlign: 'right',
+  },
+  detailValueRTL: {
+    textAlign: 'left',
+  },
+  detailValueMonoRTL: {
+    textAlign: 'left',
+  },
+  servicesTitleRTL: {
+    textAlign: 'right',
+  },
+  serviceRowRTL: {
+    flexDirection: 'row-reverse',
+  },
+  serviceNameRTL: {
+    textAlign: 'right',
+    marginRight: 0,
+    marginLeft: 16,
+  },
+  serviceTotalRTL: {
+    textAlign: 'left',
+  },
+  totalRowRTL: {
+    flexDirection: 'row-reverse',
+  },
+  totalLabelRTL: {
+    textAlign: 'right',
+  },
+  totalValueRTL: {
+    textAlign: 'left',
+  },
   actionsContainer: {
     paddingHorizontal: 32,
     paddingBottom: 24,

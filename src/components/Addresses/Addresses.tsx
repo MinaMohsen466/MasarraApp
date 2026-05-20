@@ -168,14 +168,14 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
           >
             <View style={{ flex: 1 }}>
               {/* header: back icon (left) + add button (right) */}
-              <View style={styles.headerRow}>
-                <View style={styles.headerLeftRow}>
+              <View style={[styles.headerRow, isRTL && styles.headerRowRTL]}>
+                <View style={[styles.headerLeftRow, isRTL && styles.headerLeftRowRTL]}>
                   {onBack && (
                     <TouchableOpacity
                       onPress={onBack}
-                      style={styles.backButtonInline}
+                      style={[styles.backButtonInline, isRTL && styles.backButtonInlineRTL]}
                     >
-                      <Text style={styles.backButtonTextInline}>{'‹'}</Text>
+                      <Text style={styles.backButtonTextInline}>{isRTL ? '›' : '‹'}</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -347,14 +347,14 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
         >
           <View style={{ flex: 1 }}>
             {/* header: back icon (left) + add button (right) */}
-            <View style={styles.headerRow}>
-              <View style={styles.headerLeftRow}>
+            <View style={[styles.headerRow, isRTL && styles.headerRowRTL]}>
+              <View style={[styles.headerLeftRow, isRTL && styles.headerLeftRowRTL]}>
                 {onBack && (
                   <TouchableOpacity
                     onPress={onBack}
-                    style={styles.backButtonInline}
+                    style={[styles.backButtonInline, isRTL && styles.backButtonInlineRTL]}
                   >
-                    <Text style={styles.backButtonTextInline}>{'‹'}</Text>
+                    <Text style={styles.backButtonTextInline}>{isRTL ? '›' : '‹'}</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -381,9 +381,9 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
             {addresses.map(addr => (
               <View key={addr._id} style={styles.addressCard}>
                 <View style={styles.addressCardInner}>
-                  <View style={styles.addressCardHeader}>
+                  <View style={[styles.addressCardHeader, isRTL && styles.addressCardHeaderRTL]}>
                     {/* Location Icon */}
-                    <View style={styles.addressIconContainer}>
+                    <View style={[styles.addressIconContainer, isRTL && styles.addressIconContainerRTL]}>
                       <Svg
                         width={22}
                         height={22}
@@ -397,15 +397,15 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
                       </Svg>
                     </View>
                     <View style={styles.addressInfoContainer}>
-                      <Text style={styles.addressName}>{addr.name}</Text>
-                      <Text style={styles.addressSubtitle}>
+                      <Text style={[styles.addressName, isRTL && styles.addressNameRTL]}>{addr.name}</Text>
+                      <Text style={[styles.addressSubtitle, isRTL && styles.addressSubtitleRTL]}>
                         {isRTL ? 'عنوان التوصيل' : 'Delivery Address'}
                       </Text>
                     </View>
                   </View>
 
-                  <View style={styles.addressDetailsContainer}>
-                    <View style={styles.addressLineWithIcon}>
+                  <View style={[styles.addressDetailsContainer, isRTL && styles.addressDetailsContainerRTL]}>
+                    <View style={[styles.addressLineWithIcon, isRTL && styles.addressLineWithIconRTL]}>
                       <Svg
                         width={14}
                         height={14}
@@ -420,11 +420,11 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
                           strokeLinejoin="round"
                         />
                       </Svg>
-                      <Text style={styles.addressLineText}>
+                      <Text style={[styles.addressLineText, isRTL && styles.addressLineTextRTL]}>
                         {addr.street} {addr.houseNumber}
                       </Text>
                     </View>
-                    <View style={styles.addressLineWithIcon}>
+                    <View style={[styles.addressLineWithIcon, isRTL && styles.addressLineWithIconRTL]}>
                       <Svg
                         width={14}
                         height={14}
@@ -442,7 +442,7 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
                           strokeWidth={2}
                         />
                       </Svg>
-                      <Text style={styles.addressLineText}>{addr.city}</Text>
+                      <Text style={[styles.addressLineText, isRTL && styles.addressLineTextRTL]}>{addr.city}</Text>
                     </View>
                   </View>
                 </View>

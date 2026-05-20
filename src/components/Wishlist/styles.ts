@@ -41,6 +41,9 @@ export const createStyles = (screenWidth: number) => {
       width: '100%',
       justifyContent: 'flex-start',
     },
+    headerRowRTL: {
+      flexDirection: 'row-reverse',
+    },
     backInline: {
       marginRight: 12,
       width: 40,
@@ -49,6 +52,10 @@ export const createStyles = (screenWidth: number) => {
       backgroundColor: colors.primary,
       justifyContent: 'center',
       alignItems: 'center',
+    },
+    backInlineRTL: {
+      marginRight: 0,
+      marginLeft: 12,
     },
     backIcon: {
       color: colors.textWhite,

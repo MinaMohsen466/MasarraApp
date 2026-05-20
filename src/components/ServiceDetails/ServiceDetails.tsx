@@ -25,7 +25,7 @@ import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useGlobalDate } from '../../contexts/DateContext';
 import { getServiceImageUrl, fetchServices } from '../../services/servicesApi';
-import { getImageUrl, checkTimeSlotAvailability } from '../../services/api';
+import { getImageUrl, checkTimeSlotAvailability, getUserBookings } from '../../services/api';
 import {
   toggleWishlist,
   isWishlisted,
@@ -37,11 +37,13 @@ import DatePickerModal, {
 } from '../DatePickerModal/DatePickerModal';
 import TimePickerModal from '../TimePickerModal/TimePickerModal';
 import AllReviews from '../../screens/AllReviews';
+import WriteReview from '../../screens/WriteReview';
 import {
   getServiceReviews,
   Review,
   ReviewStats,
   deleteReview,
+  checkUserReviewedService,
 } from '../../services/reviewsApi';
 import { CustomAlert } from '../../screens/../components/CustomAlert/CustomAlert';
 
@@ -96,6 +98,10 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
   const [showAllReviewsModal, setShowAllReviewsModal] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isDeletingReview, setIsDeletingReview] = useState(false);
+  const [hasPurchased, setHasPurchased] = useState(false);
+  const [userBookingId, setUserBookingId] = useState<string | null>(null);
+  const [showWriteReviewModal, setShowWriteReviewModal] = useState(false);
+  const [userReview, setUserReview] = useState<Review | null>(null);
   const [alertConfig, setAlertConfig] = useState<{
     visible: boolean;
     title: string;
@@ -237,6 +243,66 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
     loadUserData();
   }, []);
 
+  // Check if the user has purchased the service
+  React.useEffect(() => {
+    const checkPurchaseStatus = async () => {
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        if (!token || !serviceId) {
+          setHasPurchased(false);
+          setUserBookingId(null);
+          return;
+        }
+
+        const bookingsData = await getUserBookings(token);
+        
+        // Find if there's any booking for this service that is confirmed/completed
+        const purchaseBooking = bookingsData.find(booking => {
+          return booking.services?.some(s => {
+            const sId = typeof s.service === 'string' ? s.service : s.service?._id;
+            if (sId !== serviceId) return false;
+
+            const status = s.status || booking.status;
+            return status === 'confirmed' || status === 'completed';
+          });
+        });
+
+        if (purchaseBooking) {
+          setHasPurchased(true);
+          setUserBookingId(purchaseBooking._id);
+        } else {
+          setHasPurchased(false);
+          setUserBookingId(null);
+        }
+      } catch (error) {
+        console.log('Error checking purchase status:', error);
+        setHasPurchased(false);
+        setUserBookingId(null);
+      }
+    };
+
+    checkPurchaseStatus();
+  }, [serviceId, userToken]);
+
+  // Fetch user's existing review if any
+  React.useEffect(() => {
+    const fetchUserReview = async () => {
+      if (!serviceId || !userToken) {
+        setUserReview(null);
+        return;
+      }
+      try {
+        const review = await checkUserReviewedService(serviceId);
+        setUserReview(review);
+      } catch (error) {
+        console.log('Error checking user review status:', error);
+        setUserReview(null);
+      }
+    };
+
+    fetchUserReview();
+  }, [serviceId, userToken, reviewsData]);
+
   // Fetch services and find the selected service - Load first for faster UI
   const { data: services, isLoading } = useQuery({
     queryKey: ['services'],
@@ -263,11 +329,29 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
 
   // Update local state when reviews data changes
   useEffect(() => {
-    if (reviewsData) {
+    if (reviewsData && service) {
+      const vendorId = typeof service.vendor === 'string' ? service.vendor : service.vendor?._id;
+      const customerReviews = reviewsData.reviews.filter(
+        (review: any) => review.user?._id !== vendorId
+      );
+      setReviews(customerReviews);
+
+      // Adjust stats to match filtered reviews
+      const vendorReviewsCount = reviewsData.reviews.length - customerReviews.length;
+      if (vendorReviewsCount > 0 && reviewsData.stats) {
+        const adjustedStats = {
+          ...reviewsData.stats,
+          totalRatings: Math.max(0, reviewsData.stats.totalRatings - vendorReviewsCount),
+        };
+        setReviewStats(adjustedStats);
+      } else {
+        setReviewStats(reviewsData.stats);
+      }
+    } else if (reviewsData) {
       setReviews(reviewsData.reviews);
       setReviewStats(reviewsData.stats);
     }
-  }, [reviewsData]);
+  }, [reviewsData, service]);
 
   // Handle delete review
   const handleDeleteReview = (review: Review) => {
@@ -315,6 +399,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
   };
 
   const service = (services as any)?.find((s: any) => s._id === serviceId);
+  const hasReviewed = reviews.some(r => (typeof r.user === 'object' ? r.user?._id : r.user) === currentUserId);
 
   // Debug: Log service discount info
   React.useEffect(() => {
@@ -1041,7 +1126,10 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                   <View key={input._id} style={styles.optionCardContainer}>
                     {/* Add Option Button - shows the label and toggle */}
                     <TouchableOpacity
-                      style={styles.addOptionButton}
+                      style={[
+                        styles.addOptionButton,
+                        isRTL && styles.addOptionButtonRTL,
+                      ]}
                       activeOpacity={0.8}
                       onPress={() => {
                         setExpandedCustomInputs({
@@ -1050,7 +1138,15 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                         });
                       }}
                     >
-                      <Text style={styles.addOptionText}>{inputLabel}</Text>
+                      <Text
+                        style={[
+                          styles.addOptionText,
+                          isRTL && styles.addOptionTextRTL,
+                          isRTL ? { marginLeft: 0, marginRight: 12 } : { marginLeft: 12, marginRight: 0 },
+                        ]}
+                      >
+                        {inputLabel}
+                      </Text>
                       <Svg
                         width={20}
                         height={20}
@@ -1058,7 +1154,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                         fill="none"
                         style={{
                           transform: [
-                            { rotate: isExpanded ? '90deg' : '0deg' },
+                            { rotate: isExpanded ? '90deg' : (isRTL ? '180deg' : '0deg') },
                           ],
                         }}
                       >
@@ -1245,236 +1341,279 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
             </View>
           )}
 
-          {/* Reviews Section */}
-          {reviewStats && reviewStats.totalRatings > 0 && (
+          {((reviewStats && reviewStats.totalRatings > 0) || hasPurchased) && (
             <View style={styles.reviewsSection}>
-              <Text
-                style={[styles.reviewsTitle, isRTL && styles.reviewsTitleRTL]}
+              {/* Header Row with Title and Action Button */}
+              <View
+                style={{
+                  flexDirection: isRTL ? 'row-reverse' : 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 16,
+                  paddingHorizontal: 2,
+                }}
               >
-                {isRTL ? 'التقييمات' : 'Reviews'} ({reviewStats.totalRatings})
-              </Text>
+                <Text
+                  style={[
+                    styles.reviewsTitle,
+                    { marginBottom: 0 },
+                    isRTL && styles.reviewsTitleRTL,
+                  ]}
+                >
+                  {isRTL ? 'التقييمات' : 'Reviews'} ({reviewStats?.totalRatings || 0})
+                </Text>
 
-              {/* Review Stats */}
-              <View style={styles.reviewStatsCard}>
-                <View style={styles.averageRatingContainer}>
-                  <Text style={styles.averageRatingNumber}>
-                    {reviewStats.averageRating.toFixed(1)}
-                  </Text>
-                  <Text style={styles.averageRatingStars}>
-                    {'★'.repeat(Math.round(reviewStats.averageRating))}
-                    {'☆'.repeat(5 - Math.round(reviewStats.averageRating))}
-                  </Text>
-                  <Text style={styles.averageRatingText}>
-                    {reviewStats.totalRatings} {isRTL ? 'تقييم' : 'reviews'}
-                  </Text>
-                </View>
-
-                {/* Rating Distribution */}
-                <View style={styles.ratingDistribution}>
-                  {[5, 4, 3, 2, 1].map(star => {
-                    const count =
-                      reviewStats.ratingDistribution[
-                        star as keyof typeof reviewStats.ratingDistribution
-                      ] || 0;
-                    const percentage =
-                      reviewStats.totalRatings > 0
-                        ? (count / reviewStats.totalRatings) * 100
-                        : 0;
-                    return (
-                      <View key={star} style={styles.distributionRow}>
-                        <Text style={styles.distributionStar}>{star}★</Text>
-                        <View style={styles.distributionBar}>
-                          <View
-                            style={[
-                              styles.distributionFill,
-                              { width: `${percentage}%` },
-                            ]}
-                          />
-                        </View>
-                        <Text style={styles.distributionCount}>{count}</Text>
-                      </View>
-                    );
-                  })}
-                </View>
+                {/* Write/Edit Review Button */}
+                {hasPurchased && (
+                  <TouchableOpacity
+                    style={{
+                      backgroundColor: colors.primary,
+                      paddingHorizontal: 16,
+                      paddingVertical: 8,
+                      borderRadius: 20,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      shadowColor: colors.primary,
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 4,
+                      elevation: 2,
+                    }}
+                    onPress={() => setShowWriteReviewModal(true)}
+                  >
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#FFF' }}>
+                      {isRTL ? 'تقييم' : 'Review'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
 
-              {/* Individual Reviews */}
-              {reviews.length > 0 && (
-                <View style={styles.reviewsList}>
-                  {reviews.slice(0, 2).map(review => (
-                    <View key={review._id} style={styles.reviewCard}>
-                      <View style={styles.reviewHeader}>
-                        <View style={styles.reviewUserInfo}>
-                          {review.user.profilePicture ? (
-                            <Image
-                              source={{
-                                uri: getImageUrl(review.user.profilePicture),
-                              }}
-                              style={styles.reviewUserAvatar}
-                            />
-                          ) : (
-                            <View style={styles.reviewUserAvatarPlaceholder}>
-                              <Text style={styles.reviewUserAvatarText}>
-                                {review.user.name.charAt(0).toUpperCase()}
-                              </Text>
-                            </View>
-                          )}
-                          <View style={{ flex: 1 }}>
-                            <View
-                              style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                flexWrap: 'wrap',
-                              }}
-                            >
-                              <Text
+              {reviewStats && reviewStats.totalRatings > 0 && (
+                <>
+                  {/* Review Stats */}
+                  <View style={styles.reviewStatsCard}>
+                    <View style={styles.averageRatingContainer}>
+                      <Text style={styles.averageRatingNumber}>
+                        {reviewStats.averageRating.toFixed(1)}
+                      </Text>
+                      <Text style={styles.averageRatingStars}>
+                        {'★'.repeat(Math.round(reviewStats.averageRating))}
+                        {'☆'.repeat(5 - Math.round(reviewStats.averageRating))}
+                      </Text>
+                      <Text style={styles.averageRatingText}>
+                        {reviewStats.totalRatings} {isRTL ? 'تقييم' : 'reviews'}
+                      </Text>
+                    </View>
+
+                    {/* Rating Distribution */}
+                    <View style={styles.ratingDistribution}>
+                      {[5, 4, 3, 2, 1].map(star => {
+                        const count =
+                          reviewStats.ratingDistribution[
+                            star as keyof typeof reviewStats.ratingDistribution
+                          ] || 0;
+                        const percentage =
+                          reviewStats.totalRatings > 0
+                            ? (count / reviewStats.totalRatings) * 100
+                            : 0;
+                        return (
+                          <View key={star} style={styles.distributionRow}>
+                            <Text style={styles.distributionStar}>{star}★</Text>
+                            <View style={styles.distributionBar}>
+                              <View
                                 style={[
-                                  styles.reviewUserName,
-                                  { maxWidth: '50%' },
+                                  styles.distributionFill,
+                                  { width: `${percentage}%` },
                                 ]}
-                                numberOfLines={1}
-                              >
-                                {review.user.name}
-                              </Text>
-                              <Text
-                                style={{
-                                  fontSize: 12,
-                                  color: colors.textSecondary,
-                                  marginHorizontal: 6,
-                                }}
-                              >
-                                •
-                              </Text>
-                              <Text
-                                style={{
-                                  fontSize: 12,
-                                  color: colors.textSecondary,
-                                }}
-                              >
-                                {new Date(review.createdAt).toLocaleDateString(
-                                  isRTL ? 'ar-EG' : 'en-US',
-                                  { month: 'short', day: 'numeric' },
-                                )}
-                              </Text>
+                              />
                             </View>
-                            {review.isVerifiedPurchase && (
-                              <Text style={styles.verifiedBadge}>
-                                ✓ {isRTL ? 'مشترٍ موثق' : 'Verified'}
-                              </Text>
+                            <Text style={styles.distributionCount}>{count}</Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  </View>
+
+                  {/* Individual Reviews */}
+                  {reviews.length > 0 && (
+                    <View>
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.reviewsListHorizontal}
+                      >
+                        {reviews.slice(0, 5).map(review => (
+                          <View key={review._id} style={styles.reviewCardHorizontal}>
+                            <View style={styles.reviewHeader}>
+                              <View style={styles.reviewUserInfo}>
+                                {review.user.profilePicture ? (
+                                  <Image
+                                    source={{
+                                      uri: getImageUrl(review.user.profilePicture),
+                                    }}
+                                    style={styles.reviewUserAvatar}
+                                  />
+                                ) : (
+                                  <View style={styles.reviewUserAvatarPlaceholder}>
+                                    <Text style={styles.reviewUserAvatarText}>
+                                      {review.user.name.charAt(0).toUpperCase()}
+                                    </Text>
+                                  </View>
+                                )}
+                                <View style={{ flex: 1 }}>
+                                  <View
+                                    style={{
+                                      flexDirection: 'row',
+                                      alignItems: 'center',
+                                      flexWrap: 'wrap',
+                                    }}
+                                  >
+                                    <Text
+                                      style={[
+                                        styles.reviewUserName,
+                                        { maxWidth: '100%' },
+                                      ]}
+                                      numberOfLines={1}
+                                    >
+                                      {review.user.name}
+                                    </Text>
+                                  </View>
+                                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+                                    <Text
+                                      style={{
+                                        fontSize: 11,
+                                        color: colors.textSecondary,
+                                      }}
+                                    >
+                                      {new Date(review.createdAt).toLocaleDateString(
+                                        isRTL ? 'ar-EG' : 'en-US',
+                                        { month: 'short', day: 'numeric' },
+                                      )}
+                                    </Text>
+                                    {review.isVerifiedPurchase && (
+                                      <>
+                                        <Text style={{ fontSize: 11, color: colors.textSecondary, marginHorizontal: 4 }}>•</Text>
+                                        <Text style={styles.verifiedBadge}>
+                                          {isRTL ? 'موثق' : 'Verified'}
+                                        </Text>
+                                      </>
+                                    )}
+                                  </View>
+                                </View>
+                              </View>
+                              <View
+                                style={{
+                                  flexDirection: isRTL ? 'row-reverse' : 'row',
+                                  alignItems: 'center',
+                                  gap: 6,
+                                }}
+                              >
+                                {/* Delete Button - Only show for current user's reviews */}
+                                {currentUserId && review.user._id === currentUserId && (
+                                  <TouchableOpacity
+                                    style={{
+                                      padding: 6,
+                                      backgroundColor: 'rgba(220, 53, 69, 0.08)',
+                                      borderRadius: 6,
+                                    }}
+                                    onPress={() => handleDeleteReview(review)}
+                                    disabled={isDeletingReview}
+                                  >
+                                    {isDeletingReview ? (
+                                      <ActivityIndicator size="small" color="#e57373" />
+                                    ) : (
+                                      <Svg
+                                        width={14}
+                                        height={14}
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                      >
+                                        <Path
+                                          d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"
+                                          stroke="#e57373"
+                                          strokeWidth={2}
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                        />
+                                      </Svg>
+                                    )}
+                                  </TouchableOpacity>
+                                )}
+
+                                <View style={styles.reviewRating}>
+                                  <Text style={styles.reviewRatingText}>
+                                    {review.rating.toFixed(1)} ★
+                                  </Text>
+                                </View>
+                              </View>
+                            </View>
+
+                            {/* Comment Section */}
+                            <Text
+                              style={[
+                                styles.reviewComment,
+                                isRTL && styles.reviewCommentRTL,
+                              ]}
+                              numberOfLines={2}
+                            >
+                              {review.comment}
+                            </Text>
+
+                            {review.vendorReply && review.vendorReply.text && review.vendorReply.text.trim() !== '' && (
+                              <View style={styles.vendorReply}>
+                                <Text style={styles.vendorReplyLabel}>
+                                  {isRTL ? 'رد البائع:' : 'Vendor Reply:'}
+                                </Text>
+                                <Text
+                                  style={[
+                                    styles.vendorReplyText,
+                                    isRTL && styles.vendorReplyTextRTL,
+                                  ]}
+                                  numberOfLines={1}
+                                >
+                                  {review.vendorReply.text}
+                                </Text>
+                              </View>
                             )}
                           </View>
-                        </View>
-                        <View style={styles.reviewRating}>
-                          <Text style={styles.reviewRatingText}>
-                            {review.rating.toFixed(1)} ★
-                          </Text>
-                        </View>
-                      </View>
+                        ))}
+                      </ScrollView>
 
-                      {/* Comment with Delete Button in same row */}
-                      <View
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'flex-start',
-                          justifyContent: 'space-between',
-                        }}
-                      >
-                        <Text
-                          style={[
-                            styles.reviewComment,
-                            isRTL && styles.reviewCommentRTL,
-                            { flex: 1 },
-                          ]}
+                      {/* Show More/Less Button */}
+                      {reviews.length > 2 && (
+                        <TouchableOpacity
+                          style={styles.showMoreReviewsButton}
+                          activeOpacity={0.7}
+                          onPress={() => setShowAllReviewsModal(true)}
                         >
-                          {review.comment}
-                        </Text>
-
-                        {/* Delete Button - Only show for current user's reviews */}
-                        {currentUserId && review.user._id === currentUserId && (
-                          <TouchableOpacity
+                          <Text style={styles.showMoreReviewsText}>
+                            {isRTL
+                              ? `عرض جميع التقييمات (${reviews.length})`
+                              : `Show All Reviews (${reviews.length})`}
+                          </Text>
+                          <Svg
+                            width={20}
+                            height={20}
+                            viewBox="0 0 24 24"
+                            fill="none"
                             style={{
                               marginLeft: isRTL ? 0 : 8,
                               marginRight: isRTL ? 8 : 0,
-                              padding: 6,
-                              backgroundColor: 'rgba(220, 53, 69, 0.1)',
-                              borderRadius: 6,
                             }}
-                            onPress={() => handleDeleteReview(review)}
-                            disabled={isDeletingReview}
                           >
-                            {isDeletingReview ? (
-                              <ActivityIndicator size="small" color="#e57373" />
-                            ) : (
-                              <Svg
-                                width={16}
-                                height={16}
-                                viewBox="0 0 24 24"
-                                fill="none"
-                              >
-                                <Path
-                                  d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"
-                                  stroke="#e57373"
-                                  strokeWidth={2}
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </Svg>
-                            )}
-                          </TouchableOpacity>
-                        )}
-                      </View>
-
-                      {review.vendorReply && (
-                        <View style={styles.vendorReply}>
-                          <Text style={styles.vendorReplyLabel}>
-                            {isRTL ? 'رد البائع:' : 'Vendor Reply:'}
-                          </Text>
-                          <Text
-                            style={[
-                              styles.vendorReplyText,
-                              isRTL && styles.vendorReplyTextRTL,
-                            ]}
-                          >
-                            {review.vendorReply.text}
-                          </Text>
-                        </View>
+                            <Path
+                              d="M9 18l6-6-6-6"
+                              stroke={colors.primary}
+                              strokeWidth={2}
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </Svg>
+                        </TouchableOpacity>
                       )}
                     </View>
-                  ))}
-
-                  {/* Show More/Less Button */}
-                  {reviews.length > 2 && (
-                    <TouchableOpacity
-                      style={styles.showMoreReviewsButton}
-                      activeOpacity={0.7}
-                      onPress={() => setShowAllReviewsModal(true)}
-                    >
-                      <Text style={styles.showMoreReviewsText}>
-                        {isRTL
-                          ? `عرض جميع التقييمات (${reviews.length})`
-                          : `Show All Reviews (${reviews.length})`}
-                      </Text>
-                      <Svg
-                        width={20}
-                        height={20}
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        style={{
-                          marginLeft: isRTL ? 0 : 8,
-                          marginRight: isRTL ? 8 : 0,
-                        }}
-                      >
-                        <Path
-                          d="M9 18l6-6-6-6"
-                          stroke={colors.primary}
-                          strokeWidth={2}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </Svg>
-                    </TouchableOpacity>
                   )}
-                </View>
+                </>
               )}
             </View>
           )}
@@ -1676,16 +1815,17 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                     if (selectedIndices.length > 0) {
                       const selectedOptions = selectedIndices.map(
                         (index: number) => {
-                          const selectedOption = (
-                            isRTL ? input.optionsAr : input.options
-                          )[index];
+                          const optionEn = input.options?.[index] || '';
+                          const optionAr = input.optionsAr?.[index] || optionEn;
                           const optionPrice = Number(
                             input.optionPrices[index] ?? 0,
                           );
                           totalPrice += optionPrice; // Add option price to total
                           return {
                             label: String(input.label), // Always use English label for backend matching
-                            value: selectedOption as string | number,
+                            labelAr: input.labelAr ? String(input.labelAr) : undefined,
+                            value: optionEn as string | number, // Save English value
+                            valueAr: optionAr as string | number, // Save Arabic value
                             price: optionPrice,
                           };
                         },
@@ -1703,12 +1843,10 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                   ) {
                     return {
                       label: String(input.label), // Always use English label for backend matching
+                      labelAr: input.labelAr ? String(input.labelAr) : undefined,
                       value: selectedValue,
+                      valueAr: selectedValue,
                       price: 0, // Text/number inputs don't have option prices
-                    } as {
-                      label: string;
-                      value: string | number;
-                      price?: number;
                     };
                   }
 
@@ -1886,6 +2024,30 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
             serviceName={displayName}
             onBack={() => setShowAllReviewsModal(false)}
             onReviewDeleted={() => refetchReviews()}
+          />
+        </Modal>
+      )}
+
+      {/* Write Review Modal */}
+      {service && (
+        <Modal
+          visible={showWriteReviewModal}
+          animationType="slide"
+          presentationStyle="fullScreen"
+          onRequestClose={() => setShowWriteReviewModal(false)}
+        >
+          <WriteReview
+            bookingId={userBookingId || ''}
+            serviceId={service._id}
+            serviceName={displayName}
+            initialRating={userReview?.rating || 0}
+            initialComment={userReview?.comment || ''}
+            oldReviewId={userReview?._id}
+            onBack={() => setShowWriteReviewModal(false)}
+            onSuccess={() => {
+              setShowWriteReviewModal(false);
+              refetchReviews();
+            }}
           />
         </Modal>
       )}

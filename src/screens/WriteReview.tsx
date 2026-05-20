@@ -7,13 +7,12 @@ import {
   ScrollView,
   ActivityIndicator,
   StyleSheet,
-  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '../contexts/LanguageContext';
-import { createReview } from '../services/reviewsApi';
+import { createReview, deleteReview } from '../services/reviewsApi';
 import { colors } from '../constants/colors';
 import { CustomAlert } from '../components/CustomAlert/CustomAlert';
 
@@ -21,6 +20,9 @@ interface WriteReviewProps {
   bookingId: string;
   serviceId: string;
   serviceName: string;
+  initialRating?: number;
+  initialComment?: string;
+  oldReviewId?: string;
   onBack?: () => void;
   onSuccess?: () => void;
 }
@@ -29,13 +31,16 @@ const WriteReview: React.FC<WriteReviewProps> = ({
   bookingId,
   serviceId,
   serviceName,
+  initialRating,
+  initialComment,
+  oldReviewId,
   onBack,
   onSuccess,
 }) => {
   const { isRTL } = useLanguage();
   const queryClient = useQueryClient();
-  const [rating, setRating] = useState(0);
-  const [comment, setComment] = useState('');
+  const [rating, setRating] = useState(initialRating || 0);
+  const [comment, setComment] = useState(initialComment || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [alertConfig, setAlertConfig] = useState<{
     visible: boolean;
@@ -84,6 +89,11 @@ const WriteReview: React.FC<WriteReviewProps> = ({
     setIsSubmitting(true);
 
     try {
+      if (oldReviewId) {
+        console.log('[WriteReview] Deleting old review:', oldReviewId);
+        await deleteReview(oldReviewId);
+      }
+
       console.log('[WriteReview] Submitting review:', {
         serviceId,
         bookingId,
@@ -101,8 +111,8 @@ const WriteReview: React.FC<WriteReviewProps> = ({
         visible: true,
         title: isRTL ? 'نجح!' : 'Success!',
         message: isRTL
-          ? 'تم إرسال التقييم بنجاح'
-          : 'Review submitted successfully',
+          ? (oldReviewId ? 'تم تعديل التقييم بنجاح' : 'تم إرسال التقييم بنجاح')
+          : (oldReviewId ? 'Review updated successfully' : 'Review submitted successfully'),
         buttons: [
           {
             text: isRTL ? 'حسناً' : 'OK',
@@ -177,7 +187,7 @@ const WriteReview: React.FC<WriteReviewProps> = ({
           </Svg>
         </TouchableOpacity>
         <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
-          {isRTL ? 'كتابة تقييم' : 'Write Review'}
+          {isRTL ? 'تقييم الخدمة' : 'Rate Service'}
         </Text>
         <View style={styles.placeholder} />
       </View>

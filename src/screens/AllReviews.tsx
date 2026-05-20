@@ -7,7 +7,6 @@ import {
   Image,
   StyleSheet,
   Platform,
-  Dimensions,
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';

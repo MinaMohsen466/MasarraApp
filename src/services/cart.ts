@@ -18,8 +18,8 @@ export type CartItem = {
   selectedDate: Date | string;
   selectedTime: string;
   customInputs?: Array<
-    | { label: string; value: string | number; price?: number }
-    | Array<{ label: string; value: string | number; price?: number }>
+    | { label: string; value: string | number; price?: number; labelAr?: string; valueAr?: string | number }
+    | Array<{ label: string; value: string | number; price?: number; labelAr?: string; valueAr?: string | number }>
   >;
   moreInfo?: string;
   timeSlot: { start: string | Date; end: string | Date };

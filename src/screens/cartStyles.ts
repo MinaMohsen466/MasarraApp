@@ -17,6 +17,9 @@ export const styles = StyleSheet.create({
     borderBottomWidth: 0,
     borderBottomColor: colors.border,
   },
+  headerRTL: {
+    flexDirection: 'row-reverse',
+  },
   menuButton: {
     justifyContent: 'center',
     alignItems: 'center',
@@ -75,8 +78,8 @@ export const styles = StyleSheet.create({
   cartCard: {
     backgroundColor: colors.backgroundLight,
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+    padding: 10,
+    marginBottom: 12,
     position: 'relative',
     borderColor: colors.border,
   },
@@ -113,15 +116,15 @@ export const styles = StyleSheet.create({
   },
   itemHeader: {
     flexDirection: 'row',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   itemHeaderRTL: {
     flexDirection: 'row-reverse',
   },
   itemImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
+    width: 45,
+    height: 45,
+    borderRadius: 6,
     marginRight: 12,
   },
   itemImageRTL: {
@@ -136,18 +139,18 @@ export const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   itemName: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
     color: colors.textDark,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   itemNameRTL: {
     textAlign: 'right',
   },
   vendorName: {
-    fontSize: 12,
+    fontSize: 11,
     color: colors.textSecondary,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   vendorNameRTL: {
     textAlign: 'right',
@@ -159,11 +162,11 @@ export const styles = StyleSheet.create({
   dateTimeSection: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingVertical: 12,
+    paddingVertical: 6,
     paddingHorizontal: 8,
     backgroundColor: '#F9F9F9',
     borderRadius: 8,
-    marginBottom: 12,
+    marginBottom: 6,
   },
   dateTimeSectionRTL: {
     flexDirection: 'row-reverse',
@@ -182,39 +185,42 @@ export const styles = StyleSheet.create({
     fontWeight: '500',
   },
   priceSection: {
-    paddingVertical: 8,
-    marginBottom: 12,
+    paddingVertical: 2,
+    marginBottom: 6,
   },
   priceRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 3,
+  },
+  priceRowRTL: {
+    flexDirection: 'row-reverse',
   },
   priceLabel: {
-    fontSize: 13,
+    fontSize: 11,
     color: colors.textDark,
     fontWeight: '500',
   },
   priceValue: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700',
     color: colors.primary,
   },
   deliveryChargeValue: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700',
     color: '#28A745',
   },
   actionButtons: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 8,
   },
   deleteButton: {
-    width: 44,
-    height: 44,
+    width: 36,
+    height: 36,
     backgroundColor: '#FFF5F5',
-    borderRadius: 8,
+    borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -223,14 +229,14 @@ export const styles = StyleSheet.create({
   viewDetailsButton: {
     flex: 1,
     backgroundColor: colors.primary,
-    borderRadius: 8,
-    paddingVertical: 10,
+    borderRadius: 6,
+    paddingVertical: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   viewDetailsText: {
     color: colors.textWhite,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
   },
   editButton: {
@@ -525,5 +531,50 @@ export const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     letterSpacing: 0.5,
+  },
+  optionsContainer: {
+    marginTop: 6,
+    paddingHorizontal: 4,
+  },
+  optionsContainerRTL: {
+    alignItems: 'flex-end',
+  },
+  optionRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 3,
+  },
+  optionRowRTL: {
+    flexDirection: 'row-reverse',
+  },
+  optionBullet: {
+    fontSize: 12,
+    color: colors.primary,
+    marginRight: 6,
+    lineHeight: 16,
+  },
+  optionBulletRTL: {
+    marginRight: 0,
+    marginLeft: 6,
+  },
+  optionText: {
+    fontSize: 11,
+    color: colors.textDark,
+    lineHeight: 16,
+    flex: 1,
+  },
+  optionTextRTL: {
+    textAlign: 'right',
+  },
+  optionLabel: {
+    fontWeight: '600',
+    color: colors.textDark,
+  },
+  optionValue: {
+    color: colors.textSecondary,
+  },
+  optionPrice: {
+    color: colors.primary,
+    fontWeight: '600',
   },
 });

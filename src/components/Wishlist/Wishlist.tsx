@@ -92,10 +92,10 @@ const Wishlist: React.FC<Props> = ({ onBack, onSelectService }) => {
   if (!items || items.length === 0) {
     return (
       <View style={[styles.emptyContainer, { paddingTop: insets.top + 16 }]}>
-        <View style={styles.headerRow}>
+        <View style={[styles.headerRow, isRTL && styles.headerRowRTL]}>
           {onBack && (
-            <TouchableOpacity style={styles.backInline} onPress={onBack}>
-              <Text style={styles.backIcon}>{'‹'}</Text>
+            <TouchableOpacity style={[styles.backInline, isRTL && styles.backInlineRTL]} onPress={onBack}>
+              <Text style={styles.backIcon}>{isRTL ? '›' : '‹'}</Text>
             </TouchableOpacity>
           )}
           <Text style={styles.header}>
@@ -118,10 +118,10 @@ const Wishlist: React.FC<Props> = ({ onBack, onSelectService }) => {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
-      <View style={styles.headerRow}>
+      <View style={[styles.headerRow, isRTL && styles.headerRowRTL]}>
         {onBack && (
-          <TouchableOpacity style={styles.backInline} onPress={onBack}>
-            <Text style={styles.backIcon}>{'‹'}</Text>
+          <TouchableOpacity style={[styles.backInline, isRTL && styles.backInlineRTL]} onPress={onBack}>
+            <Text style={styles.backIcon}>{isRTL ? '›' : '‹'}</Text>
           </TouchableOpacity>
         )}
         <Text style={styles.header}>

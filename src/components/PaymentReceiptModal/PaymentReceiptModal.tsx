@@ -211,22 +211,22 @@ ${amount != null ? `${isRTL ? 'المجموع' : 'Total'}: ${amount.toFixed(3)} 
             {/* Details Section */}
             <View style={styles.detailsSection}>
               {/* Booking Reference */}
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>{isRTL ? 'رقم الحجز' : 'Booking Reference'}</Text>
-                <Text style={styles.detailValueMono}>{bookingId}</Text>
+              <View style={[styles.detailRow, isRTL && styles.detailRowRTL]}>
+                <Text style={[styles.detailLabel, isRTL && styles.detailLabelRTL]}>{isRTL ? 'رقم الحجز' : 'Booking Reference'}</Text>
+                <Text style={[styles.detailValueMono, isRTL && styles.detailValueMonoRTL]}>{bookingId}</Text>
               </View>
 
               {/* Date & Time */}
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>{isRTL ? 'التاريخ والوقت' : 'Date & Time'}</Text>
-                <Text style={styles.detailValue}>{formattedDate}</Text>
+              <View style={[styles.detailRow, isRTL && styles.detailRowRTL]}>
+                <Text style={[styles.detailLabel, isRTL && styles.detailLabelRTL]}>{isRTL ? 'التاريخ والوقت' : 'Date & Time'}</Text>
+                <Text style={[styles.detailValue, isRTL && styles.detailValueRTL]}>{formattedDate}</Text>
               </View>
 
               {/* Amount Charged */}
               {amount != null && (
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{isRTL ? 'المبلغ المخصوم' : 'Amount Charged'}</Text>
-                  <Text style={[styles.detailValue, { fontWeight: '700', color: '#111827' }]}>
+                <View style={[styles.detailRow, isRTL && styles.detailRowRTL]}>
+                  <Text style={[styles.detailLabel, isRTL && styles.detailLabelRTL]}>{isRTL ? 'المبلغ المخصوم' : 'Amount Charged'}</Text>
+                  <Text style={[styles.detailValue, isRTL && styles.detailValueRTL, { fontWeight: '700', color: '#111827' }]}>
                     {amount.toFixed(3)} {currency}
                   </Text>
                 </View>
@@ -234,49 +234,49 @@ ${amount != null ? `${isRTL ? 'المجموع' : 'Total'}: ${amount.toFixed(3)} 
 
               {/* Payment Method */}
               {paymentMethod && (
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{isRTL ? 'طريقة الدفع' : 'Payment Method'}</Text>
-                  <Text style={styles.detailValue}>{paymentMethod}</Text>
+                <View style={[styles.detailRow, isRTL && styles.detailRowRTL]}>
+                  <Text style={[styles.detailLabel, isRTL && styles.detailLabelRTL]}>{isRTL ? 'طريقة الدفع' : 'Payment Method'}</Text>
+                  <Text style={[styles.detailValue, isRTL && styles.detailValueRTL]}>{paymentMethod}</Text>
                 </View>
               )}
 
               {/* Invoice ID */}
               {invoiceId && (
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{isRTL ? 'رقم الفاتورة' : 'Invoice ID'}</Text>
-                  <Text style={styles.detailValueMono}>{invoiceId}</Text>
+                <View style={[styles.detailRow, isRTL && styles.detailRowRTL]}>
+                  <Text style={[styles.detailLabel, isRTL && styles.detailLabelRTL]}>{isRTL ? 'رقم الفاتورة' : 'Invoice ID'}</Text>
+                  <Text style={[styles.detailValueMono, isRTL && styles.detailValueMonoRTL]}>{invoiceId}</Text>
                 </View>
               )}
 
               {/* Transaction ID */}
               {transactionId && (
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{isRTL ? 'رقم المعاملة' : 'Transaction ID'}</Text>
-                  <Text style={styles.detailValueMono}>{transactionId}</Text>
+                <View style={[styles.detailRow, isRTL && styles.detailRowRTL]}>
+                  <Text style={[styles.detailLabel, isRTL && styles.detailLabelRTL]}>{isRTL ? 'رقم المعاملة' : 'Transaction ID'}</Text>
+                  <Text style={[styles.detailValueMono, isRTL && styles.detailValueMonoRTL]}>{transactionId}</Text>
                 </View>
               )}
 
               {/* Reference ID */}
               {referenceId && (
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{isRTL ? 'الرقم المرجعي' : 'Reference ID'}</Text>
-                  <Text style={styles.detailValueMono}>{referenceId}</Text>
+                <View style={[styles.detailRow, isRTL && styles.detailRowRTL]}>
+                  <Text style={[styles.detailLabel, isRTL && styles.detailLabelRTL]}>{isRTL ? 'الرقم المرجعي' : 'Reference ID'}</Text>
+                  <Text style={[styles.detailValueMono, isRTL && styles.detailValueMonoRTL]}>{referenceId}</Text>
                 </View>
               )}
 
               {/* Services List */}
               {services.length > 0 && (
                 <View style={styles.servicesContainer}>
-                  <Text style={styles.servicesTitle}>
+                  <Text style={[styles.servicesTitle, isRTL && styles.servicesTitleRTL]}>
                     {isRTL ? 'الخدمات المدفوعة' : 'SERVICES PAID'}
                   </Text>
                   {services.map((svc, idx) => (
-                    <View key={idx} style={styles.serviceRow}>
-                      <Text style={styles.serviceName} numberOfLines={1}>
+                    <View key={idx} style={[styles.serviceRow, isRTL && styles.serviceRowRTL]}>
+                      <Text style={[styles.serviceName, isRTL && styles.serviceNameRTL]} numberOfLines={1}>
                         {svc.name || (isRTL ? 'خدمة' : 'Service')}
                         {svc.quantity > 1 && ` × ${svc.quantity}`}
                       </Text>
-                      <Text style={styles.serviceTotal}>
+                      <Text style={[styles.serviceTotal, isRTL && styles.serviceTotalRTL]}>
                         {svc.total.toFixed(3)} {currency}
                       </Text>
                     </View>
@@ -286,9 +286,9 @@ ${amount != null ? `${isRTL ? 'المجموع' : 'Total'}: ${amount.toFixed(3)} 
 
               {/* Total Row */}
               {amount != null && (
-                <View style={styles.totalRow}>
-                  <Text style={styles.totalLabel}>{isRTL ? 'المجموع' : 'Total'}</Text>
-                  <Text style={styles.totalValue}>
+                <View style={[styles.totalRow, isRTL && styles.totalRowRTL]}>
+                  <Text style={[styles.totalLabel, isRTL && styles.totalLabelRTL]}>{isRTL ? 'المجموع' : 'Total'}</Text>
+                  <Text style={[styles.totalValue, isRTL && styles.totalValueRTL]}>
                     {amount.toFixed(3)} {currency}
                   </Text>
                 </View>

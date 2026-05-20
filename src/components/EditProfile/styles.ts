@@ -25,6 +25,9 @@ export const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  headerRTL: {
+    flexDirection: 'row-reverse',
+  },
   backButton: {
     // width: 40,
     // height: 40,
@@ -33,6 +36,10 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
+  },
+  backButtonRTL: {
+    marginRight: 0,
+    marginLeft: 8,
   },
   backButtonText: {
     fontSize: 37,

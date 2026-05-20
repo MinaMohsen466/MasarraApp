@@ -425,10 +425,10 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
           style={[styles.container, { backgroundColor: colors.background }]}
         >
           {/* Header */}
-          <View style={styles.header}>
+          <View style={[styles.header, isRTL && styles.headerRTL]}>
             {onBack && (
               <TouchableOpacity
-                style={styles.backButton}
+                style={[styles.backButton, isRTL && styles.backButtonRTL]}
                 onPress={onBack}
                 activeOpacity={0.7}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}

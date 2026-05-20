@@ -393,11 +393,28 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       fontSize: 12,
       fontWeight: '600',
     },
+    reviewsListHorizontal: {
+      flexDirection: 'row',
+      gap: 12,
+      paddingVertical: 6,
+      paddingHorizontal: 2,
+    },
     reviewCard: {
       backgroundColor: colors.backgroundCard,
       padding: 16,
       borderRadius: 12,
       marginBottom: 12,
+    },
+    reviewCardHorizontal: {
+      backgroundColor: colors.backgroundCard,
+      borderRadius: 12,
+      padding: 16,
+      width: SCREEN_WIDTH * 0.78,
+      // shadowColor: '#000',
+      // shadowOffset: { width: 0, height: 2 },
+      // shadowOpacity: 0.06,
+      // shadowRadius: 8,
+      // elevation: 2.5,
     },
     reviewHeader: {
       flexDirection: 'row',

@@ -16,6 +16,9 @@ export const styles = StyleSheet.create({
     paddingVertical: 12,
     zIndex: 1,
   },
+  headerBarRTL: {
+    flexDirection: 'row-reverse',
+  },
   headerBackground: {
     position: 'absolute',
     top: 0,
@@ -48,7 +51,7 @@ export const styles = StyleSheet.create({
     color: colors.textWhite,
     // smaller font and explicit lineHeight to center the chevron glyph exactly inside the 40x40 circle
     fontSize: 37,
-    lineHeight: 20,
+    lineHeight: 28,
     textAlign: 'center',
     fontWeight: '700',
   },
@@ -166,11 +169,13 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   menuItem: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.backgroundLight,
+    borderWidth: 1,
+    borderColor: colors.primaryLight,
     paddingVertical: 18,
     paddingHorizontal: 20,
     marginBottom: 12,
-    borderRadius: 8,
+    borderRadius: 15,
   },
   menuItemPrimary: {
     backgroundColor: colors.primary,

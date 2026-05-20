@@ -551,7 +551,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
             style={{ height: insets.top, backgroundColor: colors.primary }}
           />
           <View style={styles.container}>
-            <View style={styles.header}>
+            <View style={[styles.header, isRTL && styles.headerRTL]}>
               <TouchableOpacity onPress={onBack} style={styles.backButton}>
                 <Text style={styles.backIcon}>{isRTL ? '›' : '‹'}</Text>
               </TouchableOpacity>
@@ -580,7 +580,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
         <View style={{ height: insets.top, backgroundColor: colors.primary }} />
         <View style={styles.container}>
           {/* Header */}
-          <View style={styles.header}>
+          <View style={[styles.header, isRTL && styles.headerRTL]}>
             <TouchableOpacity onPress={onBack} style={styles.backButton}>
               <Text style={styles.backIcon}>{isRTL ? '›' : '‹'}</Text>
             </TouchableOpacity>
