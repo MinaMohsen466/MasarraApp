@@ -19,27 +19,21 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: colors.primary,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    backgroundColor: 'transparent',
+    zIndex: 1,
   },
   headerRTL: {
     flexDirection: 'row-reverse',
   },
   backButton: {
-    // width: 40,
-    // height: 40,
-    // borderRadius: 20,
-    // backgroundColor: colors.textWhite,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
   },
   backButtonRTL: {
-    marginRight: 0,
-    marginLeft: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
   },
   backButtonText: {
     fontSize: 37,
@@ -62,7 +56,7 @@ export const styles = StyleSheet.create({
     fontFamily: 'System',
   },
   headerSpacer: {
-    width: 60,
+    width: 40,
   },
   scrollView: {
     flex: 1,

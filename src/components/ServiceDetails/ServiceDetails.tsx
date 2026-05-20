@@ -301,7 +301,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
     };
 
     fetchUserReview();
-  }, [serviceId, userToken, reviewsData]);
+  }, [serviceId, userToken]);
 
   // Fetch services and find the selected service - Load first for faster UI
   const { data: services, isLoading } = useQuery({
@@ -351,7 +351,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
       setReviews(reviewsData.reviews);
       setReviewStats(reviewsData.stats);
     }
-  }, [reviewsData, service]);
+  }, [reviewsData, serviceId]);
 
   // Handle delete review
   const handleDeleteReview = (review: Review) => {
@@ -399,7 +399,6 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
   };
 
   const service = (services as any)?.find((s: any) => s._id === serviceId);
-  const hasReviewed = reviews.some(r => (typeof r.user === 'object' ? r.user?._id : r.user) === currentUserId);
 
   // Debug: Log service discount info
   React.useEffect(() => {
@@ -1343,12 +1342,12 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
 
           {((reviewStats && reviewStats.totalRatings > 0) || hasPurchased) && (
             <View style={styles.reviewsSection}>
-              {/* Header Row with Title and Action Button */}
+              {/* Header Row with Title */}
               <View
                 style={{
                   flexDirection: isRTL ? 'row-reverse' : 'row',
-                  justifyContent: 'space-between',
                   alignItems: 'center',
+                  justifyContent: 'space-between',
                   marginBottom: 16,
                   paddingHorizontal: 2,
                 }}
@@ -1363,25 +1362,32 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                   {isRTL ? 'التقييمات' : 'Reviews'} ({reviewStats?.totalRatings || 0})
                 </Text>
 
-                {/* Write/Edit Review Button */}
+                {/* Write/Edit Review Button (in header) */}
                 {hasPurchased && (
                   <TouchableOpacity
                     style={{
-                      backgroundColor: colors.primary,
-                      paddingHorizontal: 16,
-                      paddingVertical: 8,
-                      borderRadius: 20,
-                      justifyContent: 'center',
+                      flexDirection: isRTL ? 'row-reverse' : 'row',
                       alignItems: 'center',
-                      shadowColor: colors.primary,
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.1,
-                      shadowRadius: 4,
-                      elevation: 2,
+                      justifyContent: 'center',
+                      backgroundColor: colors.primary,
+                      paddingVertical: 8,
+                      paddingHorizontal: 14,
+                      borderRadius: 8,
+                      gap: 6,
                     }}
+                    activeOpacity={0.8}
                     onPress={() => setShowWriteReviewModal(true)}
                   >
-                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#FFF' }}>
+                    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                      <Path
+                        d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"
+                        stroke="#FFFFFF"
+                        strokeWidth={2.2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </Svg>
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: '#FFF' }}>
                       {isRTL ? 'تقييم' : 'Review'}
                     </Text>
                   </TouchableOpacity>

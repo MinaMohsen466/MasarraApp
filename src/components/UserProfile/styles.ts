@@ -25,8 +25,6 @@ export const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: colors.primary,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
     zIndex: 0,
   },
   headerBackButton: {
@@ -35,7 +33,7 @@ export const styles = StyleSheet.create({
   },
   headerBackText: {
     fontSize: 16,
-    color: colors.primary,
+    color: colors.textWhite,
     fontWeight: '500',
   },
   // headerBackInline: {

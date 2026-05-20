@@ -424,6 +424,9 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
         <View
           style={[styles.container, { backgroundColor: colors.background }]}
         >
+          {/* Header background */}
+          <View style={[styles.headerBackground, { height: 56 }]} />
+
           {/* Header */}
           <View style={[styles.header, isRTL && styles.headerRTL]}>
             {onBack && (

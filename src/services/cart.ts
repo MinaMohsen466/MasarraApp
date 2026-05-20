@@ -471,23 +471,33 @@ export async function createBookingsFromCart(
 
     // Helper function to convert customInputs
     const convertCustomInputs = (item: CartItem) => {
-      const customInputsObject: { [key: string]: string | number | any } = {};
+      const flattened: any[] = [];
       if (item.customInputs && Array.isArray(item.customInputs)) {
         item.customInputs.forEach(input => {
           if (Array.isArray(input)) {
-            const values: (string | number)[] = [];
             input.forEach(option => {
-              values.push(option.value);
+              if (option) {
+                flattened.push({
+                  label: option.label,
+                  labelAr: option.labelAr,
+                  value: option.value,
+                  valueAr: option.valueAr,
+                  price: option.price,
+                });
+              }
             });
-            if (input.length > 0) {
-              customInputsObject[input[0].label] = values;
-            }
-          } else {
-            customInputsObject[input.label] = input.value;
+          } else if (input) {
+            flattened.push({
+              label: input.label,
+              labelAr: input.labelAr,
+              value: input.value,
+              valueAr: input.valueAr,
+              price: input.price,
+            });
           }
         });
       }
-      return customInputsObject;
+      return flattened;
     };
 
     // Create ONE booking for ALL cart items

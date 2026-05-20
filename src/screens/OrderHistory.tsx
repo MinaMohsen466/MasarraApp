@@ -856,6 +856,71 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                                     </View>
                                   </View>
 
+                                  {/* Custom Options */}
+                                  {serviceEntry.customInputs && serviceEntry.customInputs.length > 0 && (
+                                    <View
+                                      style={{
+                                        marginTop: 8,
+                                        width: '100%',
+                                        paddingTop: 6,
+                                        borderTopWidth: 1,
+                                        borderTopColor: 'rgba(0, 0, 0, 0.05)',
+                                        alignItems: isRTL ? 'flex-end' : 'flex-start',
+                                      }}
+                                    >
+                                      {serviceEntry.customInputs.map((opt: any, optIndex: number) => {
+                                        const displayLabel = isRTL && opt.labelAr ? opt.labelAr : opt.label;
+                                        const rawValue = isRTL && opt.valueAr ? opt.valueAr : opt.value;
+                                        const displayValue = Array.isArray(rawValue)
+                                          ? rawValue.join(', ')
+                                          : rawValue;
+                                        const hasPrice = typeof opt.price === 'number' && opt.price > 0;
+
+                                        return (
+                                          <View
+                                            key={optIndex}
+                                            style={{
+                                              flexDirection: isRTL ? 'row-reverse' : 'row',
+                                              alignItems: 'flex-start',
+                                              marginVertical: 2,
+                                            }}
+                                          >
+                                            <Text
+                                              style={{
+                                                fontSize: 11,
+                                                color: colors.primary,
+                                                marginRight: isRTL ? 0 : 4,
+                                                marginLeft: isRTL ? 4 : 0,
+                                                lineHeight: 16,
+                                              }}
+                                            >
+                                              •
+                                            </Text>
+                                            <Text
+                                              style={{
+                                                fontSize: 12,
+                                                textAlign: isRTL ? 'right' : 'left',
+                                                flex: 1,
+                                                lineHeight: 16,
+                                              }}
+                                            >
+                                              <Text style={{ fontWeight: '600', color: '#374151' }}>
+                                                {displayLabel}:{' '}
+                                              </Text>
+                                              <Text style={{ color: '#4B5563' }}>
+                                                {displayValue}
+                                              </Text>
+                                              {hasPrice && (
+                                                <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '500' }}>
+                                                  {` (+${opt.price.toFixed(3)} ${isRTL ? 'د.ك' : 'KWD'})`}
+                                                </Text>
+                                              )}
+                                            </Text>
+                                          </View>
+                                        );
+                                      })}
+                                    </View>
+                                  )}
 
                                 </View>
 

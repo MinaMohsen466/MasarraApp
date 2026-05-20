@@ -21,11 +21,9 @@ export const orderHistoryStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: colors.primary,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   headerRTL: {
     flexDirection: 'row-reverse',
@@ -36,7 +34,7 @@ export const orderHistoryStyles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 37,
-    lineHeight: 32,
+    lineHeight: 28,
     color: colors.textWhite,
     fontWeight: '700',
     textAlign: 'center',
@@ -47,7 +45,7 @@ export const orderHistoryStyles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: colors.textWhite,
   },
   loadingContainer: {
@@ -113,7 +111,7 @@ export const orderHistoryStyles = StyleSheet.create({
   },
   serviceName: {
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#FFFFFF',
   },
   statusBadge: {
@@ -126,7 +124,7 @@ export const orderHistoryStyles = StyleSheet.create({
   statusText: {
     color: '#FFFFFF',
     fontSize: 11,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   itemsHeader: {
     flexDirection: 'row',

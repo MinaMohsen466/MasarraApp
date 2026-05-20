@@ -12,11 +12,10 @@ export const myEventsStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: colors.primary,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    zIndex: 1,
   },
   headerRTL: {
     flexDirection: 'row-reverse',
@@ -29,7 +28,7 @@ export const myEventsStyles = StyleSheet.create({
     fontSize: 37,
     color: colors.textWhite,
     fontWeight: '700',
-    lineHeight: 32,
+    lineHeight: 28,
   },
   headerTitle: {
     fontSize: 18,
