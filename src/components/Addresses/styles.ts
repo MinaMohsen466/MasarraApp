@@ -11,25 +11,62 @@ export const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 140,
   },
-  headerRow: {
+  headerBar: {
+    backgroundColor: 'transparent',
+    paddingHorizontal: 16,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    zIndex: 1,
   },
-  headerTitle: {
-    fontSize: 24,
+  headerBarRTL: {
+    flexDirection: 'row-reverse',
+  },
+  headerBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: colors.primary,
+    zIndex: 0,
+  },
+  headerBackButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
+  headerBackIcon: {
+    color: colors.textWhite,
+    fontSize: 37,
+    lineHeight: 28,
+    textAlign: 'center',
     fontWeight: '700',
   },
-  // Prominent Add button - now matches back button color
-  addButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 0,
+  headerBackTextRTL: {
+    fontFamily: 'System',
   },
-  addButtonText: { color: colors.textWhite, fontWeight: '600' },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.textWhite,
+    flex: 1,
+    textAlign: 'center',
+  },
+  headerTitleRTL: {
+    fontFamily: 'System',
+  },
+  headerAddButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    minWidth: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerAddButtonText: {
+    color: colors.textWhite,
+    fontSize: 16,
+    fontWeight: '600',
+  },
 
   emptyBox: {
     marginTop: 12,

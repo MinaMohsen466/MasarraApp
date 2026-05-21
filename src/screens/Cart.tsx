@@ -992,7 +992,14 @@ const Cart: React.FC<CartProps> = ({
                 <View key={item._id} style={styles.cartCard}>
                   {/* Old Booking Warning Badge */}
                   {isItemOld && (
-                    <View style={styles.oldBookingBadge}>
+                    <View
+                      style={[
+                        styles.oldBookingBadge,
+                        isRTL
+                          ? styles.oldBookingBadgeRTL
+                          : styles.oldBookingBadgeLTR,
+                      ]}
+                    >
                       <Text style={styles.oldBookingText}>
                         {t('pastTimeWarning')}
                       </Text>

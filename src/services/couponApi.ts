@@ -27,6 +27,121 @@ export interface Coupon {
   updatedAt: string;
 }
 
+export interface ActiveCoupon {
+  code: string;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+}
+
+/** Banner label: coupon code only (no discount text) */
+export const formatActiveCouponLabel = (
+  coupon: ActiveCoupon,
+  isRTL: boolean,
+): string =>
+  isRTL ? `كوبون : ${coupon.code}` : `Coupon: ${coupon.code}`;
+
+/** Get banner messages from SiteSetting */
+export const getBannerMessages = async (): Promise<{
+  text: string;
+  textAr: string;
+  enabled: boolean;
+} | null> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/settings`);
+    const data = await response.json();
+    if (!response.ok || !data?.success) return null;
+    
+    const siteSettings = data.data;
+    return {
+      text: siteSettings.bannerText || '',
+      textAr: siteSettings.bannerTextAr || '',
+      enabled: siteSettings.bannerEnabled || false,
+    };
+  } catch {
+    return null;
+  }
+};
+
+export const fetchActiveCouponsFromBanner = async (): Promise<ActiveCoupon[]> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/settings`);
+    const data = await response.json();
+    if (!response.ok || !data?.success) return [];
+    
+    const siteSettings = data.data;
+    if (!siteSettings?.bannerEnabled) return [];
+    
+    const bannerText = siteSettings.bannerText || '';
+    const bannerTextAr = siteSettings.bannerTextAr || '';
+    
+    // Extract coupon codes from banner text
+    const codes = [
+      ...new Set([
+        ...parseCouponCodesFromText(bannerText),
+        ...parseCouponCodesFromText(bannerTextAr),
+      ]),
+    ];
+    
+    // Convert codes to ActiveCoupon format
+    return codes.map(code => ({
+      code,
+      discountType: 'percentage' as const,
+      discountValue: 0,
+    }));
+  } catch {
+    return [];
+  }
+};
+
+const COUPON_CODE_PATTERN = /\b[A-Z][A-Z0-9]{2,}\b/g;
+
+export const parseCouponCodesFromText = (text: string): string[] => {
+  const matches = text.match(COUPON_CODE_PATTERN);
+  if (!matches) return [];
+  return [...new Set(matches.filter(code => code.length >= 4))];
+};
+
+export const mergeActiveCoupons = (
+  ...lists: (ActiveCoupon[] | undefined | null)[]
+): ActiveCoupon[] => {
+  const map = new Map<string, ActiveCoupon>();
+  for (const list of lists) {
+    for (const coupon of list ?? []) {
+      if (coupon?.code) {
+        map.set(coupon.code.toUpperCase(), {
+          ...coupon,
+          code: coupon.code.toUpperCase(),
+        });
+      }
+    }
+  }
+  return Array.from(map.values());
+};
+
+/** Resolve coupons from SiteSetting banner text only */
+export const resolveActiveCouponsForBanner = (
+  bannerTextEn: string,
+  bannerTextAr: string,
+): ActiveCoupon[] => {
+  const codes = [
+    ...new Set([
+      ...parseCouponCodesFromText(bannerTextEn),
+      ...parseCouponCodesFromText(bannerTextAr),
+    ]),
+  ];
+
+  return codes.map(code => ({
+    code,
+    discountType: 'percentage' as const,
+    discountValue: 0,
+  }));
+};
+
+export const buildBannerCouponLabels = (
+  coupons: ActiveCoupon[],
+  isRTL: boolean,
+): string[] => coupons.map(c => formatActiveCouponLabel(c, isRTL));
+
 export interface ValidateCouponResponse {
   valid: boolean;
   message: string;

@@ -46,6 +46,11 @@ export interface SiteSettings {
   bannerEnabled?: boolean;
   bannerText?: string;
   bannerTextAr?: string;
+  activeCoupons?: Array<{
+    code: string;
+    discountType: 'percentage' | 'fixed';
+    discountValue: number;
+  }>;
 }
 
 export interface Occasion {

@@ -16,6 +16,7 @@ import {
   WishlistItem,
 } from '../../services/wishlist';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { colors } from '../../constants/colors';
 
 interface Props {
   onBack?: () => void;
@@ -89,56 +90,54 @@ const Wishlist: React.FC<Props> = ({ onBack, onSelectService }) => {
     </TouchableOpacity>
   );
 
-  if (!items || items.length === 0) {
-    return (
-      <View style={[styles.emptyContainer, { paddingTop: insets.top + 16 }]}>
-        <View style={[styles.headerRow, isRTL && styles.headerRowRTL]}>
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.primary }}>
+      <View style={{ height: insets.top, backgroundColor: colors.primary }} />
+      <View style={[styles.container, { padding: 0, position: 'relative' }]}>
+        {/* Header background */}
+        <View style={[styles.headerBackground, { height: 56 }]} />
+        
+        {/* Header */}
+        <View style={[styles.headerBar, isRTL && styles.headerBarRTL]}>
           {onBack && (
-            <TouchableOpacity style={[styles.backInline, isRTL && styles.backInlineRTL]} onPress={onBack}>
-              <Text style={styles.backIcon}>{isRTL ? '›' : '‹'}</Text>
+            <TouchableOpacity style={styles.headerBackButton} onPress={onBack} activeOpacity={0.8}>
+              <Text style={[styles.headerBackIcon, isRTL && styles.headerBackTextRTL]}>
+                {isRTL ? '›' : '‹'}
+              </Text>
             </TouchableOpacity>
           )}
-          <Text style={styles.header}>
-            {isRTL ? 'المفضلة (0)' : 'Wishlist (0)'}
+          <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
+            {isRTL ? `المفضلة (${items.length})` : `Wishlist (${items.length})`}
           </Text>
+          <View style={styles.headerSpacer} />
         </View>
-        <View style={styles.emptyBodyCentered}>
-          <Text style={styles.emptyTitle}>
-            {isRTL ? 'قائمة المفضلة فارغة' : 'Your wishlist is empty'}
-          </Text>
-          <Text style={styles.emptyNote}>
-            {isRTL
-              ? 'أضف خدمات إلى المفضلة للعثور عليها لاحقاً'
-              : 'Add services to your wishlist to find them later.'}
-          </Text>
-        </View>
-      </View>
-    );
-  }
 
-  return (
-    <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
-      <View style={[styles.headerRow, isRTL && styles.headerRowRTL]}>
-        {onBack && (
-          <TouchableOpacity style={[styles.backInline, isRTL && styles.backInlineRTL]} onPress={onBack}>
-            <Text style={styles.backIcon}>{isRTL ? '›' : '‹'}</Text>
-          </TouchableOpacity>
+        {/* Content body */}
+        {!items || items.length === 0 ? (
+          <View style={styles.emptyBodyCentered}>
+            <Text style={styles.emptyTitle}>
+              {isRTL ? 'قائمة المفضلة فارغة' : 'Your wishlist is empty'}
+            </Text>
+            <Text style={styles.emptyNote}>
+              {isRTL
+                ? 'أضف خدمات إلى المفضلة للعثور عليها لاحقاً'
+                : 'Add services to your wishlist to find them later.'}
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            style={styles.list}
+            contentContainerStyle={styles.listContent}
+            data={items}
+            renderItem={renderItem}
+            keyExtractor={i => i._id}
+            numColumns={numColumns}
+            key={numColumns}
+            columnWrapperStyle={[styles.row, isRTL && styles.rowRTL]}
+            showsVerticalScrollIndicator={false}
+          />
         )}
-        <Text style={styles.header}>
-          {isRTL ? `المفضلة (${items.length})` : `Wishlist (${items.length})`}
-        </Text>
       </View>
-      <FlatList
-        style={styles.list}
-        contentContainerStyle={styles.listContent}
-        data={items}
-        renderItem={renderItem}
-        keyExtractor={i => i._id}
-        numColumns={numColumns}
-        key={numColumns}
-        columnWrapperStyle={[styles.row, isRTL && styles.rowRTL]}
-        showsVerticalScrollIndicator={false}
-      />
     </View>
   );
 };

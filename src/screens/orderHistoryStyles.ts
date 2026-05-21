@@ -8,6 +8,19 @@ export const orderHistoryStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+    position: 'relative',
+  },
+  headerBar: {
+    backgroundColor: 'transparent',
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    zIndex: 1,
+  },
+  headerBarRTL: {
+    flexDirection: 'row-reverse',
   },
   headerBackground: {
     position: 'absolute',
@@ -17,36 +30,32 @@ export const orderHistoryStyles = StyleSheet.create({
     backgroundColor: colors.primary,
     zIndex: 0,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: colors.primary,
+  headerBackButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 4,
   },
-  headerRTL: {
-    flexDirection: 'row-reverse',
-  },
-  backButton: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  backButtonText: {
+  headerBackIcon: {
+    color: colors.textWhite,
     fontSize: 37,
     lineHeight: 28,
-    color: colors.textWhite,
-    fontWeight: '700',
     textAlign: 'center',
+    fontWeight: '700',
   },
-  placeholder: {
-    width: 40,
-    height: 40,
+  headerBackTextRTL: {
+    fontFamily: 'System',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: colors.textWhite,
+    flex: 1,
+    textAlign: 'center',
+  },
+  headerTitleRTL: {
+    fontFamily: 'System',
+  },
+  headerSpacer: {
+    width: 40,
   },
   loadingContainer: {
     flex: 1,

@@ -551,14 +551,30 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
             style={{ height: insets.top, backgroundColor: colors.primary }}
           />
           <View style={styles.container}>
-            <View style={[styles.header, isRTL && styles.headerRTL]}>
-              <TouchableOpacity onPress={onBack} style={styles.backButton}>
-                <Text style={styles.backIcon}>{isRTL ? '›' : '‹'}</Text>
-              </TouchableOpacity>
-              <Text style={styles.headerTitle}>
+            {/* Header background */}
+            <View style={[styles.headerBackground, { height: 56 }]} />
+
+            <View style={[styles.headerBar, isRTL && styles.headerBarRTL]}>
+              {onBack && (
+                <TouchableOpacity
+                  style={styles.headerBackButton}
+                  onPress={onBack}
+                  activeOpacity={0.8}
+                >
+                  <Text
+                    style={[
+                      styles.headerBackIcon,
+                      isRTL && styles.headerBackTextRTL,
+                    ]}
+                  >
+                    {isRTL ? '›' : '‹'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
                 {isRTL ? 'فعالياتي' : 'My Events'}
               </Text>
-              <View style={styles.placeholder} />
+              <View style={styles.headerSpacer} />
             </View>
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.primary} />
@@ -579,15 +595,31 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
       <View style={{ flex: 1, backgroundColor: colors.primary }}>
         <View style={{ height: insets.top, backgroundColor: colors.primary }} />
         <View style={styles.container}>
+          {/* Header background */}
+          <View style={[styles.headerBackground, { height: 56 }]} />
+
           {/* Header */}
-          <View style={[styles.header, isRTL && styles.headerRTL]}>
-            <TouchableOpacity onPress={onBack} style={styles.backButton}>
-              <Text style={styles.backIcon}>{isRTL ? '›' : '‹'}</Text>
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>
+          <View style={[styles.headerBar, isRTL && styles.headerBarRTL]}>
+            {onBack && (
+              <TouchableOpacity
+                style={styles.headerBackButton}
+                onPress={onBack}
+                activeOpacity={0.8}
+              >
+                <Text
+                  style={[
+                    styles.headerBackIcon,
+                    isRTL && styles.headerBackTextRTL,
+                  ]}
+                >
+                  {isRTL ? '›' : '‹'}
+                </Text>
+              </TouchableOpacity>
+            )}
+            <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
               {isRTL ? 'فعالياتي' : 'My Events'}
             </Text>
-            <View style={styles.placeholder} />
+            <View style={styles.headerSpacer} />
           </View>
 
           {/* Date and Occasion Filters */}

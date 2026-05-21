@@ -257,62 +257,83 @@ export const canCreateQRCode = async (
     return false;
   }
 
-  // Get the first service from booking
-  const service = booking?.services?.[0];
-  if (!service) {
+  // Check all services in the booking - at least ONE must have allowed occasions
+  const services = booking?.services || [];
+  if (!services.length) {
     return false;
   }
 
-  // Get the service data
-  let serviceData =
-    typeof service.service === 'string' ? null : service.service;
-  const serviceId =
-    typeof service.service === 'string'
-      ? service.service
-      : service.service?._id;
+  // Helper to check if occasion/category is allowed (matching web logic)
+  const isOccasionCategoryAllowed = (occasionId: any, categoryId: any): boolean => {
+    if (!settings?.allowedOccasions) return false;
 
-  // If service is not populated and we have a token, try to fetch full details
-  if ((!serviceData || !serviceData.occasions) && serviceId && token) {
-    serviceData = await fetchServiceDetails(serviceId, token);
-  }
-
-  // If still no service data, return false
-  if (!serviceData) {
-    return false;
-  }
-
-  // Get occasions from service
-  const serviceOccasions = serviceData.occasions || [];
-
-  if (!serviceOccasions.length) {
-    return false;
-  }
-
-  // If we have settings with allowedOccasions, use them (from full API call)
-  if (settings?.allowedOccasions && settings.allowedOccasions.length > 0) {
-    // Get enabled allowed occasions
-    const enabledAllowedOccasionIds = settings.allowedOccasions
-      .filter(ao => ao.isEnabled)
-      .map(ao => ao.occasion._id);
-    // Check if ANY of the service's occasions match the enabled allowed ones
-    const hasAllowedOccasion = serviceOccasions.some((svc: any) => {
-      const serviceOccasionId = svc.occasion?._id || svc.occasion;
-      return (
-        serviceOccasionId &&
-        enabledAllowedOccasionIds.includes(String(serviceOccasionId))
-      );
+    const allowedOccasion = settings.allowedOccasions.find((ao: any) => {
+      const aoOccasionId = typeof ao.occasion === 'object' 
+        ? ao.occasion?._id 
+        : ao.occasion;
+      const paramOccasionId = typeof occasionId === 'object' 
+        ? occasionId?._id 
+        : occasionId;
+      return String(aoOccasionId) === String(paramOccasionId) && ao.isEnabled;
     });
 
-    if (hasAllowedOccasion) {
-      // QR code allowed
-    } else {
+    if (!allowedOccasion) return false;
+
+    const allowedCategoryIds = allowedOccasion.allowedCategories || [];
+
+    // If no categories are restricted in settings, it's allowed
+    if (allowedCategoryIds.length === 0) return true;
+
+    // If categories are restricted, categoryId must match one of them
+    if (!categoryId) return false;
+
+    return allowedCategoryIds.some((id: any) => 
+      String(id) === String(categoryId)
+    );
+  };
+
+  // Check each service to see if ANY has allowed occasions (same logic as web)
+  for (const service of services) {
+    // Get the service data
+    let serviceData =
+      typeof service.service === 'string' ? null : service.service;
+    const serviceId =
+      typeof service.service === 'string'
+        ? service.service
+        : service.service?._id;
+
+    // If service is not populated and we have a token, try to fetch full details
+    if ((!serviceData || !serviceData.occasions) && serviceId && token) {
+      serviceData = await fetchServiceDetails(serviceId, token);
     }
 
-    return hasAllowedOccasion;
+    // If no service data, skip this service
+    if (!serviceData) {
+      continue;
+    }
+
+    // Get occasions from service
+    const serviceOccasions = serviceData.occasions || [];
+
+    if (!serviceOccasions.length) {
+      continue;
+    }
+
+    // Check if ANY of this service's occasions is allowed
+    for (const svc of serviceOccasions) {
+      const serviceOccasionId = typeof svc.occasion === 'object' 
+        ? svc.occasion?._id 
+        : svc.occasion;
+      const categoryId = svc.categoryId;
+
+      if (isOccasionCategoryAllowed(serviceOccasionId, categoryId)) {
+        // Found at least one service with allowed occasion/category - allow QR code
+        return true;
+      }
+    }
   }
 
-  // If no settings or no allowedOccasions available, don't allow QR code creation
-  // This prevents false positives - backend will validate anyway
+  // No allowed services found
   return false;
 };
 

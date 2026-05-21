@@ -13,11 +13,16 @@ export const createStyles = (screenWidth: number) => {
   return StyleSheet.create({
     container: {
       flex: 1,
-      padding: horizontalPadding,
       backgroundColor: colors.background,
     },
-    list: { flex: 1 },
-    listContent: { paddingBottom: 96 },
+    list: { 
+      flex: 1,
+      paddingHorizontal: horizontalPadding,
+    },
+    listContent: { 
+      paddingBottom: 96,
+      paddingTop: 12,
+    },
     row: {
       justifyContent: 'flex-start',
       gap: gap,
@@ -26,42 +31,52 @@ export const createStyles = (screenWidth: number) => {
     rowRTL: {
       flexDirection: 'row-reverse',
     },
-    header: {
-      fontWeight: '700',
-      fontSize: isTablet ? 20 : 18,
-      marginBottom: 12,
-      flex: 1,
-      textAlign: 'center',
-      color: colors.textDark,
-    },
-    headerRow: {
+    headerBar: {
+      backgroundColor: 'transparent',
+      paddingHorizontal: 16,
       flexDirection: 'row',
       alignItems: 'center',
-      marginBottom: 18,
-      width: '100%',
-      justifyContent: 'flex-start',
+      justifyContent: 'space-between',
+      paddingVertical: 12,
+      zIndex: 1,
     },
-    headerRowRTL: {
+    headerBarRTL: {
       flexDirection: 'row-reverse',
     },
-    backInline: {
-      marginRight: 12,
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+    headerBackground: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
       backgroundColor: colors.primary,
-      justifyContent: 'center',
-      alignItems: 'center',
+      zIndex: 0,
     },
-    backInlineRTL: {
-      marginRight: 0,
-      marginLeft: 12,
+    headerBackButton: {
+      paddingVertical: 8,
+      paddingHorizontal: 4,
     },
-    backIcon: {
+    headerBackIcon: {
       color: colors.textWhite,
-      fontSize: 32,
-      lineHeight: 20,
+      fontSize: 37,
+      lineHeight: 28,
+      textAlign: 'center',
       fontWeight: '700',
+    },
+    headerBackTextRTL: {
+      fontFamily: 'System',
+    },
+    headerTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.textWhite,
+      flex: 1,
+      textAlign: 'center',
+    },
+    headerTitleRTL: {
+      fontFamily: 'System',
+    },
+    headerSpacer: {
+      width: 40,
     },
     cardVertical: {
       backgroundColor: colors.backgroundLight,
@@ -156,6 +171,7 @@ export const createStyles = (screenWidth: number) => {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
+      paddingHorizontal: 16,
     },
   });
 };

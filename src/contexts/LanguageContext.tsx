@@ -172,7 +172,7 @@ const translations = {
     enterCoupon: 'الرجاء إدخال رمز الكوبون',
     pleaseLogin: 'الرجاء تسجيل الدخول أولاً',
 
-    pastTimeWarning: '⚠ وقت قديم',
+    pastTimeWarning: '⚠ انتهى الموعد',
     oldBookingsAlert: '⚠ تنبيه: حجوزات قديمة',
     oldBookingsMessage:
       'لديك {count} حجز(حجوزات) بتاريخ قديم في السلة:\n\n{items}\n\nالرجاء تحديث أو إزالة هذه الحجوزات.',

@@ -260,7 +260,7 @@ function App() {
   const routesWithoutHeader = ['occasions', 'packages', 'categories', 'services', 'vendors', 'vendor-services', 'occasion-services', 'service-details', 'package-details', 'cart', 'about', 'terms', 'privacy', 'contact', 'profile', 'addresses', 'search'];
   const shouldShowHeader = !routesWithoutHeader.includes(currentRoute);
 
-  const routesWithoutSafeArea = ['about', 'terms', 'privacy', 'contact', 'service-details', 'cart', 'profile', 'search'];
+  const routesWithoutSafeArea = ['about', 'terms', 'privacy', 'contact', 'service-details', 'cart', 'profile', 'search', 'addresses'];
   const shouldRenderWithoutSafeArea = routesWithoutSafeArea.includes(currentRoute);
 
   return (

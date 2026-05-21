@@ -86,12 +86,19 @@ export const styles = StyleSheet.create({
   oldBookingBadge: {
     position: 'absolute',
     top: 12,
-    left: 12,
     backgroundColor: '#FF6B6B',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
     zIndex: 5,
+  },
+  oldBookingBadgeLTR: {
+    right: 12,
+    left: undefined,
+  },
+  oldBookingBadgeRTL: {
+    left: 12,
+    right: undefined,
   },
   oldBookingText: {
     color: '#FFFFFF',

@@ -7,35 +7,53 @@ export const myEventsStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+    position: 'relative',
   },
-  header: {
+  headerBar: {
+    backgroundColor: 'transparent',
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: colors.primary,
     zIndex: 1,
   },
-  headerRTL: {
+  headerBarRTL: {
     flexDirection: 'row-reverse',
   },
-  backButton: {
-    justifyContent: 'center',
-    alignItems: 'center',
+  headerBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: colors.primary,
+    zIndex: 0,
   },
-  backIcon: {
-    fontSize: 37,
+  headerBackButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
+  headerBackIcon: {
     color: colors.textWhite,
-    fontWeight: '700',
+    fontSize: 37,
     lineHeight: 28,
+    textAlign: 'center',
+    fontWeight: '700',
+  },
+  headerBackTextRTL: {
+    fontFamily: 'System',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: colors.textWhite,
+    flex: 1,
+    textAlign: 'center',
   },
-  placeholder: {
+  headerTitleRTL: {
+    fontFamily: 'System',
+  },
+  headerSpacer: {
     width: 40,
   },
   loadingContainer: {
