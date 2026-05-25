@@ -1,7 +1,7 @@
 import { StyleSheet, Dimensions } from 'react-native';
 import { colors } from '../../constants/colors';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 export const styles = StyleSheet.create({
   modalOverlay: {
@@ -13,14 +13,14 @@ export const styles = StyleSheet.create({
   modalContent: {
     backgroundColor: colors.background,
     borderRadius: 8,
-    width: width * 0.85,
-    maxWidth: 400,
+    width: width * 0.78,
+    maxWidth: 360,
     overflow: 'hidden',
   },
   dateHeader: {
     backgroundColor: colors.primary,
-    padding: 20,
-    paddingVertical: 24,
+    padding: 16,
+    paddingVertical: 18,
   },
   yearText: {
     fontSize: 16,
@@ -29,13 +29,13 @@ export const styles = StyleSheet.create({
     marginBottom: 4,
   },
   selectedDateText: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '400',
     color: colors.textWhite,
   },
   calendarContainer: {
-    padding: 16,
-    paddingBottom: 8,
+    padding: 12,
+    paddingBottom: 6,
   },
   monthHeader: {
     flexDirection: 'row',
@@ -63,8 +63,8 @@ export const styles = StyleSheet.create({
     marginBottom: 8,
   },
   weekDayCell: {
-    width: 40,
-    height: 40,
+    width: 34,
+    height: 34,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -82,7 +82,7 @@ export const styles = StyleSheet.create({
     aspectRatio: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 6,
   },
   selectedDayCell: {
     backgroundColor: colors.primary,
@@ -106,13 +106,13 @@ export const styles = StyleSheet.create({
   actionButtons: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    padding: 16,
-    paddingTop: 8,
+    padding: 12,
+    paddingTop: 6,
     gap: 8,
   },
   cancelButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
   },
   cancelButtonText: {
     fontSize: 14,
@@ -120,8 +120,8 @@ export const styles = StyleSheet.create({
     color: colors.primary,
   },
   okButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
   },
   okButtonText: {
     fontSize: 14,

@@ -525,7 +525,10 @@ export interface BookingTimeSlot {
 
 export interface CustomInput {
   label: string;
-  value: string;
+  value: any;
+  labelAr?: string;
+  valueAr?: any;
+  price?: number;
   _id?: string;
 }
 
@@ -542,8 +545,16 @@ export interface ServiceInfo {
 export interface VendorInfo {
   _id: string;
   name?: string;
+  firstName?: string;
+  lastName?: string;
+  businessName?: string;
+  businessName_ar?: string;
   email?: string;
   phone?: string;
+  vendorProfile?: {
+    businessName?: string;
+    businessName_ar?: string;
+  };
 }
 
 export interface BookingService {
@@ -552,9 +563,13 @@ export interface BookingService {
   price: number;
   quantity: number;
   status: string;
+  paymentStatus?: string;
   confirmedAt?: string;
+  paidAt?: string;
   notes?: string;
   customInputs?: CustomInput[];
+  eventDate?: string;
+  timeSlot?: BookingTimeSlot;
   _id: string;
 }
 
@@ -567,6 +582,7 @@ export interface Booking {
   services: BookingService[];
   packages: any[];
   totalPrice: number;
+  deliveryFees?: number;
   coupon?: {
     code: string;
     discountAmount: number;
@@ -582,7 +598,15 @@ export interface Booking {
   specialRequests?: string;
   guestLimit?: number;
   guests?: any[];
+  myFatoorahPayment?: {
+    paymentMethod?: string;
+    transactionId?: string;
+    invoiceId?: string | number;
+    referenceId?: string;
+  };
+  review?: any;
   createdAt: string;
+  updatedAt?: string;
   __v: number;
 }
 
@@ -634,6 +658,34 @@ export const getUserBookings = async (token: string): Promise<Booking[]> => {
 
     const data: Booking[] = await response.json();
     return data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Fetch user dashboard bookings using the same endpoint as the web dashboard.
+ */
+export const getUserDashboardBookings = async (
+  token: string,
+): Promise<Booking[]> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/dashboard/user`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch user dashboard bookings: ${response.statusText}`,
+      );
+    }
+
+    const data = await response.json();
+    return Array.isArray(data?.myBookings) ? data.myBookings : [];
   } catch (error) {
     throw error;
   }

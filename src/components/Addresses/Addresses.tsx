@@ -12,6 +12,7 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
   Modal,
+  StatusBar,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { styles } from './styles';
@@ -46,6 +47,13 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [addressToDelete, setAddressToDelete] = useState<any>(null);
+  const pageStatusBar = (
+    <StatusBar
+      backgroundColor={colors.primary}
+      barStyle="dark-content"
+      translucent={false}
+    />
+  );
 
   useEffect(() => {
     const doLoad = async () => {
@@ -147,6 +155,7 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
   if (loading) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.primary }}>
+        {pageStatusBar}
         <View style={{ height: insets.top, backgroundColor: colors.primary }} />
         <View style={[styles.addressesContainer, { position: 'relative', flex: 1 }]}>
           {/* Header background */}
@@ -190,6 +199,7 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.primary }}>
+      {pageStatusBar}
       <View style={{ height: insets.top, backgroundColor: colors.primary }} />
       <View style={[styles.addressesContainer, { position: 'relative', flex: 1 }]}>
       {/* Header background */}

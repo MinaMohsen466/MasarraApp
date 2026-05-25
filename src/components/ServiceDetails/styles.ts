@@ -46,7 +46,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'flex-end',
-      gap: 14,
+      gap: 0,
     },
     actionButton: {
       width: 44,

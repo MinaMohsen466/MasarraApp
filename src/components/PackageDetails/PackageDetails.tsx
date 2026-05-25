@@ -342,44 +342,45 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
           const screenWidth = Dimensions.get('window').width;
           const isTabletDevice = screenWidth >= 600;
 
-          // Bottom navigation bar height calculation (from styles.ts)
-          // paddingBottom: 18 (mobile) or 24 (tablet)
-          // navItem paddingVertical: 8 (mobile) or 12 (tablet)
-          // iconSize: 28 (mobile) or 36 (tablet)
-          // Plus View under BottomNav: 20px
-          const paddingBottom = isTabletDevice ? 24 : 18;
+          // ---- Accurate BottomNavigation layout calculation ----
+          // From BottomNavigation/styles.ts:
+          //   container: position absolute, bottom:0, paddingVertical: 16(tablet)/12(mobile),
+          //              paddingBottom: 24(tablet)/18(mobile), paddingHorizontal: 16
+          //   navItem: paddingVertical: 12(tablet)/8(mobile)
+          //   iconSize: 36(tablet)/28(mobile)
+          // From App.tsx: there's a 20px View below the BottomNavigation
+
+          const bottomViewHeight = 20; // View below BottomNav in App.tsx
+          const navPaddingBottom = isTabletDevice ? 24 : 18;  // paddingBottom overrides paddingVertical bottom
           const navItemPaddingVertical = isTabletDevice ? 12 : 8;
           const navIconSize = isTabletDevice ? 36 : 28;
-          const bottomViewHeight = 20;
+          const navPaddingHorizontal = 16;
 
-          // Distance from screen bottom to icon center
-          // Icon center is at: bottomViewHeight + paddingBottom + navItemPaddingVertical + (navIconSize/2)
-          const iconCenterFromBottom =
-            bottomViewHeight +
-            paddingBottom +
-            navItemPaddingVertical +
-            navIconSize / 2;
-
-          // Cart icon is the LAST item in bottom nav (5th item, index 4)
-          // Bottom nav has 5 items evenly distributed using space-around
-          const navItemWidth = screenWidth / 5;
-          const cartIconIndex = 4; // 0-based index (5th item)
-
-          // In RTL, the container uses flexDirection: row-reverse, so cart appears first
-          const cartPosition = isRTL ? 0 : cartIconIndex;
-
-          // Calculate X position: center of the nav item
-          const targetX = cartPosition * navItemWidth + navItemWidth / 2;
-
-          // Calculate Y position: screen height minus distance from bottom to icon center
+          // The icon center Y from screen bottom:
+          // bottomViewHeight + navPaddingBottom + navItemPaddingVertical + iconSize/2
+          const iconCenterFromBottom = bottomViewHeight + navPaddingBottom + navItemPaddingVertical + navIconSize / 2;
           const targetY = screenHeight - iconCenterFromBottom;
 
-          // Calculate icon size (60x60)
+          // ---- X position: space-around with paddingHorizontal ----
+          // The container uses justifyContent: 'space-around' with paddingHorizontal: 16
+          // Available width for space-around = screenWidth - 2 * paddingHorizontal
+          // With space-around and N items, each item gets equal "slots"
+          // Item center positions: slot_width * (i + 0.5) + paddingHorizontal
+          const numItems = 5;
+          const availableWidth = screenWidth - 2 * navPaddingHorizontal;
+          const slotWidth = availableWidth / numItems;
+          const cartIconIndex = 4; // 0-based, cart is 5th item
+
+          // In RTL, flexDirection is row-reverse, so cart (index 4) appears first
+          const cartPosition = isRTL ? 0 : cartIconIndex;
+          const targetX = navPaddingHorizontal + slotWidth * cartPosition + slotWidth / 2;
+
+          // Calculate icon size (60x60 flying icon)
           const iconSize = 60;
 
           // Calculate translation needed from start position
           const translateX = targetX - startX;
-          const translateY = targetY - startY;
+          const translateY2 = targetY - startY;
 
           // Set start position (center-based)
           setIconStartPosition({
@@ -395,7 +396,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
           // Animate icon flying to cart
           Animated.parallel([
             Animated.timing(flyingIconTranslate, {
-              toValue: { x: translateX, y: translateY },
+              toValue: { x: translateX, y: translateY2 },
               duration: 600,
               easing: Easing.bezier(0.25, 0.1, 0.25, 1),
               useNativeDriver: true,
@@ -462,13 +463,10 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
   const handleShare = async () => {
     if (!packageData) return;
     try {
-      const price = displayPrice.toFixed(3);
-      const vendorName = packageData.vendor?.name || '';
-      const message = isRTL
-        ? `${displayName}\n${vendorName}\n${price} د.ك\n\nشاهد هذه الباقة الرائعة!`
-        : `${displayName}\n${vendorName}\nKD ${price}\n\nCheck out this amazing package!`;
+      // Create package URL
+      const packageUrl = `https://masarrakw.com/packages/${packageData._id}`;
 
-      await Share.share({ message, title: displayName });
+      await Share.share({ message: packageUrl });
     } catch (error: any) {
       Alert.alert(
         isRTL ? 'خطأ' : 'Error',

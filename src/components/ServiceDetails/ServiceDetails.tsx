@@ -164,33 +164,52 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
           // Get actual screen dimensions
           const screenHeight = Dimensions.get('window').height;
           const screenWidth = Dimensions.get('window').width;
+          const isTabletDevice = screenWidth >= 600;
 
-          // Bottom tab bar configuration
-          // Tab bar is approximately 60px + safe area bottom
-          const tabBarBaseHeight = 60;
-          const bottomInset = insets.bottom || 0;
-          const totalTabBarHeight = tabBarBaseHeight + bottomInset;
+          // ---- Accurate BottomNavigation layout calculation ----
+          // From BottomNavigation/styles.ts:
+          //   container: position absolute, bottom:0, paddingVertical: 16(tablet)/12(mobile),
+          //              paddingBottom: 24(tablet)/18(mobile), paddingHorizontal: 16
+          //   navItem: paddingVertical: 12(tablet)/8(mobile)
+          //   iconSize: 36(tablet)/28(mobile)
+          // From App.tsx: there's a 20px View below the BottomNavigation
 
-          // Cart icon is the LAST item in bottom nav (5th item, index 4)
-          // Bottom nav has 5 items evenly distributed
-          const navItemWidth = screenWidth / 5;
-          const cartIconIndex = 4; // 0-based index (5th item)
+          const bottomViewHeight = 20; // View below BottomNav in App.tsx
+          const navPaddingTop = isTabletDevice ? 16 : 12;    // paddingVertical top
+          const navPaddingBottom = isTabletDevice ? 24 : 18;  // paddingBottom overrides paddingVertical bottom
+          const navItemPaddingVertical = isTabletDevice ? 12 : 8;
+          const navIconSize = isTabletDevice ? 36 : 28;
+          const navPaddingHorizontal = 16;
 
-          // In RTL, cart moves to the beginning
+          // Total nav bar height = paddingTop + paddingBottom + navItem content height
+          // navItem content height = paddingVertical*2 + iconSize
+          const navBarTotalHeight = navPaddingTop + navPaddingBottom + navItemPaddingVertical * 2 + navIconSize;
+
+          // The icon center Y from screen bottom:
+          // bottomViewHeight + navPaddingBottom + navItemPaddingVertical + iconSize/2
+          const iconCenterFromBottom = bottomViewHeight + navPaddingBottom + navItemPaddingVertical + navIconSize / 2;
+          const targetY = screenHeight - iconCenterFromBottom;
+
+          // ---- X position: space-around with paddingHorizontal ----
+          // The container uses justifyContent: 'space-around' with paddingHorizontal: 16
+          // Available width for space-around = screenWidth - 2 * paddingHorizontal
+          // With space-around and N items, each item gets equal "slots"
+          // Item center positions: slot_width * (i + 0.5) + paddingHorizontal
+          const numItems = 5;
+          const availableWidth = screenWidth - 2 * navPaddingHorizontal;
+          const slotWidth = availableWidth / numItems;
+          const cartIconIndex = 4; // 0-based, cart is 5th item
+
+          // In RTL, flexDirection is row-reverse, so cart (index 4) appears first
           const cartPosition = isRTL ? 0 : cartIconIndex;
+          const targetX = navPaddingHorizontal + slotWidth * cartPosition + slotWidth / 2;
 
-          // Calculate X position: center of the nav item
-          const targetX = cartPosition * navItemWidth + navItemWidth / 2;
-
-          // Calculate Y position: icon center should be in middle of tab bar
-          const targetY = screenHeight - totalTabBarHeight / 2 - 5;
-
-          // Calculate icon size (60x60)
+          // Calculate icon size (60x60 flying icon)
           const iconSize = 60;
 
           // Calculate translation needed from start position
           const translateX = targetX - startX;
-          const translateY = targetY - startY;
+          const translateY2 = targetY - startY;
 
           // Set start position (center-based)
           setIconStartPosition({
@@ -206,7 +225,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
           // Animate icon flying to cart
           Animated.parallel([
             Animated.timing(flyingIconTranslate, {
-              toValue: { x: translateX, y: translateY },
+              toValue: { x: translateX, y: translateY2 },
               duration: 600,
               easing: Easing.bezier(0.25, 0.1, 0.25, 1),
               useNativeDriver: true,
@@ -665,36 +684,11 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
             onPress={async () => {
               if (!service) return;
               try {
-                const serviceName = isRTL ? service.nameAr : service.name;
-                const vendorName = service.vendor?.name || '';
-
-                // Calculate display price
-                let displayPrice = service.price;
-                if (service.isOnSale) {
-                  if (
-                    service.salePrice &&
-                    service.salePrice > 0 &&
-                    service.salePrice < service.price
-                  ) {
-                    displayPrice = service.salePrice;
-                  } else if (
-                    service.discountPercentage &&
-                    service.discountPercentage > 0
-                  ) {
-                    displayPrice =
-                      service.price * (1 - service.discountPercentage / 100);
-                  }
-                }
-
-                const price = displayPrice.toFixed(3);
-
-                const message = isRTL
-                  ? `${serviceName}\n${vendorName}\n${price} د.ك\n\nشاهد هذه الخدمة الرائعة!`
-                  : `${serviceName}\n${vendorName}\nKD ${price}\n\nCheck out this amazing service!`;
-
+                // Create service URL
+                const serviceUrl = `https://masarrakw.com/services/${service._id}`;
+                
                 const result = await Share.share({
-                  message: message,
-                  title: serviceName,
+                  message: serviceUrl,
                 });
 
                 if (result.action === Share.sharedAction) {

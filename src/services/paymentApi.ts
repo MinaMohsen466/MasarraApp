@@ -259,6 +259,71 @@ export const sendPayment = async (
   }
 };
 
+export interface PendingServiceForPayment {
+  serviceId: string;
+  name?: string;
+  nameAr?: string;
+  price: number;
+  quantity: number;
+  total: number;
+  discountedTotal?: number;
+  vendor?: any;
+  status: string;
+  paymentStatus: string;
+}
+
+export interface PendingServicesPaymentData {
+  bookingId: string;
+  pendingServices: PendingServiceForPayment[];
+  awaitingConfirmation: PendingServiceForPayment[];
+  pendingTotal: number;
+  pendingTotalRaw: number;
+  deliveryFees: number;
+  awaitingTotal: number;
+  coupon?: {
+    code: string;
+    discountAmount: number;
+    originalPendingTotal: number;
+  } | null;
+}
+
+export const getPendingServicesForPayment = async (
+  bookingId: string,
+): Promise<{
+  success: boolean;
+  data?: PendingServicesPaymentData;
+  message?: string;
+}> => {
+  try {
+    const token = await getAuthToken();
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+
+    const response = await fetch(
+      `${API_URL}/payment/pending-services/${bookingId}`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to get pending services');
+    }
+
+    return data;
+  } catch (error: any) {
+    console.error('Error getting pending services:', error);
+    throw error;
+  }
+};
+
 /**
  * Create HTML content for embedded MyFatoorah payment
  */

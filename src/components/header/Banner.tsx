@@ -4,14 +4,17 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  StatusBar,
 } from 'react-native';
 import { useSiteSettings } from '../../hooks/useSiteSettings';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { colors } from '../../constants/colors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const Banner: React.FC = () => {
   const { data: siteSettings } = useSiteSettings();
   const { isRTL } = useLanguage();
+  const insets = useSafeAreaInsets();
   const [isDismissed, setIsDismissed] = useState(false);
 
   if (!siteSettings?.bannerEnabled || isDismissed) {
@@ -36,19 +39,40 @@ const Banner: React.FC = () => {
   );
 
   return (
-    <View style={styles.bannerContainer}>
-      {isRTL && closeButton}
-      <View style={styles.contentArea}>
-        <View style={styles.staticRow}>
-          <Text style={styles.bannerText}>{bannerText}</Text>
+    <>
+      <StatusBar
+        backgroundColor={colors.primary}
+        barStyle="dark-content"
+        translucent={false}
+      />
+      <View style={styles.bannerWrap}>
+        <View style={[styles.notchFill, { height: insets.top, top: -insets.top }]} />
+        <View style={styles.bannerContainer}>
+          {isRTL && closeButton}
+          <View style={styles.contentArea}>
+            <View style={styles.staticRow}>
+              <Text style={styles.bannerText}>{bannerText}</Text>
+            </View>
+          </View>
+          {!isRTL && closeButton}
         </View>
       </View>
-      {!isRTL && closeButton}
-    </View>
+    </>
   );
 };
 
 const styles = StyleSheet.create({
+  bannerWrap: {
+    position: 'relative',
+    backgroundColor: colors.primary,
+    zIndex: 1,
+  },
+  notchFill: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    backgroundColor: colors.primary,
+  },
   bannerContainer: {
     backgroundColor: colors.primary,
     minHeight: 40,

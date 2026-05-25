@@ -10,10 +10,13 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Svg, { Path, Polyline, Line, Rect, Circle } from 'react-native-svg';
-import { getUserBookings, Booking } from '../services/api';
+import { getUserDashboardBookings, Booking } from '../services/api';
 import { API_URL } from '../config/api.config';
 import { colors } from '../constants/colors';
-import { sendPayment } from '../services/paymentApi';
+import {
+  getPendingServicesForPayment,
+  sendPayment,
+} from '../services/paymentApi';
 import { useLanguage } from '../contexts/LanguageContext';
 import { orderHistoryStyles as styles } from './orderHistoryStyles';
 import { QRFormModal } from '../components/QRCodeCard/QRFormModal';
@@ -78,9 +81,26 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
   // Payment timeout in milliseconds (10 minutes)
   const PAYMENT_TIMEOUT = 10 * 60 * 1000;
 
+  const filterBookingsByStatus = useCallback(
+    (items: Booking[], filter: string) => {
+      if (filter === 'all') {
+        return items;
+      }
+
+      return items.filter(
+        booking => booking.status.toLowerCase() === filter.toLowerCase(),
+      );
+    },
+    [],
+  );
+
   useEffect(() => {
     loadBookings();
   }, []);
+
+  useEffect(() => {
+    setFilteredBookings(filterBookingsByStatus(bookings, selectedFilter));
+  }, [bookings, selectedFilter, filterBookingsByStatus]);
 
   const loadBookings = async () => {
     try {
@@ -102,11 +122,12 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
           },
         ]);
         setAlertVisible(true);
+        setLoading(false);
         return;
       }
 
       const [data, settings] = await Promise.all([
-        getUserBookings(token),
+        getUserDashboardBookings(token),
         getQRCodeSettings(token),
       ]);
 
@@ -116,7 +137,6 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       );
       setBookings(sortedBookings);
-      setFilteredBookings(sortedBookings);
 
       // End loading immediately so user sees bookings right away
       setLoading(false);
@@ -143,34 +163,29 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
     }
   };
 
+  const getConfirmedPendingServices = useCallback((booking: Booking) => {
+    return (
+      booking.services?.filter(
+        (s: any) => s.paymentStatus === 'pending' && s.status === 'confirmed',
+      ) || []
+    );
+  }, []);
+
   // Calculate time left for payment pending bookings
   const calculateTimeLeft = useCallback(
     (booking: Booking): number => {
-      // Don't calculate time for cancelled bookings
       if (booking.status === 'cancelled') {
         return 0;
       }
 
-      // Only calculate time if booking payment is pending and booking is confirmed
-      if (
-        booking.paymentStatus !== 'pending' ||
-        booking.status !== 'confirmed'
-      ) {
+      const confirmedServices = getConfirmedPendingServices(booking);
+
+      if (confirmedServices.length === 0) {
         return 0;
       }
 
-      // Check if there are any services that are confirmed by vendor (have confirmedAt)
-      const confirmedServices = booking.services?.filter(
-        (s: any) => s.status === 'confirmed' && s.confirmedAt,
-      );
-
-      if (!confirmedServices || confirmedServices.length === 0) {
-        return 0;
-      }
-
-      // Get the earliest confirmation time from services
       const confirmedDates = confirmedServices
-        .map((s: any) => s.confirmedAt)
+        .map((s: any) => s.confirmedAt || booking.createdAt)
         .filter(Boolean)
         .map((d: string) => new Date(d).getTime());
 
@@ -182,7 +197,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
 
       return Math.max(0, expiryTime - now);
     },
-    [PAYMENT_TIMEOUT],
+    [PAYMENT_TIMEOUT, getConfirmedPendingServices],
   );
 
   // Start timer for pending payments
@@ -191,13 +206,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
       const newTimeLeftMap: { [key: string]: number } = {};
 
       bookings.forEach(booking => {
-        // Always calculate time left for bookings with pending payment and confirmed status
-        if (
-          booking.paymentStatus === 'pending' &&
-          booking.status === 'confirmed'
-        ) {
+        if (getConfirmedPendingServices(booking).length > 0) {
           const timeLeft = calculateTimeLeft(booking);
-          // Store the time even if it's 0 - it means the timer has expired but payment is still needed
           newTimeLeftMap[booking._id] = timeLeft;
         }
       });
@@ -214,13 +224,79 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
         clearInterval(timerRef.current);
       }
     };
-  }, [bookings, calculateTimeLeft]);
+  }, [bookings, calculateTimeLeft, getConfirmedPendingServices]);
 
   // Format time left as MM:SS
   const formatTimeLeft = (ms: number): string => {
     const minutes = Math.floor(ms / 60000);
     const seconds = Math.floor((ms % 60000) / 1000);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const isFreeBooking = (booking: Booking) => booking.totalPrice === 0;
+
+  const isPaidOrFreeService = (serviceEntry: any, booking: Booking) => {
+    return (
+      serviceEntry.price === 0 ||
+      isFreeBooking(booking) ||
+      serviceEntry.paymentStatus === 'paid' ||
+      booking.paymentStatus === 'paid'
+    );
+  };
+
+  const getEventEndTime = (booking: Booking) => {
+    if (booking.eventTime?.end) {
+      return new Date(booking.eventTime.end);
+    }
+
+    const eventDate = new Date(booking.eventDate);
+    eventDate.setHours(23, 59, 59, 999);
+    return eventDate;
+  };
+
+  const hasEventDatePassed = (booking: Booking) => {
+    return getEventEndTime(booking) < new Date();
+  };
+
+  const hasPaymentWindowExpired = (booking: Booking) => {
+    const timeLeft = timeLeftMap[booking._id] ?? calculateTimeLeft(booking);
+    return (
+      getConfirmedPendingServices(booking).length > 0 &&
+      timeLeft <= 0
+    );
+  };
+
+  const getPendingPaymentPreviewTotal = (booking: Booking) => {
+    const pendingServicesTotal = getConfirmedPendingServices(booking).reduce(
+      (sum: number, s: any) => sum + s.price * (s.quantity || 1),
+      0,
+    );
+    const pendingTotalRaw = pendingServicesTotal + (booking.deliveryFees || 0);
+
+    if (
+      booking.coupon &&
+      booking.coupon.discountAmount > 0 &&
+      booking.coupon.originalPrice > 0
+    ) {
+      const discountRatio =
+        booking.coupon.discountAmount / booking.coupon.originalPrice;
+      return pendingTotalRaw * (1 - discountRatio);
+    }
+
+    return pendingTotalRaw;
+  };
+
+  const getReceiptServices = (booking: Booking) => {
+    return (booking.services || [])
+      .filter((s: any) => s.paymentStatus === 'paid')
+      .map((s: any) => ({
+        name:
+          s.service?.name ||
+          s.service?.nameAr ||
+          (isRTL ? 'Ø®Ø¯Ù…Ø©' : 'Service'),
+        quantity: s.quantity || 1,
+        total: s.price * (s.quantity || 1),
+      }));
   };
 
   // Cancel booking
@@ -316,19 +392,14 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
         return;
       }
 
-      // Calculate pending total from all confirmed services (vendor approved)
-      // If booking payment is pending, calculate from all confirmed services
-      const pendingServices =
-        booking.services?.filter(
-          (s: any) => s.status === 'confirmed' && s.confirmedAt,
-        ) || [];
+      // Use the same pending-payment calculation as the web checkout flow.
+      const pendingResponse = await getPendingServicesForPayment(booking._id);
+      const pendingData = pendingResponse.data;
+      const pendingServices = pendingData?.pendingServices || [];
+      const pendingAmount =
+        pendingData?.pendingTotalRaw || pendingData?.pendingTotal || 0;
 
-      const pendingTotal = pendingServices.reduce(
-        (sum: number, s: any) => sum + s.price * (s.quantity || 1),
-        0,
-      );
-
-      if (pendingTotal <= 0) {
+      if (!pendingResponse.success || pendingServices.length === 0) {
         setAlertTitle(isRTL ? 'تنبيه' : 'Info');
         setAlertMessage(
           isRTL ? 'لا يوجد مبلغ مستحق للدفع' : 'No pending amount to pay',
@@ -336,6 +407,22 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
         setAlertButtons([
           {
             text: isRTL ? 'حسناً' : 'OK',
+            style: 'default',
+          },
+        ]);
+        setAlertVisible(true);
+        await loadBookings();
+        return;
+      }
+
+      if (pendingAmount <= 0) {
+        setAlertTitle(isRTL ? 'تنبيه' : 'Info');
+        setAlertMessage(
+          isRTL ? 'لا يوجد مبلغ مستحق للدفع' : 'No pending amount to pay',
+        );
+        setAlertButtons([
+          {
+            text: isRTL ? 'حسنًا' : 'OK',
             style: 'default',
           },
         ]);
@@ -349,17 +436,15 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
 
       // Prepare invoice items
       const invoiceItems = pendingServices.map((s: any) => ({
-        ItemName:
-          isRTL && s.service?.nameAr
-            ? s.service.nameAr
-            : s.service?.name || 'Service',
+        ItemName: isRTL && s.nameAr ? s.nameAr : s.name || 'Service',
         Quantity: s.quantity || 1,
-        UnitPrice: s.price,
+        UnitPrice:
+          (s.discountedTotal || s.total || s.price) / (s.quantity || 1),
       }));
 
       const response = await sendPayment({
         bookingId: booking._id,
-        invoiceValue: pendingTotal,
+        invoiceValue: pendingAmount,
         customerName: user?.name || user?.firstName || 'Customer',
         customerEmail: user?.email || '',
         customerMobile:
@@ -477,14 +562,6 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
 
   const applyFilter = (filter: string) => {
     setSelectedFilter(filter);
-    if (filter === 'all') {
-      setFilteredBookings(bookings);
-    } else {
-      const filtered = bookings.filter(
-        booking => booking.status.toLowerCase() === filter.toLowerCase(),
-      );
-      setFilteredBookings(filtered);
-    }
   };
 
   // Helper to get single service name
@@ -819,9 +896,10 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                             const serviceName = getSingleServiceName(
                               serviceEntry.service,
                             );
-                            const isPaid =
-                              serviceEntry.paymentStatus === 'paid' ||
-                              booking.paymentStatus === 'paid';
+                            const isPaid = isPaidOrFreeService(
+                              serviceEntry,
+                              booking,
+                            );
 
                             return (
                               <View
@@ -1040,20 +1118,21 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
 
                   {/* Payment Pending Banner with Timer - Only for confirmed services that need payment */}
                   {(() => {
-                    // Check if booking payment is pending and status is confirmed (vendor approved)
                     const isPaymentPending =
                       booking.paymentStatus === 'pending' &&
-                      booking.status === 'confirmed';
-
-                    // Check if there are confirmed services (vendor approved with confirmedAt)
-                    const hasConfirmedServices = booking.services?.some(
-                      (s: any) => s.status === 'confirmed' && s.confirmedAt,
-                    );
-
+                      booking.totalPrice > 0;
+                    const hasPendingPayment =
+                      getConfirmedPendingServices(booking).length > 0;
+                    const hasExpired = hasPaymentWindowExpired(booking);
                     const bookingTimeLeft = timeLeftMap[booking._id];
 
-                    return isPaymentPending &&
-                      hasConfirmedServices &&
+                    return booking.status !== 'cancelled' &&
+                      !hasExpired &&
+                      isPaymentPending &&
+                      !isFreeBooking(booking) &&
+                      booking.status !== 'pending' &&
+                      booking.paymentStatus !== 'paid' &&
+                      hasPendingPayment &&
                       bookingTimeLeft !== undefined ? (
                       <View
                         style={{
@@ -1142,12 +1221,9 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                   })()}
 
                   {/* Awaiting Vendor Confirmation Banner */}
-                  {booking.services?.some(
-                    (s: any) => s.status !== 'confirmed' || !s.confirmedAt,
-                  ) &&
-                    booking.status !== 'cancelled' &&
-                    (booking.status === 'pending' ||
-                      booking.paymentStatus === 'awaiting_confirmation') && (
+                  {booking.status !== 'cancelled' &&
+                    !hasPaymentWindowExpired(booking) &&
+                    booking.status === 'pending' && (
                       <View
                         style={{
                           flexDirection: 'row',
@@ -1178,50 +1254,36 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                       return null;
                     }
 
-                    // Check if booking payment is pending and confirmed (vendor approved)
+                    const isFree = isFreeBooking(booking);
+                    const hasPendingPayment =
+                      getConfirmedPendingServices(booking).length > 0;
+                    const hasExpired = hasPaymentWindowExpired(booking);
+                    const eventDateHasPassed = hasEventDatePassed(booking);
+
                     const isPaymentPending =
                       booking.paymentStatus === 'pending' &&
-                      booking.status === 'confirmed';
+                      booking.totalPrice > 0;
+                    const isPendingConfirmation = booking.status === 'pending';
+                    const canCancel =
+                      isPendingConfirmation || (isPaymentPending && !isFree);
+                    const pendingTotal = getPendingPaymentPreviewTotal(booking);
 
-                    // Check if any service is still awaiting vendor confirmation (not confirmed yet)
-                    const isAwaitingVendorConfirmation = booking.services?.some(
-                      (s: any) => s.status !== 'confirmed' || !s.confirmedAt,
-                    );
-
-                    // Check if there are services ready for payment (vendor confirmed with confirmedAt)
-                    const hasServicesReadyForPayment = booking.services?.some(
-                      (s: any) => s.status === 'confirmed' && s.confirmedAt,
-                    );
-
-                    // Calculate total from confirmed services only
-                    const totalAmount =
-                      booking.services
-                        ?.filter(
-                          (s: any) => s.status === 'confirmed' && s.confirmedAt,
-                        )
-                        .reduce(
-                          (sum: number, s: any) =>
-                            sum + s.price * (s.quantity || 1),
-                          0,
-                        ) || 0;
-
-                    // Show pay button only if:
-                    // 1. Booking payment is pending and status is confirmed
-                    // 2. There are services ready for payment (not awaiting confirmation)
-                    // 3. Payment timer exists and has not expired (timeLeft > 0)
                     const showPayButton =
-                      isPaymentPending &&
-                      hasServicesReadyForPayment &&
-                      timeLeftMap[booking._id] !== undefined &&
-                      timeLeftMap[booking._id] > 0 &&
-                      totalAmount > 0;
+                      hasPendingPayment &&
+                      booking.paymentStatus !== 'paid' &&
+                      !eventDateHasPassed &&
+                      !hasExpired &&
+                      booking.totalPrice > 0 &&
+                      pendingTotal > 0;
 
-                    // Show cancel button if booking is pending payment or any service is awaiting confirmation
-                    const showCancelButton =
-                      isPaymentPending || isAwaitingVendorConfirmation;
+                    const showCancelButton = canCancel;
 
-                    const showReceiptButton = booking.paymentStatus === 'paid' || booking.totalPrice === 0;
-                    const hasQR = qrAllowedBookings.has(booking._id);
+                    const showReceiptButton = booking.paymentStatus === 'paid';
+                    const hasQR =
+                      (booking.status === 'confirmed' ||
+                        booking.status === 'completed') &&
+                      (booking.paymentStatus === 'paid' || isFree) &&
+                      qrAllowedBookings.has(booking._id);
 
                     if (!showPayButton && !showCancelButton && !showReceiptButton && !hasQR) return null;
 
@@ -1443,16 +1505,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                       selectedReceiptBooking.myFatoorahPayment?.invoiceId,
                     referenceId:
                       selectedReceiptBooking.myFatoorahPayment?.referenceId,
-                    services: (selectedReceiptBooking.services || []).map(
-                      (s: any) => ({
-                        name:
-                          s.service?.name ||
-                          s.service?.nameAr ||
-                          (isRTL ? 'خدمة' : 'Service'),
-                        quantity: s.quantity || 1,
-                        total: s.price * (s.quantity || 1),
-                      }),
-                    ),
+                    services: getReceiptServices(selectedReceiptBooking),
                     paidAt:
                       selectedReceiptBooking.services?.find((s: any) => s.paidAt)
                         ?.paidAt ||

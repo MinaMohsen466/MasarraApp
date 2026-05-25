@@ -14,7 +14,6 @@ import {
 } from 'react-native';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { colors } from '../../constants/colors';
-import { getBackgroundImageUrl } from '../../services/qrCodeApi';
 import { CustomAlert } from '../CustomAlert/CustomAlert';
 import type { QRCodeData, QRCodeCustomDetails } from '../../services/qrCodeApi';
 
@@ -125,10 +124,9 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
   useEffect(() => {
     // Try to compute natural aspect ratio of the background image to avoid side gaps
     const bgUri = getBackgroundImageUri();
-    if (!bgUri) return;
-
     let isActive = true;
-    if (Image.getSize) {
+
+    if (bgUri && Image.getSize) {
       Image.getSize(
         bgUri,
         (w, h) => {
@@ -136,7 +134,7 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
             setCardAspectRatio(w / h);
           }
         },
-        error => {},
+        _error => {},
       );
     }
     return () => {
@@ -174,9 +172,7 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                       aspectRatio: cardAspectRatio || 0.7,
                     },
                   ]}
-                  imageStyle={{ resizeMode: 'stretch' }}
-                  onError={error => {}}
-                  onLoad={() => {}}
+                  imageStyle={{ resizeMode: 'cover' }}
                 >
                   {/* Semi-transparent overlay for better text visibility */}
                   <View style={styles.cardOverlay} />
@@ -184,7 +180,7 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                   {/* Card Content - Centered Layout */}
                   <View style={styles.cardContentWrapper}>
                     {/* Top Spacing */}
-                    <View style={{ height: 20 }} />
+                    <View style={{ height: 12 }} />
 
                     {/* Names - Main Title */}
                     {(customDetails.name1 || customDetails.name2) && (
@@ -194,10 +190,10 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                           {
                             fontFamily:
                               backgroundImage?.font?.family || 'Georgia',
-                            color: backgroundImage?.font?.color || '#000000',
+                            color: backgroundImage?.font?.color || '#ffffff',
                             fontSize: backgroundImage?.font?.size
-                              ? backgroundImage.font.size + 10
-                              : 28,
+                              ? backgroundImage.font.size + 4
+                              : 24,
                           },
                         ]}
                         numberOfLines={2}
@@ -213,10 +209,10 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                         {
                           fontFamily:
                             backgroundImage?.font?.family || 'Georgia',
-                          color: backgroundImage?.font?.color || '#999999',
+                          color: backgroundImage?.font?.color || 'rgba(255, 255, 255, 0.85)',
                           fontSize: backgroundImage?.font?.size
-                            ? backgroundImage.font.size + 2
-                            : 14,
+                            ? backgroundImage.font.size - 2
+                            : 12,
                         },
                       ]}
                     >
@@ -231,10 +227,10 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                           {
                             fontFamily:
                               backgroundImage?.font?.family || 'Georgia',
-                            color: backgroundImage?.font?.color || '#000000',
+                            color: backgroundImage?.font?.color || '#ffffff',
                             fontSize: backgroundImage?.font?.size
-                              ? backgroundImage.font.size + 10
-                              : 28,
+                              ? backgroundImage.font.size + 4
+                              : 24,
                           },
                         ]}
                       >
@@ -248,8 +244,8 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                         styles.divider,
                         {
                           backgroundColor:
-                            backgroundImage?.font?.color || '#cccccc',
-                          marginVertical: 12,
+                            backgroundImage?.font?.color || 'rgba(255, 255, 255, 0.5)',
+                          marginVertical: 8,
                         },
                       ]}
                     />
@@ -262,10 +258,10 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                           {
                             fontFamily:
                               backgroundImage?.font?.family || 'Georgia',
-                            color: backgroundImage?.font?.color || '#333333',
+                            color: backgroundImage?.font?.color || '#ffffff',
                             fontSize: backgroundImage?.font?.size
-                              ? backgroundImage.font.size + 4
-                              : 18,
+                              ? backgroundImage.font.size
+                              : 16,
                           },
                         ]}
                       >
@@ -281,10 +277,10 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                           {
                             fontFamily:
                               backgroundImage?.font?.family || 'Georgia',
-                            color: backgroundImage?.font?.color || '#666666',
+                            color: backgroundImage?.font?.color || 'rgba(255, 255, 255, 0.9)',
                             fontSize: backgroundImage?.font?.size
-                              ? backgroundImage.font.size - 2
-                              : 12,
+                              ? backgroundImage.font.size - 4
+                              : 11,
                           },
                         ]}
                       >
@@ -300,13 +296,13 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                           {
                             fontFamily:
                               backgroundImage?.font?.family || 'Georgia',
-                            color: backgroundImage?.font?.color || '#666666',
+                            color: backgroundImage?.font?.color || 'rgba(255, 255, 255, 0.9)',
                             fontSize: backgroundImage?.font?.size
-                              ? backgroundImage.font.size - 2
-                              : 12,
+                              ? backgroundImage.font.size - 4
+                              : 11,
                           },
                         ]}
-                        numberOfLines={3}
+                        numberOfLines={2}
                       >
                         {customDetails.location}
                       </Text>
@@ -320,33 +316,16 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                           {
                             fontFamily:
                               backgroundImage?.font?.family || 'Georgia',
-                            color: backgroundImage?.font?.color || '#666666',
+                            color: backgroundImage?.font?.color || 'rgba(255, 255, 255, 0.9)',
                             fontSize: backgroundImage?.font?.size
-                              ? backgroundImage.font.size - 2
-                              : 12,
+                              ? backgroundImage.font.size - 4
+                              : 11,
                           },
                         ]}
                       >
                         {customDetails.contact}
                       </Text>
                     )}
-
-                    {/* Bottom Spacing */}
-                    <View style={{ height: 16 }} />
-
-                    {/* Divider before QR */}
-                    <View
-                      style={[
-                        styles.divider,
-                        {
-                          backgroundColor:
-                            backgroundImage?.font?.color || '#cccccc',
-                        },
-                      ]}
-                    />
-
-                    {/* Bottom Spacing */}
-                    <View style={{ height: 16 }} />
                   </View>
 
                   {/* QR Code Box - Below content */}
@@ -356,11 +335,11 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                       <>
                         <View style={styles.qrCodeBox}>
                           <Image
-                            source={{ uri: getQRCodeImageUri() }}
-                            style={{ width: 120, height: 120 }}
-                            resizeMode="contain"
-                            onError={error => {}}
-                            onLoad={() => {}}
+                             source={{ uri: getQRCodeImageUri() }}
+                             style={{ width: 110, height: 110 }}
+                             resizeMode="contain"
+                             onError={_error => {}}
+                             onLoad={() => {}}
                           />
                         </View>
                         <Text
@@ -369,7 +348,7 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                             {
                               fontFamily:
                                 backgroundImage?.font?.family || 'Georgia',
-                              color: backgroundImage?.font?.color || '#666666',
+                              color: backgroundImage?.font?.color || 'rgba(255, 255, 255, 0.85)',
                             },
                           ]}
                         >
@@ -382,14 +361,14 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                       <View style={styles.qrCodeBox}>
                         <View
                           style={{
-                            width: 120,
-                            height: 120,
+                            width: 110,
+                            height: 110,
                             backgroundColor: '#e0e0e0',
                             justifyContent: 'center',
                             alignItems: 'center',
                           }}
                         >
-                          <Text style={{ color: '#666', fontSize: 16 }}>
+                          <Text style={{ color: '#666', fontSize: 14 }}>
                             {isRTL ? 'معاينة' : 'Preview'}
                           </Text>
                         </View>
@@ -536,51 +515,51 @@ const styles = StyleSheet.create({
   nameText: {
     fontWeight: '700',
     textAlign: 'center',
-    marginVertical: 6,
-    textShadowColor: 'rgba(255, 255, 255, 0.4)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    marginVertical: 4,
+    textShadowColor: 'rgba(0, 0, 0, 0.6)',
+    textShadowOffset: { width: 1, height: 1.5 },
+    textShadowRadius: 3.5,
   },
   andText: {
     fontStyle: 'italic',
     textAlign: 'center',
-    marginVertical: 4,
-    opacity: 0.7,
-    textShadowColor: 'rgba(255, 255, 255, 0.3)',
-    textShadowOffset: { width: 0.5, height: 0.5 },
-    textShadowRadius: 1,
+    marginVertical: 2,
+    opacity: 0.85,
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0.5, height: 1 },
+    textShadowRadius: 2,
   },
   dateText: {
     fontWeight: '600',
     textAlign: 'center',
-    marginVertical: 8,
+    marginVertical: 6,
     letterSpacing: 2,
-    textShadowColor: 'rgba(255, 255, 255, 0.3)',
-    textShadowOffset: { width: 0.5, height: 0.5 },
-    textShadowRadius: 1,
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0.5, height: 1 },
+    textShadowRadius: 2,
   },
   divider: {
     width: '50%',
     height: 1,
     alignSelf: 'center',
-    opacity: 0.5,
+    opacity: 0.6,
   },
   infoText: {
     textAlign: 'center',
-    marginVertical: 3,
-    textShadowColor: 'rgba(255, 255, 255, 0.3)',
-    textShadowOffset: { width: 0.5, height: 0.5 },
-    textShadowRadius: 1,
+    marginVertical: 2.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0.5, height: 1 },
+    textShadowRadius: 2,
   },
   qrCodeBoxContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 12,
+    marginTop: 8,
     zIndex: 2,
   },
   qrCodeBox: {
-    width: 140,
-    height: 140,
+    width: 125,
+    height: 125,
     backgroundColor: '#ffffff',
     borderRadius: 8,
     justifyContent: 'center',
@@ -595,19 +574,19 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   qrCodePlaceholder: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: 'bold',
     color: colors.primary,
     textAlign: 'center',
-    lineHeight: 48,
+    lineHeight: 40,
   },
   scanText: {
     fontSize: 11,
     textAlign: 'center',
-    marginTop: 8,
+    marginTop: 6,
     fontStyle: 'italic',
-    textShadowColor: 'rgba(255, 255, 255, 0.5)',
-    textShadowOffset: { width: 1, height: 1 },
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0.5, height: 1 },
     textShadowRadius: 2,
     zIndex: 1,
   },
