@@ -23,6 +23,7 @@ export interface QRCodeData {
   qrCode?: string; // QR code image data URL
   qrCodeImage?: string; // Alternative name for QR code image
   qrUrl?: string; // URL to view QR code details
+  updateTimestamp?: number; // Timestamp of when QR was updated/loaded locally
 }
 
 export interface QRCodeSettings {
@@ -184,6 +185,7 @@ export const generateQRCode = async (
   customDetails: QRCodeCustomDetails,
   backgroundImageId: string,
   serviceId?: string,
+  guestLimit?: number,
 ): Promise<any> => {
   try {
     const payload: any = {
@@ -195,6 +197,12 @@ export const generateQRCode = async (
     if (serviceId) {
       payload.serviceId = serviceId;
     }
+
+    // Add guestLimit if available
+    if (typeof guestLimit !== 'undefined') {
+      payload.guestLimit = guestLimit;
+    }
+
     const response = await fetch(
       `${API_BASE_URL}/qr-codes/generate/${bookingId}`,
       {
@@ -399,4 +407,26 @@ export const getBackgroundImageUrl = (imagePath: string): string => {
     return '';
   }
   return imagePath;
+};
+
+export const getUserQRCodes = async (
+  token: string,
+): Promise<{ success: boolean; qrCodes: QRCodeData[] }> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/qr-codes/my-codes`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      return { success: false, qrCodes: [] };
+    }
+
+    return await response.json();
+  } catch (error) {
+    return { success: false, qrCodes: [] };
+  }
 };

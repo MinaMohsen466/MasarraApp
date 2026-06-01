@@ -19,7 +19,7 @@ import { CustomAlert } from '../components/CustomAlert';
 import { API_URL } from '../config/api.config';
 import { myEventsStyles as styles } from './myEventsStyles';
 import { fetchOccasions } from '../services/api';
-import { getQRCodeByBooking } from '../services/qrCodeApi';
+import { getQRCodeByBooking, getUserQRCodes } from '../services/qrCodeApi';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 interface MyEventsProps {
@@ -68,7 +68,6 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
   const { isRTL } = useLanguage();
   const insets = useSafeAreaInsets();
   const [events, setEvents] = useState<MyEvent[]>([]);
-  const [filteredEvents, setFilteredEvents] = useState<MyEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
@@ -99,82 +98,8 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
     loadOccasions();
   }, []);
 
-  useEffect(() => {
-    filterEvents();
-  }, [events, selectedFilter, selectedDate, selectedOccasion]);
-
-  const loadOccasions = async () => {
-    try {
-      const data = await fetchOccasions();
-      setOccasions(data);
-    } catch (error) {}
-  };
-
-  const loadEvents = async () => {
-    try {
-      setLoading(true);
-      const token = await AsyncStorage.getItem('userToken');
-
-      if (!token) {
-        showAlert(
-          isRTL ? 'خطأ' : 'Error',
-          isRTL ? 'يرجى تسجيل الدخول أولاً' : 'Please login first',
-        );
-        setLoading(false);
-        return;
-      }
-
-      // Fetch user's own bookings
-      const response = await fetch(`${API_URL}/bookings`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const bookings = await response.json();
-      const allBookings = Array.isArray(bookings) ? bookings : [];
-
-      // Filter bookings that already have QR codes created (in parallel for speed)
-      const qrChecks = await Promise.all(
-        allBookings.map(async booking => {
-          try {
-            const qrData = await getQRCodeByBooking(token, booking._id);
-            return { booking, hasQR: qrData !== null && qrData.qrUrl };
-          } catch {
-            return { booking, hasQR: false };
-          }
-        }),
-      );
-
-      // Only keep bookings that have QR codes
-      const bookingsWithQR = qrChecks
-        .filter(item => item.hasQR)
-        .map(item => item.booking);
-
-      // Sort by event date (newest first)
-      bookingsWithQR.sort(
-        (a, b) =>
-          new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime(),
-      );
-
-      setEvents(bookingsWithQR);
-    } catch (error: any) {
-      showAlert(
-        isRTL ? 'خطأ' : 'Error',
-        isRTL ? 'حدث خطأ أثناء تحميل الفعاليات' : 'Error loading events',
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filterEvents = () => {
+  // Derive filteredEvents directly during render to prevent state-update lag and visual flashing
+  const filteredEvents = React.useMemo(() => {
     let filtered = events;
 
     // Filter by status
@@ -203,8 +128,98 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
       });
     }
 
-    setFilteredEvents(filtered);
+    return filtered;
+  }, [events, selectedFilter, selectedDate, selectedOccasion]);
+
+  const loadOccasions = async () => {
+    try {
+      const data = await fetchOccasions();
+      setOccasions(data);
+    } catch (error) {}
   };
+
+  const loadEvents = async () => {
+    try {
+      setLoading(true);
+      const token = await AsyncStorage.getItem('userToken');
+
+      if (!token) {
+        showAlert(
+          isRTL ? 'خطأ' : 'Error',
+          isRTL ? 'يرجى تسجيل الدخول أولاً' : 'Please login first',
+        );
+        setLoading(false);
+        return;
+      }
+
+      // Fetch user's own bookings and their QR codes in parallel
+      const [bookingsResponse, qrCodesResponse] = await Promise.all([
+        fetch(`${API_URL}/bookings`, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }),
+        getUserQRCodes(token),
+      ]);
+
+      if (!bookingsResponse.ok) {
+        throw new Error(`HTTP ${bookingsResponse.status}`);
+      }
+
+      const bookings = await bookingsResponse.json();
+      const allBookings = Array.isArray(bookings) ? bookings : [];
+
+      let bookingsWithQR: MyEvent[] = [];
+
+      if (qrCodesResponse?.success) {
+        // Create a set of booking IDs that have QR codes for O(1) lookup
+        const qrCodesList = qrCodesResponse.qrCodes || [];
+        const bookingsWithQRSet = new Set(
+          qrCodesList.filter(qr => qr.qrUrl).map(qr => qr.booking)
+        );
+
+        // Only keep bookings that have QR codes
+        bookingsWithQR = allBookings.filter(booking =>
+          bookingsWithQRSet.has(booking._id)
+        );
+      } else {
+        // Fallback: Check each booking individually since bulk API is not available on production server yet
+        const qrChecks = await Promise.all(
+          allBookings.map(async (booking) => {
+            try {
+              const qr = await getQRCodeByBooking(token, booking._id);
+              if (qr && qr.qrUrl) {
+                return booking;
+              }
+            } catch (e) {
+              // Ignore
+            }
+            return null;
+          })
+        );
+        bookingsWithQR = qrChecks.filter((b): b is MyEvent => b !== null);
+      }
+
+      // Sort by event date (newest first)
+      bookingsWithQR.sort(
+        (a, b) =>
+          new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime(),
+      );
+
+      setEvents(bookingsWithQR);
+    } catch (error: any) {
+      showAlert(
+        isRTL ? 'خطأ' : 'Error',
+        isRTL ? 'حدث خطأ أثناء تحميل الفعاليات' : 'Error loading events',
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Removed filterEvents function as it is now derived via React.useMemo
 
   const showAlert = (title: string, message: string) => {
     setAlertTitle(title);
@@ -390,7 +405,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
     }
   };
 
-  const handleDateChange = (event: any, date?: Date) => {
+  const handleDateChange = (_event: any, date?: Date) => {
     setShowDatePicker(false);
     if (date) {
       setSelectedDate(date);

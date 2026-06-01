@@ -338,6 +338,7 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                       <>
                         <View style={styles.qrCodeBox}>
                           <Image
+                             key={qrCode ? `qr_${qrCode.qrToken || ''}_${qrCode.updateTimestamp || 0}` : 'empty'}
                              source={{ uri: getQRCodeImageUri() }}
                              style={{ width: 110, height: 110 }}
                              resizeMode="contain"

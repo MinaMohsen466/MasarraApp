@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -12,50 +12,18 @@ import Svg, { Path } from 'react-native-svg';
 import { styles } from './styles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { API_URL } from '../../config/api.config';
+import { useTermsSettings } from '../../hooks/useSiteSettings';
 
 interface TermsProps {
   onBack?: () => void;
 }
 
-interface TermsData {
-  _id: string | null;
-  contentEn: string;
-  contentAr: string;
-  lastUpdated: string;
-}
 
-const BASE_URL = API_URL;
 
 const Terms: React.FC<TermsProps> = ({ onBack }) => {
   const { isRTL, language } = useLanguage();
   const insets = useSafeAreaInsets();
-  const [termsData, setTermsData] = useState<TermsData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchTermsData();
-  }, []);
-
-  const fetchTermsData = async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch(`${BASE_URL}/settings/terms`);
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch: ${response.status}`);
-      }
-
-      const data = await response.json();
-      setTermsData(data);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load data');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { data: termsData, isLoading, error } = useTermsSettings();
 
   // Show loading state
   if (isLoading) {
@@ -87,7 +55,7 @@ const Terms: React.FC<TermsProps> = ({ onBack }) => {
           {isRTL ? 'فشل في تحميل البيانات' : 'Failed to load data'}
         </Text>
         <Text style={[styles.errorSubtext, isRTL && styles.textRTL]}>
-          {error}
+          {error.message}
         </Text>
       </View>
     );

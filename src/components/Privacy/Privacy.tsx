@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -12,50 +12,18 @@ import Svg, { Path } from 'react-native-svg';
 import { styles } from './styles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { API_URL } from '../../config/api.config';
+import { usePrivacySettings } from '../../hooks/useSiteSettings';
 
 interface PrivacyProps {
   onBack?: () => void;
 }
 
-interface PrivacyData {
-  _id: string | null;
-  contentEn: string;
-  contentAr: string;
-  lastUpdated: string;
-}
 
-const BASE_URL = API_URL;
 
 const Privacy: React.FC<PrivacyProps> = ({ onBack }) => {
   const { isRTL, language } = useLanguage();
   const insets = useSafeAreaInsets();
-  const [privacyData, setPrivacyData] = useState<PrivacyData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchPrivacyData();
-  }, []);
-
-  const fetchPrivacyData = async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch(`${BASE_URL}/settings/privacy`);
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch: ${response.status}`);
-      }
-
-      const data = await response.json();
-      setPrivacyData(data);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load data');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { data: privacyData, isLoading, error } = usePrivacySettings();
 
   // Show loading state
   if (isLoading) {
@@ -87,7 +55,7 @@ const Privacy: React.FC<PrivacyProps> = ({ onBack }) => {
           {isRTL ? 'فشل في تحميل البيانات' : 'Failed to load data'}
         </Text>
         <Text style={[styles.errorSubtext, isRTL && styles.textRTL]}>
-          {error}
+          {error.message}
         </Text>
       </View>
     );

@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  StatusBar,
 } from 'react-native';
 import { useSiteSettings } from '../../hooks/useSiteSettings';
 import { useLanguage } from '../../contexts/LanguageContext';

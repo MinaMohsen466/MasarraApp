@@ -39,7 +39,6 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
   const { isRTL } = useLanguage();
   const insets = useSafeAreaInsets();
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [filteredBookings, setFilteredBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [qrModalVisible, setQrModalVisible] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
@@ -98,8 +97,9 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
     loadBookings();
   }, []);
 
-  useEffect(() => {
-    setFilteredBookings(filterBookingsByStatus(bookings, selectedFilter));
+  // Derive filteredBookings directly during render to prevent state-update lag and visual flashing
+  const filteredBookings = React.useMemo(() => {
+    return filterBookingsByStatus(bookings, selectedFilter);
   }, [bookings, selectedFilter, filterBookingsByStatus]);
 
   const loadBookings = async () => {
@@ -1355,11 +1355,11 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                             >
                               {isRTL ? 'رمز QR' : 'QR Code'}
                             </Text>
-                            <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
-                              <Path
-                                d="M3 3h6v6H3V3zm12 0h6v6h-6V3zM3 15h6v6H3v-6zm15 3h3v3h-3v-3zm0-3h3v3h-3v-3zm-3 3h3v3h-3v-3zm0-3h3v3h-3v-3zm0-3h3v3h-3v-3zm3 0h3v3h-3v-3zM7 7h-2v-2h2v2zm12 0h-2v-2h2v2zM7 19h-2v-2h2v2z"
-                                fill="#fff"
-                              />
+                            <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                              <Rect x="3" y="3" width="6" height="6" rx="1" />
+                              <Rect x="15" y="3" width="6" height="6" rx="1" />
+                              <Rect x="3" y="15" width="6" height="6" rx="1" />
+                              <Path d="M16 16h1v1h-1zm3 0h2v1h-2zm-3 3h2v2h-2zm6 1h1v1h-1zm-2-4h2v2h-2zm-3 0h1v2h-1z" fill="#fff" />
                             </Svg>
                           </TouchableOpacity>
                         )}
@@ -1457,9 +1457,18 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                 setSelectedBooking(null);
                 setSelectedQRCode(null);
               }}
-              onSuccess={() => {
-                loadBookings();
-              }}
+               onSuccess={(_updatedQR, updatedGuestLimit) => {
+                 if (selectedBooking) {
+                   setBookings(prevBookings =>
+                     prevBookings.map(b =>
+                       b._id === selectedBooking._id
+                         ? { ...b, guestLimit: updatedGuestLimit }
+                         : b
+                     )
+                   );
+                 }
+                 loadBookings();
+               }}
             />
           )}
 

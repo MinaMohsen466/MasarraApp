@@ -65,6 +65,15 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       color: colors.primary,
       fontWeight: '600',
     },
+    headerCircleButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: 'rgba(0, 161, 156, 0.1)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginHorizontal: 4,
+    },
     backButton: {
       position: 'absolute',
       top: 50,

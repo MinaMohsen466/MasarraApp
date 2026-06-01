@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { View, StatusBar } from "react-native";
-import { SafeAreaView, SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import { useSiteSettings } from "./src/hooks/useSiteSettings";
 import { QueryClient, QueryClientProvider, focusManager } from '@tanstack/react-query';
 import { LanguageProvider } from "./src/contexts/LanguageContext";
@@ -60,7 +60,6 @@ const queryClient = new QueryClient({
 });
 
 function AppContent() {
-  const insets = useSafeAreaInsets();
   const { data: siteSettings } = useSiteSettings();
   const [isBannerDismissed, setIsBannerDismissed] = useState<boolean>(false);
   const [showSplash, setShowSplash] = useState<boolean>(true);

@@ -55,8 +55,8 @@ const Home: React.FC<HomeProps> = ({
     isLoading: servicesLoading,
     refetch: refetchServices,
   } = useServices();
-  const [showAuth, setShowAuth] = useState(false);
-  const [showUserProfile, setShowUserProfile] = useState(false);
+  const showAuth = currentRoute === 'auth';
+  const showUserProfile = currentRoute === 'profile';
   const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0.3)).current;
@@ -136,18 +136,7 @@ const Home: React.FC<HomeProps> = ({
     }
   }, [refetchOccasions, refetchServices]);
 
-  useEffect(() => {
-    if (currentRoute === 'auth') {
-      setShowAuth(true);
-      setShowUserProfile(false);
-    } else if (currentRoute === 'profile') {
-      setShowUserProfile(true);
-      setShowAuth(false);
-    } else {
-      setShowAuth(false);
-      setShowUserProfile(false);
-    }
-  }, [currentRoute]);
+
 
   // Show loading screen with logo while initial data is loading
   if (initialLoading && isLoading) {
@@ -171,7 +160,6 @@ const Home: React.FC<HomeProps> = ({
         userPhone={user?.phone}
         profilePicture={user?.profilePicture}
         onBack={() => {
-          setShowUserProfile(false);
           if (onNavigate) {
             onNavigate('home');
           }
@@ -182,12 +170,10 @@ const Home: React.FC<HomeProps> = ({
           }
         }}
         onNavigate={route => {
-          setShowUserProfile(false);
           if (onNavigate) onNavigate(route);
         }}
         onSelectService={(serviceId: string) => {
           // close profile and forward service selection to parent
-          setShowUserProfile(false);
           if (onSelectService) onSelectService(serviceId);
         }}
       />
@@ -199,7 +185,6 @@ const Home: React.FC<HomeProps> = ({
     return (
       <Auth
         onBack={() => {
-          setShowAuth(false);
           if (onNavigate) {
             onNavigate('home');
           }

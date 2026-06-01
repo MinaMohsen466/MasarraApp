@@ -11,6 +11,8 @@ import {
   Modal,
   Image,
   FlatList,
+  Animated,
+  Easing,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -28,12 +30,132 @@ import type {
   QRCodeData,
 } from '../../services/qrCodeApi';
 
+const QRLoader: React.FC<{ isRTL: boolean }> = ({ isRTL }) => {
+  const [scanAnim] = useState(new Animated.Value(0));
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(scanAnim, {
+          toValue: 1,
+          duration: 1500,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scanAnim, {
+          toValue: 0,
+          duration: 1500,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+  }, [scanAnim]);
+
+  const translateY = scanAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 100],
+  });
+
+  return (
+    <View style={qrLoaderStyles.container}>
+      <View style={qrLoaderStyles.qrBox}>
+        {/* Corner squares to simulate QR code outline */}
+        <View style={[qrLoaderStyles.corner, qrLoaderStyles.topLeft]} />
+        <View style={[qrLoaderStyles.corner, qrLoaderStyles.topRight]} />
+        <View style={[qrLoaderStyles.corner, qrLoaderStyles.bottomLeft]} />
+        {/* Center dot pattern simulated */}
+        <View style={qrLoaderStyles.innerSquare} />
+        {/* Scanning laser line */}
+        <Animated.View
+          style={[
+            qrLoaderStyles.scanLine,
+            { transform: [{ translateY }] },
+          ]}
+        />
+      </View>
+      <Text style={qrLoaderStyles.text}>
+        {isRTL ? 'جاري تحميل الرمز...' : 'Loading QR Code...'}
+      </Text>
+    </View>
+  );
+};
+
+const qrLoaderStyles = StyleSheet.create({
+  container: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 50,
+    width: '100%',
+  },
+  qrBox: {
+    width: 140,
+    height: 140,
+    borderWidth: 2,
+    borderColor: 'rgba(0, 161, 156, 0.4)',
+    borderRadius: 16,
+    padding: 12,
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  corner: {
+    position: 'absolute',
+    width: 36,
+    height: 36,
+    borderWidth: 4,
+    borderColor: '#00a19c',
+    backgroundColor: 'transparent',
+    borderRadius: 6,
+  },
+  topLeft: {
+    top: 12,
+    left: 12,
+  },
+  topRight: {
+    top: 12,
+    right: 12,
+  },
+  bottomLeft: {
+    bottom: 12,
+    left: 12,
+  },
+  innerSquare: {
+    width: 24,
+    height: 24,
+    backgroundColor: 'rgba(0, 161, 156, 0.3)',
+    borderRadius: 4,
+  },
+  scanLine: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    top: 10,
+    height: 3,
+    backgroundColor: '#00a19c',
+    borderRadius: 2,
+    shadowColor: '#00a19c',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  text: {
+    marginTop: 24,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#ffffff',
+    textAlign: 'center',
+  },
+});
+
 interface QRFormModalProps {
   visible: boolean;
   booking: any;
   existingQRCode: any;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (updatedQR: any, updatedGuestCount: number) => void;
 }
 
 export const QRFormModal: React.FC<QRFormModalProps> = ({
@@ -112,12 +234,14 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
         }
         setSelectedBackgroundId(backgroundId);
 
+        // Initialize guest count from booking limit
+        const limitStr = booking?.guestLimit?.toString() || '1';
+        setGuestCount(limitStr);
+
         // Store original data for change detection
         setOriginalFormData(existingQRCode.customDetails);
         setOriginalBackgroundId(backgroundId);
-        setOriginalGuestCount(
-          existingQRCode.guestCount?.toString() || guestCount,
-        );
+        setOriginalGuestCount(limitStr);
         setHasChanges(false);
 
         // Show result modal directly
@@ -296,6 +420,7 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
         formData,
         selectedBackgroundId,
         serviceId,
+        parseInt(guestCount, 10) || undefined,
       );
 
       // Store the generated QR code data
@@ -307,6 +432,8 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
         existingQRCode?.qrCodeImage;
       const qrCodeData = {
         ...result,
+        customDetails: formData,
+        updateTimestamp: Date.now(),
         qrCode: result.qrCode || result.qrCodeImage || previousQRImage,
         qrCodeImage: result.qrCodeImage || result.qrCode || previousQRImage,
       };
@@ -320,6 +447,7 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
         setHasChanges(false);
         setOriginalFormData(formData);
         setOriginalBackgroundId(selectedBackgroundId);
+        setOriginalGuestCount(guestCount);
       }
     } catch (error: any) {
       setAlertConfig({
@@ -346,12 +474,10 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
-        <View style={styles.modal}>
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={colors.primary} />
-            </View>
-          ) : (
+        {loading ? (
+          <QRLoader isRTL={isRTL} />
+        ) : (
+          <View style={styles.modal}>
             <ScrollView
               style={styles.scrollContent}
               showsVerticalScrollIndicator={false}
@@ -605,8 +731,8 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
                 {isRTL ? '*المعلومات المطلوبة' : '*Required fields'}
               </Text>
             </ScrollView>
-          )}
-        </View>
+          </View>
+        )}
       </View>
 
       {/* QR Code Result Modal */}
@@ -619,7 +745,7 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
         onClose={() => {
           setShowResultModal(false);
           if (!isPreviewMode) {
-            onSuccess();
+            onSuccess(generatedQRCode, parseInt(guestCount, 10) || 1);
             onClose();
           }
         }}

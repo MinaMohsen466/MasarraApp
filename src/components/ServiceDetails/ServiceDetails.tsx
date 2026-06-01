@@ -599,143 +599,231 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
     );
   };
 
+  const handleToggleWishlist = async () => {
+    if (!service) return;
+    const img =
+      service.images && service.images.length > 0
+        ? getServiceImageUrl(service.images[0])
+        : undefined;
+
+    // Calculate display price for wishlist
+    let displayPrice = service.price;
+    if (service.isOnSale) {
+      if (
+        service.salePrice &&
+        service.salePrice > 0 &&
+        service.salePrice < service.price
+      ) {
+        displayPrice = service.salePrice;
+      } else if (
+        service.discountPercentage &&
+        service.discountPercentage > 0
+      ) {
+        displayPrice =
+          service.price * (1 - service.discountPercentage / 100);
+      }
+    }
+
+    const item: WishlistItem = {
+      _id: service._id,
+      name: service.name,
+      image: img,
+      price: displayPrice,
+    };
+    await toggleWishlist(item);
+    const now = await isWishlisted(service._id);
+    setIsSaved(now);
+  };
+
+  const handleShare = async () => {
+    if (!service) return;
+    try {
+      // Create service URL
+      const serviceUrl = `https://masarrakw.com/services/${service._id}`;
+      
+      const result = await Share.share({
+        message: serviceUrl,
+      });
+
+      if (result.action === Share.sharedAction) {
+        // Share was successful
+      } else if (result.action === Share.dismissedAction) {
+        // Share was dismissed
+      }
+    } catch (error: any) {
+      Alert.alert(
+        isRTL ? 'خطأ' : 'Error',
+        error.message ||
+          (isRTL ? 'فشلت المشاركة' : 'Failed to share'),
+      );
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Fixed actions bar under notch (not scrolling) */}
       <View
         style={[
           styles.fixedActionsRow,
-          { top: 0, height: fixedHeight, paddingTop: insets.top },
+          {
+            top: 0,
+            height: fixedHeight,
+            paddingTop: insets.top,
+          },
         ]}
       >
+        {/* Left Container: Contains Share/Wishlist in RTL, Back button in LTR */}
         <View style={styles.actionsLeft}>
-          <TouchableOpacity
-            onPress={onBack}
-            activeOpacity={0.7}
-            style={[styles.actionButton, styles.actionButtonLarge]}
-            accessibilityLabel="Back"
-          >
-            <Svg width={26} height={26} viewBox="0 0 24 24" fill="none">
-              <Path
-                d="M15 18l-6-6 6-6"
-                stroke={colors.primary}
-                strokeWidth={2.4}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </Svg>
-          </TouchableOpacity>
+          {isRTL ? (
+            <>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                style={styles.headerCircleButton}
+                accessibilityLabel="Share"
+                onPress={handleShare}
+              >
+                <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M18 8a3 3 0 100-6 3 3 0 000 6z"
+                    stroke={colors.primary}
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <Path
+                    d="M6 15a3 3 0 100-6 3 3 0 000 6z"
+                    stroke={colors.primary}
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <Path
+                    d="M18 22a3 3 0 100-6 3 3 0 000 6z"
+                    stroke={colors.primary}
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <Path
+                    d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"
+                    stroke={colors.primary}
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                style={styles.headerCircleButton}
+                accessibilityLabel="Wishlist"
+                onPress={handleToggleWishlist}
+              >
+                <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                    fill={isSaved ? '#E8837A' : '#7FBFB6'}
+                    stroke={isSaved ? '#E8837A' : '#7FBFB6'}
+                    strokeWidth={2}
+                  />
+                </Svg>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <TouchableOpacity
+              onPress={onBack}
+              activeOpacity={0.7}
+              style={styles.headerCircleButton}
+              accessibilityLabel="Back"
+            >
+              <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M15 18l-6-6 6-6"
+                  stroke={colors.primary}
+                  strokeWidth={2.4}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
+            </TouchableOpacity>
+          )}
         </View>
 
+        {/* Right Container: Contains Back button in RTL, Wishlist/Share in LTR */}
         <View style={styles.actionsRight}>
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={async () => {
-              if (!service) return;
-              const img =
-                service.images && service.images.length > 0
-                  ? getServiceImageUrl(service.images[0])
-                  : undefined;
-
-              // Calculate display price for wishlist
-              let displayPrice = service.price;
-              if (service.isOnSale) {
-                if (
-                  service.salePrice &&
-                  service.salePrice > 0 &&
-                  service.salePrice < service.price
-                ) {
-                  displayPrice = service.salePrice;
-                } else if (
-                  service.discountPercentage &&
-                  service.discountPercentage > 0
-                ) {
-                  displayPrice =
-                    service.price * (1 - service.discountPercentage / 100);
-                }
-              }
-
-              const item: WishlistItem = {
-                _id: service._id,
-                name: service.name,
-                image: img,
-                price: displayPrice,
-              };
-              await toggleWishlist(item);
-              const now = await isWishlisted(service._id);
-              setIsSaved(now);
-            }}
-            style={[styles.actionButton, styles.actionButtonLarge]}
-            accessibilityLabel="Wishlist"
-          >
-            <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-              <Path
-                d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-                fill={isSaved ? '#E8837A' : 'none'}
-                stroke={isSaved ? '#E8837A' : '#7FBFB6'}
-                strokeWidth={isSaved ? 0 : 2}
-              />
-            </Svg>
-          </TouchableOpacity>
-          <TouchableOpacity
-            activeOpacity={0.7}
-            style={[styles.actionButton, styles.actionButtonLarge]}
-            accessibilityLabel="Share"
-            onPress={async () => {
-              if (!service) return;
-              try {
-                // Create service URL
-                const serviceUrl = `https://masarrakw.com/services/${service._id}`;
-                
-                const result = await Share.share({
-                  message: serviceUrl,
-                });
-
-                if (result.action === Share.sharedAction) {
-                  // Share was successful
-                } else if (result.action === Share.dismissedAction) {
-                  // Share was dismissed
-                }
-              } catch (error: any) {
-                Alert.alert(
-                  isRTL ? 'خطأ' : 'Error',
-                  error.message ||
-                    (isRTL ? 'فشلت المشاركة' : 'Failed to share'),
-                );
-              }
-            }}
-          >
-            <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-              <Path
-                d="M18 8a3 3 0 100-6 3 3 0 000 6z"
-                stroke={colors.primary}
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <Path
-                d="M6 15a3 3 0 100-6 3 3 0 000 6z"
-                stroke={colors.primary}
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <Path
-                d="M18 22a3 3 0 100-6 3 3 0 000 6z"
-                stroke={colors.primary}
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <Path
-                d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"
-                stroke={colors.primary}
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </Svg>
-          </TouchableOpacity>
+          {isRTL ? (
+            <TouchableOpacity
+              onPress={onBack}
+              activeOpacity={0.7}
+              style={styles.headerCircleButton}
+              accessibilityLabel="Back"
+            >
+              <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M9 18l6-6-6-6"
+                  stroke={colors.primary}
+                  strokeWidth={2.4}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
+            </TouchableOpacity>
+          ) : (
+            <>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                style={styles.headerCircleButton}
+                accessibilityLabel="Wishlist"
+                onPress={handleToggleWishlist}
+              >
+                <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                    fill={isSaved ? '#E8837A' : '#7FBFB6'}
+                    stroke={isSaved ? '#E8837A' : '#7FBFB6'}
+                    strokeWidth={2}
+                  />
+                </Svg>
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                style={styles.headerCircleButton}
+                accessibilityLabel="Share"
+                onPress={handleShare}
+              >
+                <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M18 8a3 3 0 100-6 3 3 0 000 6z"
+                    stroke={colors.primary}
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <Path
+                    d="M6 15a3 3 0 100-6 3 3 0 000 6z"
+                    stroke={colors.primary}
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <Path
+                    d="M18 22a3 3 0 100-6 3 3 0 000 6z"
+                    stroke={colors.primary}
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <Path
+                    d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"
+                    stroke={colors.primary}
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </View>
 
