@@ -118,11 +118,13 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
 
     // Handle My Account - navigate to Edit Profile
     if (id === 'account') {
-      // Set a short-lived flag so the Profile screen opens EditProfile automatically
-      try {
-        AsyncStorage.setItem('openEditProfile', '1');
-      } catch {
-        // Error handling
+      if (isLoggedIn) {
+        // Set a short-lived flag so the Profile screen opens EditProfile automatically
+        try {
+          AsyncStorage.setItem('openEditProfile', '1');
+        } catch {
+          // Error handling
+        }
       }
       if (onNavigate) {
         onNavigate('profile', t(titleKey));

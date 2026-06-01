@@ -3,11 +3,11 @@ import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   ActivityIndicator,
-  Platform,
+  TouchableOpacity,
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { styles } from './styles';
 import { colors } from '../../constants/colors';
@@ -29,6 +29,7 @@ const BASE_URL = API_URL;
 
 const Terms: React.FC<TermsProps> = ({ onBack }) => {
   const { isRTL, language } = useLanguage();
+  const insets = useSafeAreaInsets();
   const [termsData, setTermsData] = useState<TermsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +61,11 @@ const Terms: React.FC<TermsProps> = ({ onBack }) => {
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
+        <StatusBar
+          backgroundColor={colors.primary}
+          barStyle="light-content"
+          translucent={false}
+        />
         <ActivityIndicator size="large" color={colors.primary} />
         <Text style={[styles.loadingText, isRTL && styles.textRTL]}>
           {isRTL ? 'جاري التحميل...' : 'Loading...'}
@@ -72,6 +78,11 @@ const Terms: React.FC<TermsProps> = ({ onBack }) => {
   if (error) {
     return (
       <View style={styles.centerContainer}>
+        <StatusBar
+          backgroundColor={colors.primary}
+          barStyle="light-content"
+          translucent={false}
+        />
         <Text style={[styles.errorText, isRTL && styles.textRTL]}>
           {isRTL ? 'فشل في تحميل البيانات' : 'Failed to load data'}
         </Text>
@@ -87,7 +98,13 @@ const Terms: React.FC<TermsProps> = ({ onBack }) => {
     language === 'ar' ? termsData?.contentAr : termsData?.contentEn;
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <View style={{ flex: 1, backgroundColor: colors.backgroundLight }}>
+      <StatusBar
+        backgroundColor={colors.primary}
+        barStyle="light-content"
+        translucent={false}
+      />
+      <View style={{ height: insets.top, backgroundColor: colors.primary }} />
       <View style={styles.container}>
         <ScrollView
           style={styles.scrollView}
@@ -142,7 +159,7 @@ const Terms: React.FC<TermsProps> = ({ onBack }) => {
           </View>
         </ScrollView>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 

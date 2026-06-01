@@ -1260,12 +1260,6 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                     const hasExpired = hasPaymentWindowExpired(booking);
                     const eventDateHasPassed = hasEventDatePassed(booking);
 
-                    const isPaymentPending =
-                      booking.paymentStatus === 'pending' &&
-                      booking.totalPrice > 0;
-                    const isPendingConfirmation = booking.status === 'pending';
-                    const canCancel =
-                      isPendingConfirmation || (isPaymentPending && !isFree);
                     const pendingTotal = getPendingPaymentPreviewTotal(booking);
 
                     const showPayButton =
@@ -1276,7 +1270,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                       booking.totalPrice > 0 &&
                       pendingTotal > 0;
 
-                    const showCancelButton = canCancel;
+                    const showCancelButton = false;
 
                     const showReceiptButton = booking.paymentStatus === 'paid';
                     const hasQR =

@@ -7,6 +7,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Linking,
+  StatusBar,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -166,6 +167,11 @@ const Contact: React.FC<ContactProps> = ({
 
   return (
     <>
+      <StatusBar
+        backgroundColor={colors.primary}
+        barStyle="light-content"
+        translucent={false}
+      />
       <CustomAlert
         visible={alertVisible}
         title={alertTitle}
@@ -174,25 +180,25 @@ const Contact: React.FC<ContactProps> = ({
         onClose={() => setAlertVisible(false)}
       />
       <View style={contactStyles.container}>
-        <View style={[contactStyles.headerBar, { height: insets.top + 60 }]}>
+        <View style={[contactStyles.headerBar, { height: insets.top + 56, paddingTop: insets.top }]}>
           <TouchableOpacity
             onPress={() => onBack && onBack()}
             style={[
               contactStyles.backButton,
               {
-                top: insets.top + 3,
+                top: insets.top + 9,
                 left: isRTL ? undefined : 12,
                 right: isRTL ? 12 : undefined,
               },
             ]}
             activeOpacity={0.8}
           >
-            <Text style={{ fontSize: 37, color: colors.textWhite }}>
+            <Text style={{ fontSize: 37, color: colors.textWhite, lineHeight: 40 }}>
               {isRTL ? '›' : '‹'}
             </Text>
           </TouchableOpacity>
           <Text
-            style={[contactStyles.headerTitle, { marginTop: insets.top + 8 }]}
+            style={contactStyles.headerTitle}
           >
             {isRTL ? 'اتصل بنا' : 'Contact Us'}
           </Text>
@@ -225,7 +231,7 @@ const Contact: React.FC<ContactProps> = ({
               {/* Email Card */}
               {siteSettings.contactEmail && (
                 <TouchableOpacity
-                  style={contactStyles.contactCard}
+                  style={[contactStyles.contactCard, isRTL && { flexDirection: 'row-reverse' }]}
                   onPress={() =>
                     Linking.openURL(`mailto:${siteSettings.contactEmail}`)
                   }
@@ -249,14 +255,14 @@ const Contact: React.FC<ContactProps> = ({
                       {siteSettings.contactEmail}
                     </Text>
                   </View>
-                  <Text style={{ fontSize: 20, color: '#999' }}>›</Text>
+                  <Text style={{ fontSize: 20, color: '#999' }}>{isRTL ? '‹' : '›'}</Text>
                 </TouchableOpacity>
               )}
 
               {/* Phone Card */}
               {siteSettings.contactPhone && (
                 <TouchableOpacity
-                  style={contactStyles.contactCard}
+                  style={[contactStyles.contactCard, isRTL && { flexDirection: 'row-reverse' }]}
                   onPress={() =>
                     Linking.openURL(`tel:${siteSettings.contactPhone}`)
                   }
@@ -280,7 +286,7 @@ const Contact: React.FC<ContactProps> = ({
                       {siteSettings.contactPhone}
                     </Text>
                   </View>
-                  <Text style={{ fontSize: 20, color: '#999' }}>›</Text>
+                  <Text style={{ fontSize: 20, color: '#999' }}>{isRTL ? '‹' : '›'}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -419,7 +425,7 @@ const Contact: React.FC<ContactProps> = ({
           <TouchableOpacity
             style={{
               position: 'absolute',
-              bottom: insets.bottom + 65,
+              bottom: insets.bottom + 96,
               left: 16,
               width: 54,
               height: 54,

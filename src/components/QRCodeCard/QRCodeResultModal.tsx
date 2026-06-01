@@ -48,8 +48,12 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
       onPress?: () => void;
     }>;
   }>({ visible: false, title: '', message: '', buttons: [] });
-  const maxCardWidth = Math.min(420, Math.floor(winWidth * 0.88));
-  const maxCardHeight = Math.floor(winHeight * 0.78);
+  // Calculate card dimensions dynamically to prevent overflow inside the modal and aspect ratio conflicts
+  const maxCardWidth = Math.min(380, Math.floor(winWidth * 0.80));
+  const maxCardHeight = Math.floor(winHeight * 0.65);
+
+  const cardWidth = maxCardWidth;
+  const cardHeight = Math.min(maxCardHeight, Math.floor(cardWidth / (cardAspectRatio || 0.7)));
 
   const handleDownloadCard = async () => {
     setDownloadingCard(true);
@@ -167,12 +171,11 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                   style={[
                     styles.cardBackground,
                     {
-                      width: maxCardWidth,
-                      maxHeight: maxCardHeight,
-                      aspectRatio: cardAspectRatio || 0.7,
+                      width: cardWidth,
+                      height: cardHeight,
                     },
                   ]}
-                  imageStyle={{ resizeMode: 'cover' }}
+                  resizeMode="cover"
                 >
                   {/* Semi-transparent overlay for better text visibility */}
                   <View style={styles.cardOverlay} />
@@ -380,7 +383,12 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                 <View
                   style={[
                     styles.cardBackground,
-                    { backgroundColor: '#f0f0f0' },
+                    {
+                      width: cardWidth,
+                      height: cardHeight,
+                      backgroundColor: '#f0f0f0',
+                      justifyContent: 'center',
+                    },
                   ]}
                 >
                   <Text>
@@ -496,7 +504,7 @@ const styles = StyleSheet.create({
   },
   cardBackground: {
     width: '100%',
-    minHeight: 520,
+    minHeight: 350,
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 24,

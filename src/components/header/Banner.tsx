@@ -11,11 +11,18 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { colors } from '../../constants/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const Banner: React.FC = () => {
+interface BannerProps {
+  isDismissed?: boolean;
+  setIsDismissed?: (val: boolean) => void;
+}
+
+const Banner: React.FC<BannerProps> = ({
+  isDismissed = false,
+  setIsDismissed,
+}) => {
   const { data: siteSettings } = useSiteSettings();
   const { isRTL } = useLanguage();
   const insets = useSafeAreaInsets();
-  const [isDismissed, setIsDismissed] = useState(false);
 
   if (!siteSettings?.bannerEnabled || isDismissed) {
     return null;
@@ -31,7 +38,7 @@ const Banner: React.FC = () => {
   const closeButton = (
     <TouchableOpacity
       style={styles.closeButton}
-      onPress={() => setIsDismissed(true)}
+      onPress={() => setIsDismissed?.(true)}
       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
     >
       <Text style={styles.closeButtonText}>✕</Text>
@@ -39,25 +46,18 @@ const Banner: React.FC = () => {
   );
 
   return (
-    <>
-      <StatusBar
-        backgroundColor={colors.primary}
-        barStyle="dark-content"
-        translucent={false}
-      />
-      <View style={styles.bannerWrap}>
-        <View style={[styles.notchFill, { height: insets.top, top: -insets.top }]} />
-        <View style={styles.bannerContainer}>
-          {isRTL && closeButton}
-          <View style={styles.contentArea}>
-            <View style={styles.staticRow}>
-              <Text style={styles.bannerText}>{bannerText}</Text>
-            </View>
+    <View style={styles.bannerWrap}>
+      <View style={[styles.notchFill, { height: insets.top, top: -insets.top }]} />
+      <View style={styles.bannerContainer}>
+        {isRTL && closeButton}
+        <View style={styles.contentArea}>
+          <View style={styles.staticRow}>
+            <Text style={styles.bannerText}>{bannerText}</Text>
           </View>
-          {!isRTL && closeButton}
         </View>
+        {!isRTL && closeButton}
       </View>
-    </>
+    </View>
   );
 };
 

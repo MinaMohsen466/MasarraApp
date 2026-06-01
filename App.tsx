@@ -1,12 +1,24 @@
 import React, { useState } from "react";
 import { View, StatusBar } from "react-native";
-import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { SafeAreaView, SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSiteSettings } from "./src/hooks/useSiteSettings";
+import { QueryClient, QueryClientProvider, focusManager } from '@tanstack/react-query';
 import { LanguageProvider } from "./src/contexts/LanguageContext";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
 import { SocketProvider } from "./src/contexts/SocketContext";
 import { DateProvider } from "./src/contexts/DateContext";
 import colors from './src/constants/colors';
+import { AppState, AppStateStatus, Platform } from 'react-native';
+
+// Set up AppState listener for React Query to refetch on app foreground
+focusManager.setEventListener((handleFocus) => {
+  const subscription = AppState.addEventListener('change', (state: AppStateStatus) => {
+    handleFocus(state === 'active');
+  });
+  return () => {
+    subscription.remove();
+  };
+});
 
 // Components
 import Header from "./src/components/header/Header";
@@ -38,16 +50,19 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 2,
-      staleTime: 10 * 60 * 1000, // 10 minutes - longer stale time
+      staleTime: 5 * 60 * 1000, // 5 minutes stale time
       gcTime: 15 * 60 * 1000, // 15 minutes - keep cached data longer
-      refetchOnWindowFocus: false, // Don't refetch on focus in mobile
+      refetchOnWindowFocus: true, // Refetch on focus in mobile when stale
       refetchOnMount: false, // Don't refetch on mount if data exists
       refetchOnReconnect: true, // Only refetch on network reconnect
     },
   },
 });
 
-function App() {
+function AppContent() {
+  const insets = useSafeAreaInsets();
+  const { data: siteSettings } = useSiteSettings();
+  const [isBannerDismissed, setIsBannerDismissed] = useState<boolean>(false);
   const [showSplash, setShowSplash] = useState<boolean>(true);
   const [currentRoute, setCurrentRoute] = useState<string>('home');
   const [showBottomNav, setShowBottomNav] = useState<boolean>(true);
@@ -157,6 +172,8 @@ function App() {
             currentRoute={currentRoute}
             onSelectService={(serviceId) => handleServiceSelect(serviceId, 'home')}
             onSelectOccasion={(occasion, searchDate) => handleOccasionSelect(occasion._id, occasion.name || occasion.nameAr, 'home', searchDate)}
+            isBannerDismissed={isBannerDismissed}
+            setIsBannerDismissed={setIsBannerDismissed}
           />
         );
       case 'search':
@@ -257,56 +274,65 @@ function App() {
     }
   };
 
-  const routesWithoutHeader = ['occasions', 'packages', 'categories', 'services', 'vendors', 'vendor-services', 'occasion-services', 'service-details', 'package-details', 'cart', 'about', 'terms', 'privacy', 'contact', 'profile', 'addresses', 'search'];
+  const routesWithoutHeader = ['home', 'occasions', 'packages', 'categories', 'services', 'vendors', 'vendor-services', 'occasion-services', 'service-details', 'package-details', 'cart', 'about', 'terms', 'privacy', 'contact', 'profile', 'addresses', 'search'];
   const shouldShowHeader = !routesWithoutHeader.includes(currentRoute);
 
   const routesWithoutSafeArea = ['about', 'terms', 'privacy', 'contact', 'service-details', 'cart', 'profile', 'search', 'addresses'];
   const shouldRenderWithoutSafeArea = routesWithoutSafeArea.includes(currentRoute);
 
+  const isBannerVisible = siteSettings?.bannerEnabled && !isBannerDismissed;
+  const dynamicBgColor = (currentRoute === 'home' && isBannerVisible) ? colors.primary : colors.backgroundHome;
+
+  return (
+    <LanguageProvider>
+      <DateProvider>
+        <AuthProvider onLogout={() => setCurrentRoute('home')}>
+          <SocketProvider>
+            {showSplash ? (
+              <SplashScreen onFinish={() => setShowSplash(false)} />
+            ) : shouldRenderWithoutSafeArea ? (
+              <View style={{ flex: 1, paddingTop: currentRoute === 'search' ? 40 : 0 }}>
+                {renderScreen()}
+                {showBottomNav && (
+                  <>
+                    <BottomNavigation
+                      activeRoute={currentRoute}
+                      onNavigate={handleNavigation}
+                    />
+                    <View style={{ height: 20, backgroundColor: colors.backgroundHome }} />
+                  </>
+                )}
+              </View>
+            ) : (
+              <SafeAreaView style={{ flex: 1, backgroundColor: dynamicBgColor }}>
+                <StatusBar backgroundColor={dynamicBgColor} barStyle="dark-content" translucent={false} />
+                {shouldShowHeader && <Header onNavigate={handleNavigation} />}
+                <View style={{ flex: 1 }}>
+                  {renderScreen()}
+                </View>
+                {showBottomNav && (
+                  <>
+                    <BottomNavigation
+                      activeRoute={currentRoute}
+                      onNavigate={handleNavigation}
+                    />
+                    <View style={{ height: 20, backgroundColor: '#ffffff' }} />
+                  </>
+                )}
+              </SafeAreaView>
+            )}
+          </SocketProvider>
+        </AuthProvider>
+      </DateProvider>
+    </LanguageProvider>
+  );
+}
+
+function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider>
-        <StatusBar backgroundColor={colors.backgroundHome} barStyle="dark-content" translucent={false} />
-        <LanguageProvider>
-          <DateProvider>
-            <AuthProvider onLogout={() => setCurrentRoute('home')}>
-              <SocketProvider>
-                {showSplash ? (
-                  <SplashScreen onFinish={() => setShowSplash(false)} />
-                ) : shouldRenderWithoutSafeArea ? (
-                  <View style={{ flex: 1, paddingTop: currentRoute === 'search' ? 40 : 0 }}>
-                    {renderScreen()}
-                    {showBottomNav && (
-                      <>
-                        <BottomNavigation
-                          activeRoute={currentRoute}
-                          onNavigate={handleNavigation}
-                        />
-                        <View style={{ height: 20, backgroundColor: colors.backgroundHome }} />
-                      </>
-                    )}
-                  </View>
-                ) : (
-                  <SafeAreaView style={{ flex: 1, backgroundColor: colors.backgroundHome }}>
-                    {shouldShowHeader && <Header onNavigate={handleNavigation} />}
-                    <View style={{ flex: 1 }}>
-                      {renderScreen()}
-                    </View>
-                    {showBottomNav && (
-                      <>
-                        <BottomNavigation
-                          activeRoute={currentRoute}
-                          onNavigate={handleNavigation}
-                        />
-                        <View style={{ height: 20, backgroundColor: '#ffffff' }} />
-                      </>
-                    )}
-                  </SafeAreaView>
-                )}
-              </SocketProvider>
-            </AuthProvider>
-          </DateProvider>
-        </LanguageProvider>
+        <AppContent />
       </SafeAreaProvider>
     </QueryClientProvider>
   );

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Image, ScrollView, StatusBar } from 'react-native';
+import Svg, { Path, Circle, Rect, Line, Polyline } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from './styles';
@@ -12,6 +13,7 @@ import OrderHistory from '../../screens/OrderHistory';
 import MyEvents from '../../screens/MyEvents';
 
 import { API_URL } from '../../config/api.config';
+import { fetchAddresses } from '../../services/api';
 
 interface UserProfileProps {
   onBack?: () => void;
@@ -30,17 +32,18 @@ const UserProfile: React.FC<UserProfileProps> = ({
   onNavigate,
   onSelectService,
   userName = 'User',
-  userPhone,
+  userPhone: _userPhone,
   userEmail: _userEmail,
   profilePicture,
 }) => {
   const { isRTL } = useLanguage();
-  const { user, logout } = useAuth();
+  const { user, logout, token } = useAuth();
   const insets = useSafeAreaInsets();
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showWishlist, setShowWishlist] = useState(false);
   const [showOrderHistory, setShowOrderHistory] = useState(false);
   const [showMyEvents, setShowMyEvents] = useState(false);
+  const [defaultAddress, setDefaultAddress] = useState<string | null>(null);
 
   // Check for edit profile flag when component mounts
   useEffect(() => {
@@ -75,6 +78,25 @@ const UserProfile: React.FC<UserProfileProps> = ({
     checkOpenEdit();
     checkOpenOrderHistory();
   }, []);
+
+  useEffect(() => {
+    const loadDefaultAddress = async () => {
+      if (!token) return;
+      try {
+        const data = await fetchAddresses(token);
+        if (data && data.length > 0) {
+          const def = data.find((a: any) => a.isDefault) || data[0];
+          if (def) {
+            setDefaultAddress(def.city || null);
+          }
+        }
+      } catch (e) {
+        // Silent catch
+      }
+    };
+
+    loadDefaultAddress();
+  }, [token]);
 
   const handleEditProfile = () => {
     setShowEditProfile(true);
@@ -136,7 +158,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
   };
 
   // If showing edit profile, render EditProfile component
-  if (showEditProfile) {
+  if (showEditProfile && user) {
     return <EditProfile onBack={() => setShowEditProfile(false)} />;
   }
 
@@ -288,119 +310,182 @@ const UserProfile: React.FC<UserProfileProps> = ({
         style={styles.scrollContainer}
         contentContainerStyle={styles.contentContainer}
       >
-        {/* User Info Section (horizontal: icon + data) */}
+        {/* User Info Section (centered: avatar, name, address) */}
         <View style={styles.userInfoSection}>
-          <View style={styles.userInfoRow}>
-            <View style={styles.profileImageContainer}>
-              {user.profilePicture || profilePicture ? (
-                <Image
-                  source={{
-                    uri:
-                      getImageUri(user.profilePicture || profilePicture) ||
-                      undefined,
-                  }}
-                  style={styles.profileImage}
-                  resizeMode="cover"
-                  onError={e => {
-                    console.log('Image load error:', e.nativeEvent.error);
-                  }}
-                />
-              ) : (
-                <View style={styles.profileImagePlaceholder}>
-                  <Text style={styles.profileImagePlaceholderText}>
-                    {(user.name || userName || 'U').charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-              )}
-            </View>
-
-            <View style={styles.userDataContainer}>
-              <Text style={[styles.userName, isRTL && styles.userNameRTL]}>
-                {user.name || userName}
-              </Text>
-
-              {user.phone || userPhone ? (
-                <Text style={[styles.userPhone, isRTL && styles.userPhoneRTL]}>
-                  {user.phone || userPhone}
+          <View style={styles.profileImageContainer}>
+            {user.profilePicture || profilePicture ? (
+              <Image
+                source={{
+                  uri:
+                    getImageUri(user.profilePicture || profilePicture) ||
+                    undefined,
+                }}
+                style={styles.profileImage}
+                resizeMode="cover"
+                onError={e => {
+                  console.log('Image load error:', e.nativeEvent.error);
+                }}
+              />
+            ) : (
+              <View style={styles.profileImagePlaceholder}>
+                <Text style={styles.profileImagePlaceholderText}>
+                  {(user.name || userName || 'U').charAt(0).toUpperCase()}
                 </Text>
-              ) : (
-                <Text style={[styles.noPhone, isRTL && styles.noPhoneRTL]}>
-                  {isRTL ? 'لا يوجد رقم هاتف' : 'No phone number'}
-                </Text>
-              )}
-            </View>
+              </View>
+            )}
+          </View>
+
+          <Text style={[styles.userNameCentered, isRTL && styles.userNameCenteredRTL]}>
+            {user.name || userName}
+          </Text>
+
+          {/* Location row */}
+          <View style={[styles.userLocationRow, isRTL && styles.userLocationRowRTL]}>
+            <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#666666" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+              <Circle cx={12} cy={10} r={3} />
+            </Svg>
+            <Text style={[styles.userLocationText, isRTL && styles.userLocationTextRTL]}>
+              {defaultAddress || (isRTL ? 'الكويت' : 'Kuwait')}
+            </Text>
           </View>
         </View>
 
         {/* Menu Options */}
         <View style={styles.menuSection}>
-          {/* Edit Profile */}
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={handleEditProfile}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.menuText, isRTL && styles.menuTextRTL]}>
-              {isRTL ? 'تعديل الملف الشخصي' : 'Edit Profile'}
-            </Text>
-          </TouchableOpacity>
-
-          {/* Address */}
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={handleAddress}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.menuText, isRTL && styles.menuTextRTL]}>
-              {isRTL ? 'العنوان' : 'Address'}
-            </Text>
-          </TouchableOpacity>
-
-          {/* Order History */}
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={handleOrderHistory}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.menuText, isRTL && styles.menuTextRTL]}>
-              {isRTL ? 'سجل الطلبات' : 'Order History'}
-            </Text>
-          </TouchableOpacity>
-
-          {/* My Events */}
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={handleMyEvents}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.menuText, isRTL && styles.menuTextRTL]}>
-              {isRTL ? 'فعالياتي' : 'My Events'}
-            </Text>
-          </TouchableOpacity>
-
-          {/* Wishlist */}
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={handleWishlist}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.menuText, isRTL && styles.menuTextRTL]}>
-              {isRTL ? 'قائمة الأمنيات' : 'Wishlist'}
-            </Text>
-          </TouchableOpacity>
-
-          {/* Logout */}
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={handleLogout}
-            activeOpacity={0.7}
-          >
-            <Text
-              style={[styles.menuTextLogout, isRTL && styles.menuTextLogoutRTL]}
+          <View style={styles.menuContainer}>
+            {/* Edit Profile */}
+            <TouchableOpacity
+              style={[styles.menuItemRow, isRTL && styles.menuItemRowRTL]}
+              onPress={handleEditProfile}
+              activeOpacity={0.7}
             >
-              {isRTL ? 'تسجيل الخروج' : 'Logout'}
-            </Text>
-          </TouchableOpacity>
+              <View style={[styles.menuItemLeft, isRTL && styles.menuItemLeftRTL]}>
+                <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#4B5563" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <Path d="M12 20h9" />
+                  <Path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                </Svg>
+                <Text style={[styles.menuItemText, isRTL && styles.menuItemTextRTL]}>
+                  {isRTL ? 'تعديل الملف الشخصي' : 'Edit Profile'}
+                </Text>
+              </View>
+              <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                <Path d={isRTL ? "M15 18l-6-6 6-6" : "M9 18l6-6-6-6"} />
+              </Svg>
+            </TouchableOpacity>
+
+            <View style={styles.menuDivider} />
+
+            {/* Address */}
+            <TouchableOpacity
+              style={[styles.menuItemRow, isRTL && styles.menuItemRowRTL]}
+              onPress={handleAddress}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuItemLeft, isRTL && styles.menuItemLeftRTL]}>
+                <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#4B5563" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                  <Circle cx={12} cy={10} r={3} />
+                </Svg>
+                <Text style={[styles.menuItemText, isRTL && styles.menuItemTextRTL]}>
+                  {isRTL ? 'العنوان' : 'Address'}
+                </Text>
+              </View>
+              <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                <Path d={isRTL ? "M15 18l-6-6 6-6" : "M9 18l6-6-6-6"} />
+              </Svg>
+            </TouchableOpacity>
+
+            <View style={styles.menuDivider} />
+
+            {/* Order History */}
+            <TouchableOpacity
+              style={[styles.menuItemRow, isRTL && styles.menuItemRowRTL]}
+              onPress={handleOrderHistory}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuItemLeft, isRTL && styles.menuItemLeftRTL]}>
+                <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#4B5563" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <Rect x={4} y={4} width={16} height={16} rx={2} />
+                  <Path d="M9 9h6M9 13h6M9 17h4" />
+                </Svg>
+                <Text style={[styles.menuItemText, isRTL && styles.menuItemTextRTL]}>
+                  {isRTL ? 'سجل الطلبات' : 'Order History'}
+                </Text>
+              </View>
+              <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                <Path d={isRTL ? "M15 18l-6-6 6-6" : "M9 18l6-6-6-6"} />
+              </Svg>
+            </TouchableOpacity>
+
+            <View style={styles.menuDivider} />
+
+            {/* My Events */}
+            <TouchableOpacity
+              style={[styles.menuItemRow, isRTL && styles.menuItemRowRTL]}
+              onPress={handleMyEvents}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuItemLeft, isRTL && styles.menuItemLeftRTL]}>
+                <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#4B5563" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <Rect x={3} y={4} width={18} height={18} rx={2} ry={2} />
+                  <Line x1={16} y1={2} x2={16} y2={6} />
+                  <Line x1={8} y1={2} x2={8} y2={6} />
+                  <Line x1={3} y1={10} x2={21} y2={10} />
+                </Svg>
+                <Text style={[styles.menuItemText, isRTL && styles.menuItemTextRTL]}>
+                  {isRTL ? 'فعالياتي' : 'My Events'}
+                </Text>
+              </View>
+              <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                <Path d={isRTL ? "M15 18l-6-6 6-6" : "M9 18l6-6-6-6"} />
+              </Svg>
+            </TouchableOpacity>
+
+            <View style={styles.menuDivider} />
+
+            {/* Wishlist */}
+            <TouchableOpacity
+              style={[styles.menuItemRow, isRTL && styles.menuItemRowRTL]}
+              onPress={handleWishlist}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuItemLeft, isRTL && styles.menuItemLeftRTL]}>
+                <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#4B5563" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <Path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </Svg>
+                <Text style={[styles.menuItemText, isRTL && styles.menuItemTextRTL]}>
+                  {isRTL ? 'قائمة الأمنيات' : 'Wishlist'}
+                </Text>
+              </View>
+              <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                <Path d={isRTL ? "M15 18l-6-6 6-6" : "M9 18l6-6-6-6"} />
+              </Svg>
+            </TouchableOpacity>
+          </View>
+
+          {/* Logout Separate Card Container */}
+          <View style={styles.logoutCardContainer}>
+            <TouchableOpacity
+              style={[styles.menuItemRow, isRTL && styles.menuItemRowRTL]}
+              onPress={handleLogout}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuItemLeft, isRTL && styles.menuItemLeftRTL]}>
+                <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#E53935" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <Path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <Polyline points="16 17 21 12 16 7" />
+                  <Line x1={21} y1={12} x2={9} y2={12} />
+                </Svg>
+                <Text style={[styles.menuItemTextLogout, isRTL && styles.menuItemTextLogoutRTL]}>
+                  {isRTL ? 'تسجيل الخروج' : 'Logout'}
+                </Text>
+              </View>
+              <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#E53935" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                <Path d={isRTL ? "M15 18l-6-6 6-6" : "M9 18l6-6-6-6"} />
+              </Svg>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </View>

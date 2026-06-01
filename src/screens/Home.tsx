@@ -7,6 +7,7 @@ import {
   Image,
   FlatList,
   Animated,
+  RefreshControl,
 } from 'react-native';
 import { SvgUri } from 'react-native-svg';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -21,12 +22,16 @@ import Auth from '../components/Auth';
 import UserProfile from '../components/UserProfile';
 import { useAuth } from '../contexts/AuthContext';
 import { styles } from './styles';
+import { colors } from '../constants/colors';
+import Header from '../components/header/Header';
 
 interface HomeProps {
   onNavigate?: (route: string) => void;
   currentRoute?: string;
   onSelectService?: (serviceId: string) => void;
   onSelectOccasion?: (occasion: any, selectedDate?: Date) => void;
+  isBannerDismissed?: boolean;
+  setIsBannerDismissed?: (val: boolean) => void;
 }
 
 const Home: React.FC<HomeProps> = ({
@@ -34,6 +39,8 @@ const Home: React.FC<HomeProps> = ({
   currentRoute,
   onSelectService,
   onSelectOccasion,
+  isBannerDismissed,
+  setIsBannerDismissed,
 }) => {
   const { isRTL, t } = useLanguage();
   const { user } = useAuth();
@@ -41,18 +48,25 @@ const Home: React.FC<HomeProps> = ({
     data: occasions,
     isLoading: occasionsLoading,
     error,
+    refetch: refetchOccasions,
   } = useOccasions();
-  const { data: services, isLoading: servicesLoading } = useServices();
+  const { 
+    data: services, 
+    isLoading: servicesLoading,
+    refetch: refetchServices,
+  } = useServices();
   const [showAuth, setShowAuth] = useState(false);
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0.3)).current;
+  const refreshFadeAnim = useRef(new Animated.Value(0.3)).current;
 
   const hasFeaturedServices =
     services?.some(service => service.isFeatured) || false;
   const isLoading = occasionsLoading || servicesLoading;
 
-  // Pulsing animation for logo
+  // Pulsing animation for logo (initial loading)
   useEffect(() => {
     if (initialLoading && isLoading) {
       const pulse = Animated.loop(
@@ -75,6 +89,29 @@ const Home: React.FC<HomeProps> = ({
     return undefined;
   }, [initialLoading, isLoading, fadeAnim]);
 
+  // Pulsing animation for refresh logo
+  useEffect(() => {
+    if (refreshing) {
+      const pulse = Animated.loop(
+        Animated.sequence([
+          Animated.timing(refreshFadeAnim, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(refreshFadeAnim, {
+            toValue: 0.3,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+        ]),
+      );
+      pulse.start();
+      return () => pulse.stop();
+    }
+    return undefined;
+  }, [refreshing, refreshFadeAnim]);
+
   // Set initial loading to false when query is finished
   useEffect(() => {
     if (!isLoading && initialLoading) {
@@ -86,6 +123,18 @@ const Home: React.FC<HomeProps> = ({
     }
     return undefined;
   }, [isLoading, initialLoading]);
+
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        refetchOccasions(),
+        refetchServices(),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refetchOccasions, refetchServices]);
 
   useEffect(() => {
     if (currentRoute === 'auth') {
@@ -128,8 +177,9 @@ const Home: React.FC<HomeProps> = ({
           }
         }}
         onShowAuth={() => {
-          setShowUserProfile(false);
-          setShowAuth(true);
+          if (onNavigate) {
+            onNavigate('auth');
+          }
         }}
         onNavigate={route => {
           setShowUserProfile(false);
@@ -199,7 +249,53 @@ const Home: React.FC<HomeProps> = ({
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={styles.container}
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor="transparent"
+          colors={['transparent']}
+          progressBackgroundColor="transparent"
+          progressViewOffset={10000}
+        />
+      }
+    >
+      {/* Custom Pull-to-Refresh Header - Like Keeta */}
+      {refreshing && (
+        <View style={{
+          width: '100%',
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingTop: 20,
+          paddingBottom: 15,
+          backgroundColor: colors.primary,
+        }}>
+          <Animated.Image
+            source={require('../imgs/logo.png')}
+            style={{ width: 80, height: 80, opacity: refreshFadeAnim }}
+            resizeMode="contain"
+          />
+          <Text style={{
+            marginTop: 10,
+            fontSize: 14,
+            color: '#ffffff',
+            fontWeight: '600',
+          }}>
+            {isRTL ? 'جاري التحميل...' : 'Loading...'}
+          </Text>
+        </View>
+      )}
+
+      {/* Header inside ScrollView so it slides down with pull-to-refresh */}
+      <Header
+        onNavigate={onNavigate}
+        isBannerDismissed={isBannerDismissed}
+        setIsBannerDismissed={setIsBannerDismissed}
+      />
+
       {/* Conditional Welcome Section or Featured Services Carousel */}
       {hasFeaturedServices ? (
         <>
@@ -219,12 +315,15 @@ const Home: React.FC<HomeProps> = ({
       ) : (
         <MasarraWelcome
           onBrowseServices={() => {
-            // Navigate to occasions page
             if (onNavigate) {
               onNavigate('occasions');
             }
           }}
-          onGetStarted={() => setShowAuth(true)}
+          onGetStarted={() => {
+            if (onNavigate) {
+              onNavigate('auth');
+            }
+          }}
         />
       )}
 

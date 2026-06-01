@@ -6,6 +6,7 @@ import {
   FlatList,
   TouchableOpacity,
   useWindowDimensions,
+  StatusBar,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -92,13 +93,15 @@ const Wishlist: React.FC<Props> = ({ onBack, onSelectService }) => {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.primary }}>
+      <StatusBar
+        backgroundColor={colors.primary}
+        barStyle="light-content"
+        translucent={false}
+      />
       <View style={{ height: insets.top, backgroundColor: colors.primary }} />
-      <View style={[styles.container, { padding: 0, position: 'relative' }]}>
-        {/* Header background */}
-        <View style={[styles.headerBackground, { height: 56 }]} />
-        
+      <View style={[styles.container, { padding: 0 }]}>
         {/* Header */}
-        <View style={[styles.headerBar, isRTL && styles.headerBarRTL]}>
+        <View style={[styles.headerBar, { backgroundColor: colors.primary, height: 56, paddingVertical: 0 }, isRTL && styles.headerBarRTL]}>
           {onBack && (
             <TouchableOpacity style={styles.headerBackButton} onPress={onBack} activeOpacity={0.8}>
               <Text style={[styles.headerBackIcon, isRTL && styles.headerBackTextRTL]}>

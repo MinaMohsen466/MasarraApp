@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   Image,
   ActivityIndicator,
   useWindowDimensions,
+  RefreshControl,
+  Animated,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useQueryClient } from '@tanstack/react-query';
@@ -51,13 +53,15 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
   const styles = createStyles(screenWidth);
   const { isRTL } = useLanguage();
   const queryClient = useQueryClient(); // For prefetching
-  const { data: services, isLoading, error } = useServices();
+  const { data: services, isLoading, error, refetch } = useServices();
   const { data: packages } = useVendorPackages(vendorId || '');
   const [vendor, setVendor] = useState<Vendor | null>(null);
   const [loadingVendor, setLoadingVendor] = useState(!!vendorId);
   const [showFilter, setShowFilter] = useState(false);
   const [showSort, setShowSort] = useState(false);
   const [sortBy, setSortBy] = useState<string>('newest');
+  const [refreshing, setRefreshing] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0.3)).current;
   const [filters, setFilters] = useState<{
     minPrice?: number;
     maxPrice?: number;
@@ -71,6 +75,38 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
   const [serviceRatings, setServiceRatings] = useState<{
     [key: string]: { rating: number; totalReviews: number };
   }>({});
+
+  // Pulsing animation for logo during refresh
+  useEffect(() => {
+    if (refreshing) {
+      const pulse = Animated.loop(
+        Animated.sequence([
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(fadeAnim, {
+            toValue: 0.3,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      pulse.start();
+      return () => pulse.stop();
+    }
+    return undefined;
+  }, [refreshing, fadeAnim]);
+
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refetch]);
 
   // Prefetch reviews for visible services - optimized approach
   useEffect(() => {
@@ -728,6 +764,16 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
 
       {/* Services Grid */}
       <FlatList
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh} 
+            tintColor="transparent" 
+            colors={['transparent']} 
+            progressBackgroundColor="transparent"
+            progressViewOffset={10000}
+          />
+        }
         data={sortedAndFilteredServices}
         renderItem={renderServiceCard}
         keyExtractor={item => item._id}
@@ -737,16 +783,43 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
-          vendor ? (
-            <VendorHeader
-              vendor={vendor}
-              occasions={vendorOccasions}
-              onFilterPress={() => setShowFilter(true)}
-              onSortPress={() => setShowSort(true)}
-              overrideRating={vendorRating.rating}
-              overrideTotalReviews={vendorRating.totalReviews}
-            />
-          ) : null
+          <View>
+            {/* Custom Pull-to-Refresh Header - Like Keeta */}
+            {refreshing && (
+              <View style={{
+                width: '100%',
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingTop: 20,
+                paddingBottom: 15,
+                marginBottom: 10,
+              }}>
+                <Animated.Image
+                  source={require('../../imgs/logo.png')}
+                  style={{ width: 80, height: 80, opacity: fadeAnim }}
+                  resizeMode="contain"
+                />
+                <Text style={{
+                  marginTop: 10,
+                  fontSize: 14,
+                  color: colors.primary,
+                  fontWeight: '600',
+                }}>
+                  {isRTL ? 'جاري التحميل...' : 'Loading...'}
+                </Text>
+              </View>
+            )}
+            {vendor ? (
+              <VendorHeader
+                vendor={vendor}
+                occasions={vendorOccasions}
+                onFilterPress={() => setShowFilter(true)}
+                onSortPress={() => setShowSort(true)}
+                overrideRating={vendorRating.rating}
+                overrideTotalReviews={vendorRating.totalReviews}
+              />
+            ) : null}
+          </View>
         }
         ListFooterComponent={
           <>

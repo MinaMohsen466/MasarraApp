@@ -12,9 +12,15 @@ import { getImageUrl } from '../../services/api';
 
 interface HeaderProps {
   onNavigate?: (route: string) => void;
+  isBannerDismissed?: boolean;
+  setIsBannerDismissed?: (val: boolean) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
+const Header: React.FC<HeaderProps> = ({
+  onNavigate,
+  isBannerDismissed,
+  setIsBannerDismissed,
+}) => {
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
   const { isRTL } = useLanguage();
   const { user, isLoggedIn } = useAuth();
@@ -49,7 +55,10 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
 
   return (
     <>
-      <Banner />
+      <Banner
+        isDismissed={isBannerDismissed}
+        setIsDismissed={setIsBannerDismissed}
+      />
       <View
         style={[styles.headerContainer, isRTL && styles.headerContainerRTL]}
       >
