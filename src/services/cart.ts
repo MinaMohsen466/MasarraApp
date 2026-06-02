@@ -18,8 +18,20 @@ export type CartItem = {
   selectedDate: Date | string;
   selectedTime: string;
   customInputs?: Array<
-    | { label: string; value: string | number; price?: number; labelAr?: string; valueAr?: string | number }
-    | Array<{ label: string; value: string | number; price?: number; labelAr?: string; valueAr?: string | number }>
+    | {
+        label: string;
+        value: string | number;
+        price?: number;
+        labelAr?: string;
+        valueAr?: string | number;
+      }
+    | Array<{
+        label: string;
+        value: string | number;
+        price?: number;
+        labelAr?: string;
+        valueAr?: string | number;
+      }>
   >;
   moreInfo?: string;
   timeSlot: { start: string | Date; end: string | Date };
@@ -502,32 +514,50 @@ export async function createBookingsFromCart(
 
     // Create ONE booking for ALL cart items
     try {
-      // Build services array with all cart items
-      const servicesArray = cartItems.map(item => {
+      // Build services and packages arrays
+      const servicesArray: any[] = [];
+      const packagesArray: any[] = [];
+
+      cartItems.forEach(item => {
         const itemDelivery =
           item.maxBookingsPerSlot === -1 ? item.deliveryFee || 0 : 0;
         const itemTotal = (item.totalPrice || item.price) + itemDelivery;
-        return {
-          service: item.serviceId,
-          vendor: item.vendorId,
-          price: itemTotal,
-          quantity: item.quantity,
-          notes: item.moreInfo || '',
-          customInputs: convertCustomInputs(item),
-          // Store original cart item info for reference
-          _cartItemId: item._id,
-          _cartItemName: item.name,
-          // Store the event date/time for this specific service (must match backend field names)
-          eventDate: item.selectedDate,
-          timeSlot: item.timeSlot
-            ? {
-                start: item.timeSlot.start,
-                end: item.timeSlot.end,
-              }
-            : undefined,
-          // Mark if this service needs vendor confirmation
-          availabilityStatus: item.availabilityStatus || 'available_now',
-        };
+
+        if (item.isPackage) {
+          packagesArray.push({
+            package: item.serviceId, // Package ID is stored in serviceId
+            price: itemTotal,
+            notes: item.moreInfo || '',
+            _cartItemId: item._id,
+            _cartItemName: item.name,
+            eventDate: item.selectedDate,
+            timeSlot: item.timeSlot
+              ? {
+                  start: item.timeSlot.start,
+                  end: item.timeSlot.end,
+                }
+              : undefined,
+          });
+        } else {
+          servicesArray.push({
+            service: item.serviceId,
+            vendor: item.vendorId,
+            price: itemTotal,
+            quantity: item.quantity,
+            notes: item.moreInfo || '',
+            customInputs: convertCustomInputs(item),
+            _cartItemId: item._id,
+            _cartItemName: item.name,
+            eventDate: item.selectedDate,
+            timeSlot: item.timeSlot
+              ? {
+                  start: item.timeSlot.start,
+                  end: item.timeSlot.end,
+                }
+              : undefined,
+            availabilityStatus: item.availabilityStatus || 'available_now',
+          });
+        }
       });
 
       // Calculate total price for the combined booking
@@ -550,7 +580,8 @@ export async function createBookingsFromCart(
         address: address || '',
         notes: '',
         totalPrice: combinedTotalPrice,
-        services: servicesArray,
+        services: servicesArray.length > 0 ? servicesArray : undefined,
+        packages: packagesArray.length > 0 ? packagesArray : undefined,
         // If any item needs confirmation, mark the whole booking as awaiting confirmation
         _hasItemsNeedingConfirmation: hasItemsNeedingConfirmation,
       };

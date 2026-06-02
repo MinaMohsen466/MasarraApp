@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback,
+} from 'react';
 import {
   View,
   Text,
@@ -48,10 +54,11 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
   preSelectedDate,
 }) => {
   const { width: screenWidth } = useWindowDimensions();
-  const isTablet = screenWidth >= 600;
-  const numColumns = isTablet ? 3 : 2;
   const styles = createStyles(screenWidth);
   const { isRTL } = useLanguage();
+  const isTablet = screenWidth >= 600;
+  const numColumns = isTablet ? 3 : 2;
+  const backIconSize = isTablet ? 18 : 20;
   const queryClient = useQueryClient(); // For prefetching
   const { data: services, isLoading, error, refetch } = useServices();
   const { data: packages } = useVendorPackages(vendorId || '');
@@ -62,6 +69,97 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
   const [sortBy, setSortBy] = useState<string>('newest');
   const [refreshing, setRefreshing] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0.3)).current;
+
+  // Touch-based pull-to-refresh states
+  const [isPulling, setIsPulling] = useState(false);
+  const isPullingRef = useRef(false);
+  const touchStartY = useRef(0);
+  const pullAnim = useRef(new Animated.Value(0)).current;
+  const scrollOffset = useRef(0);
+  const pullTimeout = useRef<any>(null);
+
+  const collapseHeader = useCallback(() => {
+    if (pullTimeout.current) {
+      clearTimeout(pullTimeout.current);
+      pullTimeout.current = null;
+    }
+    isPullingRef.current = false;
+    setIsPulling(false);
+    if (!refreshing) {
+      Animated.timing(pullAnim, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: false,
+      }).start();
+    }
+  }, [refreshing, pullAnim]);
+
+  const handleScroll = (e: any) => {
+    scrollOffset.current = e.nativeEvent.contentOffset.y;
+  };
+
+  const handleTouchStart = (e: any) => {
+    touchStartY.current = e.nativeEvent.pageY;
+  };
+
+  const handleTouchMove = (e: any) => {
+    if (refreshing) return;
+    const currentY = e.nativeEvent.pageY;
+    const dy = currentY - touchStartY.current;
+
+    // Only animate if we are at the top of the list and pulling down
+    if (scrollOffset.current <= 5 && dy > 0) {
+      if (!isPullingRef.current) {
+        isPullingRef.current = true;
+        setIsPulling(true);
+      }
+      const resistance = 0.55;
+      const pullDistance = Math.min(dy * resistance, 110);
+      pullAnim.setValue(pullDistance);
+
+      // Safety timeout: if no move event occurs for 800ms, collapse the header
+      if (pullTimeout.current) {
+        clearTimeout(pullTimeout.current);
+      }
+      pullTimeout.current = setTimeout(() => {
+        if (isPullingRef.current && !refreshing) {
+          collapseHeader();
+        }
+      }, 800);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    collapseHeader();
+  };
+
+  const handleScrollEndDrag = () => {
+    collapseHeader();
+  };
+
+  useEffect(() => {
+    if (refreshing) {
+      Animated.timing(pullAnim, {
+        toValue: 110,
+        duration: 200,
+        useNativeDriver: false,
+      }).start();
+    } else if (!isPulling) {
+      Animated.timing(pullAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: false,
+      }).start();
+    }
+  }, [refreshing, isPulling]);
+
+  useEffect(() => {
+    return () => {
+      if (pullTimeout.current) {
+        clearTimeout(pullTimeout.current);
+      }
+    };
+  }, []);
   const [filters, setFilters] = useState<{
     minPrice?: number;
     maxPrice?: number;
@@ -91,7 +189,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
             duration: 1000,
             useNativeDriver: true,
           }),
-        ])
+        ]),
       );
       pulse.start();
       return () => pulse.stop();
@@ -392,7 +490,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
           {/* Discount Badge */}
           {hasDiscount && (
             <View style={styles.discountBadge}>
-              <Text style={styles.discountText}>-{discountPercent}%</Text>
+              <Text style={styles.discountText}>{discountPercent}%</Text>
             </View>
           )}
         </View>
@@ -525,7 +623,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
                   ((item.totalPrice - item.discountPrice) / item.totalPrice) *
                     100,
                 )}
-                % OFF
+                %
               </Text>
             </View>
           )}
@@ -611,7 +709,12 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
             onPress={onBack}
             activeOpacity={0.7}
           >
-            <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+            <Svg
+              width={backIconSize}
+              height={backIconSize}
+              viewBox="0 0 24 24"
+              fill="none"
+            >
               <Path
                 d="M15 18L9 12L15 6"
                 stroke={colors.primary}
@@ -697,7 +800,12 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
           onPress={onBack}
           activeOpacity={0.7}
         >
-          <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+          <Svg
+            width={backIconSize}
+            height={backIconSize}
+            viewBox="0 0 24 24"
+            fill="none"
+          >
             <Path
               d="M15 18L9 12L15 6"
               stroke={colors.primary}
@@ -765,15 +873,21 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
       {/* Services Grid */}
       <FlatList
         refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
-            onRefresh={onRefresh} 
-            tintColor="transparent" 
-            colors={['transparent']} 
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="transparent"
+            colors={['transparent']}
             progressBackgroundColor="transparent"
             progressViewOffset={10000}
           />
         }
+        scrollEnabled={!isPulling && !refreshing}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onScroll={handleScroll}
+        onScrollEndDrag={handleScrollEndDrag}
         data={sortedAndFilteredServices}
         renderItem={renderServiceCard}
         keyExtractor={item => item._id}
@@ -784,31 +898,41 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View>
-            {/* Custom Pull-to-Refresh Header - Like Keeta */}
-            {refreshing && (
-              <View style={{
+            {/* Custom Pull-to-Refresh Header with dynamic slide down */}
+            <Animated.View
+              style={{
                 width: '100%',
-                alignItems: 'center',
-                justifyContent: 'center',
-                paddingTop: 20,
-                paddingBottom: 15,
-                marginBottom: 10,
-              }}>
+                height: pullAnim,
+                overflow: 'hidden',
+                backgroundColor: colors.backgroundHome,
+              }}
+            >
+              <View
+                style={{
+                  width: '100%',
+                  height: 110,
+                  alignItems: 'center',
+                  justifyContent: 'flex-end',
+                  paddingBottom: 10,
+                }}
+              >
                 <Animated.Image
                   source={require('../../imgs/logo.png')}
                   style={{ width: 80, height: 80, opacity: fadeAnim }}
                   resizeMode="contain"
                 />
-                <Text style={{
-                  marginTop: 10,
-                  fontSize: 14,
-                  color: colors.primary,
-                  fontWeight: '600',
-                }}>
+                <Text
+                  style={{
+                    marginTop: 8,
+                    fontSize: 14,
+                    color: colors.primary,
+                    fontWeight: '600',
+                  }}
+                >
                   {isRTL ? 'جاري التحميل...' : 'Loading...'}
                 </Text>
               </View>
-            )}
+            </Animated.View>
             {vendor ? (
               <VendorHeader
                 vendor={vendor}

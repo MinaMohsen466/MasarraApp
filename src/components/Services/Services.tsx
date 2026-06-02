@@ -125,7 +125,7 @@ const Services: React.FC<ServicesProps> = ({ onSelectService, onViewAll }) => {
               />
               {hasDiscount && discountPercent > 0 && (
                 <View style={styles.discountBadge}>
-                  <Text style={styles.discountText}>-{discountPercent}%</Text>
+                  <Text style={styles.discountText}>{discountPercent}%</Text>
                 </View>
               )}
             </>

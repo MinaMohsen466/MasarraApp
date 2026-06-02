@@ -15,6 +15,7 @@ import {
   TextInput,
   Dimensions,
   Easing,
+  StatusBar,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useQuery } from '@tanstack/react-query';
@@ -64,6 +65,10 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
   const { globalSelectedDate, setGlobalSelectedDate } = useGlobalDate();
   const insets = useSafeAreaInsets();
   const fixedHeight = insets.top + 46; // 22 (ACTIONS_BAR_HEIGHT) + 24 (EXTRA_HEIGHT)
+
+  const isTablet = SCREEN_WIDTH >= 600;
+  const backIconSize = isTablet ? 18 : 20;
+  const headerIconSize = isTablet ? 16 : 18;
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
   const flatListRef = useRef<FlatList>(null);
@@ -589,10 +594,10 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
           style={styles.carouselImage}
           resizeMode="cover"
         />
-        {/* Show discount badge only on first image */}
-        {index === 0 && hasDiscount && discountPercent > 0 && (
+        {/* Show discount badge on all images */}
+        {hasDiscount && discountPercent > 0 && (
           <View style={styles.imageDiscountBadge}>
-            <Text style={styles.imageDiscountText}>-{discountPercent}%</Text>
+            <Text style={styles.imageDiscountText}>{discountPercent}%</Text>
           </View>
         )}
       </View>
@@ -661,6 +666,11 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
 
   return (
     <View style={styles.container}>
+      <StatusBar
+        backgroundColor={colors.backgroundLight}
+        barStyle="dark-content"
+        translucent={false}
+      />
       {/* Fixed actions bar under notch (not scrolling) */}
       <View
         style={[
@@ -682,7 +692,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                 accessibilityLabel="Share"
                 onPress={handleShare}
               >
-                <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+                <Svg width={headerIconSize} height={headerIconSize} viewBox="0 0 24 24" fill="none">
                   <Path
                     d="M18 8a3 3 0 100-6 3 3 0 000 6z"
                     stroke={colors.primary}
@@ -719,7 +729,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                 accessibilityLabel="Wishlist"
                 onPress={handleToggleWishlist}
               >
-                <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+                <Svg width={headerIconSize} height={headerIconSize} viewBox="0 0 24 24" fill="none">
                   <Path
                     d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
                     fill={isSaved ? '#E8837A' : '#7FBFB6'}
@@ -736,7 +746,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
               style={styles.headerCircleButton}
               accessibilityLabel="Back"
             >
-              <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+              <Svg width={backIconSize} height={backIconSize} viewBox="0 0 24 24" fill="none">
                 <Path
                   d="M15 18l-6-6 6-6"
                   stroke={colors.primary}
@@ -758,7 +768,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
               style={styles.headerCircleButton}
               accessibilityLabel="Back"
             >
-              <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+              <Svg width={backIconSize} height={backIconSize} viewBox="0 0 24 24" fill="none">
                 <Path
                   d="M9 18l6-6-6-6"
                   stroke={colors.primary}
@@ -776,7 +786,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                 accessibilityLabel="Wishlist"
                 onPress={handleToggleWishlist}
               >
-                <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+                <Svg width={headerIconSize} height={headerIconSize} viewBox="0 0 24 24" fill="none">
                   <Path
                     d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
                     fill={isSaved ? '#E8837A' : '#7FBFB6'}
@@ -791,7 +801,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                 accessibilityLabel="Share"
                 onPress={handleShare}
               >
-                <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+                <Svg width={headerIconSize} height={headerIconSize} viewBox="0 0 24 24" fill="none">
                   <Path
                     d="M18 8a3 3 0 100-6 3 3 0 000 6z"
                     stroke={colors.primary}

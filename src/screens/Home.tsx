@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -50,8 +50,8 @@ const Home: React.FC<HomeProps> = ({
     error,
     refetch: refetchOccasions,
   } = useOccasions();
-  const { 
-    data: services, 
+  const {
+    data: services,
     isLoading: servicesLoading,
     refetch: refetchServices,
   } = useServices();
@@ -61,6 +61,97 @@ const Home: React.FC<HomeProps> = ({
   const [refreshing, setRefreshing] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0.3)).current;
   const refreshFadeAnim = useRef(new Animated.Value(0.3)).current;
+
+  // Touch-based pull-to-refresh states
+  const [isPulling, setIsPulling] = useState(false);
+  const isPullingRef = useRef(false);
+  const touchStartY = useRef(0);
+  const pullAnim = useRef(new Animated.Value(0)).current;
+  const scrollOffset = useRef(0);
+  const pullTimeout = useRef<any>(null);
+
+  const collapseHeader = useCallback(() => {
+    if (pullTimeout.current) {
+      clearTimeout(pullTimeout.current);
+      pullTimeout.current = null;
+    }
+    isPullingRef.current = false;
+    setIsPulling(false);
+    if (!refreshing) {
+      Animated.timing(pullAnim, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: false,
+      }).start();
+    }
+  }, [refreshing, pullAnim]);
+
+  const handleScroll = (e: any) => {
+    scrollOffset.current = e.nativeEvent.contentOffset.y;
+  };
+
+  const handleTouchStart = (e: any) => {
+    touchStartY.current = e.nativeEvent.pageY;
+  };
+
+  const handleTouchMove = (e: any) => {
+    if (refreshing) return;
+    const currentY = e.nativeEvent.pageY;
+    const dy = currentY - touchStartY.current;
+
+    // Only animate if we are at the top of the list and pulling down
+    if (scrollOffset.current <= 5 && dy > 0) {
+      if (!isPullingRef.current) {
+        isPullingRef.current = true;
+        setIsPulling(true);
+      }
+      const resistance = 0.55;
+      const pullDistance = Math.min(dy * resistance, 110);
+      pullAnim.setValue(pullDistance);
+
+      // Safety timeout: if no move event occurs for 800ms, collapse the header
+      if (pullTimeout.current) {
+        clearTimeout(pullTimeout.current);
+      }
+      pullTimeout.current = setTimeout(() => {
+        if (isPullingRef.current && !refreshing) {
+          collapseHeader();
+        }
+      }, 800);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    collapseHeader();
+  };
+
+  const handleScrollEndDrag = () => {
+    collapseHeader();
+  };
+
+  useEffect(() => {
+    if (refreshing) {
+      Animated.timing(pullAnim, {
+        toValue: 110,
+        duration: 200,
+        useNativeDriver: false,
+      }).start();
+    } else if (!isPulling) {
+      Animated.timing(pullAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: false,
+      }).start();
+    }
+  }, [refreshing, isPulling]);
+
+  useEffect(() => {
+    return () => {
+      if (pullTimeout.current) {
+        clearTimeout(pullTimeout.current);
+      }
+    };
+  }, []);
 
   const hasFeaturedServices =
     services?.some(service => service.isFeatured) || false;
@@ -127,16 +218,11 @@ const Home: React.FC<HomeProps> = ({
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
     try {
-      await Promise.all([
-        refetchOccasions(),
-        refetchServices(),
-      ]);
+      await Promise.all([refetchOccasions(), refetchServices()]);
     } finally {
       setRefreshing(false);
     }
   }, [refetchOccasions, refetchServices]);
-
-
 
   // Show loading screen with logo while initial data is loading
   if (initialLoading && isLoading) {
@@ -247,32 +333,49 @@ const Home: React.FC<HomeProps> = ({
           progressViewOffset={10000}
         />
       }
+      scrollEnabled={!isPulling && !refreshing}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onScroll={handleScroll}
+      onScrollEndDrag={handleScrollEndDrag}
+      scrollEventThrottle={16}
     >
-      {/* Custom Pull-to-Refresh Header - Like Keeta */}
-      {refreshing && (
-        <View style={{
+      {/* Custom Pull-to-Refresh Header with dynamic slide down */}
+      <Animated.View
+        style={{
           width: '100%',
-          alignItems: 'center',
-          justifyContent: 'center',
-          paddingTop: 20,
-          paddingBottom: 15,
+          height: pullAnim,
+          overflow: 'hidden',
           backgroundColor: colors.primary,
-        }}>
+        }}
+      >
+        <View
+          style={{
+            width: '100%',
+            height: 110,
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            paddingBottom: 10,
+          }}
+        >
           <Animated.Image
             source={require('../imgs/logo.png')}
             style={{ width: 80, height: 80, opacity: refreshFadeAnim }}
             resizeMode="contain"
           />
-          <Text style={{
-            marginTop: 10,
-            fontSize: 14,
-            color: '#ffffff',
-            fontWeight: '600',
-          }}>
+          <Text
+            style={{
+              marginTop: 8,
+              fontSize: 14,
+              color: '#ffffff',
+              fontWeight: '600',
+            }}
+          >
             {isRTL ? 'جاري التحميل...' : 'Loading...'}
           </Text>
         </View>
-      )}
+      </Animated.View>
 
       {/* Header inside ScrollView so it slides down with pull-to-refresh */}
       <Header

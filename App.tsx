@@ -276,11 +276,16 @@ function AppContent() {
   const routesWithoutHeader = ['home', 'occasions', 'packages', 'categories', 'services', 'vendors', 'vendor-services', 'occasion-services', 'service-details', 'package-details', 'cart', 'about', 'terms', 'privacy', 'contact', 'profile', 'addresses', 'search'];
   const shouldShowHeader = !routesWithoutHeader.includes(currentRoute);
 
-  const routesWithoutSafeArea = ['about', 'terms', 'privacy', 'contact', 'service-details', 'cart', 'profile', 'search', 'addresses'];
+  const routesWithoutSafeArea = ['about', 'terms', 'privacy', 'contact', 'service-details', 'package-details', 'cart', 'profile', 'search', 'addresses'];
   const shouldRenderWithoutSafeArea = routesWithoutSafeArea.includes(currentRoute);
 
   const isBannerVisible = siteSettings?.bannerEnabled && !isBannerDismissed;
-  const dynamicBgColor = (currentRoute === 'home' && isBannerVisible) ? colors.primary : colors.backgroundHome;
+  const dynamicBgColor = 
+    (currentRoute === 'home' && isBannerVisible) 
+      ? colors.primary 
+      : ['services', 'occasion-services', 'vendor-services', 'packages'].includes(currentRoute)
+        ? colors.backgroundLight
+        : colors.backgroundHome;
 
   return (
     <LanguageProvider>

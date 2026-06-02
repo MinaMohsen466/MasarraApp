@@ -151,7 +151,7 @@ const WriteReview: React.FC<WriteReviewProps> = ({
             style={styles.starButton}
             disabled={isSubmitting}
           >
-            <Svg width={40} height={40} viewBox="0 0 24 24" fill="none">
+            <Svg width={32} height={32} viewBox="0 0 24 24" fill="none">
               <Path
                 d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
                 fill={star <= rating ? colors.primary : '#E0E0E0'}
@@ -186,23 +186,18 @@ const WriteReview: React.FC<WriteReviewProps> = ({
             />
           </Svg>
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
-          {isRTL ? 'تقييم الخدمة' : 'Rate Service'}
-        </Text>
+        <View style={styles.headerTitleContainer}>
+          <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
+            {isRTL ? 'تقييم الخدمة' : 'Rate Service'}
+          </Text>
+          <Text style={[styles.headerSubtitle, isRTL && styles.headerSubtitleRTL]} numberOfLines={1}>
+            {serviceName}
+          </Text>
+        </View>
         <View style={styles.placeholder} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Service Name */}
-        <View style={styles.serviceNameContainer}>
-          <Text style={[styles.serviceNameLabel, isRTL && styles.textRTL]}>
-            {isRTL ? 'الخدمة:' : 'Service:'}
-          </Text>
-          <Text style={[styles.serviceName, isRTL && styles.textRTL]}>
-            {serviceName}
-          </Text>
-        </View>
-
         {/* Rating Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>
@@ -236,7 +231,7 @@ const WriteReview: React.FC<WriteReviewProps> = ({
             }
             placeholderTextColor="#999"
             multiline
-            numberOfLines={6}
+            numberOfLines={4}
             maxLength={300}
             textAlignVertical="top"
             editable={!isSubmitting}
@@ -287,19 +282,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
   },
   backButton: {
     padding: 8,
   },
+  headerTitleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.textPrimary,
   },
   headerTitleRTL: {
+    fontFamily: 'Arial',
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 2,
+  },
+  headerSubtitleRTL: {
     fontFamily: 'Arial',
   },
   placeholder: {
@@ -307,59 +315,42 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 20,
-    paddingBottom: 140,
-  },
-  serviceNameContainer: {
-    backgroundColor: '#F5F5F5',
     padding: 16,
-    borderRadius: 12,
-    marginBottom: 24,
-  },
-  serviceNameLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
-  },
-  serviceName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.textPrimary,
   },
   section: {
-    marginBottom: 32,
+    marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: colors.textPrimary,
-    marginBottom: 16,
+    marginBottom: 8,
   },
   starsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
+    gap: 6,
+    marginBottom: 6,
   },
   starButton: {
-    padding: 4,
+    padding: 2,
   },
   ratingText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500',
     color: colors.primary,
     textAlign: 'center',
-    marginTop: 8,
+    marginTop: 6,
   },
   commentInput: {
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
     color: colors.textPrimary,
-    minHeight: 150,
+    minHeight: 100,
     backgroundColor: '#FAFAFA',
   },
   commentInputRTL: {
@@ -369,22 +360,22 @@ const styles = StyleSheet.create({
   characterCount: {
     fontSize: 12,
     color: '#999',
-    marginTop: 8,
+    marginTop: 6,
     textAlign: 'right',
   },
   submitButton: {
     backgroundColor: colors.primary,
-    paddingVertical: 16,
-    borderRadius: 12,
+    paddingVertical: 12,
+    borderRadius: 8,
     alignItems: 'center',
-    marginTop: 8,
-    marginBottom: 32,
+    marginTop: 4,
+    marginBottom: 24,
   },
   submitButtonDisabled: {
     backgroundColor: '#BDBDBD',
   },
   submitButtonText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#FFF',
   },

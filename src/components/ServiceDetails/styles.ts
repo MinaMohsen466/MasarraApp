@@ -3,7 +3,7 @@ import { colors } from '../../constants/colors';
 
 export const createStyles = (SCREEN_WIDTH: number) => {
   const isTablet = SCREEN_WIDTH >= 600;
-  const carouselHeight = isTablet ? 500 : 380;
+  const carouselHeight = isTablet ? 400 : 330;
 
   return StyleSheet.create({
     container: {
@@ -66,9 +66,9 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       fontWeight: '600',
     },
     headerCircleButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+      width: 34,
+      height: 34,
+      borderRadius: 17,
       backgroundColor: 'rgba(0, 161, 156, 0.1)',
       justifyContent: 'center',
       alignItems: 'center',
@@ -154,12 +154,12 @@ export const createStyles = (SCREEN_WIDTH: number) => {
     },
     imageDiscountBadge: {
       position: 'absolute',
-      top: 16,
-      right: 16,
+      top: 12,
+      right: 12,
       backgroundColor: colors.primary,
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-      borderRadius: 10,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 6,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.3,
@@ -168,7 +168,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
     },
     imageDiscountText: {
       color: '#fff',
-      fontSize: 20,
+      fontSize: 14,
       fontWeight: 'bold',
     },
     paginationContainer: {
@@ -592,7 +592,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
     addToCartButton: {
       backgroundColor: colors.primaryDark,
       borderRadius: 12,
-      paddingVertical: 14,
+      paddingVertical: 11,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
@@ -600,14 +600,14 @@ export const createStyles = (SCREEN_WIDTH: number) => {
     },
     addToCartButtonText: {
       color: colors.textWhite,
-      fontSize: 16,
+      fontSize: 14,
       fontWeight: '700',
       letterSpacing: 0.5,
     },
     backButtonBottom: {
       backgroundColor: 'transparent',
       borderRadius: 12,
-      paddingVertical: 14,
+      paddingVertical: 11,
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1.5,
@@ -615,7 +615,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
     },
     backButtonText: {
       color: colors.primary,
-      fontSize: 16,
+      fontSize: 14,
       fontWeight: '700',
       letterSpacing: 0.5,
     },

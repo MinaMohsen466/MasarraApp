@@ -3,7 +3,7 @@ import { colors } from '../../constants/colors';
 
 export const createStyles = (SCREEN_WIDTH: number) => {
   const isTablet = SCREEN_WIDTH >= 600;
-  const imageHeight = isTablet ? 500 : 380;
+  const imageHeight = isTablet ? 400 : 330;
 
   return StyleSheet.create({
     container: {
@@ -70,11 +70,13 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       gap: 8,
     },
     headerButton: {
-      width: 42,
-      height: 42,
-      borderRadius: 21,
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      backgroundColor: 'rgba(0, 161, 156, 0.1)',
       justifyContent: 'center',
       alignItems: 'center',
+      marginHorizontal: 4,
     },
 
     // ScrollView Content
@@ -95,12 +97,12 @@ export const createStyles = (SCREEN_WIDTH: number) => {
     },
     discountBadge: {
       position: 'absolute',
-      top: 16,
-      right: 16,
+      top: 12,
+      right: 12,
       backgroundColor: colors.primary,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 8,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 6,
     },
     discountText: {
       color: colors.textWhite,
@@ -372,26 +374,81 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       marginBottom: 20,
     },
 
-    // Reviews Section
-    reviewsContainer: {
+    // Reviews Section Styles
+    reviewsSection: {
       marginTop: 20,
+      marginBottom: 16,
     },
-    reviewsHeader: {
+    reviewsTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.textPrimary,
+      marginBottom: 16,
+    },
+    reviewsTitleRTL: {
+      textAlign: 'right',
+      fontFamily: 'Arial',
+    },
+    reviewStatsCard: {
+      backgroundColor: colors.backgroundCard,
+      borderRadius: 12,
+      padding: 14,
       flexDirection: 'row',
-      justifyContent: 'space-between',
+      marginBottom: 16,
+    },
+    averageRatingContainer: {
+      flex: 1,
       alignItems: 'center',
-      marginBottom: 12,
+      justifyContent: 'center',
+      borderRightWidth: 1,
+      borderRightColor: colors.border,
+      paddingRight: 16,
     },
-    viewAllButton: {
-      backgroundColor: colors.primaryLight,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 6,
-    },
-    viewAllText: {
+    averageRatingNumber: {
+      fontSize: 36,
+      fontWeight: '700',
       color: colors.primary,
+    },
+    averageRatingStars: {
+      fontSize: 18,
+      color: colors.primary,
+      marginVertical: 4,
+    },
+    averageRatingText: {
       fontSize: 12,
-      fontWeight: '600',
+      color: colors.textSecondary,
+    },
+    ratingDistribution: {
+      flex: 2,
+      paddingLeft: 16,
+    },
+    distributionRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 6,
+    },
+    distributionStar: {
+      width: 30,
+      fontSize: 12,
+      color: colors.textSecondary,
+    },
+    distributionBar: {
+      flex: 1,
+      height: 8,
+      backgroundColor: colors.border,
+      borderRadius: 4,
+      marginHorizontal: 8,
+      overflow: 'hidden',
+    },
+    distributionFill: {
+      height: '100%',
+      backgroundColor: colors.primary,
+    },
+    distributionCount: {
+      width: 30,
+      fontSize: 12,
+      color: colors.textSecondary,
+      textAlign: 'right',
     },
     reviewsListHorizontal: {
       flexDirection: 'row',
@@ -399,247 +456,151 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       paddingVertical: 6,
       paddingHorizontal: 2,
     },
-    reviewCard: {
-      backgroundColor: colors.backgroundCard,
-      padding: 16,
-      borderRadius: 12,
-      marginBottom: 12,
-    },
     reviewCardHorizontal: {
       backgroundColor: colors.backgroundCard,
       borderRadius: 12,
-      padding: 16,
-      width: SCREEN_WIDTH * 0.78,
-      // shadowColor: '#000',
-      // shadowOffset: { width: 0, height: 2 },
-      // shadowOpacity: 0.06,
-      // shadowRadius: 8,
-      // elevation: 2.5,
+      padding: 10,
+      width: SCREEN_WIDTH * 0.58,
     },
     reviewHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'flex-start',
-      marginBottom: 8,
+      marginBottom: 4,
     },
-    reviewerInfo: {
-      flex: 1,
-    },
-    reviewerName: {
-      fontSize: 15,
-      fontWeight: '600',
-      color: colors.textPrimary,
-      marginBottom: 2,
-    },
-    reviewDate: {
-      fontSize: 12,
-      color: colors.textSecondary,
-    },
-    reviewRating: {
+    reviewUserInfo: {
       flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-    },
-    reviewRatingValue: {
-      fontSize: 14,
-      fontWeight: 'bold',
-      color: colors.primary,
-    },
-    reviewRatingStar: {
-      fontSize: 12,
-      color: colors.primary,
-    },
-    reviewComment: {
-      fontSize: 14,
-      color: colors.textSecondary,
-      lineHeight: 20,
-    },
-    noReviewsText: {
-      fontSize: 14,
-      color: colors.textSecondary,
-      textAlign: 'center',
-      paddingVertical: 20,
-    },
-    reviewRatingLabel: {
-      fontSize: 12,
-      color: colors.textSecondary,
-      width: 25,
-    },
-    reviewRatingBar: {
+      alignItems: 'flex-start',
       flex: 1,
-      height: 8,
-      backgroundColor: '#e0e0e0',
-      borderRadius: 4,
-      overflow: 'hidden',
-    },
-    reviewRatingFill: {
-      height: '100%',
-      backgroundColor: colors.primary,
-    },
-    reviewRatingPercentage: {
-      fontSize: 12,
-      color: colors.textSecondary,
-      width: 35,
-      textAlign: 'right',
-    },
-    reviewRatingRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: 8,
-    },
-    reviewStatsContainer: {
-      backgroundColor: colors.backgroundCard,
-      padding: 16,
-      borderRadius: 12,
-      marginBottom: 16,
-      flexDirection: 'row',
-    },
-    reviewStatsLeft: {
-      alignItems: 'center',
-      paddingRight: 20,
-      borderRightWidth: 1,
-      borderColor: '#e0e0e0',
-    },
-    reviewStatsAverageRating: {
-      fontSize: 36,
-      fontWeight: 'bold',
-      color: colors.primary,
-    },
-    reviewStatsStars: {
-      fontSize: 18,
-      color: colors.primary,
-      marginVertical: 4,
-    },
-    reviewStatsTotalText: {
-      fontSize: 12,
-      color: colors.textSecondary,
-    },
-    reviewStatsRight: {
-      flex: 1,
-      paddingLeft: 20,
-    },
-    userAvatar: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+      gap: 8,
       marginRight: 12,
     },
-    userAvatarPlaceholder: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+    reviewUserAvatar: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+    },
+    reviewUserAvatarPlaceholder: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
       backgroundColor: colors.primary,
-      alignItems: 'center',
       justifyContent: 'center',
-      marginRight: 12,
-    },
-    userAvatarText: {
-      color: colors.textWhite,
-      fontSize: 18,
-      fontWeight: 'bold',
-    },
-    userInfoRow: {
-      flexDirection: 'row',
       alignItems: 'center',
-      flexWrap: 'wrap',
     },
-    userName: {
+    reviewUserAvatarText: {
+      color: '#FFF',
       fontSize: 14,
       fontWeight: '600',
+    },
+    reviewUserName: {
+      fontSize: 13,
+      fontWeight: '600',
       color: colors.textPrimary,
-      maxWidth: '50%',
-    },
-    dateSeparator: {
-      fontSize: 12,
-      color: '#999',
-      marginHorizontal: 6,
-    },
-    reviewDateText: {
-      fontSize: 12,
-      color: '#999',
+      flex: 1,
     },
     verifiedBadge: {
       fontSize: 11,
-      color: colors.primary,
+      color: colors.success,
       marginTop: 2,
     },
-    vendorReplyContainer: {
-      marginTop: 12,
-      paddingTop: 12,
-      borderTopWidth: 1,
-      borderTopColor: '#f0f0f0',
+    reviewRating: {
+      backgroundColor: colors.primaryLight,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 8,
     },
-    vendorReplyTitle: {
+    reviewRatingText: {
       fontSize: 12,
       fontWeight: '600',
       color: colors.primary,
-      marginBottom: 4,
     },
-    vendorReplyText: {
+    reviewComment: {
       fontSize: 13,
       color: colors.textSecondary,
       lineHeight: 18,
+      marginBottom: 4,
     },
-    showMoreButton: {
+    reviewCommentRTL: {
+      textAlign: 'right',
+      fontFamily: 'Arial',
+    },
+    reviewDate: {
+      fontSize: 12,
+      color: '#999',
+    },
+    vendorReply: {
+      marginTop: 6,
+      paddingTop: 6,
+      borderTopWidth: 1,
+      borderTopColor: '#E0E0E0',
+    },
+    vendorReplyLabel: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.primary,
+      marginBottom: 2,
+    },
+    vendorReplyText: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      lineHeight: 16,
+    },
+    vendorReplyTextRTL: {
+      textAlign: 'right',
+      fontFamily: 'Arial',
+    },
+    showMoreReviewsButton: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: 12,
-      backgroundColor: colors.backgroundCard,
-      borderRadius: 8,
-      marginTop: 8,
+      paddingVertical: 14,
+      paddingHorizontal: 24,
+      backgroundColor: colors.backgroundLight,
+      borderRadius: 12,
+      borderWidth: 1.5,
+      borderColor: colors.primary,
+      marginTop: 16,
+      marginHorizontal: 16,
     },
-    showMoreText: {
-      fontSize: 14,
-      color: colors.primary,
+    showMoreReviewsText: {
+      fontSize: 15,
       fontWeight: '600',
-    },
-    showMoreIcon: {
-      marginLeft: 8,
+      color: colors.primary,
+      letterSpacing: 0.3,
     },
 
-    // Bottom Actions - Vertical layout matching ServiceDetails
+    // Bottom Actions
     bottomActions: {
       position: 'absolute',
       bottom: 0,
       left: 0,
       right: 0,
       backgroundColor: colors.background,
-      paddingHorizontal: isTablet ? 40 : 20,
+      paddingHorizontal: 20,
       paddingTop: 16,
       borderTopWidth: 1,
       borderTopColor: colors.border,
-      alignItems: 'center',
-    },
-    bottomActionsInner: {
-      width: '100%',
-      maxWidth: isTablet ? 500 : undefined,
     },
     addToCartButton: {
       backgroundColor: colors.primaryDark,
       borderRadius: 12,
-      paddingVertical: isTablet ? 16 : 14,
+      paddingVertical: 11,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: 10,
     },
-    addToCartButtonDisabled: {
-      backgroundColor: '#ccc',
-    },
     addToCartButtonText: {
       color: colors.textWhite,
-      fontSize: isTablet ? 18 : 16,
+      fontSize: 14,
       fontWeight: '700',
       letterSpacing: 0.5,
     },
-    addToCartIcon: {
-      marginRight: 8,
-    },
-    backButton: {
+    backButtonBottom: {
       backgroundColor: 'transparent',
       borderRadius: 12,
-      paddingVertical: isTablet ? 16 : 14,
+      paddingVertical: 11,
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1.5,
@@ -647,7 +608,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
     },
     backButtonText: {
       color: colors.primary,
-      fontSize: isTablet ? 18 : 16,
+      fontSize: 14,
       fontWeight: '700',
       letterSpacing: 0.5,
     },
