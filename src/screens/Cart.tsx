@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
   TextInput,
   Dimensions,
+  StatusBar,
+  Platform,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -833,8 +835,13 @@ const Cart: React.FC<CartProps> = ({
   if (!isLoggedIn) {
     return (
       <View style={styles.container}>
+        <StatusBar
+          backgroundColor={colors.background}
+          barStyle="dark-content"
+          translucent={false}
+        />
         {/* Header */}
-        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+        <View style={[styles.header, { paddingTop: Platform.OS === 'android' ? (insets.top > 0 ? insets.top : 8) + 8 : insets.top + 8 }]}>
           {/* Menu Button - Left */}
           <TouchableOpacity
             onPress={() => toggleDrawer(true)}
@@ -908,8 +915,13 @@ const Cart: React.FC<CartProps> = ({
 
   return (
     <View style={styles.container}>
+      <StatusBar
+        backgroundColor={colors.background}
+        barStyle="dark-content"
+        translucent={false}
+      />
       {/* Header */}
-      <View style={[styles.header, isRTL && styles.headerRTL, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.header, isRTL && styles.headerRTL, { paddingTop: Platform.OS === 'android' ? (insets.top > 0 ? insets.top : 8) + 8 : insets.top + 8 }]}>
         {/* Menu Button - Left */}
         <TouchableOpacity
           onPress={() => toggleDrawer(true)}

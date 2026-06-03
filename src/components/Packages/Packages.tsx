@@ -3,7 +3,6 @@ import React, {
   useState,
   useCallback,
   useMemo,
-  useRef,
 } from 'react';
 import {
   View,
@@ -13,7 +12,6 @@ import {
   Image,
   ActivityIndicator,
   useWindowDimensions,
-  Animated,
   RefreshControl,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -25,11 +23,11 @@ import {
   flattenPackages,
   Package,
 } from '../../hooks/usePackages';
-export type { Package };
 import { getImageUrl } from '../../services/api';
 import { getServiceReviews } from '../../services/reviewsApi';
 import SortModal from '../SortModal/SortModal';
 import FilterModal from '../FilterModal/FilterModal';
+export type { Package };
 
 interface PackagesProps {
   onSelectPackage?: (pkg: Package) => void;
@@ -56,121 +54,6 @@ const Packages: React.FC<PackagesProps> = ({ onSelectPackage, onBack }) => {
   }>({});
 
   const [refreshing, setRefreshing] = useState(false);
-  const fadeAnim = useRef(new Animated.Value(0.3)).current;
-
-  // Touch-based pull-to-refresh states
-  const [isPulling, setIsPulling] = useState(false);
-  const isPullingRef = useRef(false);
-  const touchStartY = useRef(0);
-  const pullAnim = useRef(new Animated.Value(0)).current;
-  const scrollOffset = useRef(0);
-  const pullTimeout = useRef<any>(null);
-
-  const collapseHeader = useCallback(() => {
-    if (pullTimeout.current) {
-      clearTimeout(pullTimeout.current);
-      pullTimeout.current = null;
-    }
-    isPullingRef.current = false;
-    setIsPulling(false);
-    if (!refreshing) {
-      Animated.timing(pullAnim, {
-        toValue: 0,
-        duration: 250,
-        useNativeDriver: false,
-      }).start();
-    }
-  }, [refreshing, pullAnim]);
-
-  const handleScroll = (e: any) => {
-    scrollOffset.current = e.nativeEvent.contentOffset.y;
-  };
-
-  const handleTouchStart = (e: any) => {
-    touchStartY.current = e.nativeEvent.pageY;
-  };
-
-  const handleTouchMove = (e: any) => {
-    if (refreshing) return;
-    const currentY = e.nativeEvent.pageY;
-    const dy = currentY - touchStartY.current;
-
-    // Only animate if we are at the top of the list and pulling down
-    if (scrollOffset.current <= 5 && dy > 0) {
-      if (!isPullingRef.current) {
-        isPullingRef.current = true;
-        setIsPulling(true);
-      }
-      const resistance = 0.55;
-      const pullDistance = Math.min(dy * resistance, 110);
-      pullAnim.setValue(pullDistance);
-
-      // Safety timeout: if no move event occurs for 800ms, collapse the header
-      if (pullTimeout.current) {
-        clearTimeout(pullTimeout.current);
-      }
-      pullTimeout.current = setTimeout(() => {
-        if (isPullingRef.current && !refreshing) {
-          collapseHeader();
-        }
-      }, 800);
-    }
-  };
-
-  const handleTouchEnd = () => {
-    collapseHeader();
-  };
-
-  const handleScrollEndDrag = () => {
-    collapseHeader();
-  };
-
-  // Pulsing animation for logo during refresh
-  useEffect(() => {
-    if (refreshing) {
-      const pulse = Animated.loop(
-        Animated.sequence([
-          Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(fadeAnim, {
-            toValue: 0.3,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ]),
-      );
-      pulse.start();
-      return () => pulse.stop();
-    }
-    return undefined;
-  }, [refreshing, fadeAnim]);
-
-  useEffect(() => {
-    if (refreshing) {
-      Animated.timing(pullAnim, {
-        toValue: 110,
-        duration: 200,
-        useNativeDriver: false,
-      }).start();
-    } else if (!isPulling) {
-      Animated.timing(pullAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: false,
-      }).start();
-    }
-  }, [refreshing, isPulling]);
-
-  useEffect(() => {
-    return () => {
-      if (pullTimeout.current) {
-        clearTimeout(pullTimeout.current);
-      }
-    };
-  }, []);
 
   // Memoized query filters to pass to backend
   const queryFilters = useMemo(() => {
@@ -529,19 +412,11 @@ const Packages: React.FC<PackagesProps> = ({ onSelectPackage, onBack }) => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="transparent"
-            colors={['transparent']}
-            progressBackgroundColor="transparent"
-            progressViewOffset={10000}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+            progressBackgroundColor="#ffffff"
           />
         }
-        scrollEnabled={!isPulling && !refreshing}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onScroll={handleScroll}
-        onScrollEndDrag={handleScrollEndDrag}
-        scrollEventThrottle={16}
         data={sortedAndFilteredPackages}
         renderItem={renderPackageCard}
         keyExtractor={item => item._id}
@@ -553,40 +428,7 @@ const Packages: React.FC<PackagesProps> = ({ onSelectPackage, onBack }) => {
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5}
         ListHeaderComponent={
-          <Animated.View
-            style={{
-              width: '100%',
-              height: pullAnim,
-              overflow: 'hidden',
-              backgroundColor: colors.background,
-            }}
-          >
-            <View
-              style={{
-                width: '100%',
-                height: 110,
-                alignItems: 'center',
-                justifyContent: 'flex-end',
-                paddingBottom: 10,
-              }}
-            >
-              <Animated.Image
-                source={require('../../imgs/logo.png')}
-                style={{ width: 80, height: 80, opacity: fadeAnim }}
-                resizeMode="contain"
-              />
-              <Text
-                style={{
-                  marginTop: 8,
-                  fontSize: 14,
-                  color: colors.primary,
-                  fontWeight: '600',
-                }}
-              >
-                {isRTL ? 'جاري التحميل...' : 'Loading...'}
-              </Text>
-            </View>
-          </Animated.View>
+          <View style={{ width: '100%' }} />
         }
         ListFooterComponent={renderFooter}
       />

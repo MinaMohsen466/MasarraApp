@@ -55,7 +55,7 @@ export const createStyles = (screenWidth: number, numColumns: number) => {
       paddingBottom: isTablet ? 200 : 140,
     },
     row: {
-      justifyContent: 'center',
+      justifyContent: 'flex-start',
       marginBottom: 12,
       gap: 4,
     },

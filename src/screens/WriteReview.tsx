@@ -7,8 +7,10 @@ import {
   ScrollView,
   ActivityIndicator,
   StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -38,6 +40,7 @@ const WriteReview: React.FC<WriteReviewProps> = ({
   onSuccess,
 }) => {
   const { isRTL } = useLanguage();
+  const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const [rating, setRating] = useState(initialRating || 0);
   const [comment, setComment] = useState(initialComment || '');
@@ -166,99 +169,113 @@ const WriteReview: React.FC<WriteReviewProps> = ({
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Svg
-            width={24}
-            height={24}
-            viewBox="0 0 24 24"
-            fill="none"
-            style={!isRTL && { transform: [{ rotate: '180deg' }] }}
-          >
-            <Path
-              d={isRTL ? 'M15 18l-6-6 6-6' : 'M9 18l6-6-6-6'}
-              stroke={colors.primary}
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </Svg>
-        </TouchableOpacity>
-        <View style={styles.headerTitleContainer}>
-          <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
-            {isRTL ? 'تقييم الخدمة' : 'Rate Service'}
-          </Text>
-          <Text style={[styles.headerSubtitle, isRTL && styles.headerSubtitleRTL]} numberOfLines={1}>
-            {serviceName}
-          </Text>
-        </View>
-        <View style={styles.placeholder} />
-      </View>
-
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Rating Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>
-            {isRTL ? 'التقييم' : 'Rating'}
-          </Text>
-          {renderStars()}
-          {rating > 0 && (
-            <Text style={[styles.ratingText, isRTL && styles.textRTL]}>
-              {rating === 5 && (isRTL ? 'ممتاز!' : 'Excellent!')}
-              {rating === 4 && (isRTL ? 'جيد جداً' : 'Very Good')}
-              {rating === 3 && (isRTL ? 'جيد' : 'Good')}
-              {rating === 2 && (isRTL ? 'مقبول' : 'Fair')}
-              {rating === 1 && (isRTL ? 'ضعيف' : 'Poor')}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={styles.overlay}
+    >
+      <TouchableOpacity
+        style={styles.backdrop}
+        activeOpacity={1}
+        onPress={onBack}
+      />
+      <View style={[styles.sheetContainer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={onBack} style={styles.backButton}>
+            <Svg
+              width={24}
+              height={24}
+              viewBox="0 0 24 24"
+              fill="none"
+              style={!isRTL && { transform: [{ rotate: '180deg' }] }}
+            >
+              <Path
+                d={isRTL ? 'M15 18l-6-6 6-6' : 'M9 18l6-6-6-6'}
+                stroke={colors.primary}
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
+          </TouchableOpacity>
+          <View style={styles.headerTitleContainer}>
+            <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
+              {isRTL ? 'تقييم الخدمة' : 'Rate Service'}
             </Text>
-          )}
+            <Text style={[styles.headerSubtitle, isRTL && styles.headerSubtitleRTL]} numberOfLines={1}>
+              {serviceName}
+            </Text>
+          </View>
+          <View style={styles.placeholder} />
         </View>
 
-        {/* Comment Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>
-            {isRTL ? 'التعليق' : 'Comment'}
-          </Text>
-          <TextInput
-            style={[styles.commentInput, isRTL && styles.commentInputRTL]}
-            value={comment}
-            onChangeText={setComment}
-            placeholder={
-              isRTL
-                ? 'شارك تجربتك مع هذه الخدمة...'
-                : 'Share your experience with this service...'
-            }
-            placeholderTextColor="#999"
-            multiline
-            numberOfLines={4}
-            maxLength={300}
-            textAlignVertical="top"
-            editable={!isSubmitting}
-          />
-          <Text style={[styles.characterCount, isRTL && styles.textRTL]}>
-            {comment.length} / 300
-          </Text>
-        </View>
-
-        {/* Submit Button */}
-        <TouchableOpacity
-          style={[
-            styles.submitButton,
-            (isSubmitting || rating === 0) && styles.submitButtonDisabled,
-          ]}
-          onPress={handleSubmit}
-          disabled={isSubmitting || rating === 0}
+        <ScrollView
+          style={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          {isSubmitting ? (
-            <ActivityIndicator color="#FFF" />
-          ) : (
-            <Text style={styles.submitButtonText}>
-              {isRTL ? 'إرسال التقييم' : 'Submit Review'}
+          {/* Rating Section */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>
+              {isRTL ? 'التقييم' : 'Rating'}
             </Text>
-          )}
-        </TouchableOpacity>
-      </ScrollView>
+            {renderStars()}
+            {rating > 0 && (
+              <Text style={[styles.ratingText, isRTL && styles.textRTL]}>
+                {rating === 5 && (isRTL ? 'ممتاز!' : 'Excellent!')}
+                {rating === 4 && (isRTL ? 'جيد جداً' : 'Very Good')}
+                {rating === 3 && (isRTL ? 'جيد' : 'Good')}
+                {rating === 2 && (isRTL ? 'مقبول' : 'Fair')}
+                {rating === 1 && (isRTL ? 'ضعيف' : 'Poor')}
+              </Text>
+            )}
+          </View>
+
+          {/* Comment Section */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>
+              {isRTL ? 'التعليق' : 'Comment'}
+            </Text>
+            <TextInput
+              style={[styles.commentInput, isRTL && styles.commentInputRTL]}
+              value={comment}
+              onChangeText={setComment}
+              placeholder={
+                isRTL
+                  ? 'شارك تجربتك مع هذه الخدمة...'
+                  : 'Share your experience with this service...'
+              }
+              placeholderTextColor="#999"
+              multiline
+              numberOfLines={4}
+              maxLength={300}
+              textAlignVertical="top"
+              editable={!isSubmitting}
+            />
+            <Text style={[styles.characterCount, isRTL && styles.textRTL]}>
+              {comment.length} / 300
+            </Text>
+          </View>
+
+          {/* Submit Button */}
+          <TouchableOpacity
+            style={[
+              styles.submitButton,
+              (isSubmitting || rating === 0) && styles.submitButtonDisabled,
+            ]}
+            onPress={handleSubmit}
+            disabled={isSubmitting || rating === 0}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color="#FFF" />
+            ) : (
+              <Text style={styles.submitButtonText}>
+                {isRTL ? 'إرسال التقييم' : 'Submit Review'}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
 
       {/* Custom Alert */}
       <CustomAlert
@@ -268,14 +285,26 @@ const WriteReview: React.FC<WriteReviewProps> = ({
         buttons={alertConfig.buttons}
         onClose={() => setAlertConfig({ ...alertConfig, visible: false })}
       />
-    </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  overlay: {
     flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  sheetContainer: {
     backgroundColor: '#FFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    height: 480,
+    width: '100%',
+    paddingTop: 8,
   },
   header: {
     flexDirection: 'row',

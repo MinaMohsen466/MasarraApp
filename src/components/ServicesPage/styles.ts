@@ -20,7 +20,7 @@ export const createStyles = (screenWidth: number) => {
       justifyContent: 'space-between',
       paddingHorizontal: 12,
       paddingVertical: 6,
-      backgroundColor: colors.backgroundLight,
+      backgroundColor: colors.background,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },

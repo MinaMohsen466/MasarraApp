@@ -9,6 +9,7 @@ import {
   StatusBar,
   Dimensions,
 } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { styles } from './styles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -80,8 +81,20 @@ const Vendors: React.FC<VendorsProps> = ({ onSelectVendor, onBack }) => {
       />
       {/* Header */}
       <View style={[styles.header, isRTL && styles.headerRTL]}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backIcon}>{isRTL ? '›' : '‹'}</Text>
+        <TouchableOpacity
+          style={[styles.backButton, isRTL && styles.backButtonRTL]}
+          onPress={onBack}
+          activeOpacity={0.7}
+        >
+          <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+            <Path
+              d="M15 18L9 12L15 6"
+              stroke={colors.primary}
+              strokeWidth={2.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </Svg>
         </TouchableOpacity>
         <Text style={[styles.title, isRTL && styles.titleRTL]}>
           {isRTL ? 'الموردين' : 'VENDORS'}

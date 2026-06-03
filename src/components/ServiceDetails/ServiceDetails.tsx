@@ -667,7 +667,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
   return (
     <View style={styles.container}>
       <StatusBar
-        backgroundColor={colors.backgroundLight}
+        backgroundColor={colors.background}
         barStyle="dark-content"
         translucent={false}
       />
@@ -2131,7 +2131,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
         <Modal
           visible={showWriteReviewModal}
           animationType="slide"
-          presentationStyle="fullScreen"
+          transparent={true}
           onRequestClose={() => setShowWriteReviewModal(false)}
         >
           <WriteReview

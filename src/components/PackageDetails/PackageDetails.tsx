@@ -1742,7 +1742,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
         <Modal
           visible={showWriteReviewModal}
           animationType="slide"
-          presentationStyle="fullScreen"
+          transparent={true}
           onRequestClose={() => setShowWriteReviewModal(false)}
         >
           <WriteReview

@@ -283,8 +283,8 @@ function AppContent() {
   const dynamicBgColor = 
     (currentRoute === 'home' && isBannerVisible) 
       ? colors.primary 
-      : ['services', 'occasion-services', 'vendor-services', 'packages'].includes(currentRoute)
-        ? colors.backgroundLight
+      : ['services', 'occasion-services', 'vendor-services', 'packages', 'vendors', 'occasions'].includes(currentRoute)
+        ? colors.background
         : colors.backgroundHome;
 
   return (
@@ -295,7 +295,7 @@ function AppContent() {
             {showSplash ? (
               <SplashScreen onFinish={() => setShowSplash(false)} />
             ) : shouldRenderWithoutSafeArea ? (
-              <View style={{ flex: 1, paddingTop: currentRoute === 'search' ? 40 : 0 }}>
+              <View style={{ flex: 1 }}>
                 {renderScreen()}
                 {showBottomNav && (
                   <>

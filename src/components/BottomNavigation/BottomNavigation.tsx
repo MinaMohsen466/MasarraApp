@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, TouchableOpacity, Text, Dimensions } from 'react-native';
-import Svg, { Path, Circle, G, Rect } from 'react-native-svg';
+import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import { styles } from './styles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -19,25 +19,18 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
   const isRTL = language === 'ar';
   const screenWidth = Dimensions.get('window').width;
   const isTablet = screenWidth >= 600;
-  const iconSize = isTablet ? 36 : 28;
+  const iconSize = isTablet ? 34 : 30;
   const [cartCount, setCartCount] = React.useState(0);
 
-  // Load cart count and subscribe to changes
   React.useEffect(() => {
     const loadCartCount = async () => {
       const count = await getCartCount();
       setCartCount(count);
     };
-
-    // Load initial count
     loadCartCount();
-
-    // Subscribe to cart changes - update only when cart actually changes
     const unsubscribe = subscribeToCartChanges(() => {
       loadCartCount();
     });
-
-    // Cleanup subscription on unmount
     return unsubscribe;
   }, []);
 
@@ -48,223 +41,232 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
   };
 
   const isActive = (route: string) => activeRoute === route;
+  const activeColor = colors.primary;
+  const inactiveColor = colors.primary;
+
+  // Home icon - outline with chimney and arch door matching user's image
+  const HomeIcon = ({ active }: { active: boolean }) => {
+    const color = active ? activeColor : inactiveColor;
+    return (
+      <Svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none">
+        {/* Main house outline */}
+        <Path
+          d="M4 11V20C4 20.55 4.45 21 5 21H19C19.55 21 20 20.55 20 20V11"
+          stroke={color}
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        {/* Roof */}
+        <Path
+          d="M2.5 11.5L12 3.5L21.5 11.5"
+          stroke={color}
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        {/* Chimney */}
+        <Path
+          d="M17 5V7.7"
+          stroke={color}
+          strokeWidth={2}
+          strokeLinecap="round"
+        />
+        {/* Arch Door */}
+        <Path
+          d="M9 21V15C9 13.9 9.9 13 11 13H13C14.1 13 15 13.9 15 15V21"
+          stroke={color}
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </Svg>
+    );
+  };
+
+  // Search icon
+  const SearchIcon = ({ active }: { active: boolean }) => {
+    const color = active ? activeColor : inactiveColor;
+    return (
+      <Svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none">
+        <Circle
+          cx="10.5"
+          cy="10.5"
+          r="7.5"
+          fill={active ? activeColor + '22' : 'none'}
+          stroke={color}
+          strokeWidth={2}
+        />
+        <Path
+          d="M20 20L16 16"
+          stroke={color}
+          strokeWidth={2}
+          strokeLinecap="round"
+        />
+      </Svg>
+    );
+  };
+
+  // Categories icon — same level, no FAB
+  const CategoriesIcon = () => {
+    const darkColor = colors.primary;
+    const lightColor = '#b5e7e4';
+    return (
+      <Svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none">
+        {/* Top Left - Dark */}
+        <Rect
+          x="3"
+          y="3"
+          width="8"
+          height="8"
+          rx="2.5"
+          fill={darkColor}
+        />
+        {/* Top Right - Light */}
+        <Rect
+          x="13"
+          y="3"
+          width="8"
+          height="8"
+          rx="2.5"
+          fill={lightColor}
+        />
+        {/* Bottom Left - Light */}
+        <Rect
+          x="3"
+          y="13"
+          width="8"
+          height="8"
+          rx="2.5"
+          fill={lightColor}
+        />
+        {/* Bottom Right - Dark */}
+        <Rect
+          x="13"
+          y="13"
+          width="8"
+          height="8"
+          rx="2.5"
+          fill={darkColor}
+        />
+      </Svg>
+    );
+  };
+
+  // Vendors / Store icon
+  const VendorsIcon = ({ active }: { active: boolean }) => {
+    const color = active ? activeColor : inactiveColor;
+    return (
+      <Svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none">
+        <Path
+          d="M1.5 9.5L4 4H20L22.5 9.5"
+          stroke={color}
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <Path
+          d="M3 9.5V20C3 20.5523 3.44772 21 4 21H20C20.5523 21 21 20.5523 21 20V9.5"
+          fill={active ? activeColor + '22' : 'none'}
+          stroke={color}
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <Path
+          d="M9.5 21V16C9.5 15.4477 9.94772 15 10.5 15H13.5C14.0523 15 14.5 15.4477 14.5 16V21"
+          stroke={color}
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <Path
+          d="M1.5 9.5C1.5 10.8807 2.61929 12 4 12C5.38071 12 6.5 10.8807 6.5 9.5"
+          stroke={color}
+          strokeWidth={2}
+          strokeLinecap="round"
+        />
+        <Path
+          d="M6.5 9.5C6.5 10.8807 7.61929 12 9 12C10.3807 12 11.5 10.8807 11.5 9.5"
+          stroke={color}
+          strokeWidth={2}
+          strokeLinecap="round"
+        />
+        <Path
+          d="M11.5 9.5C11.5 10.8807 12.6193 12 14 12C15.3807 12 16.5 10.8807 16.5 9.5"
+          stroke={color}
+          strokeWidth={2}
+          strokeLinecap="round"
+        />
+        <Path
+          d="M16.5 9.5C16.5 10.8807 17.6193 12 19 12C20.3807 12 21.5 10.8807 21.5 9.5"
+          stroke={color}
+          strokeWidth={2}
+          strokeLinecap="round"
+        />
+      </Svg>
+    );
+  };
+
+  // Cart icon
+  const CartIcon = ({ active }: { active: boolean }) => {
+    const color = active ? activeColor : inactiveColor;
+    return (
+      <Svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none">
+        <Path
+          d="M1.5 2H4L6.27 13.39C6.42 14.17 7.1 14.75 7.9 14.75H18.5C19.28 14.75 19.95 14.19 20.11 13.42L21.5 6.5H5"
+          fill={active ? activeColor + '22' : 'none'}
+          stroke={color}
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <Circle cx="9" cy="19.5" r="1.5" fill={color} />
+        <Circle cx="18" cy="19.5" r="1.5" fill={color} />
+      </Svg>
+    );
+  };
+
+  const renderIcon = (route: string, active: boolean) => {
+    switch (route) {
+      case 'home':       return <HomeIcon active={active} />;
+      case 'search':     return <SearchIcon active={active} />;
+      case 'categories': return <CategoriesIcon />;
+      case 'vendors':    return <VendorsIcon active={active} />;
+      case 'cart':       return <CartIcon active={active} />;
+      default:           return null;
+    }
+  };
+
+  // Fixed LTR order, reversed for RTL
+  const ltrOrder = ['home', 'search', 'categories', 'vendors', 'cart'];
+  const navOrder = isRTL ? [...ltrOrder].reverse() : ltrOrder;
 
   return (
-    <View style={[styles.container, isRTL && styles.containerRTL]}>
-      {/* Home Icon */}
-      <TouchableOpacity
-        style={styles.navItem}
-        onPress={() => handlePress('home')}
-        activeOpacity={0.7}
-      >
-        <Svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none">
-          <Path
-            d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z"
-            stroke={colors.primary}
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill={isActive('home') ? colors.primary : 'none'}
-          />
-          <Path
-            d="M9 22V12H15V22"
-            stroke={isActive('home') ? colors.textWhite : colors.primary}
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </Svg>
-      </TouchableOpacity>
-
-      {/* Search Icon */}
-      <TouchableOpacity
-        style={styles.navItem}
-        onPress={() => handlePress('search')}
-        activeOpacity={0.7}
-      >
-        <Svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none">
-          <Circle
-            cx="11"
-            cy="11"
-            r="8"
-            stroke={colors.primary}
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <Path
-            d="M21 21L16.65 16.65"
-            stroke={colors.primary}
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </Svg>
-      </TouchableOpacity>
-
-      {/* Categories/Grid Icon */}
-      <TouchableOpacity
-        style={styles.navItem}
-        onPress={() => handlePress('categories')}
-        activeOpacity={0.7}
-      >
-        <Svg
-          width={iconSize}
-          height={iconSize}
-          viewBox="0 0 120 120"
-          fill="none"
-        >
-          <G>
-            {/* Top Left */}
-            <Rect
-              x="6"
-              y="6"
-              width="48"
-              height="48"
-              rx="12"
-              fill={isActive('categories') ? colors.primary : colors.primary}
-            />
-            {/* Top Right */}
-            <Rect
-              x="66"
-              y="6"
-              width="48"
-              height="48"
-              rx="12"
-              fill={isActive('categories') ? colors.primary : '#A0E7E5'}
-              opacity={isActive('categories') ? 1 : 0.6}
-            />
-            {/* Bottom Left */}
-            <Rect
-              x="6"
-              y="66"
-              width="48"
-              height="48"
-              rx="12"
-              fill={isActive('categories') ? colors.primary : '#A0E7E5'}
-              opacity={isActive('categories') ? 1 : 0.6}
-            />
-            {/* Bottom Right */}
-            <Rect
-              x="66"
-              y="66"
-              width="48"
-              height="48"
-              rx="12"
-              fill={isActive('categories') ? colors.primary : colors.primary}
-            />
-          </G>
-        </Svg>
-      </TouchableOpacity>
-
-      {/* Vendors/Store Icon */}
-      <TouchableOpacity
-        style={[styles.navItem, isActive('vendors') && styles.navItemActive]}
-        onPress={() => handlePress('vendors')}
-        activeOpacity={0.7}
-      >
-        <Svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none">
-          <Path
-            d="M3 9L4 4H20L21 9"
-            stroke={colors.primary}
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <Path
-            d="M3 9V19C3 19.5304 3.21071 20.0391 3.58579 20.4142C3.96086 20.7893 4.46957 21 5 21H19C19.5304 21 20.0391 20.7893 20.4142 20.4142C20.7893 20.0391 21 19.5304 21 19V9"
-            stroke={colors.primary}
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill={isActive('vendors') ? colors.primary : 'none'}
-          />
-          <Path
-            d="M3 9C3 10.1046 3.89543 11 5 11C6.10457 11 7 10.1046 7 9"
-            stroke={colors.primary}
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <Path
-            d="M7 9C7 10.1046 7.89543 11 9 11C10.1046 11 11 10.1046 11 9"
-            stroke={colors.primary}
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <Path
-            d="M11 9C11 10.1046 11.8954 11 13 11C14.1046 11 15 10.1046 15 9"
-            stroke={colors.primary}
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <Path
-            d="M15 9C15 10.1046 15.8954 11 17 11C18.1046 11 19 10.1046 19 9"
-            stroke={colors.primary}
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <Path
-            d="M19 9C19 10.1046 19.8954 11 21 11C22.1046 11 23 10.1046 23 9"
-            stroke={colors.primary}
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </Svg>
-      </TouchableOpacity>
-
-      {/* Cart Icon */}
-      <TouchableOpacity
-        style={styles.navItem}
-        onPress={() => handlePress('cart')}
-        activeOpacity={0.7}
-      >
-        <View>
-          <Svg
-            width={iconSize}
-            height={iconSize}
-            viewBox="0 0 24 24"
-            fill="none"
+    <View style={styles.container}>
+      {navOrder.map((route) => {
+        const active = isActive(route);
+        const isCart = route === 'cart';
+        return (
+          <TouchableOpacity
+            key={route}
+            style={styles.navItem}
+            onPress={() => handlePress(route)}
+            activeOpacity={0.7}
           >
-            {/* Cart body */}
-            <Path
-              d="M1 1H5L7.68 14.39C7.77 14.87 8.02 15.31 8.38 15.64C8.74 15.97 9.19 16.15 9.68 16.15H19.4C19.86 16.15 20.29 15.99 20.64 15.68C20.99 15.38 21.23 14.97 21.32 14.51L23 6H6"
-              stroke={colors.primary}
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              fill={isActive('cart') ? colors.primary : 'none'}
-            />
-            {/* Left wheel */}
-            <Circle
-              cx="10"
-              cy="21"
-              r="2"
-              stroke={colors.primary}
-              strokeWidth={2}
-              fill={isActive('cart') ? colors.primary : 'none'}
-            />
-            {/* Right wheel */}
-            <Circle
-              cx="19"
-              cy="21"
-              r="2"
-              stroke={colors.primary}
-              strokeWidth={2}
-              fill={isActive('cart') ? colors.primary : 'none'}
-            />
-          </Svg>
-          {cartCount > 0 && (
-            <View style={styles.cartBadge}>
-              <Text style={styles.cartBadgeText}>{cartCount}</Text>
+            <View style={[styles.iconWrapper, active && styles.iconWrapperActive]}>
+              {renderIcon(route, active)}
+              {isCart && cartCount > 0 && (
+                <View style={styles.cartBadge}>
+                  <Text style={styles.cartBadgeText}>
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </Text>
+                </View>
+              )}
             </View>
-          )}
-        </View>
-      </TouchableOpacity>
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 };

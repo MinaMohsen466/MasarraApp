@@ -26,15 +26,14 @@ export const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
   },
   backButton: {
+    padding: 8,
     width: 40,
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  backIcon: {
-    fontSize: 32,
-    color: colors.primary,
-    fontWeight: '300',
+  backButtonRTL: {
+    transform: [{ scaleX: -1 }],
   },
   title: {
     fontSize: isTablet ? 20 : 18,
@@ -53,9 +52,9 @@ export const styles = StyleSheet.create({
     paddingVertical: isTablet ? 28 : 16,
   },
   row: {
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     marginBottom: 12,
-    gap: 4,
+    gap: isTablet ? 40 / 3 : 16,
   },
   rowRTL: {
     flexDirection: 'row-reverse',

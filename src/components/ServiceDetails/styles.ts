@@ -18,7 +18,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      backgroundColor: colors.backgroundLight,
+      backgroundColor: colors.background,
     },
     fixedActionsRow: {
       position: 'absolute',
@@ -31,7 +31,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       justifyContent: 'space-between',
       paddingHorizontal: 10,
       paddingVertical: 6,
-      backgroundColor: colors.backgroundLight,
+      backgroundColor: colors.background,
       zIndex: 50,
       borderRadius: 0,
     },
