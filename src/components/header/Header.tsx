@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, Circle } from 'react-native-svg';
 import { styles, imageStyles } from './Styles';
 import Drawer from '../Drawer';
 import Banner from './Banner';
@@ -123,11 +123,24 @@ const Header: React.FC<HeaderProps> = ({
               onError={() => {}}
             />
           ) : (
-            <Image
-              source={require('../../imgs/user.png')}
-              style={imageStyles.profileIcon}
-              resizeMode="contain"
-            />
+            <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"
+                stroke={colors.primary}
+                strokeWidth={2.2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <Circle
+                cx="12"
+                cy="7"
+                r="4"
+                stroke={colors.primary}
+                strokeWidth={2.2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
           )}
         </TouchableOpacity>
       </View>

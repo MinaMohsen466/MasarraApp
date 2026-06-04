@@ -11,6 +11,7 @@ import EditProfile from '../EditProfile';
 import Wishlist from '../Wishlist/Wishlist';
 import OrderHistory from '../../screens/OrderHistory';
 import MyEvents from '../../screens/MyEvents';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 import { API_URL } from '../../config/api.config';
 import { fetchAddresses } from '../../services/api';
@@ -199,71 +200,88 @@ const UserProfile: React.FC<UserProfileProps> = ({
         <View style={{ flex: 1, backgroundColor: colors.primary }}>
           <View style={{ height: insets.top, backgroundColor: colors.primary }} />
           <View style={styles.fullPageContainer}>
-            {/* Header background */}
-            <View style={[styles.headerBackground, { height: 56 }]} />
+            <ScrollView
+              style={styles.scrollContainer}
+              contentContainerStyle={styles.contentContainer}
+              showsVerticalScrollIndicator={false}
+            >
+              {/* Curved Header Background Block with topographic waves & integrated navigation */}
+              <View style={styles.profileHeaderBlock}>
+                <Svg width="100%" height="100%" viewBox="0 0 375 130" preserveAspectRatio="none" style={styles.topographicSvg}>
+                  <Path d="M-20 25 C80 70 180 15 300 60 T400 40" stroke="rgba(255,255,255,0.08)" strokeWidth={1.5} fill="none" />
+                  <Path d="M-20 45 C80 90 180 25 300 80 T400 60" stroke="rgba(255,255,255,0.12)" strokeWidth={1.5} fill="none" />
+                  <Path d="M-20 65 C80 110 180 35 300 100 T400 80" stroke="rgba(255,255,255,0.15)" strokeWidth={2} fill="none" />
+                </Svg>
 
-            {/* Header with Back Button */}
-            <View style={[styles.headerBar, isRTL && styles.headerBarRTL]}>
-              {onBack && (
+                {/* Overlay Navigation Bar */}
+                <View style={[styles.headerOverlayBar, isRTL && styles.headerOverlayBarRTL]}>
+                  {onBack && (
+                    <TouchableOpacity
+                      style={styles.headerBackButtonCircle}
+                      onPress={onBack}
+                      activeOpacity={0.8}
+                    >
+                      <Icon
+                        name={isRTL ? 'chevron-forward' : 'chevron-back'}
+                        size={20}
+                        color={colors.textWhite}
+                      />
+                    </TouchableOpacity>
+                  )}
+                  <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
+                    {isRTL ? 'الملف الشخصي' : 'Profile'}
+                  </Text>
+                  <View style={styles.headerSpacer} />
+                </View>
+              </View>
+
+              {/* Curved Wave Divider (Transitions header to card background) */}
+              <View style={styles.profileCurveDivider}>
+                <Svg height="40" width="100%" viewBox="0 0 375 40" preserveAspectRatio="none">
+                  <Path d="M0,25 C100,55 250,0 375,25 L375,40 L0,40 Z" fill={colors.backgroundCard} />
+                </Svg>
+              </View>
+
+              {/* Login Prompt Section */}
+              <View style={[styles.loginPromptContainer, { paddingTop: 0 }]}>
+                <View style={[styles.profilePlaceholder, { marginTop: -50, borderWidth: 3, borderColor: '#FFFFFF', backgroundColor: '#E2E8F0' }]}>
+                  <Image
+                    source={require('../../imgs/user.png')}
+                    style={styles.profileIcon}
+                  />
+                </View>
+
+                <Text
+                  style={[
+                    styles.loginPromptTitle,
+                    isRTL && styles.loginPromptTitleRTL,
+                    { color: colors.primaryDark, fontWeight: '700' }
+                  ]}
+                >
+                  {isRTL ? 'مرحباً بك!' : 'Welcome!'}
+                </Text>
+
+                <Text
+                  style={[styles.loginPromptText, isRTL && styles.loginPromptTextRTL]}
+                >
+                  {isRTL
+                    ? 'الرجاء تسجيل الدخول للوصول إلى لوحة التحكم الخاصة بك'
+                    : 'Please log in to access your dashboard'}
+                </Text>
+
                 <TouchableOpacity
-                  style={styles.headerBackButton}
-                  onPress={onBack}
+                  style={[styles.loginButton, { borderRadius: 24, height: 46, justifyContent: 'center', paddingVertical: 0 }]}
+                  onPress={handleLogin}
                   activeOpacity={0.8}
                 >
-                  <Text
-                    style={[
-                      styles.headerBackIcon,
-                      isRTL && styles.headerBackTextRTL,
-                    ]}
-                  >
-                    {isRTL ? '›' : '‹'}
+                  <Text style={styles.loginButtonText}>
+                    {isRTL ? 'تسجيل الدخول' : 'Sign In'}
                   </Text>
                 </TouchableOpacity>
-              )}
-              <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
-                {isRTL ? 'الملف الشخصي' : 'Profile'}
-              </Text>
-              <View style={styles.headerSpacer} />
-            </View>
-
-        {/* Login Prompt */}
-        <View style={styles.loginPromptContainer}>
-          <View style={styles.profilePlaceholder}>
-            <Image
-              source={require('../../imgs/user.png')}
-              style={styles.profileIcon}
-            />
+              </View>
+            </ScrollView>
           </View>
-
-          <Text
-            style={[
-              styles.loginPromptTitle,
-              isRTL && styles.loginPromptTitleRTL,
-            ]}
-          >
-            {isRTL ? 'مرحباً بك!' : 'Welcome!'}
-          </Text>
-
-          <Text
-            style={[styles.loginPromptText, isRTL && styles.loginPromptTextRTL]}
-          >
-            {isRTL
-              ? 'الرجاء تسجيل الدخول للوصول إلى لوحة التحكم الخاصة بك'
-              : 'Please log in to access your dashboard'}
-          </Text>
-
-          <TouchableOpacity
-            style={styles.loginButton}
-            onPress={handleLogin}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.loginButtonText}>
-              {isRTL ? 'تسجيل الدخول' : 'Sign In'}
-            </Text>
-          </TouchableOpacity>
         </View>
-      </View>
-      </View>
       </>
     );
   }
@@ -278,25 +296,33 @@ const UserProfile: React.FC<UserProfileProps> = ({
       <View style={{ flex: 1, backgroundColor: colors.primary }}>
         <View style={{ height: insets.top, backgroundColor: colors.primary }} />
         <View style={styles.fullPageContainer}>
-          {/* Header background */}
-          <View style={[styles.headerBackground, { height: 56 }]} />
+      {/* Scrollable Content */}
+      <ScrollView
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Curved Header Background Block with topographic waves & integrated navigation */}
+        <View style={styles.profileHeaderBlock}>
+          <Svg width="100%" height="100%" viewBox="0 0 375 130" preserveAspectRatio="none" style={styles.topographicSvg}>
+            <Path d="M-20 25 C80 70 180 15 300 60 T400 40" stroke="rgba(255,255,255,0.08)" strokeWidth={1.5} fill="none" />
+            <Path d="M-20 45 C80 90 180 25 300 80 T400 60" stroke="rgba(255,255,255,0.12)" strokeWidth={1.5} fill="none" />
+            <Path d="M-20 65 C80 110 180 35 300 100 T400 80" stroke="rgba(255,255,255,0.15)" strokeWidth={2} fill="none" />
+          </Svg>
 
-          {/* Header with Back Button */}
-          <View style={[styles.headerBar, isRTL && styles.headerBarRTL]}>
+          {/* Overlay Navigation Bar */}
+          <View style={[styles.headerOverlayBar, isRTL && styles.headerOverlayBarRTL]}>
             {onBack && (
               <TouchableOpacity
-                style={styles.headerBackButton}
+                style={styles.headerBackButtonCircle}
                 onPress={onBack}
                 activeOpacity={0.8}
               >
-                <Text
-                  style={[
-                    styles.headerBackIcon,
-                    isRTL && styles.headerBackTextRTL,
-                  ]}
-                >
-                  {isRTL ? '›' : '‹'}
-                </Text>
+                <Icon
+                  name={isRTL ? 'chevron-forward' : 'chevron-back'}
+                  size={20}
+                  color={colors.textWhite}
+                />
               </TouchableOpacity>
             )}
             <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
@@ -304,13 +330,16 @@ const UserProfile: React.FC<UserProfileProps> = ({
             </Text>
             <View style={styles.headerSpacer} />
           </View>
+        </View>
 
-      {/* Scrollable Content */}
-      <ScrollView
-        style={styles.scrollContainer}
-        contentContainerStyle={styles.contentContainer}
-      >
-        {/* User Info Section (centered: avatar, name, address) */}
+        {/* Curved Wave Divider (Transitions header to card background) */}
+        <View style={styles.profileCurveDivider}>
+          <Svg height="40" width="100%" viewBox="0 0 375 40" preserveAspectRatio="none">
+            <Path d="M0,25 C100,55 250,0 375,25 L375,40 L0,40 Z" fill={colors.backgroundCard} />
+          </Svg>
+        </View>
+
+        {/* User Info Section (centered: avatar, name, email, address) */}
         <View style={styles.userInfoSection}>
           <View style={styles.profileImageContainer}>
             {user.profilePicture || profilePicture ? (
@@ -337,6 +366,10 @@ const UserProfile: React.FC<UserProfileProps> = ({
 
           <Text style={[styles.userNameCentered, isRTL && styles.userNameCenteredRTL]}>
             {user.name || userName}
+          </Text>
+
+          <Text style={[styles.userEmailCentered, isRTL && styles.userEmailCenteredRTL]}>
+            {user.email || _userEmail || (isRTL ? 'لا يوجد بريد إلكتروني' : 'No email address')}
           </Text>
 
           {/* Location row */}

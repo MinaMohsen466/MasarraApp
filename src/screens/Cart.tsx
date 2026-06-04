@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,11 +7,12 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   TextInput,
-  Dimensions,
   StatusBar,
   Platform,
+  Animated,
+  PanResponder,
 } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, Circle, Line, Rect, Text as SvgText } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../constants/colors';
@@ -28,8 +29,6 @@ import {
 } from '../services/cart';
 import { getServiceImageUrl } from '../services/servicesApi';
 import { styles } from './cartStyles';
-import Drawer from '../components/Drawer';
-import OrderSuccess from './OrderSuccess';
 import PaymentReceiptModal from '../components/PaymentReceiptModal/PaymentReceiptModal';
 import AddressSelection from '../components/AddressSelection/AddressSelection';
 import { CustomAlert } from '../components/CustomAlert';
@@ -43,9 +42,6 @@ import {
   Supplier,
 } from '../services/paymentApi';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const isTablet = SCREEN_WIDTH >= 600;
-
 interface CartProps {
   onBack?: () => void;
   onViewDetails?: (serviceId: string) => void;
@@ -54,8 +50,6 @@ interface CartProps {
 }
 
 const Cart: React.FC<CartProps> = ({
-  onViewDetails,
-  onViewPackageDetails,
   onNavigate,
 }) => {
   const { isRTL, t } = useLanguage();
@@ -64,7 +58,9 @@ const Cart: React.FC<CartProps> = ({
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
-  const [isDrawerVisible, setIsDrawerVisible] = useState(false);
+  // Swipe-to-delete animated values
+  const swipeAnims = useRef<{[key: string]: Animated.Value}>({}).current;
+  const [showInfo, setShowInfo] = useState<{[key: string]: boolean}>({});
   const [showSuccessScreen, setShowSuccessScreen] = useState(false);
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
   const [showAddressSelection, setShowAddressSelection] = useState(false);
@@ -198,24 +194,7 @@ const Cart: React.FC<CartProps> = ({
     }
   }, [isLoggedIn, cartItems.length]);
 
-  const handleRemoveItem = async (id: string) => {
-    const buttons = [
-      {
-        text: t('remove'),
-        style: 'destructive' as const,
-        onPress: async () => {
-          await removeFromCart(id);
-          await loadCart();
-        },
-      },
-      { text: t('cancel'), style: 'cancel' as const },
-    ];
 
-    setAlertTitle(t('confirmDelete'));
-    setAlertMessage(t('removeItemMessage'));
-    setAlertButtons(isRTL ? buttons : buttons.reverse());
-    setAlertVisible(true);
-  };
 
   // Helper to convert /public/ paths to full URLs (same as EditProfile and UserProfile)
   const getImageUri = (uri: string | null | undefined) => {
@@ -245,16 +224,134 @@ const Cart: React.FC<CartProps> = ({
     }
   };
 
-  const toggleDrawer = (state?: boolean) => {
-    setIsDrawerVisible(state ?? !isDrawerVisible);
+  const handleBack = () => {
+    if (onNavigate) {
+      onNavigate('home');
+    }
   };
 
-  const handleNavigation = (route: string) => {
-    if (onNavigate) {
-      onNavigate(route.toLowerCase());
+
+
+  // Swipe-to-delete helpers
+  const getSwipeAnim = useCallback((itemId: string) => {
+    if (!swipeAnims[itemId]) {
+      swipeAnims[itemId] = new Animated.Value(0);
     }
-    toggleDrawer(false);
-  };
+    return swipeAnims[itemId];
+  }, [swipeAnims]);
+
+  const resetSwipe = useCallback((itemId: string) => {
+    const translateX = getSwipeAnim(itemId);
+    Animated.spring(translateX, {
+      toValue: 0,
+      useNativeDriver: true,
+      tension: 100,
+      friction: 10,
+    }).start();
+  }, [getSwipeAnim]);
+
+  const confirmAndDelete = useCallback((itemId: string) => {
+    // Snap to revealed position first
+    const translateX = getSwipeAnim(itemId);
+    Animated.spring(translateX, {
+      toValue: isRTL ? 80 : -80,
+      useNativeDriver: true,
+      tension: 100,
+      friction: 10,
+    }).start();
+
+    // Show confirmation dialog
+    const buttons = [
+      {
+        text: t('remove'),
+        style: 'destructive' as const,
+        onPress: async () => {
+          // Animate card off-screen then delete
+          Animated.timing(translateX, {
+            toValue: isRTL ? 500 : -500,
+            duration: 200,
+            useNativeDriver: true,
+          }).start(async () => {
+            await removeFromCart(itemId);
+            await loadCart();
+            delete swipeAnims[itemId];
+            if (panResponders.current[itemId]) {
+              delete panResponders.current[itemId];
+            }
+          });
+        },
+      },
+      {
+        text: t('cancel'),
+        style: 'cancel' as const,
+        onPress: () => {
+          // Reset card position
+          resetSwipe(itemId);
+        },
+      },
+    ];
+    setAlertTitle(t('confirmDelete'));
+    setAlertMessage(t('removeItemMessage'));
+    setAlertButtons(isRTL ? buttons : buttons.reverse());
+    setAlertVisible(true);
+  }, [isRTL, getSwipeAnim, resetSwipe, t, swipeAnims]);
+
+  const createPanResponder = useCallback((itemId: string) => {
+    const translateX = getSwipeAnim(itemId);
+    const REVEAL_THRESHOLD = 50;
+    const DELETE_THRESHOLD = 150;
+    return PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return Math.abs(gestureState.dx) > 10 && Math.abs(gestureState.dy) < 20;
+      },
+      onPanResponderMove: (_, gestureState) => {
+        if (isRTL) {
+          if (gestureState.dx > 0) {
+            translateX.setValue(gestureState.dx);
+          } else {
+            translateX.setValue(Math.max(gestureState.dx, 0));
+          }
+        } else {
+          if (gestureState.dx < 0) {
+            translateX.setValue(gestureState.dx);
+          } else {
+            translateX.setValue(Math.min(gestureState.dx, 0));
+          }
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        const absX = Math.abs(gestureState.dx);
+        // Full swipe → show confirmation
+        if (absX > DELETE_THRESHOLD) {
+          confirmAndDelete(itemId);
+          return;
+        }
+        // Partial swipe → reveal/hide delete button
+        const targetOpen = isRTL
+          ? gestureState.dx > REVEAL_THRESHOLD ? 80 : 0
+          : gestureState.dx < -REVEAL_THRESHOLD ? -80 : 0;
+        Animated.spring(translateX, {
+          toValue: targetOpen,
+          useNativeDriver: true,
+          tension: 100,
+          friction: 10,
+        }).start();
+      },
+    });
+  }, [isRTL, getSwipeAnim, confirmAndDelete]);
+
+  const panResponders = useRef<{[key: string]: ReturnType<typeof PanResponder.create>}>({});
+  const getPanResponder = useCallback((itemId: string) => {
+    if (!panResponders.current[itemId]) {
+      panResponders.current[itemId] = createPanResponder(itemId);
+    }
+    return panResponders.current[itemId];
+  }, [createPanResponder]);
+
+  const handleInfoPress = useCallback((itemId: string) => {
+    setShowInfo(prev => ({ ...prev, [itemId]: !prev[itemId] }));
+  }, []);
 
   const handleAddAddress = () => {
     setShowAddressSelection(false);
@@ -842,16 +939,16 @@ const Cart: React.FC<CartProps> = ({
         />
         {/* Header */}
         <View style={[styles.header, { paddingTop: Platform.OS === 'android' ? (insets.top > 0 ? insets.top : 8) + 8 : insets.top + 8 }]}>
-          {/* Menu Button - Left */}
+          {/* Back Button */}
           <TouchableOpacity
-            onPress={() => toggleDrawer(true)}
-            style={styles.menuButton}
+            onPress={handleBack}
+            style={styles.backButton}
             activeOpacity={0.6}
             hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
           >
-            <Svg width={38} height={38} viewBox="0 0 24 24" fill="none">
+            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
               <Path
-                d="M4 6H20M4 12H14M4 18H9"
+                d={isRTL ? "M9 5l7 7-7 7" : "M15 19l-7-7 7-7"}
                 stroke={colors.primary}
                 strokeWidth={2.5}
                 strokeLinecap="round"
@@ -874,11 +971,24 @@ const Cart: React.FC<CartProps> = ({
             activeOpacity={0.6}
             hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
           >
-            <Image
-              source={require('../imgs/user.png')}
-              style={styles.profileIcon}
-              resizeMode="contain"
-            />
+            <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"
+                stroke={colors.primary}
+                strokeWidth={2.2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <Circle
+                cx="12"
+                cy="7"
+                r="4"
+                stroke={colors.primary}
+                strokeWidth={2.2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
           </TouchableOpacity>
         </View>
 
@@ -903,18 +1013,29 @@ const Cart: React.FC<CartProps> = ({
             <Text style={styles.checkoutButtonText}>{t('login')}</Text>
           </TouchableOpacity>
         </View>
-
-        <Drawer
-          isVisible={isDrawerVisible}
-          onClose={() => toggleDrawer(false)}
-          onNavigate={handleNavigation}
-        />
       </View>
     );
   }
 
+  const isAnyInfoOpen = Object.values(showInfo).some(val => val);
+
   return (
     <View style={styles.container}>
+      {isAnyInfoOpen && (
+        <TouchableOpacity
+          style={{
+            position: 'absolute',
+            top: 0,
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 90,
+            backgroundColor: 'transparent',
+          }}
+          activeOpacity={1}
+          onPress={() => setShowInfo({})}
+        />
+      )}
       <StatusBar
         backgroundColor={colors.background}
         barStyle="dark-content"
@@ -922,22 +1043,21 @@ const Cart: React.FC<CartProps> = ({
       />
       {/* Header */}
       <View style={[styles.header, isRTL && styles.headerRTL, { paddingTop: Platform.OS === 'android' ? (insets.top > 0 ? insets.top : 8) + 8 : insets.top + 8 }]}>
-        {/* Menu Button - Left */}
+        {/* Back Button */}
         <TouchableOpacity
-          onPress={() => toggleDrawer(true)}
-          style={styles.menuButton}
+          onPress={handleBack}
+          style={styles.backButton}
           activeOpacity={0.6}
           hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
         >
           <Svg
-            width={38}
-            height={38}
+            width={20}
+            height={20}
             viewBox="0 0 24 24"
             fill="none"
-            style={{ transform: [{ scaleX: isRTL ? -1 : 1 }] }}
           >
             <Path
-              d="M4 6H20M4 12H14M4 18H9"
+              d={isRTL ? "M9 5l7 7-7 7" : "M15 19l-7-7 7-7"}
               stroke={colors.primary}
               strokeWidth={2.5}
               strokeLinecap="round"
@@ -968,11 +1088,24 @@ const Cart: React.FC<CartProps> = ({
               onError={() => setImageError(true)}
             />
           ) : (
-            <Image
-              source={require('../imgs/user.png')}
-              style={styles.profileIcon}
-              resizeMode="contain"
-            />
+            <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"
+                stroke={colors.primary}
+                strokeWidth={2.2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <Circle
+                cx="12"
+                cy="7"
+                r="4"
+                stroke={colors.primary}
+                strokeWidth={2.2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
           )}
         </TouchableOpacity>
       </View>
@@ -982,8 +1115,66 @@ const Cart: React.FC<CartProps> = ({
           <Text style={styles.emptyText}>{t('loading')}</Text>
         </View>
       ) : cartItems.length === 0 ? (
-        <View style={styles.centerContent}>
-          <Text style={styles.emptyText}>{t('cartEmpty')}</Text>
+        <View style={styles.emptyContainer}>
+          <View style={styles.emptyTopSection}>
+            <View style={styles.emptyBasketWrapper}>
+              <Svg width={180} height={180} viewBox="0 0 100 100">
+                {/* Floating premium design shapes */}
+                {/* Gold Star */}
+                <Path d="M 25 24 L 26.5 27 L 29.5 27 L 27 29 L 28 32 L 25 30.5 L 22 32 L 23 29 L 20.5 27 L 23.5 27 Z" fill="#b89753" opacity={0.85} />
+                
+                {/* Gold Circle */}
+                <Circle cx="80" cy="28" r="3.5" stroke="#b89753" strokeWidth={1.5} fill="none" opacity={0.85} />
+                
+                {/* Teal Cross */}
+                <Line x1="14" y1="52" x2="20" y2="52" stroke={colors.primary} strokeWidth={1.8} strokeLinecap="round" />
+                <Line x1="17" y1="49" x2="17" y2="55" stroke={colors.primary} strokeWidth={1.8} strokeLinecap="round" />
+                
+                {/* Shopping Bag Handle */}
+                <Path d="M 38 38 C 38 22, 62 22, 62 38" stroke={colors.primaryDark} strokeWidth={2.8} strokeLinecap="round" fill="none" />
+                
+                {/* Shopping Bag Body */}
+                <Rect x="27" y="38" width="46" height="42" rx="6" stroke={colors.primaryDark} strokeWidth={2.8} fill={colors.backgroundCard} />
+                
+                {/* Geometric lines on shopping bag */}
+                <Path d="M 37 54 L 63 54" stroke={colors.primary} strokeWidth={1.5} strokeLinecap="round" opacity={0.4} />
+                <Path d="M 43 62 L 57 62" stroke={colors.primary} strokeWidth={1.5} strokeLinecap="round" opacity={0.4} />
+
+                {/* Overlapping Badge (representing 0 items in cart) */}
+                <Circle cx="73" cy="74" r="13" stroke={colors.primaryDark} strokeWidth={2.5} fill={colors.background} />
+                <Circle cx="73" cy="74" r="13" stroke={colors.primary} strokeWidth={1.2} strokeDasharray="3,2" fill="none" />
+                <SvgText x="73" y="78.5" fontSize="12" fontWeight="bold" fill={colors.primaryDark} textAnchor="middle">0</SvgText>
+              </Svg>
+            </View>
+          </View>
+
+          {/* Curved Transition Wave */}
+          <View style={styles.curveContainer}>
+            <Svg height="60" width="100%" viewBox="0 0 375 60" preserveAspectRatio="none" style={styles.curveSvg}>
+              <Path d="M0 60 Q 187.5 10 375 60 L 375 60 L 0 60 Z" fill={colors.primary} />
+            </Svg>
+          </View>
+
+          <View style={styles.emptyBottomSection}>
+            <Text style={styles.emptyTitle}>
+              {isRTL ? 'سلتك فارغة' : 'Your Cart is Empty'}
+            </Text>
+            <Text style={styles.emptySubtitle}>
+              {isRTL 
+                ? 'اكتشف خدماتنا وباقاتنا المميزة لجعل مناسبتك فريدة ومميزة.' 
+                : "Explore our premium services and packages to make your occasion special."}
+            </Text>
+
+            <TouchableOpacity
+              style={styles.emptyCtaButton}
+              onPress={() => onNavigate && onNavigate('home')}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.emptyCtaText}>
+                {isRTL ? 'اكتشف الخدمات' : 'EXPLORE SERVICES'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       ) : (
         <>
@@ -1000,8 +1191,30 @@ const Cart: React.FC<CartProps> = ({
                 new Date(item.selectedDate).toDateString() <
                 now.toDateString();
 
+              const panHandler = getPanResponder(item._id);
+              const translateX = getSwipeAnim(item._id);
               return (
-                <View key={item._id} style={styles.cartCard}>
+                <View key={item._id} style={[styles.swipeCardWrapper, { zIndex: showInfo[item._id] ? 999 : 1 }]}>
+                  {/* Delete button behind the card - full height */}
+                  <TouchableOpacity
+                    style={[styles.swipeDeleteBehind, isRTL && styles.swipeDeleteBehindRTL]}
+                    onPress={() => confirmAndDelete(item._id)}
+                    activeOpacity={0.7}
+                  >
+                    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+                      <Path
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        stroke="#FFFFFF"
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </Svg>
+                  </TouchableOpacity>
+                  <Animated.View
+                    style={[styles.cartCard, { marginBottom: 0, transform: [{ translateX }] }]}
+                    {...panHandler.panHandlers}
+                  >
                   {/* Old Booking Warning Badge */}
                   {isItemOld && (
                     <View
@@ -1018,7 +1231,7 @@ const Cart: React.FC<CartProps> = ({
                     </View>
                   )}
 
-                  {/* Item Header with Image and Title */}
+                  {/* Item Header with Image, Title, and info button */}
                   <View
                     style={[styles.itemHeader, isRTL && styles.itemHeaderRTL]}
                   >
@@ -1230,9 +1443,167 @@ const Cart: React.FC<CartProps> = ({
                         </TouchableOpacity>
                       </View>
                     )}
+                    {/* Info button */}
+                    <TouchableOpacity
+                      style={{
+                        paddingLeft: isRTL ? 0 : 8,
+                        paddingRight: isRTL ? 8 : 0,
+                        alignSelf: 'flex-start',
+                        marginTop: 2,
+                      }}
+                      onPress={() => handleInfoPress(item._id)}
+                      activeOpacity={0.6}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+                        <Path
+                          d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"
+                          stroke={colors.primary}
+                          strokeWidth={2}
+                        />
+                        <Path
+                          d="M12 16v-4"
+                          stroke={colors.primary}
+                          strokeWidth={2}
+                          strokeLinecap="round"
+                        />
+                        <Path
+                          d="M12 8h.01"
+                          stroke={colors.primary}
+                          strokeWidth={2}
+                          strokeLinecap="round"
+                        />
+                      </Svg>
+                    </TouchableOpacity>
                   </View>
 
-                  {/* Date and Time */}
+                  {/* Inline Info Section */}
+                  {showInfo[item._id] && (
+                    <View style={[styles.infoDropdown, isRTL && styles.infoDropdownRTL]}>
+                      <Text style={[styles.infoDropdownTitle, isRTL && styles.infoDropdownTitleRTL]}>
+                        {isRTL ? 'بيانات الخدمة' : 'Service Details'}
+                      </Text>
+
+                      <View style={[styles.infoDropdownRow, isRTL && styles.infoDropdownRowRTL]}>
+                        <Text style={[styles.infoDropdownLabel, isRTL && styles.infoDropdownLabelRTL]}>
+                          {isRTL ? 'الاسم:' : 'Name:'}
+                        </Text>
+                        <Text style={[styles.infoDropdownValue, isRTL && styles.infoDropdownValueRTL]}>
+                          {isRTL && item.nameAr ? item.nameAr : item.name}
+                        </Text>
+                      </View>
+
+                      {item.vendorName ? (
+                        <View style={[styles.infoDropdownRow, isRTL && styles.infoDropdownRowRTL]}>
+                          <Text style={[styles.infoDropdownLabel, isRTL && styles.infoDropdownLabelRTL]}>
+                            {isRTL ? 'المورد:' : 'Vendor:'}
+                          </Text>
+                          <Text style={[styles.infoDropdownValue, isRTL && styles.infoDropdownValueRTL]}>
+                            {item.vendorName}
+                          </Text>
+                        </View>
+                      ) : null}
+
+                      <View style={[styles.infoDropdownRow, isRTL && styles.infoDropdownRowRTL]}>
+                        <Text style={[styles.infoDropdownLabel, isRTL && styles.infoDropdownLabelRTL]}>
+                          {isRTL ? 'التاريخ:' : 'Date:'}
+                        </Text>
+                        <Text style={[styles.infoDropdownValue, isRTL && styles.infoDropdownValueRTL]}>
+                          {item.selectedDate
+                            ? new Date(item.selectedDate).toLocaleDateString(
+                                isRTL ? 'ar-KW' : 'en-US',
+                                { day: '2-digit', month: '2-digit', year: 'numeric' }
+                              )
+                            : '-'}
+                        </Text>
+                      </View>
+
+                      <View style={[styles.infoDropdownRow, isRTL && styles.infoDropdownRowRTL]}>
+                        <Text style={[styles.infoDropdownLabel, isRTL && styles.infoDropdownLabelRTL]}>
+                          {isRTL ? 'الوقت:' : 'Time:'}
+                        </Text>
+                        <Text style={[styles.infoDropdownValue, isRTL && styles.infoDropdownValueRTL]}>
+                          {item.selectedTime || '-'}
+                        </Text>
+                      </View>
+
+                      <View style={[styles.infoDropdownRow, isRTL && styles.infoDropdownRowRTL]}>
+                        <Text style={[styles.infoDropdownLabel, isRTL && styles.infoDropdownLabelRTL]}>
+                          {isRTL ? 'آلية الحجز:' : 'Booking Type:'}
+                        </Text>
+                        <Text style={[styles.infoDropdownValue, isRTL && styles.infoDropdownValueRTL]}>
+                          {item.availabilityStatus === 'pending_confirmation'
+                            ? (isRTL ? 'يتطلب موافقة المورد' : 'Requires vendor confirmation')
+                            : (isRTL ? 'تأكيد تلقائي فوري' : 'Instant automatic booking')}
+                        </Text>
+                      </View>
+
+                      <View style={[styles.infoDropdownRow, isRTL && styles.infoDropdownRowRTL]}>
+                        <Text style={[styles.infoDropdownLabel, isRTL && styles.infoDropdownLabelRTL]}>
+                          {isRTL ? 'السعر الأساسي:' : 'Base Price:'}
+                        </Text>
+                        <Text style={[styles.infoDropdownValue, isRTL && styles.infoDropdownValueRTL]}>
+                          {item.price.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
+                        </Text>
+                      </View>
+
+                      {item.moreInfo ? (
+                        <View style={[styles.infoDropdownRow, isRTL && styles.infoDropdownRowRTL]}>
+                          <Text style={[styles.infoDropdownLabel, isRTL && styles.infoDropdownLabelRTL]}>
+                            {isRTL ? 'ملاحظات الحجز:' : 'Booking Notes:'}
+                          </Text>
+                          <Text style={[styles.infoDropdownValue, isRTL && styles.infoDropdownValueRTL]}>
+                            {item.moreInfo}
+                          </Text>
+                        </View>
+                      ) : null}
+
+                      {item.customInputs && item.customInputs.length > 0 && (
+                        <View style={{ marginTop: 4, borderTopWidth: 1, borderTopColor: 'rgba(0, 161, 156, 0.1)', paddingTop: 4 }}>
+                          <Text style={[styles.infoDropdownTitle, isRTL && styles.infoDropdownTitleRTL, { borderBottomWidth: 0, paddingBottom: 0, marginBottom: 4, fontSize: 11 }]}>
+                            {isRTL ? 'الخيارات الإضافية:' : 'Additional Options:'}
+                          </Text>
+                          {item.customInputs.map((input, index) => {
+                            const renderInputDetail = (
+                              opt: {
+                                label: string;
+                                labelAr?: string;
+                                value: string | number;
+                                valueAr?: string | number;
+                                price?: number;
+                              },
+                              optKey: string | number,
+                            ) => {
+                              const label = isRTL && opt.labelAr ? opt.labelAr : opt.label;
+                              const value = isRTL && opt.valueAr ? opt.valueAr : opt.value;
+                              const priceText = opt.price && opt.price > 0 
+                                ? ` (+${opt.price.toFixed(3)} ${isRTL ? 'د.ك' : 'KD'})` 
+                                : '';
+                              return (
+                                <View key={optKey} style={[styles.infoDropdownRow, isRTL && styles.infoDropdownRowRTL, { marginBottom: 3 }]}>
+                                  <Text style={[styles.infoDropdownLabel, isRTL && styles.infoDropdownLabelRTL, { width: 90 }]}>
+                                    {label}:
+                                  </Text>
+                                  <Text style={[styles.infoDropdownValue, isRTL && styles.infoDropdownValueRTL]}>
+                                    {value}{priceText}
+                                  </Text>
+                                </View>
+                              );
+                            };
+
+                            if (Array.isArray(input)) {
+                              return input.map((opt, subIndex) => opt && renderInputDetail(opt, `${index}-${subIndex}`));
+                            } else if (input && input.label) {
+                              return renderInputDetail(input, index);
+                            }
+                            return null;
+                          })}
+                        </View>
+                      )}
+                    </View>
+                  )}
+
+                   {/* Date and Time */}
                   <View
                     style={[
                       styles.dateTimeSection,
@@ -1420,42 +1791,8 @@ const Cart: React.FC<CartProps> = ({
                     </View>
                   </View>
 
-                  {/* Action Buttons */}
-                  <View style={styles.actionButtons}>
-                    <TouchableOpacity
-                      style={styles.deleteButton}
-                      onPress={() => handleRemoveItem(item._id)}
-                    >
-                      <Svg
-                        width={18}
-                        height={18}
-                        viewBox="0 0 24 24"
-                        fill="none"
-                      >
-                        <Path
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                          stroke="#FF6B6B"
-                          strokeWidth={2}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </Svg>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.viewDetailsButton}
-                      onPress={() => {
-                        if (item.isPackage && onViewPackageDetails) {
-                          onViewPackageDetails(item.serviceId);
-                        } else if (onViewDetails) {
-                          onViewDetails(item.serviceId);
-                        }
-                      }}
-                    >
-                      <Text style={styles.viewDetailsText}>
-                        {t('viewDetails')}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
+
+                </Animated.View>
                 </View>
               );
             })}
@@ -1465,8 +1802,8 @@ const Cart: React.FC<CartProps> = ({
             style={[
               styles.bottomSummary,
               {
-                bottom: (insets.bottom ?? 0) + 8,
-                paddingBottom: (insets.bottom ?? 0) + (isTablet ? 100 : 20),
+                bottom: 0,
+                paddingBottom: (insets.bottom ?? 0) + 10,
               },
             ]}
           >
@@ -1605,12 +1942,7 @@ const Cart: React.FC<CartProps> = ({
         </>
       )}
 
-      {/* Drawer Navigation */}
-      <Drawer
-        isVisible={isDrawerVisible}
-        onClose={() => toggleDrawer(false)}
-        onNavigate={handleNavigation}
-      />
+
 
       {/* Address Selection Modal */}
       <AddressSelection

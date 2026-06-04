@@ -17,12 +17,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.backgroundHome,
-    paddingBottom: isTablet ? 120 : 80, // إضافة مساحة تحت Bottom Nav على التابلت
+  },
+  scrollContent: {
+    paddingBottom: isTablet ? 110 : 80,
   },
   occasionsSection: {
     paddingTop: isTablet ? 15 : 10,
-    paddingBottom: isTablet ? 80 : 30,
-    marginBottom: isTablet ? 20 : 10,
+    paddingBottom: isTablet ? 20 : 12,
+    marginBottom: 0,
   },
   sectionHeader: {
     flexDirection: 'row',

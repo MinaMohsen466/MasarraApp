@@ -6,10 +6,11 @@ import {
   TextInput,
   Modal,
   ActivityIndicator,
+  StyleSheet,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { CustomAlert } from '../CustomAlert/CustomAlert';
-import { modalStyles } from '../EditProfile/modalStyles';
+import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import {
   sendForgotPasswordCode,
@@ -35,6 +36,10 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [emailActive, setEmailActive] = useState(false);
+  const [codeActive, setCodeActive] = useState(false);
+  const [passwordActive, setPasswordActive] = useState(false);
+  const [confirmPasswordActive, setConfirmPasswordActive] = useState(false);
   const [alertConfig, setAlertConfig] = useState({
     visible: false,
     title: '',
@@ -219,15 +224,18 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
       animationType="fade"
       onRequestClose={handleClose}
     >
-      <View style={modalStyles.overlay}>
-        <View style={modalStyles.modal}>
+      <View style={styles.overlay}>
+        <View style={styles.modal}>
           {/* Header */}
-          <View style={modalStyles.header}>
-            <Text style={[modalStyles.title, isRTL && modalStyles.titleRTL]}>
-              {isRTL ? 'إعادة تعيين كلمة المرور' : 'Reset Password'}
-            </Text>
+          <View style={styles.header}>
+            <View style={styles.titleContainer}>
+              <Text style={[styles.title, isRTL && styles.titleRTL]}>
+                {isRTL ? 'إعادة تعيين كلمة المرور' : 'Reset Password'}
+              </Text>
+              <View style={[styles.titleUnderline, isRTL && styles.titleUnderlineRTL]} />
+            </View>
             <Text
-              style={[modalStyles.subtitle, isRTL && modalStyles.subtitleRTL]}
+              style={[styles.subtitle, isRTL && styles.subtitleRTL]}
             >
               {step === 'email'
                 ? isRTL
@@ -240,29 +248,40 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
           </View>
 
           {/* Form */}
-          <View style={modalStyles.form}>
+          <View style={styles.form}>
             {step === 'email' ? (
               <>
-                <View style={modalStyles.inputContainer}>
+                <View style={styles.inputContainer}>
                   <Text
-                    style={[modalStyles.label, isRTL && modalStyles.labelRTL]}
+                    style={[styles.label, isRTL && styles.labelRTL]}
                   >
                     {isRTL ? 'البريد الإلكتروني' : 'Email'}
                   </Text>
-                  <TextInput
-                    style={[modalStyles.input, isRTL && modalStyles.inputRTL]}
-                    value={email}
-                    onChangeText={setEmail}
-                    placeholder={
-                      isRTL ? 'أدخل بريدك الإلكتروني' : 'Enter your email'
-                    }
-                    placeholderTextColor="#999"
-                    keyboardType="email-address"
-                    editable={!isLoading}
-                    autoCapitalize="none"
-                  />
+                  <View style={[styles.sleekInputWrapper, isRTL && styles.sleekInputWrapperRTL, emailActive && styles.sleekInputWrapperActive]}>
+                    <Icon
+                      name="mail-outline"
+                      size={18}
+                      color={emailActive ? colors.primary : '#9CA3AF'}
+                      style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
+                    />
+                    <View style={[styles.sleekInputDivider, isRTL && styles.sleekInputDividerRTL]} />
+                    <TextInput
+                      style={[styles.sleekTextInput, isRTL && styles.sleekTextInputRTL]}
+                      value={email}
+                      onChangeText={setEmail}
+                      placeholder={
+                        isRTL ? 'أدخل بريدك الإلكتروني' : 'Enter your email'
+                      }
+                      placeholderTextColor="#9CA3AF"
+                      keyboardType="email-address"
+                      editable={!isLoading}
+                      autoCapitalize="none"
+                      onFocus={() => setEmailActive(true)}
+                      onBlur={() => setEmailActive(false)}
+                    />
+                  </View>
                   <Text
-                    style={[modalStyles.hint, isRTL && modalStyles.hintRTL]}
+                    style={[styles.hint, isRTL && styles.hintRTL]}
                   >
                     {isRTL
                       ? 'استخدم البريد المسجل بحسابك'
@@ -272,28 +291,39 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
               </>
             ) : (
               <>
-                <View style={modalStyles.inputContainer}>
+                <View style={styles.inputContainer}>
                   <Text
-                    style={[modalStyles.label, isRTL && modalStyles.labelRTL]}
+                    style={[styles.label, isRTL && styles.labelRTL]}
                   >
                     {isRTL ? 'رمز إعادة التعيين' : 'Reset Code'}
                   </Text>
-                  <TextInput
-                    style={[modalStyles.input, isRTL && modalStyles.inputRTL]}
-                    value={resetCode}
-                    onChangeText={setResetCode}
-                    placeholder={
-                      isRTL
-                        ? 'أدخل الرمز المرسل للإيميل'
-                        : 'Enter code sent to email'
-                    }
-                    placeholderTextColor="#999"
-                    keyboardType="number-pad"
-                    maxLength={6}
-                    editable={!isLoading}
-                  />
+                  <View style={[styles.sleekInputWrapper, isRTL && styles.sleekInputWrapperRTL, codeActive && styles.sleekInputWrapperActive]}>
+                    <Icon
+                      name="key-outline"
+                      size={18}
+                      color={codeActive ? colors.primary : '#9CA3AF'}
+                      style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
+                    />
+                    <View style={[styles.sleekInputDivider, isRTL && styles.sleekInputDividerRTL]} />
+                    <TextInput
+                      style={[styles.sleekTextInput, isRTL && styles.sleekTextInputRTL]}
+                      value={resetCode}
+                      onChangeText={setResetCode}
+                      placeholder={
+                        isRTL
+                          ? 'أدخل الرمز المرسل للإيميل'
+                          : 'Enter code sent to email'
+                      }
+                      placeholderTextColor="#9CA3AF"
+                      keyboardType="number-pad"
+                      maxLength={6}
+                      editable={!isLoading}
+                      onFocus={() => setCodeActive(true)}
+                      onBlur={() => setCodeActive(false)}
+                    />
+                  </View>
                   <Text
-                    style={[modalStyles.hint, isRTL && modalStyles.hintRTL]}
+                    style={[styles.hint, isRTL && styles.hintRTL]}
                   >
                     {isRTL
                       ? 'تحقق من بريدك الإلكتروني للحصول على رمز مكون من 6 أرقام'
@@ -301,15 +331,22 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
                   </Text>
                 </View>
 
-                <View style={modalStyles.inputContainer}>
+                <View style={styles.inputContainer}>
                   <Text
-                    style={[modalStyles.label, isRTL && modalStyles.labelRTL]}
+                    style={[styles.label, isRTL && styles.labelRTL]}
                   >
                     {isRTL ? 'كلمة المرور الجديدة' : 'New Password'}
                   </Text>
-                  <View style={modalStyles.passwordInputWrapper}>
+                  <View style={[styles.sleekInputWrapper, isRTL && styles.sleekInputWrapperRTL, passwordActive && styles.sleekInputWrapperActive]}>
+                    <Icon
+                      name="lock-closed-outline"
+                      size={18}
+                      color={passwordActive ? colors.primary : '#9CA3AF'}
+                      style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
+                    />
+                    <View style={[styles.sleekInputDivider, isRTL && styles.sleekInputDividerRTL]} />
                     <TextInput
-                      style={[modalStyles.input, isRTL && modalStyles.inputRTL]}
+                      style={[styles.sleekTextInput, isRTL && styles.sleekTextInputRTL]}
                       value={newPassword}
                       onChangeText={setNewPassword}
                       placeholder={
@@ -317,13 +354,15 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
                           ? 'أدخل كلمة المرور الجديدة'
                           : 'Enter new password'
                       }
-                      placeholderTextColor="#999"
+                      placeholderTextColor="#9CA3AF"
                       secureTextEntry={!showNewPassword}
                       editable={!isLoading}
                       autoCapitalize="none"
+                      onFocus={() => setPasswordActive(true)}
+                      onBlur={() => setPasswordActive(false)}
                     />
                     <TouchableOpacity
-                      style={modalStyles.eyeButton}
+                      style={styles.eyeButton}
                       onPress={() => setShowNewPassword(!showNewPassword)}
                       disabled={isLoading}
                     >
@@ -331,53 +370,53 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
                         name={
                           showNewPassword ? 'eye-outline' : 'eye-off-outline'
                         }
-                        size={22}
-                        color="#666"
+                        size={18}
+                        color="#6B7280"
                       />
                     </TouchableOpacity>
                   </View>
-                  <View style={modalStyles.passwordRequirements}>
+                  <View style={styles.passwordRequirements}>
                     <Text
                       style={[
-                        modalStyles.requirementsTitle,
-                        isRTL && modalStyles.requirementsTitleRTL,
+                        styles.requirementsTitle,
+                        isRTL && styles.requirementsTitleRTL,
                       ]}
                     >
                       {isRTL ? 'شروط كلمة المرور:' : 'Password Requirements:'}
                     </Text>
-                    <View style={modalStyles.requirement}>
+                    <View style={[styles.requirement, isRTL && styles.requirementRTL]}>
                       <Icon
                         name={
                           newPassword.length >= 8
                             ? 'checkmark-circle'
                             : 'ellipse-outline'
                         }
-                        size={16}
-                        color={newPassword.length >= 8 ? '#10b981' : '#999'}
+                        size={14}
+                        color={newPassword.length >= 8 ? '#10b981' : '#9CA3AF'}
                       />
                       <Text
                         style={[
-                          modalStyles.requirementText,
-                          isRTL && modalStyles.requirementTextRTL,
+                          styles.requirementText,
+                          isRTL && styles.requirementTextRTL,
                         ]}
                       >
                         {isRTL ? '8 أحرف على الأقل' : 'At least 8 characters'}
                       </Text>
                     </View>
-                    <View style={modalStyles.requirement}>
+                    <View style={[styles.requirement, isRTL && styles.requirementRTL]}>
                       <Icon
                         name={
                           /[A-Z]/.test(newPassword)
                             ? 'checkmark-circle'
                             : 'ellipse-outline'
                         }
-                        size={16}
-                        color={/[A-Z]/.test(newPassword) ? '#10b981' : '#999'}
+                        size={14}
+                        color={/[A-Z]/.test(newPassword) ? '#10b981' : '#9CA3AF'}
                       />
                       <Text
                         style={[
-                          modalStyles.requirementText,
-                          isRTL && modalStyles.requirementTextRTL,
+                          styles.requirementText,
+                          isRTL && styles.requirementTextRTL,
                         ]}
                       >
                         {isRTL
@@ -385,20 +424,20 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
                           : 'One uppercase letter'}
                       </Text>
                     </View>
-                    <View style={modalStyles.requirement}>
+                    <View style={[styles.requirement, isRTL && styles.requirementRTL]}>
                       <Icon
                         name={
                           /[a-z]/.test(newPassword)
                             ? 'checkmark-circle'
                             : 'ellipse-outline'
                         }
-                        size={16}
-                        color={/[a-z]/.test(newPassword) ? '#10b981' : '#999'}
+                        size={14}
+                        color={/[a-z]/.test(newPassword) ? '#10b981' : '#9CA3AF'}
                       />
                       <Text
                         style={[
-                          modalStyles.requirementText,
-                          isRTL && modalStyles.requirementTextRTL,
+                          styles.requirementText,
+                          isRTL && styles.requirementTextRTL,
                         ]}
                       >
                         {isRTL
@@ -406,20 +445,20 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
                           : 'One lowercase letter'}
                       </Text>
                     </View>
-                    <View style={modalStyles.requirement}>
+                    <View style={[styles.requirement, isRTL && styles.requirementRTL]}>
                       <Icon
                         name={
                           /[0-9]/.test(newPassword)
                             ? 'checkmark-circle'
                             : 'ellipse-outline'
                         }
-                        size={16}
-                        color={/[0-9]/.test(newPassword) ? '#10b981' : '#999'}
+                        size={14}
+                        color={/[0-9]/.test(newPassword) ? '#10b981' : '#9CA3AF'}
                       />
                       <Text
                         style={[
-                          modalStyles.requirementText,
-                          isRTL && modalStyles.requirementTextRTL,
+                          styles.requirementText,
+                          isRTL && styles.requirementTextRTL,
                         ]}
                       >
                         {isRTL ? 'رقم واحد على الأقل' : 'One number'}
@@ -428,15 +467,22 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
                   </View>
                 </View>
 
-                <View style={modalStyles.inputContainer}>
+                <View style={styles.inputContainer}>
                   <Text
-                    style={[modalStyles.label, isRTL && modalStyles.labelRTL]}
+                    style={[styles.label, isRTL && styles.labelRTL]}
                   >
                     {isRTL ? 'تأكيد كلمة المرور' : 'Confirm Password'}
                   </Text>
-                  <View style={modalStyles.passwordInputWrapper}>
+                  <View style={[styles.sleekInputWrapper, isRTL && styles.sleekInputWrapperRTL, confirmPasswordActive && styles.sleekInputWrapperActive]}>
+                    <Icon
+                      name="lock-closed-outline"
+                      size={18}
+                      color={confirmPasswordActive ? colors.primary : '#9CA3AF'}
+                      style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
+                    />
+                    <View style={[styles.sleekInputDivider, isRTL && styles.sleekInputDividerRTL]} />
                     <TextInput
-                      style={[modalStyles.input, isRTL && modalStyles.inputRTL]}
+                      style={[styles.sleekTextInput, isRTL && styles.sleekTextInputRTL]}
                       value={confirmPassword}
                       onChangeText={setConfirmPassword}
                       placeholder={
@@ -444,13 +490,15 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
                           ? 'أعد إدخال كلمة المرور الجديدة'
                           : 'Re-enter new password'
                       }
-                      placeholderTextColor="#999"
+                      placeholderTextColor="#9CA3AF"
                       secureTextEntry={!showConfirmPassword}
                       editable={!isLoading}
                       autoCapitalize="none"
+                      onFocus={() => setConfirmPasswordActive(true)}
+                      onBlur={() => setConfirmPasswordActive(false)}
                     />
                     <TouchableOpacity
-                      style={modalStyles.eyeButton}
+                      style={styles.eyeButton}
                       onPress={() =>
                         setShowConfirmPassword(!showConfirmPassword)
                       }
@@ -462,8 +510,8 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
                             ? 'eye-outline'
                             : 'eye-off-outline'
                         }
-                        size={22}
-                        color="#666"
+                        size={18}
+                        color="#6B7280"
                       />
                     </TouchableOpacity>
                   </View>
@@ -473,24 +521,24 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
           </View>
 
           {/* Buttons */}
-          <View style={modalStyles.buttons}>
+          <View style={[styles.buttons, isRTL && styles.buttonsRTL]}>
             <TouchableOpacity
-              style={[modalStyles.button, modalStyles.cancelButton]}
+              style={[styles.button, styles.cancelButton]}
               onPress={handleClose}
               disabled={isLoading}
               activeOpacity={0.7}
             >
               <Text
                 style={[
-                  modalStyles.cancelButtonText,
-                  isRTL && modalStyles.cancelButtonTextRTL,
+                  styles.cancelButtonText,
+                  isRTL && styles.cancelButtonTextRTL,
                 ]}
               >
                 {isRTL ? 'إلغاء' : 'Cancel'}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[modalStyles.button, modalStyles.submitButton]}
+              style={[styles.button, styles.submitButton]}
               onPress={step === 'email' ? handleSendCode : handleResetPassword}
               disabled={isLoading}
               activeOpacity={0.7}
@@ -500,8 +548,8 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
               ) : (
                 <Text
                   style={[
-                    modalStyles.submitButtonText,
-                    isRTL && modalStyles.submitButtonTextRTL,
+                    styles.submitButtonText,
+                    isRTL && styles.submitButtonTextRTL,
                   ]}
                 >
                   {step === 'email'
@@ -527,5 +575,223 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
     </Modal>
   );
 };
+
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: colors.overlay,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modal: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    width: '100%',
+    maxWidth: 380,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 10,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
+    overflow: 'hidden',
+  },
+  header: {
+    paddingTop: 28,
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+    alignItems: 'center',
+  },
+  titleContainer: {
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.primaryDark,
+    textAlign: 'center',
+  },
+  titleRTL: {
+    fontFamily: 'System',
+  },
+  titleUnderline: {
+    width: 32,
+    height: 2.5,
+    backgroundColor: colors.primary,
+    marginTop: 6,
+    borderRadius: 1.5,
+  },
+  titleUnderlineRTL: {
+    alignSelf: 'center',
+  },
+  subtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginTop: 4,
+    paddingHorizontal: 10,
+  },
+  subtitleRTL: {
+    fontFamily: 'System',
+  },
+  form: {
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 12,
+  },
+  inputContainer: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#4B5563',
+    marginBottom: 6,
+  },
+  labelRTL: {
+    textAlign: 'right',
+    fontFamily: 'System',
+  },
+  sleekInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#E5E7EB',
+    paddingVertical: 4,
+    width: '100%',
+  },
+  sleekInputWrapperRTL: {
+    flexDirection: 'row-reverse',
+  },
+  sleekInputWrapperActive: {
+    borderBottomColor: colors.primary,
+  },
+  sleekInputIcon: {
+    marginRight: 8,
+  },
+  sleekInputIconRTL: {
+    marginRight: 0,
+    marginLeft: 8,
+  },
+  sleekInputDivider: {
+    width: 1,
+    height: 16,
+    backgroundColor: '#E5E7EB',
+    marginRight: 10,
+  },
+  sleekInputDividerRTL: {
+    marginRight: 0,
+    marginLeft: 10,
+  },
+  sleekTextInput: {
+    flex: 1,
+    fontSize: 14.5,
+    color: colors.textDark,
+    paddingVertical: 6,
+    textAlign: 'left',
+  },
+  sleekTextInputRTL: {
+    textAlign: 'right',
+  },
+  hint: {
+    fontSize: 11.5,
+    color: '#9CA3AF',
+    marginTop: 6,
+  },
+  hintRTL: {
+    fontFamily: 'System',
+    textAlign: 'right',
+  },
+  passwordRequirements: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+  },
+  requirementsTitle: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  requirementsTitleRTL: {
+    fontFamily: 'System',
+    textAlign: 'right',
+  },
+  requirement: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginVertical: 2,
+  },
+  requirementRTL: {
+    flexDirection: 'row-reverse',
+  },
+  requirementText: {
+    fontSize: 11.5,
+    color: '#6B7280',
+  },
+  requirementTextRTL: {
+    fontFamily: 'System',
+    textAlign: 'right',
+  },
+  passwordInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+  },
+  eyeButton: {
+    paddingHorizontal: 8,
+    justifyContent: 'center',
+  },
+  buttons: {
+    flexDirection: 'row',
+    paddingHorizontal: 24,
+    paddingBottom: 28,
+    paddingTop: 12,
+    gap: 12,
+  },
+  buttonsRTL: {
+    flexDirection: 'row-reverse',
+  },
+  button: {
+    flex: 1,
+    height: 46,
+    borderRadius: 23,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#4B5563',
+  },
+  cancelButtonTextRTL: {
+    fontFamily: 'System',
+  },
+  submitButton: {
+    backgroundColor: colors.primary,
+  },
+  submitButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  submitButtonTextRTL: {
+    fontFamily: 'System',
+  },
+});
 
 export default ForgotPasswordModal;

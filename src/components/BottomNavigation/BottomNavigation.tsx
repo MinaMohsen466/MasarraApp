@@ -19,7 +19,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
   const isRTL = language === 'ar';
   const screenWidth = Dimensions.get('window').width;
   const isTablet = screenWidth >= 600;
-  const iconSize = isTablet ? 34 : 30;
+  const iconSize = isTablet ? 40 : 34;
   const [cartCount, setCartCount] = React.useState(0);
 
   React.useEffect(() => {

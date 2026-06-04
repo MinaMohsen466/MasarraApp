@@ -6,9 +6,12 @@ import {
   TouchableOpacity,
   ScrollView,
   Linking,
+  StatusBar,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import Svg, { Path } from 'react-native-svg';
 import { styles } from './styles';
+import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { login, User } from '../../services/api';
@@ -33,6 +36,9 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
   const [pendingUserId, setPendingUserId] = useState<string>('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [emailActive, setEmailActive] = useState(false);
+  const [passwordActive, setPasswordActive] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   // CustomAlert state
   const [alertVisible, setAlertVisible] = useState(false);
@@ -208,6 +214,7 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
 
   return (
     <>
+      <StatusBar backgroundColor={colors.primary} barStyle="light-content" translucent={false} />
       <CustomAlert
         visible={alertVisible}
         title={alertTitle}
@@ -220,107 +227,155 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
         onClose={() => setShowForgotPasswordModal(false)}
       />
       <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.contentContainer}
+        style={{ flex: 1, backgroundColor: '#FFFFFF' }}
+        contentContainerStyle={{ flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}
       >
-        {/* Title */}
-        <Text style={[styles.title, isRTL && styles.titleRTL]}>
-          {isRTL ? 'تسجيل الدخول' : 'Sign In'}
-        </Text>
+        {/* Top Header Block with topographic wave lines */}
+        <View style={styles.headerBlock}>
+          <Svg width="100%" height="100%" viewBox="0 0 375 180" preserveAspectRatio="none" style={styles.topographicSvg}>
+            <Path d="M-20 60 C80 120 180 20 300 80 T400 60" stroke="rgba(255,255,255,0.08)" strokeWidth={1.5} fill="none" />
+            <Path d="M-20 80 C80 140 180 40 300 100 T400 80" stroke="rgba(255,255,255,0.12)" strokeWidth={1.5} fill="none" />
+            <Path d="M-20 100 C80 160 180 60 300 120 T400 100" stroke="rgba(255,255,255,0.15)" strokeWidth={2} fill="none" />
+            <Path d="M-20 120 C80 180 180 80 300 140 T400 120" stroke="rgba(255,255,255,0.08)" strokeWidth={1} fill="none" />
+            <Path d="M-20 140 C80 200 180 100 300 160 T400 140" stroke="rgba(255,255,255,0.05)" strokeWidth={1} fill="none" />
+          </Svg>
+        </View>
 
-        {/* Form */}
-        <View style={styles.formContainer}>
-          <View style={styles.inputContainer}>
-            <Text style={[styles.label, isRTL && styles.labelRTL]}>
-              {isRTL ? 'البريد الإلكتروني' : 'Email'}
+        {/* Curved Wave Divider (Concave curve matching the sign-in mockup) */}
+        <View style={styles.curveDivider}>
+          <Svg height="60" width="100%" viewBox="0 0 375 60" preserveAspectRatio="none">
+            <Path d="M0,40 C100,80 250,0 375,40 L375,60 L0,60 Z" fill="#FFFFFF" />
+          </Svg>
+        </View>
+
+        {/* Form Container */}
+        <View style={styles.formWrapper}>
+          {/* Header Title with Custom Accent Line */}
+          <View style={[styles.formHeadingContainer, isRTL && styles.formHeadingContainerRTL]}>
+            <Text style={[styles.formHeading, isRTL && styles.formHeadingRTL]}>
+              {isRTL ? 'تسجيل الدخول' : 'Sign in'}
             </Text>
+            <View style={[styles.formHeadingUnderline, isRTL && styles.formHeadingUnderlineRTL]} />
+          </View>
+
+          {/* Email input field */}
+          <Text style={[styles.label, isRTL && styles.labelRTL, { marginBottom: 6, fontSize: 13, color: '#6B7280' }]}>
+            {isRTL ? 'البريد الإلكتروني' : 'Email'}
+          </Text>
+          <View style={[styles.sleekInputWrapper, isRTL && styles.sleekInputWrapperRTL, emailActive && styles.sleekInputWrapperActive]}>
+            <Icon
+              name="mail-outline"
+              size={18}
+              color={emailActive ? colors.primary : '#9CA3AF'}
+              style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
+            />
+            <View style={[styles.sleekInputDivider, isRTL && styles.sleekInputDividerRTL]} />
             <TextInput
-              style={[styles.input, isRTL && styles.inputRTL]}
+              style={[styles.sleekTextInput, isRTL && styles.sleekTextInputRTL]}
               value={email}
               onChangeText={setEmail}
               placeholder={isRTL ? 'أدخل بريدك الإلكتروني' : 'Enter your email'}
-              placeholderTextColor="#999"
+              placeholderTextColor="#9CA3AF"
               keyboardType="email-address"
               autoCapitalize="none"
-              textAlign={isRTL ? 'right' : 'left'}
+              onFocus={() => setEmailActive(true)}
+              onBlur={() => setEmailActive(false)}
             />
           </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={[styles.label, isRTL && styles.labelRTL]}>
-              {isRTL ? 'كلمة المرور' : 'Password'}
-            </Text>
-            <View style={styles.passwordInputWrapper}>
-              <TextInput
-                style={[styles.input, isRTL && styles.inputRTL]}
-                value={password}
-                onChangeText={setPassword}
-                placeholder={isRTL ? 'أدخل كلمة المرور' : 'Enter your password'}
-                placeholderTextColor="#999"
-                secureTextEntry={!showPassword}
-                textAlign={isRTL ? 'right' : 'left'}
+          {/* Password input field */}
+          <Text style={[styles.label, isRTL && styles.labelRTL, { marginBottom: 6, fontSize: 13, color: '#6B7280' }]}>
+            {isRTL ? 'كلمة المرور' : 'Password'}
+          </Text>
+          <View style={[styles.sleekInputWrapper, isRTL && styles.sleekInputWrapperRTL, passwordActive && styles.sleekInputWrapperActive]}>
+            <Icon
+              name="lock-closed-outline"
+              size={18}
+              color={passwordActive ? colors.primary : '#9CA3AF'}
+              style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
+            />
+            <View style={[styles.sleekInputDivider, isRTL && styles.sleekInputDividerRTL]} />
+            <TextInput
+              style={[styles.sleekTextInput, isRTL && styles.sleekTextInputRTL]}
+              value={password}
+              onChangeText={setPassword}
+              placeholder={isRTL ? 'أدخل كلمة المرور' : 'Enter your password'}
+              placeholderTextColor="#9CA3AF"
+              secureTextEntry={!showPassword}
+              onFocus={() => setPasswordActive(true)}
+              onBlur={() => setPasswordActive(false)}
+            />
+            <TouchableOpacity
+              onPress={() => setShowPassword(!showPassword)}
+              activeOpacity={0.7}
+              style={{ paddingHorizontal: 6 }}
+            >
+              <Icon
+                name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                size={18}
+                color="#6B7280"
               />
-              <TouchableOpacity
-                style={[styles.eyeButton, isRTL && styles.eyeButtonRTL]}
-                onPress={() => setShowPassword(!showPassword)}
-                activeOpacity={0.7}
-              >
-                <Icon
-                  name={showPassword ? 'eye-outline' : 'eye-off-outline'}
-                  size={22}
-                  color="#666"
-                />
-              </TouchableOpacity>
-            </View>
+            </TouchableOpacity>
           </View>
 
-          {/* Forgot Password Link */}
-          <TouchableOpacity
-            style={styles.forgotPassword}
-            onPress={() => setShowForgotPasswordModal(true)}
-            activeOpacity={0.7}
-          >
-            <Text
-              style={[
-                styles.forgotPasswordText,
-                isRTL && styles.forgotPasswordTextRTL,
-              ]}
+          {/* Remember me & Forgot Password */}
+          <View style={[styles.rememberContainer, isRTL && styles.rememberContainerRTL]}>
+            <TouchableOpacity
+              style={[styles.rememberCheckboxRow, isRTL && styles.rememberCheckboxRowRTL]}
+              onPress={() => setRememberMe(!rememberMe)}
+              activeOpacity={0.7}
             >
-              {isRTL ? 'نسيت كلمة المرور؟' : 'Forgot Password?'}
-            </Text>
-          </TouchableOpacity>
+              <Icon
+                name={rememberMe ? 'checkbox' : 'square-outline'}
+                size={18}
+                color={rememberMe ? colors.primary : '#9CA3AF'}
+              />
+              <Text style={[styles.rememberText, isRTL && styles.rememberTextRTL, { marginLeft: isRTL ? 0 : 4, marginRight: isRTL ? 4 : 0 }]}>
+                {isRTL ? 'تذكرني' : 'Remember Me'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => setShowForgotPasswordModal(true)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.forgotText, isRTL && styles.forgotTextRTL]}>
+                {isRTL ? 'نسيت كلمة المرور؟' : 'Forgot Password?'}
+              </Text>
+            </TouchableOpacity>
+          </View>
 
           {/* Submit Button */}
           <TouchableOpacity
             style={[
               styles.submitButton,
+              { borderRadius: 24, paddingVertical: 14, marginTop: 10 },
               isLoading && styles.submitButtonDisabled,
             ]}
             onPress={handleSubmit}
             disabled={isLoading}
             activeOpacity={0.8}
           >
-            <Text style={styles.submitButtonText}>
+            <Text style={styles.submitButtonTextNew}>
               {isLoading
                 ? isRTL
                   ? 'جاري التحميل...'
                   : 'Loading...'
                 : isRTL
                 ? 'تسجيل الدخول'
-                : 'Sign In'}
+                : 'Login'}
             </Text>
           </TouchableOpacity>
 
-          {/* Toggle to Register */}
-          <View
-            style={[styles.toggleContainer, isRTL && styles.toggleContainerRTL]}
-          >
-            <Text style={[styles.toggleText, isRTL && styles.toggleTextRTL]}>
-              {isRTL ? 'ليس لديك حساب؟' : "Don't have an account?"}
+          {/* Footer toggle to Sign Up */}
+          <View style={[styles.footerToggleContainer, isRTL && styles.footerToggleContainerRTL]}>
+            <Text style={[styles.footerToggleText, isRTL && styles.footerToggleTextRTL]}>
+              {isRTL ? 'ليس لديك حساب؟' : "Don't have an Account?"}
             </Text>
             <TouchableOpacity onPress={() => setShowMultiStepSignup(true)}>
-              <Text style={[styles.toggleLink, isRTL && styles.toggleLinkRTL]}>
-                {isRTL ? 'سجل الآن' : 'Register'}
+              <Text style={[styles.footerToggleLink, isRTL && styles.footerToggleLinkRTL]}>
+                {isRTL ? 'سجل الآن' : 'Sign up'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -336,6 +391,7 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
                 style={[
                   styles.backButtonText,
                   isRTL && styles.backButtonTextRTL,
+                  { color: colors.primary, fontWeight: '600' },
                 ]}
               >
                 {isRTL ? 'العودة إلى التصفح' : 'Back to Browse'}

@@ -8,6 +8,7 @@ interface DateSelectorProps {
   onClose: () => void;
   onSelect: (date: Date) => void;
   selectedDate?: Date;
+  allowPastDates?: boolean;
 }
 
 const DateSelector: React.FC<DateSelectorProps> = ({
@@ -15,6 +16,7 @@ const DateSelector: React.FC<DateSelectorProps> = ({
   onClose,
   onSelect,
   selectedDate,
+  allowPastDates = false,
 }) => {
   const [date, setDate] = useState<Date>(selectedDate || new Date());
   const { isRTL } = useLanguage();
@@ -110,7 +112,7 @@ const DateSelector: React.FC<DateSelectorProps> = ({
       // Check if this is a past date
       const dayDate = new Date(year, month, day);
       dayDate.setHours(0, 0, 0, 0);
-      const isPastDate = dayDate < today;
+      const isPastDate = !allowPastDates && dayDate < today;
 
       const isSelected =
         isValidDay &&

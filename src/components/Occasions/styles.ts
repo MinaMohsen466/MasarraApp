@@ -18,7 +18,7 @@ export const createStyles = (screenWidth: number, numColumns: number) => {
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: 12,
-      paddingVertical: 0,
+      paddingVertical: 10,
       backgroundColor: colors.background,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
@@ -27,10 +27,12 @@ export const createStyles = (screenWidth: number, numColumns: number) => {
       flexDirection: 'row-reverse',
     },
     backButton: {
-      padding: 8,
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      backgroundColor: 'rgba(0, 161, 156, 0.1)',
       justifyContent: 'center',
       alignItems: 'center',
-      width: 40,
     },
     backButtonRTL: {
       transform: [{ scaleX: -1 }],
@@ -47,7 +49,7 @@ export const createStyles = (screenWidth: number, numColumns: number) => {
       letterSpacing: 0,
     },
     headerSpacer: {
-      width: 40,
+      width: 34,
     },
     listContent: {
       paddingHorizontal: isTablet ? 40 : 16,

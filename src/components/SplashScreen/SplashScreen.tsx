@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Image, Animated, Easing, Dimensions } from 'react-native';
+import { View, Image, Animated, Easing, Dimensions, StatusBar } from 'react-native';
 import { colors } from '../../constants/colors';
 
 interface SplashScreenProps {
@@ -116,7 +116,9 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   });
 
   return (
-    <Animated.View
+    <>
+      <StatusBar translucent={true} backgroundColor="transparent" barStyle="light-content" />
+      <Animated.View
       style={{
         flex: 1,
         backgroundColor: backgroundColor,
@@ -205,6 +207,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
         ))}
       </View>
     </Animated.View>
+    </>
   );
 };
 

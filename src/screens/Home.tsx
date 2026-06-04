@@ -112,6 +112,9 @@ const Home: React.FC<HomeProps> = ({
   const renderOccasionCard = useCallback(
     ({ item }: { item: Occasion }) => {
       const displayName = isRTL ? item.nameAr : item.name;
+      const truncatedName = displayName && displayName.length > 13
+        ? `${displayName.substring(0, 13)}...`
+        : displayName;
       return (
         <TouchableOpacity
           style={styles.occasionCard}
@@ -139,9 +142,10 @@ const Home: React.FC<HomeProps> = ({
           </View>
           <Text
             style={[styles.occasionText, isRTL && styles.occasionTextRTL]}
-            numberOfLines={2}
+            numberOfLines={1}
+            ellipsizeMode="tail"
           >
-            {displayName}
+            {truncatedName}
           </Text>
         </TouchableOpacity>
       );
@@ -191,6 +195,7 @@ const Home: React.FC<HomeProps> = ({
   return (
     <Animated.ScrollView
       style={styles.container}
+      contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
       refreshControl={
         <RefreshControl

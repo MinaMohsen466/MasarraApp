@@ -6,10 +6,15 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StatusBar,
+  Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const isTablet = SCREEN_WIDTH >= 600;
 import Svg, { Path, Polyline, Line, Rect, Circle } from 'react-native-svg';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { getUserDashboardBookings, Booking } from '../services/api';
 import { API_URL } from '../config/api.config';
 import { colors } from '../constants/colors';
@@ -102,7 +107,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
     return filterBookingsByStatus(bookings, selectedFilter);
   }, [bookings, selectedFilter, filterBookingsByStatus]);
 
-  const loadBookings = async () => {
+  const loadBookings = async (): Promise<Booking[] | undefined> => {
     try {
       setLoading(true);
       const token = await AsyncStorage.getItem('userToken');
@@ -123,7 +128,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
         ]);
         setAlertVisible(true);
         setLoading(false);
-        return;
+        return undefined;
       }
 
       const [data, settings] = await Promise.all([
@@ -154,12 +159,14 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
         const allowed = new Set(results.filter(Boolean) as string[]);
         setQrAllowedBookings(allowed);
       });
+      return sortedBookings;
     } catch (error) {
       setAlertTitle(isRTL ? 'خطأ' : 'Error');
       setAlertMessage(isRTL ? 'فشل تحميل الحجوزات' : 'Failed to load bookings');
       setAlertButtons([{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }]);
       setAlertVisible(true);
       setLoading(false);
+      return undefined;
     }
   };
 
@@ -485,6 +492,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
   const handlePaymentSuccess = async () => {
     setShowPaymentWebView(false);
     setPaymentUrl('');
+    
+    const payingId = currentPayingBooking;
     if (currentPayingBooking) {
       setPayingBookings(prev => {
         const newSet = new Set(prev);
@@ -498,22 +507,15 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
     await new Promise<void>(resolve => setTimeout(resolve, 3000));
 
     // Reload bookings to get updated status
-    await loadBookings();
+    const updatedBookings = await loadBookings();
 
-    // Show success alert
-    setAlertTitle(isRTL ? 'نجح الدفع' : 'Payment Success');
-    setAlertMessage(
-      isRTL
-        ? 'تم الدفع بنجاح! تم تحديث حالة طلبك.'
-        : 'Payment completed successfully! Your order status has been updated.',
-    );
-    setAlertButtons([
-      {
-        text: isRTL ? 'حسناً' : 'OK',
-        style: 'default',
-      },
-    ]);
-    setAlertVisible(true);
+    if (updatedBookings && payingId) {
+      const updatedBooking = updatedBookings.find(b => b._id === payingId);
+      if (updatedBooking) {
+        setSelectedReceiptBooking(updatedBooking);
+        setShowReceiptModal(true);
+      }
+    }
   };
 
   // Handle payment error from WebView
@@ -667,31 +669,42 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
           <View
             style={{ height: insets.top, backgroundColor: colors.primary }}
           />
-          <View style={styles.container}>
-            {/* Header background */}
-            <View style={[styles.headerBackground, { height: 56 }]} />
+          <View style={[styles.container, { position: 'relative' }]}>
+            {/* Curved Header Background Block with topographic waves & integrated navigation */}
+            <View style={styles.profileHeaderBlock}>
+              <Svg width="100%" height="100%" viewBox="0 0 375 110" preserveAspectRatio="none" style={styles.topographicSvg}>
+                <Path d="M-20 20 C80 55 180 12 300 45 T400 35" stroke="rgba(255,255,255,0.08)" strokeWidth={1.5} fill="none" />
+                <Path d="M-20 35 C80 70 180 20 300 60 T400 50" stroke="rgba(255,255,255,0.12)" strokeWidth={1.5} fill="none" />
+                <Path d="M-20 50 C80 85 180 28 300 75 T400 65" stroke="rgba(255,255,255,0.15)" strokeWidth={2} fill="none" />
+              </Svg>
 
-            <View style={[styles.headerBar, isRTL && styles.headerBarRTL]}>
-              {onBack && (
-                <TouchableOpacity
-                  style={styles.headerBackButton}
-                  onPress={onBack}
-                  activeOpacity={0.8}
-                >
-                  <Text
-                    style={[
-                      styles.headerBackIcon,
-                      isRTL && styles.headerBackTextRTL,
-                    ]}
+              {/* Overlay Navigation Bar */}
+              <View style={[styles.headerOverlayBar, isRTL && styles.headerOverlayBarRTL]}>
+                {onBack && (
+                  <TouchableOpacity
+                    style={styles.headerBackButtonCircle}
+                    onPress={onBack}
+                    activeOpacity={0.8}
                   >
-                    {isRTL ? '›' : '‹'}
-                  </Text>
-                </TouchableOpacity>
-              )}
-              <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
-                {isRTL ? 'سجل الطلبات' : 'Order History'}
-              </Text>
-              <View style={styles.headerSpacer} />
+                    <Icon
+                      name={isRTL ? 'chevron-forward' : 'chevron-back'}
+                      size={20}
+                      color={colors.textWhite}
+                    />
+                  </TouchableOpacity>
+                )}
+                <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
+                  {isRTL ? 'سجل الطلبات' : 'Order History'}
+                </Text>
+                <View style={styles.headerSpacer} />
+              </View>
+            </View>
+
+            {/* Curved Wave Divider (Transitions header to card background) */}
+            <View style={styles.profileCurveDivider}>
+              <Svg height="30" width="100%" viewBox="0 0 375 30" preserveAspectRatio="none">
+                <Path d="M0,20 C100,40 250,0 375,20 L375,30 L0,30 Z" fill={colors.background} />
+              </Svg>
             </View>
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.primary} />
@@ -711,32 +724,42 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
       />
       <View style={{ flex: 1, backgroundColor: colors.primary }}>
         <View style={{ height: insets.top, backgroundColor: colors.primary }} />
-        <View style={styles.container}>
-          {/* Header background */}
-          <View style={[styles.headerBackground, { height: 56 }]} />
+        <View style={[styles.container, { position: 'relative' }]}>
+          {/* Curved Header Background Block with topographic waves & integrated navigation */}
+          <View style={styles.profileHeaderBlock}>
+            <Svg width="100%" height="100%" viewBox="0 0 375 110" preserveAspectRatio="none" style={styles.topographicSvg}>
+              <Path d="M-20 20 C80 55 180 12 300 45 T400 35" stroke="rgba(255,255,255,0.08)" strokeWidth={1.5} fill="none" />
+              <Path d="M-20 35 C80 70 180 20 300 60 T400 50" stroke="rgba(255,255,255,0.12)" strokeWidth={1.5} fill="none" />
+              <Path d="M-20 50 C80 85 180 28 300 75 T400 65" stroke="rgba(255,255,255,0.15)" strokeWidth={2} fill="none" />
+            </Svg>
 
-          {/* Header */}
-          <View style={[styles.headerBar, isRTL && styles.headerBarRTL]}>
-            {onBack && (
-              <TouchableOpacity
-                style={styles.headerBackButton}
-                onPress={onBack}
-                activeOpacity={0.8}
-              >
-                <Text
-                  style={[
-                    styles.headerBackIcon,
-                    isRTL && styles.headerBackTextRTL,
-                  ]}
+            {/* Overlay Navigation Bar */}
+            <View style={[styles.headerOverlayBar, isRTL && styles.headerOverlayBarRTL]}>
+              {onBack && (
+                <TouchableOpacity
+                  style={styles.headerBackButtonCircle}
+                  onPress={onBack}
+                  activeOpacity={0.8}
                 >
-                  {isRTL ? '›' : '‹'}
-                </Text>
-              </TouchableOpacity>
-            )}
-            <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
-              {isRTL ? 'سجل الطلبات' : 'Order History'}
-            </Text>
-            <View style={styles.headerSpacer} />
+                  <Icon
+                    name={isRTL ? 'chevron-forward' : 'chevron-back'}
+                    size={20}
+                    color={colors.textWhite}
+                  />
+                </TouchableOpacity>
+              )}
+              <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
+                {isRTL ? 'سجل الطلبات' : 'Order History'}
+              </Text>
+              <View style={styles.headerSpacer} />
+            </View>
+          </View>
+
+          {/* Curved Wave Divider (Transitions header to card background) */}
+          <View style={styles.profileCurveDivider}>
+            <Svg height="30" width="100%" viewBox="0 0 375 30" preserveAspectRatio="none">
+              <Path d="M0,20 C100,40 250,0 375,20 L375,30 L0,30 Z" fill={colors.background} />
+            </Svg>
           </View>
 
           {/* Filter Buttons */}
@@ -857,7 +880,9 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                   <View style={[styles.cardHeader, isRTL && { flexDirection: 'row-reverse' }]}>
                     <Text style={styles.serviceName} numberOfLines={1}>
                       {isRTL ? 'رقم الطلب:: ' : 'Order ID: '}
-                      {booking._id}
+                      {isTablet 
+                        ? (booking._id.length > 24 ? `${booking._id.substring(0, 24)}...` : booking._id)
+                        : (booking._id.length > 12 ? `${booking._id.substring(0, 12)}...` : booking._id)}
                     </Text>
                     <View
                       style={[

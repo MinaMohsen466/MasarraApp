@@ -85,7 +85,7 @@ export const createStyles = (screenWidth: number) => {
     listContent: {
       paddingHorizontal: 16,
       paddingVertical: 20,
-      paddingBottom: 100,
+      paddingBottom: isTablet ? 160 : 110,
     },
     row: {
       justifyContent: 'space-between',

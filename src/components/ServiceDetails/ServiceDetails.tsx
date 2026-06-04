@@ -72,6 +72,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
   const flatListRef = useRef<FlatList>(null);
+  const dotAnimations = useRef<Animated.Value[]>([]).current;
 
   // Date/Time picker state - initialize with global date if available
   const [selectedDate, setSelectedDate] = useState<Date | null>(
@@ -424,11 +425,45 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
 
   const service = (services as any)?.find((s: any) => s._id === serviceId);
 
-  // Debug: Log service discount info
-  React.useEffect(() => {
-    if (service) {
+  // Initialize dot animations for service images
+  if (service?.images && dotAnimations.length !== service.images.length) {
+    dotAnimations.length = 0;
+    service.images.forEach(() => {
+      dotAnimations.push(new Animated.Value(0));
+    });
+  }
+
+  // Animate dots when currentImageIndex changes
+  useEffect(() => {
+    if (dotAnimations.length > 0) {
+      dotAnimations.forEach((anim, index) => {
+        Animated.spring(anim, {
+          toValue: index === currentImageIndex ? 1 : 0,
+          useNativeDriver: false,
+          friction: 5,
+          tension: 100,
+        }).start();
+      });
     }
-  }, [service]);
+  }, [currentImageIndex, dotAnimations.length]);
+
+  // Auto-scroll slideshow effect for service details
+  useEffect(() => {
+    if (!service || !service.images || service.images.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setCurrentImageIndex(prevIndex => {
+        const nextIndex = (prevIndex + 1) % service.images.length;
+        flatListRef.current?.scrollToIndex({
+          index: nextIndex,
+          animated: true,
+        });
+        return nextIndex;
+      });
+    }, 5000); // Change slide every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [service?.images?.length]);
 
   // Check availability whenever date or time changes
   React.useEffect(() => {
@@ -582,10 +617,8 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
   // Render image carousel item
   const renderImageItem = ({
     item,
-    index,
   }: {
     item: string;
-    index: number;
   }) => {
     return (
       <View style={styles.imageSlide}>
@@ -856,26 +889,55 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
               horizontal
               pagingEnabled
               showsHorizontalScrollIndicator={false}
+              decelerationRate="fast"
+              snapToInterval={SCREEN_WIDTH}
+              snapToAlignment="center"
               onMomentumScrollEnd={event => {
                 const index = Math.round(
                   event.nativeEvent.contentOffset.x / SCREEN_WIDTH,
                 );
                 setCurrentImageIndex(index);
               }}
+              getItemLayout={(_, index) => ({
+                length: SCREEN_WIDTH,
+                offset: SCREEN_WIDTH * index,
+                index,
+              })}
             />
 
             {/* Pagination Dots */}
-            <View style={styles.paginationContainer}>
-              {service.images.map((_, index) => (
-                <View
-                  key={index}
-                  style={[
-                    styles.paginationDot,
-                    index === currentImageIndex && styles.paginationDotActive,
-                  ]}
-                />
-              ))}
-            </View>
+            {service.images.length > 1 && (
+              <View style={styles.paginationContainer}>
+                {service.images.map((_, index) => {
+                  const isActive = index === currentImageIndex;
+                  const animValue = dotAnimations[index] || new Animated.Value(0);
+
+                  const width = animValue.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [8, 20],
+                  });
+
+                  const scale = animValue.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.8, 1],
+                  });
+
+                  return (
+                    <Animated.View
+                      key={index}
+                      style={[
+                        styles.paginationDot,
+                        isActive && styles.paginationDotActive,
+                        {
+                          width: width,
+                          transform: [{ scale: scale }],
+                        },
+                      ]}
+                    />
+                  );
+                })}
+              </View>
+            )}
           </View>
         )}
 

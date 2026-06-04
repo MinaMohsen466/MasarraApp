@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { styles } from './OccasionSelectorStyles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -29,6 +30,7 @@ const OccasionSelector: React.FC<OccasionSelectorProps> = ({
 }) => {
   const { isRTL } = useLanguage();
   const { data: occasions, isLoading } = useOccasions();
+  const insets = useSafeAreaInsets();
 
   const renderOccasionItem = ({ item }: { item: Occasion }) => {
     const displayName = isRTL ? item.nameAr : item.name;
@@ -76,7 +78,7 @@ const OccasionSelector: React.FC<OccasionSelectorProps> = ({
       onRequestClose={onClose}
     >
       <View style={styles.modalOverlay}>
-        <View style={[styles.modalContent, isRTL && styles.modalContentRTL]}>
+        <View style={[styles.modalContent, isRTL && styles.modalContentRTL, { paddingBottom: 16 + insets.bottom }]}>
           {/* Header */}
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>

@@ -182,16 +182,15 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       gap: 6,
     },
     paginationDot: {
-      width: 10,
-      height: 10,
-      borderRadius: 5,
-      backgroundColor: colors.primaryLight,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: 'rgba(255, 255, 255, 0.5)',
+      borderWidth: 1,
+      borderColor: 'rgba(255, 255, 255, 0.3)',
     },
     paginationDotActive: {
       backgroundColor: colors.primary,
-      width: 12,
-      height: 12,
-      borderRadius: 6,
+      borderColor: colors.primary,
     },
     infoSection: {
       backgroundColor: colors.background,

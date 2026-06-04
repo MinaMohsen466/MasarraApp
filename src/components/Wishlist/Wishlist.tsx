@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { createStyles } from './styles';
 import {
   getWishlist,
@@ -99,20 +100,42 @@ const Wishlist: React.FC<Props> = ({ onBack, onSelectService }) => {
         translucent={false}
       />
       <View style={{ height: insets.top, backgroundColor: colors.primary }} />
-      <View style={[styles.container, { padding: 0 }]}>
-        {/* Header */}
-        <View style={[styles.headerBar, { backgroundColor: colors.primary, height: 56, paddingVertical: 0 }, isRTL && styles.headerBarRTL]}>
-          {onBack && (
-            <TouchableOpacity style={styles.headerBackButton} onPress={onBack} activeOpacity={0.8}>
-              <Text style={[styles.headerBackIcon, isRTL && styles.headerBackTextRTL]}>
-                {isRTL ? '›' : '‹'}
-              </Text>
-            </TouchableOpacity>
-          )}
-          <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
-            {isRTL ? `المفضلة (${items.length})` : `Wishlist (${items.length})`}
-          </Text>
-          <View style={styles.headerSpacer} />
+      <View style={[styles.container, { position: 'relative' }]}>
+        {/* Curved Header Background Block with topographic waves & integrated navigation */}
+        <View style={styles.profileHeaderBlock}>
+          <Svg width="100%" height="100%" viewBox="0 0 375 110" preserveAspectRatio="none" style={styles.topographicSvg}>
+            <Path d="M-20 20 C80 55 180 12 300 45 T400 35" stroke="rgba(255,255,255,0.08)" strokeWidth={1.5} fill="none" />
+            <Path d="M-20 35 C80 70 180 20 300 60 T400 50" stroke="rgba(255,255,255,0.12)" strokeWidth={1.5} fill="none" />
+            <Path d="M-20 50 C80 85 180 28 300 75 T400 65" stroke="rgba(255,255,255,0.15)" strokeWidth={2} fill="none" />
+          </Svg>
+
+          {/* Overlay Navigation Bar */}
+          <View style={[styles.headerOverlayBar, isRTL && styles.headerOverlayBarRTL]}>
+            {onBack && (
+              <TouchableOpacity
+                style={styles.headerBackButtonCircle}
+                onPress={onBack}
+                activeOpacity={0.8}
+              >
+                <Icon
+                  name={isRTL ? 'chevron-forward' : 'chevron-back'}
+                  size={20}
+                  color={colors.textWhite}
+                />
+              </TouchableOpacity>
+            )}
+            <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
+              {isRTL ? `المفضلة (${items.length})` : `Wishlist (${items.length})`}
+            </Text>
+            <View style={styles.headerSpacer} />
+          </View>
+        </View>
+
+        {/* Curved Wave Divider (Transitions header to card background) */}
+        <View style={styles.profileCurveDivider}>
+          <Svg height="30" width="100%" viewBox="0 0 375 30" preserveAspectRatio="none">
+            <Path d="M0,20 C100,40 250,0 375,20 L375,30 L0,30 Z" fill={colors.background} />
+          </Svg>
         </View>
 
         {/* Content body */}

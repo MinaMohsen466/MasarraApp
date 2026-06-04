@@ -46,8 +46,8 @@ export const styles = StyleSheet.create({
     fontFamily: 'System',
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 19,
+    fontWeight: '700',
     color: colors.textWhite,
     flex: 1,
     textAlign: 'center',
@@ -69,38 +69,59 @@ export const styles = StyleSheet.create({
   },
 
   emptyBox: {
-    marginTop: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.borderMedium,
-    backgroundColor: colors.background,
-    padding: 28,
-    alignItems: 'center',
-  },
-  emptyIconWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: colors.primaryLight,
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 14,
+    paddingHorizontal: 24,
+    paddingVertical: 40,
+    minHeight: 340,
   },
-  emptyIcon: { width: 36, height: 36, tintColor: colors.textLight },
-  emptyTitle: { fontSize: 18, fontWeight: '700', marginBottom: 8 },
+  emptyIconWrap: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: colorUtils.addOpacity(colors.primary, 0.08),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colorUtils.addOpacity(colors.primary, 0.15),
+  },
+  emptyIcon: {
+    color: colors.primary,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.textDark,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
   emptySubtitle: {
+    fontSize: 14,
     color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 16,
+    lineHeight: 20,
+    marginBottom: 20,
+    paddingHorizontal: 16,
   },
 
   primaryButton: {
     backgroundColor: colors.primary,
-    paddingHorizontal: 18,
+    paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 24,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
   },
-  primaryButtonText: { color: colors.textWhite, fontWeight: '700' },
+  primaryButtonText: {
+    color: colors.textWhite,
+    fontWeight: '700',
+    fontSize: 15,
+  },
 
   formContainer: {
     marginTop: 16,
@@ -135,63 +156,121 @@ export const styles = StyleSheet.create({
   },
   primaryButtonTextSmall: { color: colors.textWhite, fontWeight: '700' },
 
-  // Redesigned Address Card - Compact, Clean Look
+  // Redesigned Address Card - Compact, Premium & Clean
   addressCard: {
     backgroundColor: '#FFFFFF',
-    padding: 0,
+    padding: 14,
     borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: colors.border,
-    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
   },
   addressCardInner: {
-    padding: 12,
+    padding: 0,
   },
   addressCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  addressCardHeaderRTL: {
+    flexDirection: 'row-reverse',
+  },
+  addressHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  addressHeaderLeftRTL: {
+    flexDirection: 'row-reverse',
   },
   addressIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: colorUtils.addOpacity(colors.primary, 0.12),
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: colorUtils.addOpacity(colors.primary, 0.08),
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 10,
+    marginRight: 8,
   },
-  addressInfoContainer: {
+  addressIconContainerRTL: {
+    marginRight: 0,
+    marginLeft: 8,
+  },
+  addressNameSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
     flex: 1,
+  },
+  addressNameSectionRTL: {
+    flexDirection: 'row-reverse',
   },
   addressName: {
     fontWeight: '700',
     fontSize: 15,
     color: colors.textDark,
-    marginBottom: 1,
   },
-  addressSubtitle: {
-    fontSize: 11,
-    color: colors.textSecondary,
-    fontWeight: '500',
+  addressNameRTL: {
+    textAlign: 'right',
+  },
+  addressActionButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  addressActionButtonsRTL: {
+    flexDirection: 'row-reverse',
+  },
+  cardIconButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editIconButton: {
+    backgroundColor: colorUtils.addOpacity(colors.primary, 0.06),
+  },
+  deleteIconButton: {
+    backgroundColor: colorUtils.addOpacity(colors.error, 0.06),
+  },
+  defaultBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    backgroundColor: colorUtils.addOpacity(colors.success || '#10B981', 0.1),
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colorUtils.addOpacity(colors.success || '#10B981', 0.2),
+  },
+  defaultBadgeText: {
+    color: colors.success || '#10B981',
+    fontSize: 10,
+    fontWeight: '600',
   },
   addressDetailsContainer: {
-    backgroundColor: colorUtils.addOpacity(colors.primary, 0.04),
-    borderRadius: 8,
-    padding: 10,
-    marginTop: 4,
+    marginTop: 2,
+    paddingLeft: 40, // align with text start
   },
-  addressLine: {
-    color: colors.textSecondary,
-    fontSize: 14,
-    marginBottom: 3,
-    lineHeight: 20,
+  addressDetailsContainerRTL: {
+    paddingLeft: 0,
+    paddingRight: 40,
+    alignItems: 'flex-end',
   },
   addressLineWithIcon: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 4,
+  },
+  addressLineWithIconRTL: {
+    flexDirection: 'row-reverse',
   },
   addressLineText: {
     color: colors.textSecondary,
@@ -200,67 +279,31 @@ export const styles = StyleSheet.create({
     marginLeft: 6,
     flex: 1,
   },
-  actionsRow: {
+  addressLineTextRTL: {
+    marginLeft: 0,
+    marginRight: 6,
+    textAlign: 'right',
+  },
+  setDefaultContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginTop: 6,
+  },
+  setDefaultContainerRTL: {
     justifyContent: 'flex-start',
-    paddingTop: 10,
-    paddingHorizontal: 12,
-    paddingBottom: 10,
-    backgroundColor: colorUtils.addOpacity(colors.primary, 0.03),
-    borderTopWidth: 1,
-    borderTopColor: colorUtils.addOpacity(colors.primary, 0.08),
-    gap: 8,
-  },
-  actionButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: colors.primary,
-    borderRadius: 16,
-    marginHorizontal: 0,
-  },
-  actionButtonText: {
-    color: colors.textWhite,
-    fontWeight: '600',
-    fontSize: 13,
-  },
-  deleteButton: {
-    padding: 8,
-    backgroundColor: colorUtils.addOpacity(colors.error, 0.1),
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 34,
-    height: 34,
-  },
-  deleteButtonText: {
-    color: colors.error,
-  },
-  defaultBadge: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    backgroundColor: colorUtils.addOpacity(colors.success || '#10B981', 0.12),
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colorUtils.addOpacity(colors.success || '#10B981', 0.25),
-  },
-  defaultBadgeText: {
-    color: colors.success || '#10B981',
-    fontSize: 12,
-    fontWeight: '600',
   },
   setDefaultLink: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    backgroundColor: colorUtils.addOpacity(colors.primary, 0.1),
-    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: colorUtils.addOpacity(colors.primary, 0.06),
+    borderRadius: 6,
     borderWidth: 1,
-    borderColor: colorUtils.addOpacity(colors.primary, 0.2),
+    borderColor: colorUtils.addOpacity(colors.primary, 0.12),
   },
   setDefaultLinkText: {
     color: colors.primary,
     fontWeight: '600',
-    fontSize: 12,
+    fontSize: 11,
   },
   headerLeftRow: { flexDirection: 'row', alignItems: 'center' },
   headerLeftRowRTL: {
@@ -291,30 +334,7 @@ export const styles = StyleSheet.create({
   headerRowRTL: {
     flexDirection: 'row-reverse',
   },
-  addressCardHeaderRTL: {
-    flexDirection: 'row-reverse',
-  },
-  addressIconContainerRTL: {
-    marginRight: 0,
-    marginLeft: 10,
-  },
-  addressDetailsContainerRTL: {
-    alignItems: 'flex-end',
-  },
-  addressLineWithIconRTL: {
-    flexDirection: 'row-reverse',
-  },
-  addressLineTextRTL: {
-    marginLeft: 0,
-    marginRight: 6,
-    textAlign: 'right',
-  },
-  addressNameRTL: {
-    textAlign: 'right',
-  },
-  addressSubtitleRTL: {
-    textAlign: 'right',
-  },
+
   modalOverlay: {
     flex: 1,
     backgroundColor: colors.overlay,
@@ -352,15 +372,51 @@ export const styles = StyleSheet.create({
   modalBody: {
     padding: 20,
   },
-  modalInput: {
+  modalInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: colors.borderMedium,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 15,
-    color: colors.textDark,
-    backgroundColor: colors.backgroundLight,
+    borderColor: '#E2E8F0',
+    borderRadius: 10,
+    paddingHorizontal: 12,
     marginBottom: 12,
+    height: 48,
+  },
+  modalInputWrapperRTL: {
+    flexDirection: 'row-reverse',
+  },
+  modalInputWrapperActive: {
+    borderColor: colors.primary,
+    backgroundColor: '#FFFFFF',
+  },
+  modalInputIcon: {
+    marginRight: 10,
+  },
+  modalInputIconRTL: {
+    marginRight: 0,
+    marginLeft: 10,
+  },
+  modalInputDivider: {
+    width: 1,
+    height: 18,
+    backgroundColor: '#E2E8F0',
+    marginRight: 12,
+  },
+  modalInputDividerRTL: {
+    marginRight: 0,
+    marginLeft: 12,
+  },
+  modalTextInput: {
+    flex: 1,
+    fontSize: 14.5,
+    color: colors.textDark,
+    paddingVertical: 8,
+    textAlign: 'left',
+  },
+  modalTextInputRTL: {
+    textAlign: 'right',
+    fontFamily: 'System',
   },
   modalButtonsRow: {
     flexDirection: 'row',
@@ -394,6 +450,73 @@ export const styles = StyleSheet.create({
   modalPrimaryButtonText: {
     color: colors.textWhite,
     fontWeight: '700',
+  },
+  profileHeaderBlock: {
+    height: 110,
+    backgroundColor: colors.primary,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  topographicSvg: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  profileCurveDivider: {
+    height: 30,
+    backgroundColor: colors.primary,
+    marginTop: -1,
+  },
+  headerOverlayBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+    backgroundColor: 'transparent',
+    zIndex: 1,
+  },
+  headerOverlayBarRTL: {
+    flexDirection: 'row-reverse',
+  },
+  headerBackButtonCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerSpacer: {
+    width: 40,
+  },
+  bottomAddButton: {
+    backgroundColor: colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginTop: 10,
+    marginBottom: 20,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  bottomAddButtonText: {
+    color: colors.textWhite,
+    fontSize: 16,
+    fontWeight: '700',
+    marginHorizontal: 8,
   },
 });
 

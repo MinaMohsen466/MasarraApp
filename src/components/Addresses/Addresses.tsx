@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  Image,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
@@ -15,6 +14,7 @@ import {
   StatusBar,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { styles } from './styles';
 import {
   fetchAddresses,
@@ -47,6 +47,7 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [addressToDelete, setAddressToDelete] = useState<any>(null);
+  const [activeField, setActiveField] = useState<string | null>(null);
   const pageStatusBar = (
     <StatusBar
       backgroundColor={colors.primary}
@@ -158,35 +159,41 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
         {pageStatusBar}
         <View style={{ height: insets.top, backgroundColor: colors.primary }} />
         <View style={[styles.addressesContainer, { position: 'relative', flex: 1 }]}>
-          {/* Header background */}
-          <View style={[styles.headerBackground, { height: 56 }]} />
+          {/* Curved Header Background Block with topographic waves & integrated navigation */}
+          <View style={styles.profileHeaderBlock}>
+            <Svg width="100%" height="100%" viewBox="0 0 375 110" preserveAspectRatio="none" style={styles.topographicSvg}>
+              <Path d="M-20 20 C80 55 180 12 300 45 T400 35" stroke="rgba(255,255,255,0.08)" strokeWidth={1.5} fill="none" />
+              <Path d="M-20 35 C80 70 180 20 300 60 T400 50" stroke="rgba(255,255,255,0.12)" strokeWidth={1.5} fill="none" />
+              <Path d="M-20 50 C80 85 180 28 300 75 T400 65" stroke="rgba(255,255,255,0.15)" strokeWidth={2} fill="none" />
+            </Svg>
 
-          {/* Header */}
-          <View style={[styles.headerBar, isRTL && styles.headerBarRTL]}>
-            {onBack && (
-              <TouchableOpacity
-                style={styles.headerBackButton}
-                onPress={onBack}
-                activeOpacity={0.8}
-              >
-                <Text
-                  style={[
-                    styles.headerBackIcon,
-                    isRTL && styles.headerBackTextRTL,
-                  ]}
+            {/* Overlay Navigation Bar */}
+            <View style={[styles.headerOverlayBar, isRTL && styles.headerOverlayBarRTL]}>
+              {onBack && (
+                <TouchableOpacity
+                  style={styles.headerBackButtonCircle}
+                  onPress={onBack}
+                  activeOpacity={0.8}
                 >
-                  {isRTL ? '›' : '‹'}
-                </Text>
-              </TouchableOpacity>
-            )}
-            <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
-              {isRTL ? 'العناوين' : 'Addresses'}
-            </Text>
-            <View style={styles.headerAddButton}>
-              <Text style={[styles.headerAddButtonText, { opacity: 0.5 }]}>
-                {isRTL ? 'إضافة' : 'Add'}
+                  <Icon
+                    name={isRTL ? 'chevron-forward' : 'chevron-back'}
+                    size={20}
+                    color={colors.textWhite}
+                  />
+                </TouchableOpacity>
+              )}
+              <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
+                {isRTL ? 'العناوين' : 'Addresses'}
               </Text>
+              <View style={styles.headerSpacer} />
             </View>
+          </View>
+
+          {/* Curved Wave Divider */}
+          <View style={styles.profileCurveDivider}>
+            <Svg height="30" width="100%" viewBox="0 0 375 30" preserveAspectRatio="none">
+              <Path d="M0,20 C100,40 250,0 375,20 L375,30 L0,30 Z" fill={colors.background} />
+            </Svg>
           </View>
 
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -202,50 +209,42 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
       {pageStatusBar}
       <View style={{ height: insets.top, backgroundColor: colors.primary }} />
       <View style={[styles.addressesContainer, { position: 'relative', flex: 1 }]}>
-      {/* Header background */}
-      <View style={[styles.headerBackground, { height: 56 }]} />
+        {/* Curved Header Background Block with topographic waves & integrated navigation */}
+        <View style={styles.profileHeaderBlock}>
+          <Svg width="100%" height="100%" viewBox="0 0 375 110" preserveAspectRatio="none" style={styles.topographicSvg}>
+            <Path d="M-20 20 C80 55 180 12 300 45 T400 35" stroke="rgba(255,255,255,0.08)" strokeWidth={1.5} fill="none" />
+            <Path d="M-20 35 C80 70 180 20 300 60 T400 50" stroke="rgba(255,255,255,0.12)" strokeWidth={1.5} fill="none" />
+            <Path d="M-20 50 C80 85 180 28 300 75 T400 65" stroke="rgba(255,255,255,0.15)" strokeWidth={2} fill="none" />
+          </Svg>
 
-      {/* Header */}
-      <View style={[styles.headerBar, isRTL && styles.headerBarRTL]}>
-        {onBack && (
-          <TouchableOpacity
-            style={styles.headerBackButton}
-            onPress={onBack}
-            activeOpacity={0.8}
-          >
-            <Text
-              style={[
-                styles.headerBackIcon,
-                isRTL && styles.headerBackTextRTL,
-              ]}
-            >
-              {isRTL ? '›' : '‹'}
+          {/* Overlay Navigation Bar */}
+          <View style={[styles.headerOverlayBar, isRTL && styles.headerOverlayBarRTL]}>
+            {onBack && (
+              <TouchableOpacity
+                style={styles.headerBackButtonCircle}
+                onPress={onBack}
+                activeOpacity={0.8}
+              >
+                <Icon
+                  name={isRTL ? 'chevron-forward' : 'chevron-back'}
+                  size={20}
+                  color={colors.textWhite}
+                />
+              </TouchableOpacity>
+            )}
+            <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
+              {isRTL ? 'العناوين' : 'Addresses'}
             </Text>
-          </TouchableOpacity>
-        )}
-        <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
-          {isRTL ? 'العناوين' : 'Addresses'}
-        </Text>
-        <TouchableOpacity
-          style={styles.headerAddButton}
-          onPress={() => {
-            setForm({
-              name: '',
-              street: '',
-              houseNumber: '',
-              floorNumber: '',
-              city: '',
-            });
-            setEditingId(null);
-            setShowForm(true);
-          }}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.headerAddButtonText}>
-            {isRTL ? 'إضافة' : 'Add'}
-          </Text>
-        </TouchableOpacity>
-      </View>
+            <View style={styles.headerSpacer} />
+          </View>
+        </View>
+
+        {/* Curved Wave Divider */}
+        <View style={styles.profileCurveDivider}>
+          <Svg height="30" width="100%" viewBox="0 0 375 30" preserveAspectRatio="none">
+            <Path d="M0,20 C100,40 250,0 375,20 L375,30 L0,30 Z" fill={colors.background} />
+          </Svg>
+        </View>
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -261,9 +260,10 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
             {!addresses || addresses.length === 0 ? (
               <View style={styles.emptyBox}>
                 <View style={styles.emptyIconWrap}>
-                  <Image
-                    source={require('../../imgs/user.png')}
-                    style={styles.emptyIcon}
+                  <Icon
+                    name="map-outline"
+                    size={36}
+                    color={colors.primary}
                   />
                 </View>
                 <Text style={styles.emptyTitle}>
@@ -297,125 +297,109 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
                 </TouchableOpacity>
               </View>
             ) : (
-              addresses.map(addr => (
-                <View key={addr._id} style={styles.addressCard}>
-                  <View style={styles.addressCardInner}>
-                    <View style={[styles.addressCardHeader, isRTL && styles.addressCardHeaderRTL]}>
-                      {/* Location Icon */}
-                      <View style={[styles.addressIconContainer, isRTL && styles.addressIconContainerRTL]}>
-                        <Svg
-                          width={22}
-                          height={22}
-                          viewBox="0 0 24 24"
-                          fill="none"
-                        >
-                          <Path
-                            d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
-                            fill="#00897B"
-                          />
-                        </Svg>
-                      </View>
-                      <View style={styles.addressInfoContainer}>
-                        <Text style={[styles.addressName, isRTL && styles.addressNameRTL]}>{addr.name}</Text>
-                        <Text style={[styles.addressSubtitle, isRTL && styles.addressSubtitleRTL]}>
-                          {isRTL ? 'عنوان التوصيل' : 'Delivery Address'}
-                        </Text>
-                      </View>
-                    </View>
+              <>
+                {addresses.map(addr => (
+                  <View key={addr._id} style={styles.addressCard}>
+                    <View style={styles.addressCardInner}>
+                      <View style={[styles.addressCardHeader, isRTL && styles.addressCardHeaderRTL]}>
+                        <View style={[styles.addressHeaderLeft, isRTL && styles.addressHeaderLeftRTL]}>
+                          {/* Location Pin Icon */}
+                          <View style={[styles.addressIconContainer, isRTL && styles.addressIconContainerRTL]}>
+                            <Icon
+                              name="location-outline"
+                              size={18}
+                              color={colors.primary}
+                            />
+                          </View>
+                          <View style={[styles.addressNameSection, isRTL && styles.addressNameSectionRTL]}>
+                            <Text style={[styles.addressName, isRTL && styles.addressNameRTL]}>
+                              {addr.name}
+                            </Text>
+                            {addr.isDefault && (
+                              <View style={styles.defaultBadge}>
+                                <Text style={styles.defaultBadgeText}>
+                                  {isRTL ? 'الافتراضي' : 'Default'}
+                                </Text>
+                              </View>
+                            )}
+                          </View>
+                        </View>
 
-                    <View style={[styles.addressDetailsContainer, isRTL && styles.addressDetailsContainerRTL]}>
-                      <View style={[styles.addressLineWithIcon, isRTL && styles.addressLineWithIconRTL]}>
-                        <Svg
-                          width={14}
-                          height={14}
-                          viewBox="0 0 24 24"
-                          fill="none"
-                        >
-                          <Path
-                            d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
-                            stroke="#9E9E9E"
-                            strokeWidth={2}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </Svg>
-                        <Text style={[styles.addressLineText, isRTL && styles.addressLineTextRTL]}>
-                          {addr.street} {addr.houseNumber}
-                        </Text>
+                        {/* Actions: Edit & Delete */}
+                        <View style={[styles.addressActionButtons, isRTL && styles.addressActionButtonsRTL]}>
+                          <TouchableOpacity
+                            onPress={() => startEdit(addr)}
+                            style={[styles.cardIconButton, styles.editIconButton]}
+                            activeOpacity={0.7}
+                          >
+                            <Icon name="create-outline" size={16} color={colors.primary} />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => confirmDelete(addr)}
+                            style={[styles.cardIconButton, styles.deleteIconButton]}
+                            activeOpacity={0.7}
+                          >
+                            <Icon name="trash-outline" size={16} color={colors.error} />
+                          </TouchableOpacity>
+                        </View>
                       </View>
-                      <View style={[styles.addressLineWithIcon, isRTL && styles.addressLineWithIconRTL]}>
-                        <Svg
-                          width={14}
-                          height={14}
-                          viewBox="0 0 24 24"
-                          fill="none"
-                        >
-                          <Path
-                            d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1118 0z"
-                            stroke="#9E9E9E"
-                            strokeWidth={2}
-                          />
-                          <Path
-                            d="M12 13a3 3 0 100-6 3 3 0 000 6z"
-                            stroke="#9E9E9E"
-                            strokeWidth={2}
-                          />
-                        </Svg>
-                        <Text style={[styles.addressLineText, isRTL && styles.addressLineTextRTL]}>{addr.city}</Text>
+
+                      {/* Address Details Lines */}
+                      <View style={[styles.addressDetailsContainer, isRTL && styles.addressDetailsContainerRTL]}>
+                        <View style={[styles.addressLineWithIcon, isRTL && styles.addressLineWithIconRTL]}>
+                          <Icon name="home-outline" size={14} color="#9E9E9E" style={{ marginHorizontal: 2 }} />
+                          <Text style={[styles.addressLineText, isRTL && styles.addressLineTextRTL]}>
+                            {addr.street} {addr.houseNumber} {addr.floorNumber ? `(طابق ${addr.floorNumber})` : ''}
+                          </Text>
+                        </View>
+                        <View style={[styles.addressLineWithIcon, isRTL && styles.addressLineWithIconRTL]}>
+                          <Icon name="location-outline" size={14} color="#9E9E9E" style={{ marginHorizontal: 2 }} />
+                          <Text style={[styles.addressLineText, isRTL && styles.addressLineTextRTL]}>
+                            {addr.city}
+                          </Text>
+                        </View>
+
+                        {/* Set Default Action */}
+                        {!addr.isDefault && (
+                          <View style={[styles.setDefaultContainer, isRTL && styles.setDefaultContainerRTL]}>
+                            <TouchableOpacity
+                              onPress={() => handleSetDefault(addr._id)}
+                              style={styles.setDefaultLink}
+                              activeOpacity={0.7}
+                            >
+                              <Text style={styles.setDefaultLinkText}>
+                                {isRTL ? 'جعله افتراضي' : 'Set Default'}
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
                       </View>
                     </View>
                   </View>
+                ))}
 
-                  <View
-                    style={[
-                      styles.actionsRow,
-                      { flexDirection: isRTL ? 'row-reverse' : 'row' },
-                    ]}
-                  >
-                    <TouchableOpacity
-                      onPress={() => confirmDelete(addr)}
-                      style={styles.deleteButton}
-                    >
-                      <Svg
-                        width={18}
-                        height={18}
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="#EF4444"
-                        strokeWidth={2}
-                      >
-                        <Path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h16zM10 11v6M14 11v6" />
-                      </Svg>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      onPress={() => startEdit(addr)}
-                      style={styles.actionButton}
-                    >
-                      <Text style={styles.actionButtonText}>
-                        {isRTL ? 'تعديل' : 'Edit'}
-                      </Text>
-                    </TouchableOpacity>
-
-                    {addr.isDefault ? (
-                      <View style={styles.defaultBadge}>
-                        <Text style={styles.defaultBadgeText}>
-                          {isRTL ? 'الافتراضي' : 'Default'}
-                        </Text>
-                      </View>
-                    ) : (
-                      <TouchableOpacity
-                        onPress={() => handleSetDefault(addr._id)}
-                        style={styles.setDefaultLink}
-                      >
-                        <Text style={styles.setDefaultLinkText}>
-                          {isRTL ? 'جعله افتراضي' : 'Set Default'}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                </View>
-              ))
+                {/* Add button below the address list */}
+                <TouchableOpacity
+                  style={styles.bottomAddButton}
+                  onPress={() => {
+                    setForm({
+                      name: '',
+                      street: '',
+                      houseNumber: '',
+                      floorNumber: '',
+                      city: '',
+                    });
+                    setEditingId(null);
+                    setShowForm(true);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Icon name="add-circle-outline" size={20} color={colors.textWhite} />
+                  <Text style={styles.bottomAddButtonText}>
+                    {isRTL ? 'إضافة عنوان جديد' : 'Add New Address'}
+                  </Text>
+                </TouchableOpacity>
+              </>
             )}
           </ScrollView>
         </TouchableWithoutFeedback>
@@ -444,41 +428,126 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
                 </Text>
               </View>
               <View style={styles.modalBody}>
-                <TextInput
-                  placeholder={isRTL ? 'الاسم (مثل: المنزل، العمل)' : 'Name (e.g. Home, Work)'}
-                  value={form.name}
-                  onChangeText={t => setForm(s => ({ ...s, name: t }))}
-                  style={styles.modalInput}
-                  placeholderTextColor="#999"
-                />
-                <TextInput
-                  placeholder={isRTL ? 'الشارع' : 'Street'}
-                  value={form.street}
-                  onChangeText={t => setForm(s => ({ ...s, street: t }))}
-                  style={styles.modalInput}
-                  placeholderTextColor="#999"
-                />
-                <TextInput
-                  placeholder={isRTL ? 'رقم المنزل' : 'House Number'}
-                  value={form.houseNumber}
-                  onChangeText={t => setForm(s => ({ ...s, houseNumber: t }))}
-                  style={styles.modalInput}
-                  placeholderTextColor="#999"
-                />
-                <TextInput
-                  placeholder={isRTL ? 'رقم الطابق' : 'Floor Number'}
-                  value={form.floorNumber}
-                  onChangeText={t => setForm(s => ({ ...s, floorNumber: t }))}
-                  style={styles.modalInput}
-                  placeholderTextColor="#999"
-                />
-                <TextInput
-                  placeholder={isRTL ? 'المدينة' : 'City'}
-                  value={form.city}
-                  onChangeText={t => setForm(s => ({ ...s, city: t }))}
-                  style={styles.modalInput}
-                  placeholderTextColor="#999"
-                />
+                <View
+                  style={[
+                    styles.modalInputWrapper,
+                    isRTL && styles.modalInputWrapperRTL,
+                    activeField === 'name' && styles.modalInputWrapperActive,
+                  ]}
+                >
+                  <Icon
+                    name="pricetag-outline"
+                    size={18}
+                    color={activeField === 'name' ? colors.primary : '#94A3B8'}
+                    style={[styles.modalInputIcon, isRTL && styles.modalInputIconRTL]}
+                  />
+                  <View style={[styles.modalInputDivider, isRTL && styles.modalInputDividerRTL]} />
+                  <TextInput
+                    placeholder={isRTL ? 'الاسم (مثل: المنزل، العمل)' : 'Name (e.g. Home, Work)'}
+                    value={form.name}
+                    onChangeText={t => setForm(s => ({ ...s, name: t }))}
+                    style={[styles.modalTextInput, isRTL && styles.modalTextInputRTL]}
+                    placeholderTextColor="#94A3B8"
+                    onFocus={() => setActiveField('name')}
+                    onBlur={() => setActiveField(null)}
+                  />
+                </View>
+                <View
+                  style={[
+                    styles.modalInputWrapper,
+                    isRTL && styles.modalInputWrapperRTL,
+                    activeField === 'street' && styles.modalInputWrapperActive,
+                  ]}
+                >
+                  <Icon
+                    name="home-outline"
+                    size={18}
+                    color={activeField === 'street' ? colors.primary : '#94A3B8'}
+                    style={[styles.modalInputIcon, isRTL && styles.modalInputIconRTL]}
+                  />
+                  <View style={[styles.modalInputDivider, isRTL && styles.modalInputDividerRTL]} />
+                  <TextInput
+                    placeholder={isRTL ? 'الشارع' : 'Street'}
+                    value={form.street}
+                    onChangeText={t => setForm(s => ({ ...s, street: t }))}
+                    style={[styles.modalTextInput, isRTL && styles.modalTextInputRTL]}
+                    placeholderTextColor="#94A3B8"
+                    onFocus={() => setActiveField('street')}
+                    onBlur={() => setActiveField(null)}
+                  />
+                </View>
+                <View
+                  style={[
+                    styles.modalInputWrapper,
+                    isRTL && styles.modalInputWrapperRTL,
+                    activeField === 'houseNumber' && styles.modalInputWrapperActive,
+                  ]}
+                >
+                  <Icon
+                    name="business-outline"
+                    size={18}
+                    color={activeField === 'houseNumber' ? colors.primary : '#94A3B8'}
+                    style={[styles.modalInputIcon, isRTL && styles.modalInputIconRTL]}
+                  />
+                  <View style={[styles.modalInputDivider, isRTL && styles.modalInputDividerRTL]} />
+                  <TextInput
+                    placeholder={isRTL ? 'رقم المنزل' : 'House Number'}
+                    value={form.houseNumber}
+                    onChangeText={t => setForm(s => ({ ...s, houseNumber: t }))}
+                    style={[styles.modalTextInput, isRTL && styles.modalTextInputRTL]}
+                    placeholderTextColor="#94A3B8"
+                    onFocus={() => setActiveField('houseNumber')}
+                    onBlur={() => setActiveField(null)}
+                  />
+                </View>
+                <View
+                  style={[
+                    styles.modalInputWrapper,
+                    isRTL && styles.modalInputWrapperRTL,
+                    activeField === 'floorNumber' && styles.modalInputWrapperActive,
+                  ]}
+                >
+                  <Icon
+                    name="layers-outline"
+                    size={18}
+                    color={activeField === 'floorNumber' ? colors.primary : '#94A3B8'}
+                    style={[styles.modalInputIcon, isRTL && styles.modalInputIconRTL]}
+                  />
+                  <View style={[styles.modalInputDivider, isRTL && styles.modalInputDividerRTL]} />
+                  <TextInput
+                    placeholder={isRTL ? 'رقم الطابق' : 'Floor Number'}
+                    value={form.floorNumber}
+                    onChangeText={t => setForm(s => ({ ...s, floorNumber: t }))}
+                    style={[styles.modalTextInput, isRTL && styles.modalTextInputRTL]}
+                    placeholderTextColor="#94A3B8"
+                    onFocus={() => setActiveField('floorNumber')}
+                    onBlur={() => setActiveField(null)}
+                  />
+                </View>
+                <View
+                  style={[
+                    styles.modalInputWrapper,
+                    isRTL && styles.modalInputWrapperRTL,
+                    activeField === 'city' && styles.modalInputWrapperActive,
+                  ]}
+                >
+                  <Icon
+                    name="location-outline"
+                    size={18}
+                    color={activeField === 'city' ? colors.primary : '#94A3B8'}
+                    style={[styles.modalInputIcon, isRTL && styles.modalInputIconRTL]}
+                  />
+                  <View style={[styles.modalInputDivider, isRTL && styles.modalInputDividerRTL]} />
+                  <TextInput
+                    placeholder={isRTL ? 'المدينة' : 'City'}
+                    value={form.city}
+                    onChangeText={t => setForm(s => ({ ...s, city: t }))}
+                    style={[styles.modalTextInput, isRTL && styles.modalTextInputRTL]}
+                    placeholderTextColor="#94A3B8"
+                    onFocus={() => setActiveField('city')}
+                    onBlur={() => setActiveField(null)}
+                  />
+                </View>
               </View>
               <View style={styles.modalButtonsRow}>
                 <TouchableOpacity

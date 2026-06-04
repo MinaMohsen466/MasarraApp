@@ -8,7 +8,7 @@ import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
 import { SocketProvider } from "./src/contexts/SocketContext";
 import { DateProvider } from "./src/contexts/DateContext";
 import colors from './src/constants/colors';
-import { AppState, AppStateStatus, Platform } from 'react-native';
+import { AppState, AppStateStatus } from 'react-native';
 
 // Set up AppState listener for React Query to refetch on app foreground
 focusManager.setEventListener((handleFocus) => {
@@ -273,19 +273,19 @@ function AppContent() {
     }
   };
 
-  const routesWithoutHeader = ['home', 'occasions', 'packages', 'categories', 'services', 'vendors', 'vendor-services', 'occasion-services', 'service-details', 'package-details', 'cart', 'about', 'terms', 'privacy', 'contact', 'profile', 'addresses', 'search'];
+  const routesWithoutHeader = ['home', 'occasions', 'packages', 'categories', 'services', 'vendors', 'vendor-services', 'occasion-services', 'service-details', 'package-details', 'cart', 'about', 'terms', 'privacy', 'contact', 'profile', 'addresses', 'search', 'auth'];
   const shouldShowHeader = !routesWithoutHeader.includes(currentRoute);
 
-  const routesWithoutSafeArea = ['about', 'terms', 'privacy', 'contact', 'service-details', 'package-details', 'cart', 'profile', 'search', 'addresses'];
+  const routesWithoutSafeArea = ['about', 'terms', 'privacy', 'contact', 'service-details', 'package-details', 'cart', 'profile', 'search', 'addresses', 'auth'];
   const shouldRenderWithoutSafeArea = routesWithoutSafeArea.includes(currentRoute);
 
   const isBannerVisible = siteSettings?.bannerEnabled && !isBannerDismissed;
-  const dynamicBgColor = 
-    (currentRoute === 'home' && isBannerVisible) 
-      ? colors.primary 
-      : ['services', 'occasion-services', 'vendor-services', 'packages', 'vendors', 'occasions'].includes(currentRoute)
-        ? colors.background
-        : colors.backgroundHome;
+  const isBannerShownOnScreen = isBannerVisible && (currentRoute === 'home' || shouldShowHeader);
+  const dynamicBgColor = isBannerShownOnScreen
+    ? colors.primary
+    : ['services', 'occasion-services', 'vendor-services', 'packages', 'vendors', 'occasions'].includes(currentRoute)
+      ? colors.background
+      : colors.backgroundHome;
 
   return (
     <LanguageProvider>
@@ -297,7 +297,7 @@ function AppContent() {
             ) : shouldRenderWithoutSafeArea ? (
               <View style={{ flex: 1 }}>
                 {renderScreen()}
-                {showBottomNav && (
+                {showBottomNav && currentRoute !== 'cart' && currentRoute !== 'auth' && (
                   <>
                     <BottomNavigation
                       activeRoute={currentRoute}
@@ -314,7 +314,7 @@ function AppContent() {
                 <View style={{ flex: 1 }}>
                   {renderScreen()}
                 </View>
-                {showBottomNav && (
+                {showBottomNav && currentRoute !== 'auth' && (
                   <>
                     <BottomNavigation
                       activeRoute={currentRoute}

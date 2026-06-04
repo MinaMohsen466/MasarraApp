@@ -1,4 +1,4 @@
-import { StyleSheet, Dimensions } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { colors, colorUtils } from '../../constants/colors';
 
 export const createStyles = (screenWidth: number) => {
@@ -31,43 +31,52 @@ export const createStyles = (screenWidth: number) => {
     rowRTL: {
       flexDirection: 'row-reverse',
     },
-    headerBar: {
-      backgroundColor: 'transparent',
-      paddingHorizontal: 16,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingVertical: 12,
-      zIndex: 1,
+    profileHeaderBlock: {
+      height: 110,
+      backgroundColor: colors.primary,
+      position: 'relative',
+      overflow: 'hidden',
     },
-    headerBarRTL: {
-      flexDirection: 'row-reverse',
-    },
-    headerBackground: {
+    topographicSvg: {
       position: 'absolute',
       top: 0,
       left: 0,
       right: 0,
+      bottom: 0,
+    },
+    profileCurveDivider: {
+      height: 30,
       backgroundColor: colors.primary,
-      zIndex: 0,
+      marginTop: -1,
     },
-    headerBackButton: {
-      paddingVertical: 8,
-      paddingHorizontal: 4,
+    headerOverlayBar: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingTop: 16,
+      paddingBottom: 12,
+      backgroundColor: 'transparent',
+      zIndex: 1,
     },
-    headerBackIcon: {
-      color: colors.textWhite,
-      fontSize: 37,
-      lineHeight: 28,
-      textAlign: 'center',
-      fontWeight: '700',
+    headerOverlayBarRTL: {
+      flexDirection: 'row-reverse',
     },
-    headerBackTextRTL: {
-      fontFamily: 'System',
+    headerBackButtonCircle: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: 'rgba(255, 255, 255, 0.18)',
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     headerTitle: {
-      fontSize: 18,
-      fontWeight: '600',
+      fontSize: 19,
+      fontWeight: '700',
       color: colors.textWhite,
       flex: 1,
       textAlign: 'center',

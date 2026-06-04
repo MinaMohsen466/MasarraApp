@@ -16,7 +16,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 0,
+    paddingVertical: 10,
     backgroundColor: colors.background,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
@@ -26,9 +26,10 @@ export const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
   },
   backButton: {
-    padding: 8,
-    width: 40,
-    height: 40,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(0, 161, 156, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -45,11 +46,12 @@ export const styles = StyleSheet.create({
     letterSpacing: 0,
   },
   placeholder: {
-    width: 40,
+    width: 34,
   },
   gridContainer: {
     paddingHorizontal: isTablet ? 40 : 16,
     paddingVertical: isTablet ? 28 : 16,
+    paddingBottom: isTablet ? 160 : 110,
   },
   row: {
     justifyContent: 'flex-start',

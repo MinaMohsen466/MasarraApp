@@ -4,7 +4,7 @@ import { colors } from '../../constants/colors';
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundHome,
+    backgroundColor: '#FFFFFF',
   },
   contentContainer: {
     paddingHorizontal: 24,
@@ -175,6 +175,164 @@ export const styles = StyleSheet.create({
     fontWeight: '500',
   },
   backButtonTextRTL: {
+    fontFamily: 'System',
+  },
+  headerBlock: {
+    height: 180,
+    backgroundColor: colors.primary,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  topographicSvg: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  curveDivider: {
+    height: 60,
+    backgroundColor: colors.primary,
+    marginTop: -1,
+  },
+  formWrapper: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 24,
+    paddingTop: 10,
+    paddingBottom: 40,
+    flex: 1,
+  },
+  formHeadingContainer: {
+    marginBottom: 28,
+    alignSelf: 'flex-start',
+    width: '100%',
+  },
+  formHeadingContainerRTL: {
+    alignSelf: 'flex-end',
+  },
+  formHeading: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: colors.textDark,
+    textAlign: 'left',
+  },
+  formHeadingRTL: {
+    textAlign: 'right',
+    fontFamily: 'System',
+  },
+  formHeadingUnderline: {
+    width: 38,
+    height: 3,
+    backgroundColor: colors.primary,
+    marginTop: 6,
+  },
+  formHeadingUnderlineRTL: {
+    alignSelf: 'flex-end',
+  },
+  sleekInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#E5E7EB',
+    paddingVertical: 6,
+    marginBottom: 20,
+    width: '100%',
+  },
+  sleekInputWrapperRTL: {
+    flexDirection: 'row-reverse',
+  },
+  sleekInputWrapperActive: {
+    borderBottomColor: colors.primary,
+  },
+  sleekInputIcon: {
+    marginRight: 10,
+  },
+  sleekInputIconRTL: {
+    marginRight: 0,
+    marginLeft: 10,
+  },
+  sleekInputDivider: {
+    width: 1,
+    height: 18,
+    backgroundColor: '#E5E7EB',
+    marginRight: 12,
+  },
+  sleekInputDividerRTL: {
+    marginRight: 0,
+    marginLeft: 12,
+  },
+  sleekTextInput: {
+    flex: 1,
+    fontSize: 15,
+    color: colors.textDark,
+    paddingVertical: 6,
+    textAlign: 'left',
+  },
+  sleekTextInputRTL: {
+    textAlign: 'right',
+  },
+  rememberContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 4,
+    marginBottom: 24,
+    width: '100%',
+  },
+  rememberContainerRTL: {
+    flexDirection: 'row-reverse',
+  },
+  rememberCheckboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  rememberCheckboxRowRTL: {
+    flexDirection: 'row-reverse',
+  },
+  rememberText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
+  rememberTextRTL: {
+    fontFamily: 'System',
+  },
+  forgotText: {
+    fontSize: 13,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  forgotTextRTL: {
+    fontFamily: 'System',
+  },
+  submitButtonTextNew: {
+    color: colors.textWhite,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  footerToggleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 24,
+    gap: 4,
+  },
+  footerToggleContainerRTL: {
+    flexDirection: 'row-reverse',
+  },
+  footerToggleText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  footerToggleTextRTL: {
+    fontFamily: 'System',
+  },
+  footerToggleLink: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: 'bold',
+  },
+  footerToggleLinkRTL: {
     fontFamily: 'System',
   },
 });

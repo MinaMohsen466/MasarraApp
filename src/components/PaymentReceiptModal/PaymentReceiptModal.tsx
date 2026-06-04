@@ -2,20 +2,16 @@ import React from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   Modal,
   ScrollView,
-  Dimensions,
   SafeAreaView,
   Share,
 } from 'react-native';
-import Svg, { Circle, Path, Polyline, Line } from 'react-native-svg';
+import Svg, { Circle, Path, Line } from 'react-native-svg';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { styles } from './styles';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export interface ReceiptData {
   status: 'success' | 'pending' | 'failed';
@@ -42,7 +38,7 @@ const PaymentReceiptModal: React.FC<PaymentReceiptModalProps> = ({
   receiptData,
   onClose,
 }) => {
-  const { isRTL, t } = useLanguage();
+  const { isRTL } = useLanguage();
 
   if (!receiptData) return null;
 
@@ -62,7 +58,6 @@ const PaymentReceiptModal: React.FC<PaymentReceiptModalProps> = ({
 
   const isSuccess = status === 'success';
   const isPending = status === 'pending';
-  const isFailed = status === 'failed';
 
   let formattedDate = '';
   try {

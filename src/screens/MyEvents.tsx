@@ -8,19 +8,21 @@ import {
   FlatList,
   Clipboard,
   Linking,
-  Modal,
   StatusBar,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLanguage } from '../contexts/LanguageContext';
 import { colors } from '../constants/colors';
+import Svg, { Path } from 'react-native-svg';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { CustomAlert } from '../components/CustomAlert';
+import OccasionSelector from '../components/SearchSection/OccasionSelector';
+import DateSelector from '../components/SearchSection/DateSelector';
 import { API_URL } from '../config/api.config';
 import { myEventsStyles as styles } from './myEventsStyles';
-import { fetchOccasions } from '../services/api';
+import { fetchOccasions, Occasion } from '../services/api';
 import { getQRCodeByBooking, getUserQRCodes } from '../services/qrCodeApi';
-import DateTimePicker from '@react-native-community/datetimepicker';
 
 interface MyEventsProps {
   onBack?: () => void;
@@ -57,15 +59,15 @@ interface MyEvent {
   guestLimit: number;
 }
 
-interface Occasion {
-  _id: string;
-  name: string;
-  nameAr: string;
-  isActive: boolean;
-}
-
 const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
   const { isRTL } = useLanguage();
+  const getStatusBadgeStyle = (status: string) => {
+    const lower = status ? status.toLowerCase() : '';
+    if (lower === 'confirmed') return { bg: '#EAF8F1', text: '#2E7D32' };
+    if (lower === 'pending') return { bg: '#FFF8E1', text: '#F57F17' };
+    if (lower === 'cancelled') return { bg: '#FEEBEE', text: '#C62828' };
+    return { bg: '#F1F5F9', text: '#475569' };
+  };
   const insets = useSafeAreaInsets();
   const [events, setEvents] = useState<MyEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -405,11 +407,9 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
     }
   };
 
-  const handleDateChange = (_event: any, date?: Date) => {
+  const handleDateSelect = (date: Date) => {
+    setSelectedDate(date);
     setShowDatePicker(false);
-    if (date) {
-      setSelectedDate(date);
-    }
   };
 
   const clearDateFilter = () => {
@@ -466,23 +466,51 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
 
   const renderEventItem = ({ item }: { item: MyEvent }) => {
     const isExpanded = expandedEventId === item._id;
+    const statusStyle = getStatusBadgeStyle(item.status);
 
     return (
       <View style={styles.eventCard}>
         <View style={styles.eventHeader}>
-          <View style={styles.eventInfo}>
-            <Text style={styles.eventDate}>{formatDate(item.eventDate)}</Text>
-            <View style={styles.eventDetails}>
-              <Text style={styles.eventTitle}>{getOccasionName(item)}</Text>
-              <Text style={styles.eventVendor}>{getVendorName(item)}</Text>
-            </View>
+          <View style={styles.eventMainInfo}>
+            <Text style={styles.eventTitle}>{getOccasionName(item)}</Text>
+            {getVendorName(item) ? (
+              <Text style={styles.eventVendor}>
+                {isRTL ? 'مقدم الخدمة: ' : 'Vendor: '}
+                <Text style={styles.eventVendorName}>{getVendorName(item)}</Text>
+              </Text>
+            ) : null}
           </View>
           <TouchableOpacity
             style={styles.menuButton}
             onPress={() => setExpandedEventId(isExpanded ? null : item._id)}
+            activeOpacity={0.7}
           >
-            <Text style={styles.menuIcon}>⋮</Text>
+            <Icon name="ellipsis-vertical" size={18} color={colors.textSecondary} />
           </TouchableOpacity>
+        </View>
+
+        <View style={styles.eventMetaRow}>
+          <View style={styles.eventDateBadge}>
+            <Icon name="calendar-outline" size={14} color={colors.primary} />
+            <Text style={styles.eventDateText}>{formatDate(item.eventDate)}</Text>
+          </View>
+          
+          <View style={styles.guestCountBadge}>
+            <Icon name="people-outline" size={14} color="#475569" />
+            <Text style={styles.guestCountText}>
+              {isRTL 
+                ? `الضيوف: ${item.guests?.length || 0}/${item.guestLimit || 0}`
+                : `Guests: ${item.guests?.length || 0}/${item.guestLimit || 0}`}
+            </Text>
+          </View>
+
+          <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
+            <Text style={[styles.statusText, { color: statusStyle.text }]}>
+              {isRTL 
+                ? (item.status === 'confirmed' ? 'مؤكد' : item.status === 'pending' ? 'قيد الانتظار' : 'ملغي')
+                : item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+            </Text>
+          </View>
         </View>
 
         {isExpanded && (
@@ -490,6 +518,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
             <TouchableOpacity
               style={styles.simpleActionButton}
               onPress={() => handleCopyQR(item._id)}
+              activeOpacity={0.8}
             >
               <Text style={styles.simpleActionButtonText}>
                 {isRTL ? 'نسخ QR' : 'Copy QR'}
@@ -499,6 +528,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
             <TouchableOpacity
               style={styles.simpleActionButton}
               onPress={() => handleViewQR(item._id)}
+              activeOpacity={0.8}
             >
               <Text style={styles.simpleActionButtonText}>
                 {isRTL ? 'عرض QR' : 'View QR'}
@@ -508,6 +538,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
             <TouchableOpacity
               style={styles.simpleActionButton}
               onPress={() => handleGuestList(item._id)}
+              activeOpacity={0.8}
             >
               <Text style={styles.simpleActionButtonText}>
                 {isRTL ? 'الضيوف' : 'Guests'}
@@ -520,7 +551,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
           <View style={styles.guestListContainer}>
             {loadingGuests[item._id] ? (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator size="small" color="#8B4789" />
+                <ActivityIndicator size="small" color={colors.primary} />
                 <Text style={styles.loadingText}>
                   {isRTL ? 'جاري التحميل...' : 'Loading...'}
                 </Text>
@@ -541,6 +572,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
                   <TouchableOpacity
                     style={styles.deleteGuestButton}
                     onPress={() => handleRemoveGuest(guest._id, item._id)}
+                    activeOpacity={0.8}
                   >
                     <Text style={styles.deleteGuestButtonText}>✕</Text>
                   </TouchableOpacity>
@@ -565,31 +597,42 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
           <View
             style={{ height: insets.top, backgroundColor: colors.primary }}
           />
-          <View style={styles.container}>
-            {/* Header background */}
-            <View style={[styles.headerBackground, { height: 56 }]} />
+          <View style={[styles.container, { position: 'relative' }]}>
+            {/* Curved Header Background Block with topographic waves & integrated navigation */}
+            <View style={styles.profileHeaderBlock}>
+              <Svg width="100%" height="100%" viewBox="0 0 375 110" preserveAspectRatio="none" style={styles.topographicSvg}>
+                <Path d="M-20 20 C80 55 180 12 300 45 T400 35" stroke="rgba(255,255,255,0.08)" strokeWidth={1.5} fill="none" />
+                <Path d="M-20 35 C80 70 180 20 300 60 T400 50" stroke="rgba(255,255,255,0.12)" strokeWidth={1.5} fill="none" />
+                <Path d="M-20 50 C80 85 180 28 300 75 T400 65" stroke="rgba(255,255,255,0.15)" strokeWidth={2} fill="none" />
+              </Svg>
 
-            <View style={[styles.headerBar, isRTL && styles.headerBarRTL]}>
-              {onBack && (
-                <TouchableOpacity
-                  style={styles.headerBackButton}
-                  onPress={onBack}
-                  activeOpacity={0.8}
-                >
-                  <Text
-                    style={[
-                      styles.headerBackIcon,
-                      isRTL && styles.headerBackTextRTL,
-                    ]}
+              {/* Overlay Navigation Bar */}
+              <View style={[styles.headerOverlayBar, isRTL && styles.headerOverlayBarRTL]}>
+                {onBack && (
+                  <TouchableOpacity
+                    style={styles.headerBackButtonCircle}
+                    onPress={onBack}
+                    activeOpacity={0.8}
                   >
-                    {isRTL ? '›' : '‹'}
-                  </Text>
-                </TouchableOpacity>
-              )}
-              <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
-                {isRTL ? 'فعالياتي' : 'My Events'}
-              </Text>
-              <View style={styles.headerSpacer} />
+                    <Icon
+                      name={isRTL ? 'chevron-forward' : 'chevron-back'}
+                      size={20}
+                      color={colors.textWhite}
+                    />
+                  </TouchableOpacity>
+                )}
+                <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
+                  {isRTL ? 'فعالياتي' : 'My Events'}
+                </Text>
+                <View style={styles.headerSpacer} />
+              </View>
+            </View>
+
+            {/* Curved Wave Divider (Transitions header to card background) */}
+            <View style={styles.profileCurveDivider}>
+              <Svg height="30" width="100%" viewBox="0 0 375 30" preserveAspectRatio="none">
+                <Path d="M0,20 C100,40 250,0 375,20 L375,30 L0,30 Z" fill={colors.background} />
+              </Svg>
             </View>
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.primary} />
@@ -609,32 +652,42 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
       />
       <View style={{ flex: 1, backgroundColor: colors.primary }}>
         <View style={{ height: insets.top, backgroundColor: colors.primary }} />
-        <View style={styles.container}>
-          {/* Header background */}
-          <View style={[styles.headerBackground, { height: 56 }]} />
+        <View style={[styles.container, { position: 'relative' }]}>
+          {/* Curved Header Background Block with topographic waves & integrated navigation */}
+          <View style={styles.profileHeaderBlock}>
+            <Svg width="100%" height="100%" viewBox="0 0 375 110" preserveAspectRatio="none" style={styles.topographicSvg}>
+              <Path d="M-20 20 C80 55 180 12 300 45 T400 35" stroke="rgba(255,255,255,0.08)" strokeWidth={1.5} fill="none" />
+              <Path d="M-20 35 C80 70 180 20 300 60 T400 50" stroke="rgba(255,255,255,0.12)" strokeWidth={1.5} fill="none" />
+              <Path d="M-20 50 C80 85 180 28 300 75 T400 65" stroke="rgba(255,255,255,0.15)" strokeWidth={2} fill="none" />
+            </Svg>
 
-          {/* Header */}
-          <View style={[styles.headerBar, isRTL && styles.headerBarRTL]}>
-            {onBack && (
-              <TouchableOpacity
-                style={styles.headerBackButton}
-                onPress={onBack}
-                activeOpacity={0.8}
-              >
-                <Text
-                  style={[
-                    styles.headerBackIcon,
-                    isRTL && styles.headerBackTextRTL,
-                  ]}
+            {/* Overlay Navigation Bar */}
+            <View style={[styles.headerOverlayBar, isRTL && styles.headerOverlayBarRTL]}>
+              {onBack && (
+                <TouchableOpacity
+                  style={styles.headerBackButtonCircle}
+                  onPress={onBack}
+                  activeOpacity={0.8}
                 >
-                  {isRTL ? '›' : '‹'}
-                </Text>
-              </TouchableOpacity>
-            )}
-            <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
-              {isRTL ? 'فعالياتي' : 'My Events'}
-            </Text>
-            <View style={styles.headerSpacer} />
+                  <Icon
+                    name={isRTL ? 'chevron-forward' : 'chevron-back'}
+                    size={20}
+                    color={colors.textWhite}
+                  />
+                </TouchableOpacity>
+              )}
+              <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
+                {isRTL ? 'فعالياتي' : 'My Events'}
+              </Text>
+              <View style={styles.headerSpacer} />
+            </View>
+          </View>
+
+          {/* Curved Wave Divider (Transitions header to card background) */}
+          <View style={styles.profileCurveDivider}>
+            <Svg height="30" width="100%" viewBox="0 0 375 30" preserveAspectRatio="none">
+              <Path d="M0,20 C100,40 250,0 375,20 L375,30 L0,30 Z" fill={colors.background} />
+            </Svg>
           </View>
 
           {/* Date and Occasion Filters */}
@@ -642,7 +695,9 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
             <TouchableOpacity
               style={styles.dateFilterButton}
               onPress={() => setShowDatePicker(true)}
+              activeOpacity={0.8}
             >
+              <Icon name="calendar-outline" size={16} color={colors.primary} style={isRTL ? { marginLeft: 6 } : { marginRight: 6 }} />
               <Text style={styles.dateFilterText} numberOfLines={1}>
                 {selectedDate
                   ? selectedDate.toLocaleDateString('en-US', {
@@ -650,22 +705,26 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
                       day: '2-digit',
                       year: 'numeric',
                     })
-                  : 'mm/dd/yyyy'}
+                  : (isRTL ? 'تحديد التاريخ' : 'Select Date')}
               </Text>
-              {selectedDate && (
+              {selectedDate ? (
                 <TouchableOpacity
                   onPress={clearDateFilter}
                   style={styles.clearButton}
                 >
                   <Text style={styles.clearButtonText}>✕</Text>
                 </TouchableOpacity>
+              ) : (
+                <Icon name="chevron-down" size={14} color="#94A3B8" />
               )}
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.occasionFilterButton}
               onPress={() => setShowOccasionPicker(true)}
+              activeOpacity={0.8}
             >
+              <Icon name="funnel-outline" size={16} color={colors.primary} style={isRTL ? { marginLeft: 6 } : { marginRight: 6 }} />
               <Text
                 style={styles.occasionFilterText}
                 numberOfLines={1}
@@ -674,13 +733,15 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
                 {selectedOccasion ||
                   (isRTL ? 'اختر المناسبة' : 'Select Occasion')}
               </Text>
-              {selectedOccasion && (
+              {selectedOccasion ? (
                 <TouchableOpacity
                   onPress={clearOccasionFilter}
                   style={styles.clearButton}
                 >
                   <Text style={styles.clearButtonText}>✕</Text>
                 </TouchableOpacity>
+              ) : (
+                <Icon name="chevron-down" size={14} color="#94A3B8" />
               )}
             </TouchableOpacity>
           </View>
@@ -743,60 +804,23 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
           />
 
           {/* Date Picker Modal */}
-          {showDatePicker && (
-            <DateTimePicker
-              value={selectedDate || new Date()}
-              mode="date"
-              display="default"
-              onChange={handleDateChange}
-            />
-          )}
+          <DateSelector
+            visible={showDatePicker}
+            onClose={() => setShowDatePicker(false)}
+            onSelect={handleDateSelect}
+            selectedDate={selectedDate || undefined}
+            allowPastDates={true}
+          />
 
           {/* Occasion Picker Modal */}
-          <Modal
+          <OccasionSelector
             visible={showOccasionPicker}
-            transparent
-            animationType="slide"
-            onRequestClose={() => setShowOccasionPicker(false)}
-          >
-            <TouchableOpacity
-              style={styles.modalOverlay}
-              activeOpacity={1}
-              onPress={() => setShowOccasionPicker(false)}
-            >
-              <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>
-                  {isRTL ? 'اختر المناسبة' : 'Select Occasion'}
-                </Text>
-                <ScrollView style={styles.occasionList}>
-                  {occasions.map(occasion => (
-                    <TouchableOpacity
-                      key={occasion._id}
-                      style={styles.occasionItem}
-                      onPress={() => {
-                        setSelectedOccasion(
-                          isRTL ? occasion.nameAr : occasion.name,
-                        );
-                        setShowOccasionPicker(false);
-                      }}
-                    >
-                      <Text style={styles.occasionItemText}>
-                        {isRTL ? occasion.nameAr : occasion.name}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-                <TouchableOpacity
-                  style={styles.modalCloseButton}
-                  onPress={() => setShowOccasionPicker(false)}
-                >
-                  <Text style={styles.modalCloseButtonText}>
-                    {isRTL ? 'إغلاق' : 'Close'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          </Modal>
+            onClose={() => setShowOccasionPicker(false)}
+            onSelect={(occasion) => {
+              setSelectedOccasion(isRTL ? occasion.nameAr : occasion.name);
+            }}
+            selectedOccasion={occasions.find(o => (isRTL ? o.nameAr : o.name) === selectedOccasion)}
+          />
         </View>
       </View>
     </>

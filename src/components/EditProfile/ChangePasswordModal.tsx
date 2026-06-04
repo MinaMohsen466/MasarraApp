@@ -7,9 +7,10 @@ import {
   Modal,
   Alert,
   ActivityIndicator,
+  StyleSheet,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { modalStyles } from './modalStyles';
+import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { API_URL } from '../../config/api.config';
@@ -41,6 +42,10 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [userId, setUserId] = useState<string>(''); // Store userId from forgot-password response
+  const [currentActive, setCurrentActive] = useState(false);
+  const [newActive, setNewActive] = useState(false);
+  const [confirmActive, setConfirmActive] = useState(false);
+  const [codeActive, setCodeActive] = useState(false);
 
   const handleForgotPassword = async () => {
     try {
@@ -227,15 +232,18 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
       animationType="fade"
       onRequestClose={handleClose}
     >
-      <View style={modalStyles.overlay}>
-        <View style={modalStyles.modal}>
+      <View style={styles.overlay}>
+        <View style={styles.modal}>
           {/* Header */}
-          <View style={modalStyles.header}>
-            <Text style={[modalStyles.title, isRTL && modalStyles.titleRTL]}>
-              {isRTL ? 'تغيير كلمة المرور' : 'Change Password'}
-            </Text>
+          <View style={styles.header}>
+            <View style={styles.titleContainer}>
+              <Text style={[styles.title, isRTL && styles.titleRTL]}>
+                {isRTL ? 'تغيير كلمة المرور' : 'Change Password'}
+              </Text>
+              <View style={[styles.titleUnderline, isRTL && styles.titleUnderlineRTL]} />
+            </View>
             <Text
-              style={[modalStyles.subtitle, isRTL && modalStyles.subtitleRTL]}
+              style={[styles.subtitle, isRTL && styles.subtitleRTL]}
             >
               {isRTL
                 ? 'الرجاء إدخال كلمة المرور الحالية والجديدة'
@@ -244,18 +252,25 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
           </View>
 
           {/* Form */}
-          <View style={modalStyles.form}>
+          <View style={styles.form}>
             {/* Current Password - Only show in normal mode */}
             {mode === 'normal' && (
-              <View style={modalStyles.inputContainer}>
+              <View style={styles.inputContainer}>
                 <Text
-                  style={[modalStyles.label, isRTL && modalStyles.labelRTL]}
+                  style={[styles.label, isRTL && styles.labelRTL]}
                 >
                   {isRTL ? 'كلمة المرور الحالية' : 'Current Password'}
                 </Text>
-                <View style={modalStyles.passwordInputWrapper}>
+                <View style={[styles.sleekInputWrapper, isRTL && styles.sleekInputWrapperRTL, currentActive && styles.sleekInputWrapperActive]}>
+                  <Icon
+                    name="lock-open-outline"
+                    size={18}
+                    color={currentActive ? colors.primary : '#9CA3AF'}
+                    style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
+                  />
+                  <View style={[styles.sleekInputDivider, isRTL && styles.sleekInputDividerRTL]} />
                   <TextInput
-                    style={[modalStyles.input, isRTL && modalStyles.inputRTL]}
+                    style={[styles.sleekTextInput, isRTL && styles.sleekTextInputRTL]}
                     value={currentPassword}
                     onChangeText={setCurrentPassword}
                     placeholder={
@@ -263,23 +278,22 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
                         ? 'أدخل كلمة المرور الحالية'
                         : 'Enter current password'
                     }
-                    placeholderTextColor="#999"
+                    placeholderTextColor="#9CA3AF"
                     secureTextEntry={!showCurrentPassword}
                     autoCapitalize="none"
+                    onFocus={() => setCurrentActive(true)}
+                    onBlur={() => setCurrentActive(false)}
                   />
                   <TouchableOpacity
-                    style={[
-                      modalStyles.eyeButton,
-                      isRTL && modalStyles.eyeButtonRTL,
-                    ]}
+                    style={styles.eyeButton}
                     onPress={() => setShowCurrentPassword(!showCurrentPassword)}
                   >
                     <Icon
                       name={
                         showCurrentPassword ? 'eye-outline' : 'eye-off-outline'
                       }
-                      size={22}
-                      color="#666"
+                      size={18}
+                      color="#6B7280"
                     />
                   </TouchableOpacity>
                 </View>
@@ -287,12 +301,12 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
                 <TouchableOpacity
                   onPress={handleForgotPassword}
                   disabled={isLoading}
-                  style={{ marginTop: 8 }}
+                  style={{ marginTop: 4 }}
                 >
                   <Text
                     style={[
-                      modalStyles.forgotPasswordLink,
-                      isRTL && modalStyles.forgotPasswordLinkRTL,
+                      styles.forgotPasswordLink,
+                      isRTL && styles.forgotPasswordLinkRTL,
                     ]}
                   >
                     {isRTL ? 'نسيت كلمة المرور؟' : 'Forgot password?'}
@@ -303,26 +317,37 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
 
             {/* Reset Code - Only show in forgot mode after OTP sent */}
             {mode === 'forgot' && otpSent && (
-              <View style={modalStyles.inputContainer}>
+              <View style={styles.inputContainer}>
                 <Text
-                  style={[modalStyles.label, isRTL && modalStyles.labelRTL]}
+                  style={[styles.label, isRTL && styles.labelRTL]}
                 >
                   {isRTL ? 'رمز إعادة التعيين' : 'Reset Code'}
                 </Text>
-                <TextInput
-                  style={[modalStyles.input, isRTL && modalStyles.inputRTL]}
-                  value={resetCode}
-                  onChangeText={setResetCode}
-                  placeholder={
-                    isRTL
-                      ? 'أدخل الرمز المرسل للإيميل'
-                      : 'Enter code sent to email'
-                  }
-                  placeholderTextColor="#999"
-                  keyboardType="number-pad"
-                  maxLength={6}
-                />
-                <Text style={[modalStyles.hint, isRTL && modalStyles.hintRTL]}>
+                <View style={[styles.sleekInputWrapper, isRTL && styles.sleekInputWrapperRTL, codeActive && styles.sleekInputWrapperActive]}>
+                  <Icon
+                    name="key-outline"
+                    size={18}
+                    color={codeActive ? colors.primary : '#9CA3AF'}
+                    style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
+                  />
+                  <View style={[styles.sleekInputDivider, isRTL && styles.sleekInputDividerRTL]} />
+                  <TextInput
+                    style={[styles.sleekTextInput, isRTL && styles.sleekTextInputRTL]}
+                    value={resetCode}
+                    onChangeText={setResetCode}
+                    placeholder={
+                      isRTL
+                        ? 'أدخل الرمز المرسل للإيميل'
+                        : 'Enter code sent to email'
+                    }
+                    placeholderTextColor="#9CA3AF"
+                    keyboardType="number-pad"
+                    maxLength={6}
+                    onFocus={() => setCodeActive(true)}
+                    onBlur={() => setCodeActive(false)}
+                  />
+                </View>
+                <Text style={[styles.hint, isRTL && styles.hintRTL]}>
                   {isRTL
                     ? 'تحقق من بريدك الإلكتروني للحصول على رمز مكون من 6 أرقام'
                     : 'Check your email for 6-digit code'}
@@ -331,37 +356,43 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
             )}
 
             {/* New Password */}
-            <View style={modalStyles.inputContainer}>
-              <Text style={[modalStyles.label, isRTL && modalStyles.labelRTL]}>
+            <View style={styles.inputContainer}>
+              <Text style={[styles.label, isRTL && styles.labelRTL]}>
                 {isRTL ? 'كلمة المرور الجديدة' : 'New Password'}
               </Text>
-              <View style={modalStyles.passwordInputWrapper}>
+              <View style={[styles.sleekInputWrapper, isRTL && styles.sleekInputWrapperRTL, newActive && styles.sleekInputWrapperActive]}>
+                <Icon
+                  name="lock-closed-outline"
+                  size={18}
+                  color={newActive ? colors.primary : '#9CA3AF'}
+                  style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
+                />
+                <View style={[styles.sleekInputDivider, isRTL && styles.sleekInputDividerRTL]} />
                 <TextInput
-                  style={[modalStyles.input, isRTL && modalStyles.inputRTL]}
+                  style={[styles.sleekTextInput, isRTL && styles.sleekTextInputRTL]}
                   value={newPassword}
                   onChangeText={setNewPassword}
                   placeholder={
                     isRTL ? 'أدخل كلمة المرور الجديدة' : 'Enter new password'
                   }
-                  placeholderTextColor="#999"
+                  placeholderTextColor="#9CA3AF"
                   secureTextEntry={!showNewPassword}
                   autoCapitalize="none"
+                  onFocus={() => setNewActive(true)}
+                  onBlur={() => setNewActive(false)}
                 />
                 <TouchableOpacity
-                  style={[
-                    modalStyles.eyeButton,
-                    isRTL && modalStyles.eyeButtonRTL,
-                  ]}
+                  style={styles.eyeButton}
                   onPress={() => setShowNewPassword(!showNewPassword)}
                 >
                   <Icon
                     name={showNewPassword ? 'eye-outline' : 'eye-off-outline'}
-                    size={22}
-                    color="#666"
+                    size={18}
+                    color="#6B7280"
                   />
                 </TouchableOpacity>
               </View>
-              <Text style={[modalStyles.hint, isRTL && modalStyles.hintRTL]}>
+              <Text style={[styles.hint, isRTL && styles.hintRTL]}>
                 {isRTL
                   ? 'يجب أن تكون 6 أحرف على الأقل'
                   : 'Must be at least 6 characters'}
@@ -369,13 +400,20 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
             </View>
 
             {/* Confirm Password */}
-            <View style={modalStyles.inputContainer}>
-              <Text style={[modalStyles.label, isRTL && modalStyles.labelRTL]}>
+            <View style={styles.inputContainer}>
+              <Text style={[styles.label, isRTL && styles.labelRTL]}>
                 {isRTL ? 'تأكيد كلمة المرور' : 'Confirm Password'}
               </Text>
-              <View style={modalStyles.passwordInputWrapper}>
+              <View style={[styles.sleekInputWrapper, isRTL && styles.sleekInputWrapperRTL, confirmActive && styles.sleekInputWrapperActive]}>
+                <Icon
+                  name="lock-closed-outline"
+                  size={18}
+                  color={confirmActive ? colors.primary : '#9CA3AF'}
+                  style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
+                />
+                <View style={[styles.sleekInputDivider, isRTL && styles.sleekInputDividerRTL]} />
                 <TextInput
-                  style={[modalStyles.input, isRTL && modalStyles.inputRTL]}
+                  style={[styles.sleekTextInput, isRTL && styles.sleekTextInputRTL]}
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   placeholder={
@@ -383,23 +421,22 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
                       ? 'أعد إدخال كلمة المرور الجديدة'
                       : 'Re-enter new password'
                   }
-                  placeholderTextColor="#999"
+                  placeholderTextColor="#9CA3AF"
                   secureTextEntry={!showConfirmPassword}
                   autoCapitalize="none"
+                  onFocus={() => setConfirmActive(true)}
+                  onBlur={() => setConfirmActive(false)}
                 />
                 <TouchableOpacity
-                  style={[
-                    modalStyles.eyeButton,
-                    isRTL && modalStyles.eyeButtonRTL,
-                  ]}
+                  style={styles.eyeButton}
                   onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                 >
                   <Icon
                     name={
                       showConfirmPassword ? 'eye-outline' : 'eye-off-outline'
                     }
-                    size={22}
-                    color="#666"
+                    size={18}
+                    color="#6B7280"
                   />
                 </TouchableOpacity>
               </View>
@@ -407,24 +444,24 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
           </View>
 
           {/* Buttons */}
-          <View style={modalStyles.buttons}>
+          <View style={[styles.buttons, isRTL && styles.buttonsRTL]}>
             <TouchableOpacity
-              style={[modalStyles.button, modalStyles.cancelButton]}
+              style={[styles.button, styles.cancelButton]}
               onPress={handleClose}
               disabled={isLoading}
               activeOpacity={0.7}
             >
               <Text
                 style={[
-                  modalStyles.cancelButtonText,
-                  isRTL && modalStyles.cancelButtonTextRTL,
+                  styles.cancelButtonText,
+                  isRTL && styles.cancelButtonTextRTL,
                 ]}
               >
                 {isRTL ? 'إلغاء' : 'Cancel'}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[modalStyles.button, modalStyles.submitButton]}
+              style={[styles.button, styles.submitButton]}
               onPress={handleSubmit}
               disabled={isLoading}
               activeOpacity={0.7}
@@ -434,8 +471,8 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
               ) : (
                 <Text
                   style={[
-                    modalStyles.submitButtonText,
-                    isRTL && modalStyles.submitButtonTextRTL,
+                    styles.submitButtonText,
+                    isRTL && styles.submitButtonTextRTL,
                   ]}
                 >
                   {isRTL ? 'تغيير كلمة المرور' : 'Change Password'}
@@ -448,5 +485,197 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
     </Modal>
   );
 };
+
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: colors.overlay,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modal: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    width: '100%',
+    maxWidth: 380,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 10,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
+    overflow: 'hidden',
+  },
+  header: {
+    paddingTop: 28,
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+    alignItems: 'center',
+  },
+  titleContainer: {
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.primaryDark,
+    textAlign: 'center',
+  },
+  titleRTL: {
+    fontFamily: 'System',
+  },
+  titleUnderline: {
+    width: 32,
+    height: 2.5,
+    backgroundColor: colors.primary,
+    marginTop: 6,
+    borderRadius: 1.5,
+  },
+  titleUnderlineRTL: {
+    alignSelf: 'center',
+  },
+  subtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginTop: 4,
+    paddingHorizontal: 10,
+  },
+  subtitleRTL: {
+    fontFamily: 'System',
+  },
+  form: {
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 12,
+  },
+  inputContainer: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#4B5563',
+    marginBottom: 6,
+  },
+  labelRTL: {
+    textAlign: 'right',
+    fontFamily: 'System',
+  },
+  sleekInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#E5E7EB',
+    paddingVertical: 4,
+    width: '100%',
+  },
+  sleekInputWrapperRTL: {
+    flexDirection: 'row-reverse',
+  },
+  sleekInputWrapperActive: {
+    borderBottomColor: colors.primary,
+  },
+  sleekInputIcon: {
+    marginRight: 8,
+  },
+  sleekInputIconRTL: {
+    marginRight: 0,
+    marginLeft: 8,
+  },
+  sleekInputDivider: {
+    width: 1,
+    height: 16,
+    backgroundColor: '#E5E7EB',
+    marginRight: 10,
+  },
+  sleekInputDividerRTL: {
+    marginRight: 0,
+    marginLeft: 10,
+  },
+  sleekTextInput: {
+    flex: 1,
+    fontSize: 14.5,
+    color: colors.textDark,
+    paddingVertical: 6,
+    textAlign: 'left',
+  },
+  sleekTextInputRTL: {
+    textAlign: 'right',
+  },
+  hint: {
+    fontSize: 11.5,
+    color: '#9CA3AF',
+    marginTop: 6,
+  },
+  hintRTL: {
+    fontFamily: 'System',
+    textAlign: 'right',
+  },
+  passwordInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+  },
+  eyeButton: {
+    paddingHorizontal: 8,
+    justifyContent: 'center',
+  },
+  forgotPasswordLink: {
+    fontSize: 13,
+    color: colors.primary,
+    textAlign: 'left',
+  },
+  forgotPasswordLinkRTL: {
+    textAlign: 'right',
+    fontFamily: 'System',
+  },
+  buttons: {
+    flexDirection: 'row',
+    paddingHorizontal: 24,
+    paddingBottom: 28,
+    paddingTop: 12,
+    gap: 12,
+  },
+  buttonsRTL: {
+    flexDirection: 'row-reverse',
+  },
+  button: {
+    flex: 1,
+    height: 46,
+    borderRadius: 23,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#4B5563',
+  },
+  cancelButtonTextRTL: {
+    fontFamily: 'System',
+  },
+  submitButton: {
+    backgroundColor: colors.primary,
+  },
+  submitButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  submitButtonTextRTL: {
+    fontFamily: 'System',
+  },
+});
 
 export default ChangePasswordModal;
