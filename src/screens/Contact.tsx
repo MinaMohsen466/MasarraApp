@@ -167,11 +167,7 @@ const Contact: React.FC<ContactProps> = ({
 
   return (
     <>
-      <StatusBar
-        backgroundColor={colors.primary}
-        barStyle="light-content"
-        translucent={false}
-      />
+      <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
       <CustomAlert
         visible={alertVisible}
         title={alertTitle}

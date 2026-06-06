@@ -2,7 +2,6 @@ import { StyleSheet } from 'react-native';
 import { colors } from '../../constants/colors';
 
 export const createStyles = (screenWidth: number, screenHeight: number) => {
-  const isTallScreen = screenHeight > 800;
   const isSmallScreen = screenHeight < 700;
   const isMediumScreen = screenHeight >= 700 && screenHeight <= 800;
   const drawerWidth = screenWidth * 0.75;
@@ -40,6 +39,10 @@ export const createStyles = (screenWidth: number, screenHeight: number) => {
       paddingTop: 10,
     },
 
+    flexContainer: {
+      flex: 1,
+    },
+
     // Drawer content wrapper
     drawerContent: {
       flex: 1,
@@ -63,6 +66,8 @@ export const createStyles = (screenWidth: number, screenHeight: number) => {
 
     // Individual menu item
     menuItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
       paddingVertical: isSmallScreen ? 9 : isMediumScreen ? 12 : 14,
       paddingHorizontal: 25,
       borderBottomWidth: 0.5,
@@ -71,6 +76,7 @@ export const createStyles = (screenWidth: number, screenHeight: number) => {
 
     // Menu item text
     menuItemText: {
+      flex: 1,
       fontSize: isSmallScreen ? 13 : 16,
       color: colors.textPrimary,
       fontWeight: '500',
@@ -157,11 +163,33 @@ export const createStyles = (screenWidth: number, screenHeight: number) => {
 
     menuItemsContainerRTL: {},
 
-    menuItemRTL: {},
+    menuItemRTL: {
+      flexDirection: 'row-reverse',
+    },
 
     menuItemTextRTL: {
       textAlign: 'right',
       fontFamily: 'System',
+    },
+
+    menuIconContainer: {
+      marginRight: 12,
+      width: 24,
+      height: 24,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+
+    menuIconContainerRTL: {
+      marginRight: 0,
+      marginLeft: 12,
+    },
+
+    menuChevronContainer: {
+      width: 20,
+      height: 20,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
   });
 };

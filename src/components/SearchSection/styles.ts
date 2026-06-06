@@ -32,10 +32,13 @@ export const styles = StyleSheet.create({
     marginRight: 10,
     width: isTablet ? 28 : 24,
     height: isTablet ? 28 : 24,
-    backgroundColor: colors.primary,
-    borderRadius: isTablet ? 6 : 5,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
+  iconWrapperRTL: {
+    marginRight: 0,
+    marginLeft: 10,
   },
   calendarIcon: {
     width: isTablet ? 28 : 24,
@@ -94,11 +97,6 @@ export const styles = StyleSheet.create({
     height: 24,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  arrowText: {
-    fontSize: 20,
-    color: colors.primary,
-    fontWeight: '600',
   },
   searchButton: {
     backgroundColor: colors.primaryDark,

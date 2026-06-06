@@ -94,11 +94,7 @@ const Wishlist: React.FC<Props> = ({ onBack, onSelectService }) => {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.primary }}>
-      <StatusBar
-        backgroundColor={colors.primary}
-        barStyle="light-content"
-        translucent={false}
-      />
+      <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
       <View style={{ height: insets.top, backgroundColor: colors.primary }} />
       <View style={[styles.container, { position: 'relative' }]}>
         {/* Curved Header Background Block with topographic waves & integrated navigation */}

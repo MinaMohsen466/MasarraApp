@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, Rect, Text as SvgText } from 'react-native-svg';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useGlobalDate } from '../../contexts/DateContext';
 import { styles } from './styles';
 import { Occasion } from '../../services/api';
 import OccasionSelector from './OccasionSelector';
 import DateSelector from './DateSelector';
+import { colors } from '../../constants/colors';
 
 interface SearchSectionProps {
   onSearch?: () => void;
@@ -57,13 +58,47 @@ const SearchSection: React.FC<SearchSectionProps> = ({
         activeOpacity={0.7}
         onPress={() => setShowDateModal(true)}
       >
-        <View style={styles.iconWrapper}>
-          <View style={styles.calendarIcon}>
-            <View style={styles.calendarTop} />
-            <View style={styles.calendarBody}>
-              <Text style={styles.calendarText}>{selectedDate.getDate()}</Text>
-            </View>
-          </View>
+        <View style={[styles.iconWrapper, isRTL && styles.iconWrapperRTL]}>
+          <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+            {/* Header (Top section) - Filled with colors.primary */}
+            <Path
+              d="M3 7a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v2H3V7z"
+              fill={colors.primary}
+            />
+            {/* Body (Bottom section) - Filled with light teal '#b5e7e4' */}
+            <Path
+              d="M3 9h18v9a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V9z"
+              fill="#b5e7e4"
+            />
+            {/* Outer Outline */}
+            <Rect
+              x="3"
+              y="4"
+              width="18"
+              height="17"
+              rx="3"
+              stroke={colors.primary}
+              strokeWidth={1.8}
+            />
+            {/* Binder rings */}
+            <Path
+              d="M7 2v4M17 2v4"
+              stroke={colors.primary}
+              strokeWidth={1.8}
+              strokeLinecap="round"
+            />
+            {/* Day Number text inside body */}
+            <SvgText
+              x="12"
+              y="16.5"
+              fill={colors.primaryDark}
+              fontSize="9"
+              fontWeight="bold"
+              textAnchor="middle"
+            >
+              {selectedDate.getDate()}
+            </SvgText>
+          </Svg>
         </View>
         <Text style={[styles.inputText, isRTL && styles.inputTextRTL]}>
           {formatDate(selectedDate)}
@@ -76,29 +111,43 @@ const SearchSection: React.FC<SearchSectionProps> = ({
         activeOpacity={0.7}
         onPress={() => setShowOccasionModal(true)}
       >
-        <View style={styles.iconWrapper}>
-          <Svg width={20} height={20} viewBox="0 0 120 120" fill="none">
-            {/* Top Left */}
-            <Path
-              d="M6 18C6 11.373 11.373 6 18 6H42C48.627 6 54 11.373 54 18V42C54 48.627 48.627 54 42 54H18C11.373 54 6 48.627 6 42V18Z"
-              fill="#FFFFFF"
+        <View style={[styles.iconWrapper, isRTL && styles.iconWrapperRTL]}>
+          <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+            {/* Top Left - Dark Teal */}
+            <Rect
+              x="3"
+              y="3"
+              width="8"
+              height="8"
+              rx="2.2"
+              fill={colors.primary}
             />
-            {/* Top Right */}
-            <Path
-              d="M66 18C66 11.373 71.373 6 78 6H102C108.627 6 114 11.373 114 18V42C114 48.627 108.627 54 102 54H78C71.373 54 66 48.627 66 42V18Z"
-              fill="#FFFFFF"
-              opacity={0.6}
+            {/* Top Right - Light Teal */}
+            <Rect
+              x="13"
+              y="3"
+              width="8"
+              height="8"
+              rx="2.2"
+              fill="#b5e7e4"
             />
-            {/* Bottom Left */}
-            <Path
-              d="M6 78C6 71.373 11.373 66 18 66H42C48.627 66 54 71.373 54 78V102C54 108.627 48.627 114 42 114H18C11.373 114 6 108.627 6 102V78Z"
-              fill="#FFFFFF"
-              opacity={0.6}
+            {/* Bottom Left - Light Teal */}
+            <Rect
+              x="3"
+              y="13"
+              width="8"
+              height="8"
+              rx="2.2"
+              fill="#b5e7e4"
             />
-            {/* Bottom Right */}
-            <Path
-              d="M66 78C66 71.373 71.373 66 78 66H102C108.627 66 114 71.373 114 78V102C114 108.627 108.627 114 102 114H78C71.373 114 66 108.627 66 102V78Z"
-              fill="#FFFFFF"
+            {/* Bottom Right - Dark Teal */}
+            <Rect
+              x="13"
+              y="13"
+              width="8"
+              height="8"
+              rx="2.2"
+              fill={colors.primary}
             />
           </Svg>
         </View>
@@ -112,7 +161,15 @@ const SearchSection: React.FC<SearchSectionProps> = ({
             : 'Select Occasion'}
         </Text>
         <View style={styles.arrowIcon}>
-          <Text style={styles.arrowText}>{isRTL ? '‹' : '›'}</Text>
+          <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+            <Path
+              d={isRTL ? 'M15 6l-6 6 6 6' : 'M9 6l6 6-6 6'}
+              stroke={colors.primary}
+              strokeWidth={2.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </Svg>
         </View>
       </TouchableOpacity>
 

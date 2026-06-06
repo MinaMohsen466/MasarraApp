@@ -636,11 +636,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 
   return (
     <View style={styles.container}>
-      <StatusBar
-        backgroundColor={colors.backgroundLight}
-        barStyle="dark-content"
-        translucent={false}
-      />
+      <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
       {/* Header */}
       <View
         style={[

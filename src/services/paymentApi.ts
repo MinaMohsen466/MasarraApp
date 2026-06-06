@@ -352,14 +352,77 @@ function createEmbeddedPaymentHTML(
   <title>Payment</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f5f5f5; min-height: 100vh; padding: 16px; }
-    .container { max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    .header { text-align: center; margin-bottom: 20px; color: #2A9D8F; font-size: 18px; font-weight: 600; }
-    #embedded-sessions { min-height: 400px; }
-    .loading { text-align: center; padding: 40px; color: #666; }
-    .spinner { width: 40px; height: 40px; border: 3px solid #f3f3f3; border-top: 3px solid #2A9D8F; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px; }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    .error { text-align: center; padding: 40px; color: #e74c3c; display: none; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #cedfd7; /* Match colors.background */
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .container {
+      width: 100%;
+      max-width: 450px;
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 28px 24px;
+      box-shadow: 0 10px 30px rgba(0, 161, 156, 0.06);
+      border: 1px solid rgba(44, 95, 93, 0.12);
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+      color: #00a19c; /* colors.primary */
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      position: relative;
+      padding-bottom: 12px;
+    }
+    .header::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40px;
+      height: 3px;
+      background-color: #00a19c;
+      border-radius: 2px;
+    }
+    #embedded-sessions {
+      min-height: 360px;
+    }
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+      color: #666666;
+    }
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border: 3.5px solid #e5eeec;
+      border-top: 3.5px solid #00a19c;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .error {
+      text-align: center;
+      padding: 40px 20px;
+      color: #F44336;
+      display: none;
+    }
+    /* Style adjustments for embedded MyFatoorah components */
+    #embedded-sessions button {
+      border-radius: 10px !important;
+      font-weight: 600 !important;
+    }
   </style>
 </head>
 <body>
@@ -384,6 +447,25 @@ function createEmbeddedPaymentHTML(
             containerId: 'embedded-sessions',
             shouldHandlePaymentUrl: true,
             language: '${language}',
+            style: {
+              cardHeight: 280,
+              input: {
+                color: '#000000',
+                fontSize: '15px',
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                inputHeight: '46px',
+                borderColor: '#dde9e4',
+                borderRadius: '10px',
+                borderWidth: '1px',
+                errorColor: '#F44336',
+                label: {
+                  display: true,
+                  color: '#666666',
+                  fontSize: '13px',
+                  fontWeight: '600'
+                }
+              }
+            },
             callback: function(response) {
               console.log('Payment callback:', JSON.stringify(response));
               if (response.paymentType) { paymentStarted = true; }

@@ -5,10 +5,17 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
+import Svg, {
+  Path,
+  Circle,
+  Defs,
+  LinearGradient,
+  Stop,
+  Rect,
+} from 'react-native-svg';
 import { useSiteSettings } from '../../hooks/useSiteSettings';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { colors } from '../../constants/colors';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface BannerProps {
   isDismissed?: boolean;
@@ -21,7 +28,6 @@ const Banner: React.FC<BannerProps> = ({
 }) => {
   const { data: siteSettings } = useSiteSettings();
   const { isRTL } = useLanguage();
-  const insets = useSafeAreaInsets();
 
   if (!siteSettings?.bannerEnabled || isDismissed) {
     return null;
@@ -38,20 +44,64 @@ const Banner: React.FC<BannerProps> = ({
     <TouchableOpacity
       style={styles.closeButton}
       onPress={() => setIsDismissed?.(true)}
-      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+      activeOpacity={0.7}
     >
-      <Text style={styles.closeButtonText}>✕</Text>
+      <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+        <Path
+          d="M18 6L6 18M6 6l12 12"
+          stroke={colors.textWhite}
+          strokeWidth={2.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </Svg>
     </TouchableOpacity>
+  );
+
+  const couponIcon = (
+    <Svg width={15} height={15} viewBox="0 0 24 24" fill="none" style={isRTL ? styles.iconRTL : styles.iconLTR}>
+      <Path
+        d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"
+        stroke={colors.textWhite}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Circle
+        cx="7"
+        cy="7"
+        r="1.5"
+        fill={colors.textWhite}
+      />
+    </Svg>
   );
 
   return (
     <View style={styles.bannerWrap}>
-      <View style={[styles.notchFill, { height: insets.top, top: -insets.top }]} />
+      {/* Premium Background with Gradient and Topographic Wave Lines */}
+      <View style={styles.backgroundContainer}>
+        <Svg width="100%" height="100%" viewBox="0 0 375 100" preserveAspectRatio="none">
+          <Defs>
+            <LinearGradient id="bannerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <Stop offset="0%" stopColor="#00a19c" />
+              <Stop offset="100%" stopColor="#00807b" />
+            </LinearGradient>
+          </Defs>
+          <Rect x="0" y="0" width="375" height="100" fill="url(#bannerGrad)" />
+          {/* Topographic Lines */}
+          <Path d="M-20 30 C80 70 180 -10 300 40 T400 30" stroke="rgba(255,255,255,0.06)" strokeWidth={1.5} fill="none" />
+          <Path d="M-20 45 C80 85 180 5 300 55 T400 45" stroke="rgba(255,255,255,0.09)" strokeWidth={1.5} fill="none" />
+          <Path d="M-20 60 C80 100 180 20 300 70 T400 60" stroke="rgba(255,255,255,0.13)" strokeWidth={2} fill="none" />
+        </Svg>
+      </View>
+
       <View style={styles.bannerContainer}>
         {isRTL && closeButton}
         <View style={styles.contentArea}>
-          <View style={styles.staticRow}>
-            <Text style={styles.bannerText}>{bannerText}</Text>
+          <View style={[styles.staticRow, isRTL && styles.staticRowRTL]}>
+            {couponIcon}
+            <Text style={styles.bannerText} numberOfLines={2}>{bannerText}</Text>
           </View>
         </View>
         {!isRTL && closeButton}
@@ -63,18 +113,20 @@ const Banner: React.FC<BannerProps> = ({
 const styles = StyleSheet.create({
   bannerWrap: {
     position: 'relative',
-    backgroundColor: colors.primary,
+    backgroundColor: 'transparent',
     zIndex: 1,
   },
-  notchFill: {
+  backgroundContainer: {
     position: 'absolute',
     left: 0,
     right: 0,
-    backgroundColor: colors.primary,
+    top: 0,
+    bottom: 0,
+    zIndex: -1,
   },
   bannerContainer: {
-    backgroundColor: colors.primary,
-    minHeight: 40,
+    backgroundColor: 'transparent',
+    minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
     overflow: 'hidden',
@@ -83,30 +135,40 @@ const styles = StyleSheet.create({
     flex: 1,
     overflow: 'hidden',
     justifyContent: 'center',
-    minHeight: 40,
+    minHeight: 44,
   },
   staticRow: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 8,
-    paddingHorizontal: 8,
+    paddingHorizontal: 16,
+  },
+  staticRowRTL: {
+    flexDirection: 'row-reverse',
+  },
+  iconLTR: {
+    marginRight: 8,
+    flexShrink: 0,
+  },
+  iconRTL: {
+    marginLeft: 8,
+    flexShrink: 0,
   },
   bannerText: {
     color: colors.textWhite,
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: '600',
     textAlign: 'center',
+    letterSpacing: 0.3,
+    flexShrink: 1,
   },
   closeButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  closeButtonText: {
-    color: colors.textWhite,
-    fontSize: 16,
-    fontWeight: '600',
+    opacity: 0.9,
   },
 });
 

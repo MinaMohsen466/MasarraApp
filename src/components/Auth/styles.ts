@@ -4,7 +4,7 @@ import { colors } from '../../constants/colors';
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
   },
   contentContainer: {
     paddingHorizontal: 24,
@@ -117,7 +117,7 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     paddingVertical: 16,
     paddingHorizontal: 32,
-    borderRadius: 12,
+    borderRadius: 10,
     alignItems: 'center',
     marginTop: 8,
     shadowColor: colors.shadow,
@@ -178,7 +178,7 @@ export const styles = StyleSheet.create({
     fontFamily: 'System',
   },
   headerBlock: {
-    height: 180,
+    height: 130,
     backgroundColor: colors.primary,
     position: 'relative',
     overflow: 'hidden',
@@ -196,7 +196,7 @@ export const styles = StyleSheet.create({
     marginTop: -1,
   },
   formWrapper: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
     paddingHorizontal: 24,
     paddingTop: 10,
     paddingBottom: 40,
@@ -334,5 +334,30 @@ export const styles = StyleSheet.create({
   },
   footerToggleLinkRTL: {
     fontFamily: 'System',
+  },
+  headerOverlayBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+    backgroundColor: 'transparent',
+    zIndex: 1,
+  },
+  headerOverlayBarRTL: {
+    flexDirection: 'row-reverse',
+  },
+  headerBackButtonCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

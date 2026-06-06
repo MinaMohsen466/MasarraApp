@@ -282,7 +282,7 @@ function AppContent() {
   const isBannerVisible = siteSettings?.bannerEnabled && !isBannerDismissed;
   const isBannerShownOnScreen = isBannerVisible && (currentRoute === 'home' || shouldShowHeader);
   const dynamicBgColor = isBannerShownOnScreen
-    ? colors.primary
+    ? "#00a19c"
     : ['services', 'occasion-services', 'vendor-services', 'packages', 'vendors', 'occasions'].includes(currentRoute)
       ? colors.background
       : colors.backgroundHome;
@@ -309,7 +309,7 @@ function AppContent() {
               </View>
             ) : (
               <SafeAreaView style={{ flex: 1, backgroundColor: dynamicBgColor }}>
-                <StatusBar backgroundColor={dynamicBgColor} barStyle="dark-content" translucent={false} />
+                <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
                 {shouldShowHeader && <Header onNavigate={handleNavigation} />}
                 <View style={{ flex: 1 }}>
                   {renderScreen()}

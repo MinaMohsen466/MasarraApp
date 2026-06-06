@@ -588,11 +588,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
   if (loading) {
     return (
       <>
-        <StatusBar
-          barStyle="light-content"
-          backgroundColor={colors.primary}
-          translucent={false}
-        />
+        <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
         <View style={{ flex: 1, backgroundColor: colors.primary }}>
           <View
             style={{ height: insets.top, backgroundColor: colors.primary }}
@@ -645,11 +641,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
 
   return (
     <>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor={colors.primary}
-        translucent={false}
-      />
+      <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
       <View style={{ flex: 1, backgroundColor: colors.primary }}>
         <View style={{ height: insets.top, backgroundColor: colors.primary }} />
         <View style={[styles.container, { position: 'relative' }]}>

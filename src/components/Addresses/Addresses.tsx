@@ -49,11 +49,7 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
   const [addressToDelete, setAddressToDelete] = useState<any>(null);
   const [activeField, setActiveField] = useState<string | null>(null);
   const pageStatusBar = (
-    <StatusBar
-      backgroundColor={colors.primary}
-      barStyle="dark-content"
-      translucent={false}
-    />
+    <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
   );
 
   useEffect(() => {

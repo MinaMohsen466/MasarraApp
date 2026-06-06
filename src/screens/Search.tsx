@@ -374,11 +374,7 @@ const Search: React.FC<SearchProps> = ({
 
   return (
     <View style={styles.container}>
-      <StatusBar
-        backgroundColor={colors.background}
-        barStyle="dark-content"
-        translucent={false}
-      />
+      <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
       <SafeAreaView style={styles.safeArea} edges={['top']}>
 
         {/* ── Header ── */}

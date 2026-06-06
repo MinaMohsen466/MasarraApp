@@ -699,11 +699,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
 
   return (
     <View style={styles.container}>
-      <StatusBar
-        backgroundColor={colors.background}
-        barStyle="dark-content"
-        translucent={false}
-      />
+      <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
       {/* Fixed actions bar under notch (not scrolling) */}
       <View
         style={[

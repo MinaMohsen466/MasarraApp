@@ -20,6 +20,8 @@ import VerifyEmail from '../../screens/VerifyEmail';
 import ForgotPasswordModal from './ForgotPasswordModal';
 import MultiStepSignup from './MultiStepSignup';
 import { CustomAlert } from '../CustomAlert';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface AuthProps {
   onBack?: () => void;
@@ -27,6 +29,7 @@ interface AuthProps {
 
 const Auth: React.FC<AuthProps> = ({ onBack }) => {
   const { isRTL } = useLanguage();
+  const insets = useSafeAreaInsets();
   const { login: saveLogin } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -39,6 +42,25 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
   const [emailActive, setEmailActive] = useState(false);
   const [passwordActive, setPasswordActive] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+
+  // Load saved credentials on mount if Remember Me was checked
+  React.useEffect(() => {
+    const loadCredentials = async () => {
+      try {
+        const savedRememberMe = await AsyncStorage.getItem('rememberMe_checked');
+        if (savedRememberMe === 'true') {
+          const savedEmail = await AsyncStorage.getItem('remembered_email');
+          const savedPassword = await AsyncStorage.getItem('remembered_password');
+          setRememberMe(true);
+          if (savedEmail) setEmail(savedEmail);
+          if (savedPassword) setPassword(savedPassword);
+        }
+      } catch (error) {
+        console.error('Error loading remembered credentials:', error);
+      }
+    };
+    loadCredentials();
+  }, []);
 
   // CustomAlert state
   const [alertVisible, setAlertVisible] = useState(false);
@@ -118,6 +140,22 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
 
         // Store user data in AuthContext
         await saveLogin(response.user, response.token);
+
+        // Save or clear credentials based on rememberMe checkbox
+        try {
+          if (rememberMe) {
+            await AsyncStorage.setItem('rememberMe_checked', 'true');
+            await AsyncStorage.setItem('remembered_email', email);
+            await AsyncStorage.setItem('remembered_password', password);
+          } else {
+            await AsyncStorage.removeItem('rememberMe_checked');
+            await AsyncStorage.removeItem('remembered_email');
+            await AsyncStorage.removeItem('remembered_password');
+          }
+        } catch (storageErr) {
+          console.error('Error saving remembered credentials:', storageErr);
+        }
+
         // Navigate based on user role
         handleRoleBasedNavigation(response.user.role);
       } catch (err: any) {
@@ -214,7 +252,7 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
 
   return (
     <>
-      <StatusBar backgroundColor={colors.primary} barStyle="light-content" translucent={false} />
+      <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
       <CustomAlert
         visible={alertVisible}
         title={alertTitle}
@@ -226,26 +264,45 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
         visible={showForgotPasswordModal}
         onClose={() => setShowForgotPasswordModal(false)}
       />
-      <ScrollView
-        style={{ flex: 1, backgroundColor: '#FFFFFF' }}
-        contentContainerStyle={{ flexGrow: 1 }}
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={{ flex: 1, backgroundColor: colors.primary }}>
+        <View style={{ height: insets.top, backgroundColor: colors.primary }} />
+        <ScrollView
+          style={{ flex: 1, backgroundColor: colors.background }}
+          contentContainerStyle={{ flexGrow: 1 }}
+          showsVerticalScrollIndicator={false}
+        >
         {/* Top Header Block with topographic wave lines */}
         <View style={styles.headerBlock}>
-          <Svg width="100%" height="100%" viewBox="0 0 375 180" preserveAspectRatio="none" style={styles.topographicSvg}>
+          <Svg width="100%" height="100%" viewBox="0 0 375 130" preserveAspectRatio="none" style={styles.topographicSvg}>
             <Path d="M-20 60 C80 120 180 20 300 80 T400 60" stroke="rgba(255,255,255,0.08)" strokeWidth={1.5} fill="none" />
             <Path d="M-20 80 C80 140 180 40 300 100 T400 80" stroke="rgba(255,255,255,0.12)" strokeWidth={1.5} fill="none" />
             <Path d="M-20 100 C80 160 180 60 300 120 T400 100" stroke="rgba(255,255,255,0.15)" strokeWidth={2} fill="none" />
             <Path d="M-20 120 C80 180 180 80 300 140 T400 120" stroke="rgba(255,255,255,0.08)" strokeWidth={1} fill="none" />
             <Path d="M-20 140 C80 200 180 100 300 160 T400 140" stroke="rgba(255,255,255,0.05)" strokeWidth={1} fill="none" />
           </Svg>
+
+          {/* Top Overlay Navigation/Back Button */}
+          {onBack && (
+            <View style={[styles.headerOverlayBar, isRTL && styles.headerOverlayBarRTL]}>
+              <TouchableOpacity
+                style={styles.headerBackButtonCircle}
+                onPress={onBack}
+                activeOpacity={0.8}
+              >
+                <Icon
+                  name={isRTL ? 'chevron-forward' : 'chevron-back'}
+                  size={20}
+                  color={colors.textWhite}
+                />
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         {/* Curved Wave Divider (Concave curve matching the sign-in mockup) */}
         <View style={styles.curveDivider}>
           <Svg height="60" width="100%" viewBox="0 0 375 60" preserveAspectRatio="none">
-            <Path d="M0,40 C100,80 250,0 375,40 L375,60 L0,60 Z" fill="#FFFFFF" />
+            <Path d="M0,40 C100,80 250,0 375,40 L375,60 L0,60 Z" fill={colors.background} />
           </Svg>
         </View>
 
@@ -350,7 +407,7 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
           <TouchableOpacity
             style={[
               styles.submitButton,
-              { borderRadius: 24, paddingVertical: 14, marginTop: 10 },
+              { borderRadius: 10, paddingVertical: 14, marginTop: 10 },
               isLoading && styles.submitButtonDisabled,
             ]}
             onPress={handleSubmit}
@@ -400,6 +457,7 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
           )}
         </View>
       </ScrollView>
+      </View>
     </>
   );
 };

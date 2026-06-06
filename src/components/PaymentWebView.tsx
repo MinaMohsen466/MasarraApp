@@ -9,7 +9,8 @@ import {
   Platform,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { colors } from '../constants/colors';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getPaymentStatus } from '../services/paymentApi';
@@ -34,6 +35,7 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
   onPaymentError,
 }) => {
   const { isRTL, t } = useLanguage();
+  const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [verifyingPayment, setVerifyingPayment] = useState(false);
@@ -78,8 +80,8 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
               console.log('Payment not confirmed:', result.data?.InvoiceStatus);
               onPaymentError('Payment verification failed');
             }
-          } catch (error) {
-            console.error('Error verifying payment:', error);
+          } catch (err) {
+            console.error('Error verifying payment:', err);
             // Still call success as we detected the callback
             onPaymentSuccess();
           } finally {
@@ -89,8 +91,8 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
           console.log('No payment ID found in URL, calling success anyway');
           onPaymentSuccess();
         }
-      } catch (error) {
-        console.error('Error parsing callback URL:', error);
+      } catch (err) {
+        console.error('Error parsing callback URL:', err);
         onPaymentSuccess();
       }
       return;
@@ -128,196 +130,217 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
     <Modal
       visible={visible}
       animationType="slide"
-      presentationStyle="fullScreen"
+      transparent={true}
       onRequestClose={onClose}
     >
-      <SafeAreaView style={styles.container} edges={['top']}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Text style={styles.closeButtonText}>✕</Text>
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, isRTL && styles.rtlText]}>
-            {t('payment') || 'Payment'}
-          </Text>
-          <View style={styles.placeholder} />
-        </View>
-
-        {/* WebView */}
-        <View style={styles.webViewContainer}>
-          {error ? (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorIcon}>⚠️</Text>
-              <Text style={[styles.errorTitle, isRTL && styles.rtlText]}>
-                {t('paymentError') || 'Payment Error'}
-              </Text>
-              <Text style={[styles.errorText, isRTL && styles.rtlText]}>
-                {t('paymentLoadError') ||
-                  'Failed to load payment page. Please try again.'}
-              </Text>
-              <TouchableOpacity
-                style={styles.retryButton}
-                onPress={() => {
-                  setError(false);
-                  setLoading(true);
-                  webViewRef.current?.reload();
-                }}
-              >
-                <Text style={styles.retryButtonText}>
-                  {t('retry') || 'Retry'}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.cancelLink} onPress={onClose}>
-                <Text style={[styles.cancelLinkText, isRTL && styles.rtlText]}>
-                  {t('cancel') || 'Cancel'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <>
-              <WebView
-                ref={webViewRef}
-                // Check if paymentUrl is HTML content or a URL
-                source={
-                  paymentUrl.startsWith('<!DOCTYPE') ||
-                  paymentUrl.startsWith('<html')
-                    ? {
-                        html: paymentUrl,
-                        baseUrl: 'https://demo.myfatoorah.com',
-                      }
-                    : { uri: paymentUrl }
-                }
-                style={styles.webView}
-                onLoadStart={() => setLoading(true)}
-                onLoadEnd={() => setLoading(false)}
-                onNavigationStateChange={handleNavigationStateChange}
-                onError={handleError}
-                onHttpError={handleHttpError}
-                onMessage={event => {
-                  // Handle messages from embedded payment form
-                  try {
-                    const message = JSON.parse(event.nativeEvent.data);
-                    console.log('WebView message:', message);
-                    if (message.type === 'PAYMENT_SUCCESS') {
-                      onPaymentSuccess();
-                    } else if (message.type === 'PAYMENT_ERROR') {
-                      onPaymentError(message.message || 'Payment failed');
-                    }
-                  } catch (e) {
-                    console.log(
-                      'Non-JSON message from WebView:',
-                      event.nativeEvent.data,
-                    );
-                  }
-                }}
-                javaScriptEnabled={true}
-                domStorageEnabled={true}
-                startInLoadingState={true}
-                scalesPageToFit={true}
-                mixedContentMode="compatibility"
-                allowsInlineMediaPlayback={true}
-                mediaPlaybackRequiresUserAction={false}
-                originWhitelist={['*']}
-                setSupportMultipleWindows={false}
-                thirdPartyCookiesEnabled={true}
-                sharedCookiesEnabled={true}
-                cacheEnabled={true}
-                allowsBackForwardNavigationGestures={true}
-                allowsFullscreenVideo={true}
-                injectedJavaScript={`
-                  // Only set viewport meta, don't override MyFatoorah styles
-                  (function() {
-                    var meta = document.querySelector('meta[name="viewport"]');
-                    if (!meta) {
-                      meta = document.createElement('meta');
-                      meta.name = 'viewport';
-                      document.head.appendChild(meta);
-                    }
-                    meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
-                  })();
-                  true;
-                `}
-                userAgent={Platform.select({
-                  android:
-                    'Mozilla/5.0 (Linux; Android 12; SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Mobile Safari/537.36',
-                  ios: 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.5 Mobile/15E148 Safari/604.1',
-                })}
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          {/* Header */}
+          <View style={[styles.simpleHeader, isRTL && styles.simpleHeaderRTL]}>
+            <TouchableOpacity
+              style={styles.simpleCloseButton}
+              onPress={onClose}
+              activeOpacity={0.7}
+            >
+              <Icon
+                name="close"
+                size={24}
+                color={colors.textDark}
               />
-              {(loading || verifyingPayment) && (
-                <View
-                  style={[styles.loadingOverlay, { backgroundColor: '#fff' }]}
-                >
-                  <ActivityIndicator size="large" color={colors.primary} />
-                  <Text style={[styles.loadingText, isRTL && styles.rtlText]}>
-                    {verifyingPayment
-                      ? isRTL
-                        ? 'جاري التحقق من الدفع...'
-                        : 'Verifying payment...'
-                      : t('loadingPayment') || 'Loading payment page...'}
-                  </Text>
-                </View>
-              )}
-            </>
-          )}
-        </View>
+            </TouchableOpacity>
 
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={[styles.secureText, isRTL && styles.rtlText]}>
-            {t('securePayment') || 'Secured by MyFatoorah'}
-          </Text>
+            <Text style={[styles.simpleHeaderTitle, isRTL && styles.rtlText]}>
+              {t('payment') || 'Payment'}
+            </Text>
+
+            <View style={styles.placeholder} />
+          </View>
+
+          {/* WebView Container */}
+          <View style={styles.webViewContainer}>
+            {error ? (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorIcon}>⚠️</Text>
+                <Text style={[styles.errorTitle, isRTL && styles.rtlText]}>
+                  {t('paymentError') || 'Payment Error'}
+                </Text>
+                <Text style={[styles.errorText, isRTL && styles.rtlText]}>
+                  {t('paymentLoadError') ||
+                    'Failed to load payment page. Please try again.'}
+                </Text>
+                <TouchableOpacity
+                  style={styles.retryButton}
+                  onPress={() => {
+                    setError(false);
+                    setLoading(true);
+                    webViewRef.current?.reload();
+                  }}
+                >
+                  <Text style={styles.retryButtonText}>
+                    {t('retry') || 'Retry'}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.cancelLink} onPress={onClose}>
+                  <Text style={[styles.cancelLinkText, isRTL && styles.rtlText]}>
+                    {t('cancel') || 'Cancel'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <>
+                <WebView
+                  ref={webViewRef}
+                  // Check if paymentUrl is HTML content or a URL
+                  source={
+                    paymentUrl.startsWith('<!DOCTYPE') ||
+                    paymentUrl.startsWith('<html')
+                      ? {
+                          html: paymentUrl,
+                          baseUrl: 'https://demo.myfatoorah.com',
+                        }
+                      : { uri: paymentUrl }
+                  }
+                  style={styles.webView}
+                  onLoadStart={() => setLoading(true)}
+                  onLoadEnd={() => setLoading(false)}
+                  onNavigationStateChange={handleNavigationStateChange}
+                  onError={handleError}
+                  onHttpError={handleHttpError}
+                  onMessage={event => {
+                    // Handle messages from embedded payment form
+                    try {
+                      const message = JSON.parse(event.nativeEvent.data);
+                      console.log('WebView message:', message);
+                      if (message.type === 'PAYMENT_SUCCESS') {
+                        onPaymentSuccess();
+                      } else if (message.type === 'PAYMENT_ERROR') {
+                        onPaymentError(message.message || 'Payment failed');
+                      }
+                    } catch (e) {
+                      console.log(
+                        'Non-JSON message from WebView:',
+                        event.nativeEvent.data,
+                      );
+                    }
+                  }}
+                  javaScriptEnabled={true}
+                  domStorageEnabled={true}
+                  startInLoadingState={true}
+                  scalesPageToFit={true}
+                  mixedContentMode="compatibility"
+                  allowsInlineMediaPlayback={true}
+                  mediaPlaybackRequiresUserAction={false}
+                  originWhitelist={['*']}
+                  setSupportMultipleWindows={false}
+                  thirdPartyCookiesEnabled={true}
+                  sharedCookiesEnabled={true}
+                  cacheEnabled={true}
+                  allowsBackForwardNavigationGestures={true}
+                  allowsFullscreenVideo={true}
+                  injectedJavaScript={`
+                    // Only set viewport meta, don't override MyFatoorah styles
+                    (function() {
+                      var meta = document.querySelector('meta[name="viewport"]');
+                      if (!meta) {
+                        meta = document.createElement('meta');
+                        meta.name = 'viewport';
+                        document.head.appendChild(meta);
+                      }
+                      meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+                    })();
+                    true;
+                  `}
+                  userAgent={Platform.select({
+                    android:
+                      'Mozilla/5.0 (Linux; Android 12; SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Mobile Safari/537.36',
+                    ios: 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.5 Mobile/15E148 Safari/604.1',
+                  })}
+                />
+                {(loading || verifyingPayment) && (
+                  <View
+                    style={[styles.loadingOverlay, { backgroundColor: colors.background }]}
+                  >
+                    <ActivityIndicator size="large" color={colors.primary} />
+                    <Text style={[styles.loadingText, isRTL && styles.rtlText]}>
+                      {verifyingPayment
+                        ? isRTL
+                          ? 'جاري التحقق من الدفع...'
+                          : 'Verifying payment...'
+                        : t('loadingPayment') || 'Loading payment page...'}
+                    </Text>
+                  </View>
+                )}
+              </>
+            )}
+          </View>
+
+          {/* Footer */}
+          <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+            <Text style={[styles.secureText, isRTL && styles.rtlText]}>
+              {t('securePayment') || 'Secured by MyFatoorah'}
+            </Text>
+          </View>
         </View>
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  modalOverlay: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'flex-end',
   },
-  header: {
+  modalContent: {
+    height: '85%',
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  simpleHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
+    backgroundColor: colors.background,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    backgroundColor: '#fff',
+    borderBottomColor: 'rgba(0, 0, 0, 0.06)',
   },
-  closeButton: {
-    padding: 8,
-    width: 44,
-    height: 44,
-    alignItems: 'center',
+  simpleHeaderRTL: {
+    flexDirection: 'row-reverse',
+  },
+  simpleCloseButton: {
+    padding: 4,
     justifyContent: 'center',
-    backgroundColor: '#f0f0f0',
-    borderRadius: 22,
+    alignItems: 'center',
   },
-  closeButtonText: {
-    fontSize: 22,
-    fontWeight: '600',
+  simpleHeaderTitle: {
+    fontSize: 18,
+    fontWeight: '700',
     color: colors.textDark,
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.primary,
-  },
   placeholder: {
-    width: 36,
+    width: 32,
   },
   webViewContainer: {
     flex: 1,
+    backgroundColor: colors.background,
   },
   webView: {
     flex: 1,
+    backgroundColor: colors.background,
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: colors.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -373,7 +396,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   secureText: {
     fontSize: 14,

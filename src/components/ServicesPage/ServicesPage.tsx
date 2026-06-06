@@ -587,11 +587,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
   if ((isLoading || loadingVendor) && vendorId) {
     return (
       <View style={styles.pageContainer}>
-        <StatusBar
-          backgroundColor={colors.background}
-          barStyle="dark-content"
-          translucent={false}
-        />
+        <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
         {/* Custom Header with Back Button */}
         <View style={[styles.header, isRTL && styles.headerRTL]}>
           <TouchableOpacity
@@ -683,11 +679,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
 
   return (
     <View style={styles.pageContainer}>
-      <StatusBar
-        backgroundColor={colors.background}
-        barStyle="dark-content"
-        translucent={false}
-      />
+      <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
       {/* Custom Header with Back Button */}
       <View style={[styles.header, isRTL && styles.headerRTL]}>
         <TouchableOpacity
