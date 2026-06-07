@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,8 +7,6 @@ import {
   TextInput,
   PanResponder,
   LayoutChangeEvent,
-  GestureResponderEvent,
-  PanResponderGestureState,
 } from 'react-native';
 import { styles } from './styles';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -41,74 +39,77 @@ const FilterModal: React.FC<FilterModalProps> = ({
   const [onSale, setOnSale] = useState<boolean>(false);
   const [sliderWidth, setSliderWidth] = useState(300);
   const sliderRef = useRef<View>(null);
-  const sliderLeftOffset = useRef<number>(0);
+  const startMinPrice = useRef(0);
+  const startMaxPrice = useRef(0);
 
   // Calculate thumb positions
   const minThumbPosition = (minPrice / MAX_PRICE) * sliderWidth;
   const maxThumbPosition = (maxPrice / MAX_PRICE) * sliderWidth;
 
-  // Helper function to calculate price from gesture
-  const calculatePriceFromGesture = useCallback(
-    (moveX: number): number => {
-      const relativeX = moveX - sliderLeftOffset.current;
-      const clampedX = Math.max(0, Math.min(relativeX, sliderWidth));
-      return Math.round((clampedX / sliderWidth) * MAX_PRICE);
-    },
-    [sliderWidth],
-  );
+  const activeThumb = useRef<'min' | 'max' | null>(null);
 
-  // PanResponder for min thumb
-  const minPanResponder = useRef(
+  // Single PanResponder for the entire slider container
+  const sliderPanResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {
-        // Measure slider position when touch starts
-        sliderRef.current?.measure((x, y, width, height, pageX, pageY) => {
-          sliderLeftOffset.current = pageX;
-        });
-      },
-      onPanResponderMove: (_, gestureState) => {
-        const newPrice = calculatePriceFromGesture(gestureState.moveX);
-        // Don't let min exceed max - 100
-        if (newPrice < maxPrice - 100) {
-          const validPrice = Math.max(MIN_PRICE, newPrice);
+      onPanResponderGrant: event => {
+        const { locationX } = event.nativeEvent;
+        const touchPrice = (locationX / sliderWidth) * MAX_PRICE;
+
+        const isMin =
+          Math.abs(touchPrice - minPrice) < Math.abs(touchPrice - maxPrice);
+        activeThumb.current = isMin ? 'min' : 'max';
+        startMinPrice.current = minPrice;
+        startMaxPrice.current = maxPrice;
+
+        // Immediately jump closer thumb to touch position
+        if (isMin) {
+          const validPrice = Math.max(
+            MIN_PRICE,
+            Math.min(maxPrice - 100, touchPrice),
+          );
           setMinPrice(validPrice);
           setMinPriceInput(validPrice.toFixed(0));
+          startMinPrice.current = validPrice;
+        } else {
+          const validPrice = Math.max(
+            minPrice + 100,
+            Math.min(MAX_PRICE, touchPrice),
+          );
+          setMaxPrice(validPrice);
+          setMaxPriceInput(validPrice.toFixed(0));
+          startMaxPrice.current = validPrice;
         }
       },
-    }),
-  ).current;
-
-  // PanResponder for max thumb
-  const maxPanResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {
-        // Measure slider position when touch starts
-        sliderRef.current?.measure((x, y, width, height, pageX, pageY) => {
-          sliderLeftOffset.current = pageX;
-        });
-      },
       onPanResponderMove: (_, gestureState) => {
-        const newPrice = calculatePriceFromGesture(gestureState.moveX);
-        // Don't let max go below min + 100
-        if (newPrice > minPrice + 100) {
-          const validPrice = Math.min(MAX_PRICE, newPrice);
+        const priceDelta = (gestureState.dx / sliderWidth) * MAX_PRICE;
+        if (activeThumb.current === 'min') {
+          const newPrice = Math.round(startMinPrice.current + priceDelta);
+          const validPrice = Math.max(
+            MIN_PRICE,
+            Math.min(maxPrice - 100, newPrice),
+          );
+          setMinPrice(validPrice);
+          setMinPriceInput(validPrice.toFixed(0));
+        } else if (activeThumb.current === 'max') {
+          const newPrice = Math.round(startMaxPrice.current + priceDelta);
+          const validPrice = Math.max(
+            minPrice + 100,
+            Math.min(MAX_PRICE, newPrice),
+          );
           setMaxPrice(validPrice);
           setMaxPriceInput(validPrice.toFixed(0));
         }
+      },
+      onPanResponderRelease: () => {
+        activeThumb.current = null;
       },
     }),
   ).current;
 
   const handleSliderLayout = (event: LayoutChangeEvent) => {
     setSliderWidth(event.nativeEvent.layout.width);
-    // Also measure the slider's position on screen
-    sliderRef.current?.measure((x, y, width, height, pageX, pageY) => {
-      sliderLeftOffset.current = pageX;
-    });
   };
 
   const handleApplyFilter = () => {
@@ -199,9 +200,10 @@ const FilterModal: React.FC<FilterModalProps> = ({
                 style={styles.sliderContainer}
                 ref={sliderRef}
                 onLayout={handleSliderLayout}
+                {...sliderPanResponder.panHandlers}
               >
                 {/* Background Track */}
-                <View style={styles.rangeTrack}>
+                <View style={styles.rangeTrack} pointerEvents="none">
                   {/* Active Track Fill */}
                   <View
                     style={[
@@ -211,19 +213,20 @@ const FilterModal: React.FC<FilterModalProps> = ({
                         width: maxThumbPosition - minThumbPosition,
                       },
                     ]}
+                    pointerEvents="none"
                   />
                 </View>
 
                 {/* Min Thumb */}
                 <View
-                  {...minPanResponder.panHandlers}
                   style={[styles.sliderThumb, { left: minThumbPosition - 12 }]}
+                  pointerEvents="none"
                 />
 
                 {/* Max Thumb */}
                 <View
-                  {...maxPanResponder.panHandlers}
                   style={[styles.sliderThumb, { left: maxThumbPosition - 12 }]}
+                  pointerEvents="none"
                 />
               </View>
 

@@ -38,9 +38,7 @@ interface OrderHistoryProps {
   onBack?: () => void;
 }
 
-const OrderHistory: React.FC<OrderHistoryProps> = ({
-  onBack,
-}) => {
+const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
   const { isRTL } = useLanguage();
   const insets = useSafeAreaInsets();
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -80,7 +78,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
 
   // Receipt Modal state
   const [showReceiptModal, setShowReceiptModal] = useState(false);
-  const [selectedReceiptBooking, setSelectedReceiptBooking] = useState<any>(null);
+  const [selectedReceiptBooking, setSelectedReceiptBooking] =
+    useState<any>(null);
 
   // Payment timeout in milliseconds (10 minutes)
   const PAYMENT_TIMEOUT = 10 * 60 * 1000;
@@ -267,10 +266,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
 
   const hasPaymentWindowExpired = (booking: Booking) => {
     const timeLeft = timeLeftMap[booking._id] ?? calculateTimeLeft(booking);
-    return (
-      getConfirmedPendingServices(booking).length > 0 &&
-      timeLeft <= 0
-    );
+    return getConfirmedPendingServices(booking).length > 0 && timeLeft <= 0;
   };
 
   const getPendingPaymentPreviewTotal = (booking: Booking) => {
@@ -492,7 +488,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
   const handlePaymentSuccess = async () => {
     setShowPaymentWebView(false);
     setPaymentUrl('');
-    
+
     const payingId = currentPayingBooking;
     if (currentPayingBooking) {
       setPayingBookings(prev => {
@@ -660,7 +656,11 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
   if (loading) {
     return (
       <>
-        <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
+        <StatusBar
+          backgroundColor="#00a19c"
+          barStyle="light-content"
+          translucent={false}
+        />
         <View style={{ flex: 1, backgroundColor: colors.primary }}>
           <View
             style={{ height: insets.top, backgroundColor: colors.primary }}
@@ -668,14 +668,40 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
           <View style={[styles.container, { position: 'relative' }]}>
             {/* Curved Header Background Block with topographic waves & integrated navigation */}
             <View style={styles.profileHeaderBlock}>
-              <Svg width="100%" height="100%" viewBox="0 0 375 110" preserveAspectRatio="none" style={styles.topographicSvg}>
-                <Path d="M-20 20 C80 55 180 12 300 45 T400 35" stroke="rgba(255,255,255,0.08)" strokeWidth={1.5} fill="none" />
-                <Path d="M-20 35 C80 70 180 20 300 60 T400 50" stroke="rgba(255,255,255,0.12)" strokeWidth={1.5} fill="none" />
-                <Path d="M-20 50 C80 85 180 28 300 75 T400 65" stroke="rgba(255,255,255,0.15)" strokeWidth={2} fill="none" />
+              <Svg
+                width="100%"
+                height="100%"
+                viewBox="0 0 375 110"
+                preserveAspectRatio="none"
+                style={styles.topographicSvg}
+              >
+                <Path
+                  d="M-20 20 C80 55 180 12 300 45 T400 35"
+                  stroke="rgba(255,255,255,0.08)"
+                  strokeWidth={1.5}
+                  fill="none"
+                />
+                <Path
+                  d="M-20 35 C80 70 180 20 300 60 T400 50"
+                  stroke="rgba(255,255,255,0.12)"
+                  strokeWidth={1.5}
+                  fill="none"
+                />
+                <Path
+                  d="M-20 50 C80 85 180 28 300 75 T400 65"
+                  stroke="rgba(255,255,255,0.15)"
+                  strokeWidth={2}
+                  fill="none"
+                />
               </Svg>
 
               {/* Overlay Navigation Bar */}
-              <View style={[styles.headerOverlayBar, isRTL && styles.headerOverlayBarRTL]}>
+              <View
+                style={[
+                  styles.headerOverlayBar,
+                  isRTL && styles.headerOverlayBarRTL,
+                ]}
+              >
                 {onBack && (
                   <TouchableOpacity
                     style={styles.headerBackButtonCircle}
@@ -689,19 +715,29 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                     />
                   </TouchableOpacity>
                 )}
-                <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
-                  {isRTL ? 'سجل الطلبات' : 'Order History'}
-                </Text>
-                <View style={styles.headerSpacer} />
               </View>
             </View>
 
             {/* Curved Wave Divider (Transitions header to card background) */}
             <View style={styles.profileCurveDivider}>
-              <Svg height="30" width="100%" viewBox="0 0 375 30" preserveAspectRatio="none">
-                <Path d="M0,20 C100,40 250,0 375,20 L375,30 L0,30 Z" fill={colors.background} />
+              <Svg
+                height="30"
+                width="100%"
+                viewBox="0 0 375 30"
+                preserveAspectRatio="none"
+              >
+                <Path
+                  d="M0,20 C100,40 250,0 375,20 L375,30 L0,30 Z"
+                  fill={colors.background}
+                />
               </Svg>
             </View>
+
+            <Text
+              style={[styles.pageBodyTitle, isRTL && styles.pageBodyTitleRTL]}
+            >
+              {isRTL ? 'سجل الطلبات' : 'Order History'}
+            </Text>
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.primary} />
             </View>
@@ -713,20 +749,50 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
 
   return (
     <>
-      <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
+      <StatusBar
+        backgroundColor="#00a19c"
+        barStyle="light-content"
+        translucent={false}
+      />
       <View style={{ flex: 1, backgroundColor: colors.primary }}>
         <View style={{ height: insets.top, backgroundColor: colors.primary }} />
         <View style={[styles.container, { position: 'relative' }]}>
           {/* Curved Header Background Block with topographic waves & integrated navigation */}
           <View style={styles.profileHeaderBlock}>
-            <Svg width="100%" height="100%" viewBox="0 0 375 110" preserveAspectRatio="none" style={styles.topographicSvg}>
-              <Path d="M-20 20 C80 55 180 12 300 45 T400 35" stroke="rgba(255,255,255,0.08)" strokeWidth={1.5} fill="none" />
-              <Path d="M-20 35 C80 70 180 20 300 60 T400 50" stroke="rgba(255,255,255,0.12)" strokeWidth={1.5} fill="none" />
-              <Path d="M-20 50 C80 85 180 28 300 75 T400 65" stroke="rgba(255,255,255,0.15)" strokeWidth={2} fill="none" />
+            <Svg
+              width="100%"
+              height="100%"
+              viewBox="0 0 375 110"
+              preserveAspectRatio="none"
+              style={styles.topographicSvg}
+            >
+              <Path
+                d="M-20 20 C80 55 180 12 300 45 T400 35"
+                stroke="rgba(255,255,255,0.08)"
+                strokeWidth={1.5}
+                fill="none"
+              />
+              <Path
+                d="M-20 35 C80 70 180 20 300 60 T400 50"
+                stroke="rgba(255,255,255,0.12)"
+                strokeWidth={1.5}
+                fill="none"
+              />
+              <Path
+                d="M-20 50 C80 85 180 28 300 75 T400 65"
+                stroke="rgba(255,255,255,0.15)"
+                strokeWidth={2}
+                fill="none"
+              />
             </Svg>
 
             {/* Overlay Navigation Bar */}
-            <View style={[styles.headerOverlayBar, isRTL && styles.headerOverlayBarRTL]}>
+            <View
+              style={[
+                styles.headerOverlayBar,
+                isRTL && styles.headerOverlayBarRTL,
+              ]}
+            >
               {onBack && (
                 <TouchableOpacity
                   style={styles.headerBackButtonCircle}
@@ -740,19 +806,29 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                   />
                 </TouchableOpacity>
               )}
-              <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
-                {isRTL ? 'سجل الطلبات' : 'Order History'}
-              </Text>
-              <View style={styles.headerSpacer} />
             </View>
           </View>
 
           {/* Curved Wave Divider (Transitions header to card background) */}
           <View style={styles.profileCurveDivider}>
-            <Svg height="30" width="100%" viewBox="0 0 375 30" preserveAspectRatio="none">
-              <Path d="M0,20 C100,40 250,0 375,20 L375,30 L0,30 Z" fill={colors.background} />
+            <Svg
+              height="30"
+              width="100%"
+              viewBox="0 0 375 30"
+              preserveAspectRatio="none"
+            >
+              <Path
+                d="M0,20 C100,40 250,0 375,20 L375,30 L0,30 Z"
+                fill={colors.background}
+              />
             </Svg>
           </View>
+
+          <Text
+            style={[styles.pageBodyTitle, isRTL && styles.pageBodyTitleRTL]}
+          >
+            {isRTL ? 'سجل الطلبات' : 'Order History'}
+          </Text>
 
           {/* Filter Buttons */}
           <View style={styles.filterContainer}>
@@ -869,12 +945,21 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
               filteredBookings.map(booking => (
                 <View key={booking._id} style={styles.bookingCard}>
                   {/* Solid Full-Width Card Header */}
-                  <View style={[styles.cardHeader, isRTL && { flexDirection: 'row-reverse' }]}>
+                  <View
+                    style={[
+                      styles.cardHeader,
+                      isRTL && { flexDirection: 'row-reverse' },
+                    ]}
+                  >
                     <Text style={styles.serviceName} numberOfLines={1}>
                       {isRTL ? 'رقم الطلب:: ' : 'Order ID: '}
-                      {isTablet 
-                        ? (booking._id.length > 24 ? `${booking._id.substring(0, 24)}...` : booking._id)
-                        : (booking._id.length > 12 ? `${booking._id.substring(0, 12)}...` : booking._id)}
+                      {isTablet
+                        ? booking._id.length > 24
+                          ? `${booking._id.substring(0, 24)}...`
+                          : booking._id
+                        : booking._id.length > 12
+                        ? `${booking._id.substring(0, 12)}...`
+                        : booking._id}
                     </Text>
                     <View
                       style={[
@@ -893,11 +978,24 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                   <View style={styles.cardBody}>
                     {/* Items Section Header */}
                     {booking.services && booking.services.length > 0 && (
-                      <View style={[styles.itemsHeader, isRTL && { flexDirection: 'row-reverse' }, { gap: 6 }]}>
-                        <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth={2}>
-                          <Path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                          <Polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-                          <Line x1="12" y1="22.08" x2="12" y2="12"/>
+                      <View
+                        style={[
+                          styles.itemsHeader,
+                          isRTL && { flexDirection: 'row-reverse' },
+                          { gap: 6 },
+                        ]}
+                      >
+                        <Svg
+                          width={16}
+                          height={16}
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="#374151"
+                          strokeWidth={2}
+                        >
+                          <Path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                          <Polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                          <Line x1="12" y1="22.08" x2="12" y2="12" />
                         </Svg>
                         <Text style={styles.itemsTitle}>
                           {isRTL ? 'العناصر' : 'Items'}
@@ -927,32 +1025,89 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                                   borderColor: colors.border,
                                   borderRadius: 8,
                                   padding: 12,
-                                  marginBottom: serviceIndex < booking.services.length - 1 ? 10 : 0,
+                                  marginBottom:
+                                    serviceIndex < booking.services.length - 1
+                                      ? 10
+                                      : 0,
                                   flexDirection: isRTL ? 'row-reverse' : 'row',
                                   justifyContent: 'space-between',
                                   alignItems: 'center',
                                 }}
                               >
                                 {/* Info side (Right-aligned in RTL, Left-aligned in LTR) */}
-                                <View style={{ flex: 1, alignItems: isRTL ? 'flex-end' : 'flex-start' }}>
-                                  <Text style={{ fontSize: 14, fontWeight: '700', color: colors.primary, textAlign: isRTL ? 'right' : 'left' }}>
+                                <View
+                                  style={{
+                                    flex: 1,
+                                    alignItems: isRTL
+                                      ? 'flex-end'
+                                      : 'flex-start',
+                                  }}
+                                >
+                                  <Text
+                                    style={{
+                                      fontSize: 14,
+                                      fontWeight: '700',
+                                      color: colors.primary,
+                                      textAlign: isRTL ? 'right' : 'left',
+                                    }}
+                                  >
                                     {serviceName}
                                   </Text>
-                                  <Text style={{ fontSize: 12, color: '#666', marginTop: 2, textAlign: isRTL ? 'right' : 'left' }}>
+                                  <Text
+                                    style={{
+                                      fontSize: 12,
+                                      color: '#666',
+                                      marginTop: 2,
+                                      textAlign: isRTL ? 'right' : 'left',
+                                    }}
+                                  >
                                     {getServiceVendorName(serviceEntry)}
                                   </Text>
 
                                   {/* Date & Time Row with SVG Icons */}
-                                  <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', marginTop: 6, gap: 12 }}>
+                                  <View
+                                    style={{
+                                      flexDirection: isRTL
+                                        ? 'row-reverse'
+                                        : 'row',
+                                      alignItems: 'center',
+                                      marginTop: 6,
+                                      gap: 12,
+                                    }}
+                                  >
                                     {/* Date */}
-                                    <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 4 }}>
-                                      <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth={2}>
-                                        <Rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                                        <Line x1="16" y1="2" x2="16" y2="6"/>
-                                        <Line x1="8" y1="2" x2="8" y2="6"/>
-                                        <Line x1="3" y1="10" x2="21" y2="10"/>
+                                    <View
+                                      style={{
+                                        flexDirection: isRTL
+                                          ? 'row-reverse'
+                                          : 'row',
+                                        alignItems: 'center',
+                                        gap: 4,
+                                      }}
+                                    >
+                                      <Svg
+                                        width={12}
+                                        height={12}
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="#666"
+                                        strokeWidth={2}
+                                      >
+                                        <Rect
+                                          x="3"
+                                          y="4"
+                                          width="18"
+                                          height="18"
+                                          rx="2"
+                                          ry="2"
+                                        />
+                                        <Line x1="16" y1="2" x2="16" y2="6" />
+                                        <Line x1="8" y1="2" x2="8" y2="6" />
+                                        <Line x1="3" y1="10" x2="21" y2="10" />
                                       </Svg>
-                                      <Text style={{ fontSize: 11, color: '#666' }}>
+                                      <Text
+                                        style={{ fontSize: 11, color: '#666' }}
+                                      >
                                         {formatDateTime(
                                           serviceEntry.timeSlot?.start ||
                                             serviceEntry.eventDate ||
@@ -962,12 +1117,29 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                                     </View>
 
                                     {/* Time */}
-                                    <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 4 }}>
-                                      <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth={2}>
-                                        <Circle cx="12" cy="12" r="10"/>
-                                        <Polyline points="12 6 12 12 16 14"/>
+                                    <View
+                                      style={{
+                                        flexDirection: isRTL
+                                          ? 'row-reverse'
+                                          : 'row',
+                                        alignItems: 'center',
+                                        gap: 4,
+                                      }}
+                                    >
+                                      <Svg
+                                        width={12}
+                                        height={12}
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="#666"
+                                        strokeWidth={2}
+                                      >
+                                        <Circle cx="12" cy="12" r="10" />
+                                        <Polyline points="12 6 12 12 16 14" />
                                       </Svg>
-                                      <Text style={{ fontSize: 11, color: '#666' }}>
+                                      <Text
+                                        style={{ fontSize: 11, color: '#666' }}
+                                      >
                                         {formatDateTime(
                                           serviceEntry.timeSlot?.start ||
                                             booking.eventTime?.start,
@@ -984,84 +1156,139 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                                   </View>
 
                                   {/* Custom Options */}
-                                  {serviceEntry.customInputs && serviceEntry.customInputs.length > 0 && (
-                                    <View
-                                      style={{
-                                        marginTop: 8,
-                                        width: '100%',
-                                        paddingTop: 6,
-                                        borderTopWidth: 1,
-                                        borderTopColor: 'rgba(0, 0, 0, 0.05)',
-                                        alignItems: isRTL ? 'flex-end' : 'flex-start',
-                                      }}
-                                    >
-                                      {serviceEntry.customInputs.map((opt: any, optIndex: number) => {
-                                        const displayLabel = isRTL && opt.labelAr ? opt.labelAr : opt.label;
-                                        const rawValue = isRTL && opt.valueAr ? opt.valueAr : opt.value;
-                                        const displayValue = Array.isArray(rawValue)
-                                          ? rawValue.join(', ')
-                                          : rawValue;
-                                        const hasPrice = typeof opt.price === 'number' && opt.price > 0;
+                                  {serviceEntry.customInputs &&
+                                    serviceEntry.customInputs.length > 0 && (
+                                      <View
+                                        style={{
+                                          marginTop: 8,
+                                          width: '100%',
+                                          paddingTop: 6,
+                                          borderTopWidth: 1,
+                                          borderTopColor: 'rgba(0, 0, 0, 0.05)',
+                                          alignItems: isRTL
+                                            ? 'flex-end'
+                                            : 'flex-start',
+                                        }}
+                                      >
+                                        {serviceEntry.customInputs.map(
+                                          (opt: any, optIndex: number) => {
+                                            const displayLabel =
+                                              isRTL && opt.labelAr
+                                                ? opt.labelAr
+                                                : opt.label;
+                                            const rawValue =
+                                              isRTL && opt.valueAr
+                                                ? opt.valueAr
+                                                : opt.value;
+                                            const displayValue = Array.isArray(
+                                              rawValue,
+                                            )
+                                              ? rawValue.join(', ')
+                                              : rawValue;
+                                            const hasPrice =
+                                              typeof opt.price === 'number' &&
+                                              opt.price > 0;
 
-                                        return (
-                                          <View
-                                            key={optIndex}
-                                            style={{
-                                              flexDirection: isRTL ? 'row-reverse' : 'row',
-                                              alignItems: 'flex-start',
-                                              marginVertical: 2,
-                                            }}
-                                          >
-                                            <Text
-                                              style={{
-                                                fontSize: 11,
-                                                color: colors.primary,
-                                                marginRight: isRTL ? 0 : 4,
-                                                marginLeft: isRTL ? 4 : 0,
-                                                lineHeight: 16,
-                                              }}
-                                            >
-                                              •
-                                            </Text>
-                                            <Text
-                                              style={{
-                                                fontSize: 12,
-                                                textAlign: isRTL ? 'right' : 'left',
-                                                flex: 1,
-                                                lineHeight: 16,
-                                              }}
-                                            >
-                                              <Text style={{ fontWeight: '600', color: '#374151' }}>
-                                                {displayLabel}:{' '}
-                                              </Text>
-                                              <Text style={{ color: '#4B5563' }}>
-                                                {displayValue}
-                                              </Text>
-                                              {hasPrice && (
-                                                <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '500' }}>
-                                                  {` (+${opt.price.toFixed(3)} ${isRTL ? 'د.ك' : 'KWD'})`}
+                                            return (
+                                              <View
+                                                key={optIndex}
+                                                style={{
+                                                  flexDirection: isRTL
+                                                    ? 'row-reverse'
+                                                    : 'row',
+                                                  alignItems: 'flex-start',
+                                                  marginVertical: 2,
+                                                }}
+                                              >
+                                                <Text
+                                                  style={{
+                                                    fontSize: 11,
+                                                    color: colors.primary,
+                                                    marginRight: isRTL ? 0 : 4,
+                                                    marginLeft: isRTL ? 4 : 0,
+                                                    lineHeight: 16,
+                                                  }}
+                                                >
+                                                  •
                                                 </Text>
-                                              )}
-                                            </Text>
-                                          </View>
-                                        );
-                                      })}
-                                    </View>
-                                  )}
-
+                                                <Text
+                                                  style={{
+                                                    fontSize: 12,
+                                                    textAlign: isRTL
+                                                      ? 'right'
+                                                      : 'left',
+                                                    flex: 1,
+                                                    lineHeight: 16,
+                                                  }}
+                                                >
+                                                  <Text
+                                                    style={{
+                                                      fontWeight: '600',
+                                                      color: '#374151',
+                                                    }}
+                                                  >
+                                                    {displayLabel}:{' '}
+                                                  </Text>
+                                                  <Text
+                                                    style={{ color: '#4B5563' }}
+                                                  >
+                                                    {displayValue}
+                                                  </Text>
+                                                  {hasPrice && (
+                                                    <Text
+                                                      style={{
+                                                        color: colors.primary,
+                                                        fontSize: 11,
+                                                        fontWeight: '500',
+                                                      }}
+                                                    >
+                                                      {` (+${opt.price.toFixed(
+                                                        3,
+                                                      )} ${
+                                                        isRTL ? 'د.ك' : 'KWD'
+                                                      })`}
+                                                    </Text>
+                                                  )}
+                                                </Text>
+                                              </View>
+                                            );
+                                          },
+                                        )}
+                                      </View>
+                                    )}
                                 </View>
 
                                 {/* Price & Payment Status Badge (Left-aligned in RTL, Right-aligned in LTR) */}
-                                <View style={{ alignItems: isRTL ? 'flex-start' : 'flex-end', marginLeft: isRTL ? 0 : 12, marginRight: isRTL ? 12 : 0 }}>
-                                  <Text style={{ fontSize: 14, fontWeight: '700', color: '#111827', textAlign: isRTL ? 'left' : 'right' }}>
-                                    {serviceEntry.price?.toFixed(3) || '0.000'} {isRTL ? 'د.ك' : 'KWD'}
+                                <View
+                                  style={{
+                                    alignItems: isRTL
+                                      ? 'flex-start'
+                                      : 'flex-end',
+                                    marginLeft: isRTL ? 0 : 12,
+                                    marginRight: isRTL ? 12 : 0,
+                                  }}
+                                >
+                                  <Text
+                                    style={{
+                                      fontSize: 14,
+                                      fontWeight: '700',
+                                      color: '#111827',
+                                      textAlign: isRTL ? 'left' : 'right',
+                                    }}
+                                  >
+                                    {serviceEntry.price?.toFixed(3) || '0.000'}{' '}
+                                    {isRTL ? 'د.ك' : 'KWD'}
                                   </Text>
-                                  
+
                                   {/* Paid / Unpaid Status Badge */}
                                   <View
                                     style={{
-                                      backgroundColor: isPaid ? '#E8F5E9' : '#FFF3E0',
-                                      borderColor: isPaid ? '#C8E6C9' : '#FFE0B2',
+                                      backgroundColor: isPaid
+                                        ? '#E8F5E9'
+                                        : '#FFF3E0',
+                                      borderColor: isPaid
+                                        ? '#C8E6C9'
+                                        : '#FFE0B2',
                                       borderWidth: 1,
                                       borderRadius: 4,
                                       paddingHorizontal: 8,
@@ -1076,48 +1303,93 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                                         color: isPaid ? '#2E7D32' : '#E65100',
                                       }}
                                     >
-                                      {isPaid ? (isRTL ? 'مدفوع' : 'Paid') : (isRTL ? 'غير مدفوع' : 'Unpaid')}
+                                      {isPaid
+                                        ? isRTL
+                                          ? 'مدفوع'
+                                          : 'Paid'
+                                        : isRTL
+                                        ? 'غير مدفوع'
+                                        : 'Unpaid'}
                                     </Text>
                                   </View>
                                 </View>
                               </View>
                             );
-                          }
+                          },
                         )}
                       </View>
                     )}
 
                     {/* Price Container */}
-                    <View style={[styles.priceContainer, isRTL && { flexDirection: 'row-reverse' }]}>
+                    <View
+                      style={[
+                        styles.priceContainer,
+                        isRTL && { flexDirection: 'row-reverse' },
+                      ]}
+                    >
                       {booking.coupon && booking.coupon.discountAmount > 0 ? (
                         <View style={{ flex: 1 }}>
                           {/* Original Price */}
-                          <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                          <View
+                            style={{
+                              flexDirection: isRTL ? 'row-reverse' : 'row',
+                              justifyContent: 'space-between',
+                              marginBottom: 4,
+                            }}
+                          >
                             <Text style={{ fontSize: 12, color: '#999' }}>
                               {isRTL ? 'المبلغ قبل الخصم:' : 'Original Amount:'}
                             </Text>
-                            <Text style={{ fontSize: 13, color: '#999', textDecorationLine: 'line-through' }}>
-                              {booking.coupon.originalPrice.toFixed(3)} {isRTL ? 'د.ك' : 'KWD'}
+                            <Text
+                              style={{
+                                fontSize: 13,
+                                color: '#999',
+                                textDecorationLine: 'line-through',
+                              }}
+                            >
+                              {booking.coupon.originalPrice.toFixed(3)}{' '}
+                              {isRTL ? 'د.ك' : 'KWD'}
                             </Text>
                           </View>
 
                           {/* Discount Amount */}
-                          <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                          <View
+                            style={{
+                              flexDirection: isRTL ? 'row-reverse' : 'row',
+                              justifyContent: 'space-between',
+                              marginBottom: 4,
+                            }}
+                          >
                             <Text style={{ fontSize: 12, color: '#4CAF50' }}>
-                              {isRTL ? 'الخصم' : 'Discount'} ({booking.coupon.code}):
+                              {isRTL ? 'الخصم' : 'Discount'} (
+                              {booking.coupon.code}):
                             </Text>
-                            <Text style={{ fontSize: 13, color: '#4CAF50', fontWeight: '600' }}>
-                              - {booking.coupon.discountAmount.toFixed(3)} {isRTL ? 'د.ك' : 'KWD'}
+                            <Text
+                              style={{
+                                fontSize: 13,
+                                color: '#4CAF50',
+                                fontWeight: '600',
+                              }}
+                            >
+                              - {booking.coupon.discountAmount.toFixed(3)}{' '}
+                              {isRTL ? 'د.ك' : 'KWD'}
                             </Text>
                           </View>
 
                           {/* Final Price */}
-                          <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', marginTop: 4 }}>
+                          <View
+                            style={{
+                              flexDirection: isRTL ? 'row-reverse' : 'row',
+                              justifyContent: 'space-between',
+                              marginTop: 4,
+                            }}
+                          >
                             <Text style={styles.priceLabel}>
                               {isRTL ? 'المبلغ الإجمالي:' : 'Total Amount:'}
                             </Text>
                             <Text style={styles.priceValue}>
-                              {booking.totalPrice.toFixed(3)} {isRTL ? 'د.ك' : 'KWD'}
+                              {booking.totalPrice.toFixed(3)}{' '}
+                              {isRTL ? 'د.ك' : 'KWD'}
                             </Text>
                           </View>
                         </View>
@@ -1127,337 +1399,419 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                             {isRTL ? 'المبلغ الإجمالي:' : 'Total Amount:'}
                           </Text>
                           <Text style={styles.priceValue}>
-                            {getTotalPrice(booking).toFixed(3)} {isRTL ? 'د.ك' : 'KWD'}
+                            {getTotalPrice(booking).toFixed(3)}{' '}
+                            {isRTL ? 'د.ك' : 'KWD'}
                           </Text>
                         </>
                       )}
                     </View>
 
-                  {/* Payment Pending Banner with Timer - Only for confirmed services that need payment */}
-                  {(() => {
-                    const isPaymentPending =
-                      booking.paymentStatus === 'pending' &&
-                      booking.totalPrice > 0;
-                    const hasPendingPayment =
-                      getConfirmedPendingServices(booking).length > 0;
-                    const hasExpired = hasPaymentWindowExpired(booking);
-                    const bookingTimeLeft = timeLeftMap[booking._id];
+                    {/* Payment Pending Banner with Timer - Only for confirmed services that need payment */}
+                    {(() => {
+                      const isPaymentPending =
+                        booking.paymentStatus === 'pending' &&
+                        booking.totalPrice > 0;
+                      const hasPendingPayment =
+                        getConfirmedPendingServices(booking).length > 0;
+                      const hasExpired = hasPaymentWindowExpired(booking);
+                      const bookingTimeLeft = timeLeftMap[booking._id];
 
-                    return booking.status !== 'cancelled' &&
-                      !hasExpired &&
-                      isPaymentPending &&
-                      !isFreeBooking(booking) &&
-                      booking.status !== 'pending' &&
-                      booking.paymentStatus !== 'paid' &&
-                      hasPendingPayment &&
-                      bookingTimeLeft !== undefined ? (
-                      <View
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          backgroundColor:
-                            bookingTimeLeft > 0 ? '#FFF3E0' : '#FFEBEE',
-                          borderWidth: 1,
-                          borderColor:
-                            bookingTimeLeft > 0 ? '#FFCC80' : '#EF9A9A',
-                          borderRadius: 8,
-                          padding: 12,
-                          marginTop: 12,
-                        }}
-                      >
+                      return booking.status !== 'cancelled' &&
+                        !hasExpired &&
+                        isPaymentPending &&
+                        !isFreeBooking(booking) &&
+                        booking.status !== 'pending' &&
+                        booking.paymentStatus !== 'paid' &&
+                        hasPendingPayment &&
+                        bookingTimeLeft !== undefined ? (
                         <View
                           style={{
                             flexDirection: 'row',
                             alignItems: 'center',
-                            flex: 1,
+                            justifyContent: 'space-between',
+                            backgroundColor:
+                              bookingTimeLeft > 0 ? '#FFF3E0' : '#FFEBEE',
+                            borderWidth: 1,
+                            borderColor:
+                              bookingTimeLeft > 0 ? '#FFCC80' : '#EF9A9A',
+                            borderRadius: 8,
+                            padding: 12,
+                            marginTop: 12,
+                          }}
+                        >
+                          <View
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              flex: 1,
+                            }}
+                          >
+                            <Text style={{ fontSize: 16, marginRight: 8 }}>
+                              💳
+                            </Text>
+                            <Text
+                              style={{
+                                color:
+                                  bookingTimeLeft > 0 ? '#E65100' : '#C62828',
+                                fontSize: 13,
+                                flex: 1,
+                              }}
+                            >
+                              {isRTL ? 'الدفع معلق' : 'Payment Pending'}
+                            </Text>
+                          </View>
+                          {bookingTimeLeft > 0 ? (
+                            <View
+                              style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                backgroundColor: '#FFCC80',
+                                paddingHorizontal: 10,
+                                paddingVertical: 4,
+                                borderRadius: 12,
+                              }}
+                            >
+                              <Text style={{ fontSize: 12, marginRight: 4 }}>
+                                ⏱
+                              </Text>
+                              <Text
+                                style={{
+                                  color: '#E65100',
+                                  fontSize: 12,
+                                  fontWeight: '600',
+                                }}
+                              >
+                                {formatTimeLeft(bookingTimeLeft)}
+                              </Text>
+                            </View>
+                          ) : (
+                            <View
+                              style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                backgroundColor: '#EF9A9A',
+                                paddingHorizontal: 10,
+                                paddingVertical: 4,
+                                borderRadius: 12,
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  fontSize: 12,
+                                  color: '#C62828',
+                                  fontWeight: '600',
+                                }}
+                              >
+                                {isRTL ? 'انتهى الوقت' : 'Expired'}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      ) : null;
+                    })()}
+
+                    {/* Awaiting Vendor Confirmation Banner */}
+                    {booking.status !== 'cancelled' &&
+                      !hasPaymentWindowExpired(booking) &&
+                      booking.status === 'pending' && (
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            backgroundColor: '#E3F2FD',
+                            borderWidth: 1,
+                            borderColor: '#90CAF9',
+                            borderRadius: 8,
+                            padding: 12,
+                            marginTop: 12,
                           }}
                         >
                           <Text style={{ fontSize: 16, marginRight: 8 }}>
-                            💳
+                            ⏳
                           </Text>
                           <Text
-                            style={{
-                              color:
-                                bookingTimeLeft > 0 ? '#E65100' : '#C62828',
-                              fontSize: 13,
-                              flex: 1,
-                            }}
+                            style={{ color: '#1565C0', fontSize: 13, flex: 1 }}
                           >
-                            {isRTL ? 'الدفع معلق' : 'Payment Pending'}
+                            {isRTL
+                              ? 'في انتظار موافقة مقدم الخدمة'
+                              : 'Awaiting vendor confirmation'}
                           </Text>
                         </View>
-                        {bookingTimeLeft > 0 ? (
-                          <View
-                            style={{
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              backgroundColor: '#FFCC80',
-                              paddingHorizontal: 10,
-                              paddingVertical: 4,
-                              borderRadius: 12,
-                            }}
-                          >
-                            <Text style={{ fontSize: 12, marginRight: 4 }}>
-                              ⏱
-                            </Text>
-                            <Text
-                              style={{
-                                color: '#E65100',
-                                fontSize: 12,
-                                fontWeight: '600',
-                              }}
-                            >
-                              {formatTimeLeft(bookingTimeLeft)}
-                            </Text>
-                          </View>
-                        ) : (
-                          <View
-                            style={{
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              backgroundColor: '#EF9A9A',
-                              paddingHorizontal: 10,
-                              paddingVertical: 4,
-                              borderRadius: 12,
-                            }}
-                          >
-                            <Text
-                              style={{
-                                fontSize: 12,
-                                color: '#C62828',
-                                fontWeight: '600',
-                              }}
-                            >
-                              {isRTL ? 'انتهى الوقت' : 'Expired'}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                    ) : null;
-                  })()}
+                      )}
 
-                  {/* Awaiting Vendor Confirmation Banner */}
-                  {booking.status !== 'cancelled' &&
-                    !hasPaymentWindowExpired(booking) &&
-                    booking.status === 'pending' && (
-                      <View
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          backgroundColor: '#E3F2FD',
-                          borderWidth: 1,
-                          borderColor: '#90CAF9',
-                          borderRadius: 8,
-                          padding: 12,
-                          marginTop: 12,
-                        }}
-                      >
-                        <Text style={{ fontSize: 16, marginRight: 8 }}>⏳</Text>
-                        <Text
-                          style={{ color: '#1565C0', fontSize: 13, flex: 1 }}
+                    {/* Pay Now, Cancel, and Receipt Buttons */}
+                    {(() => {
+                      // Only return early if booking is cancelled
+                      if (booking.status === 'cancelled') {
+                        return null;
+                      }
+
+                      const isFree = isFreeBooking(booking);
+                      const hasPendingPayment =
+                        getConfirmedPendingServices(booking).length > 0;
+                      const hasExpired = hasPaymentWindowExpired(booking);
+                      const eventDateHasPassed = hasEventDatePassed(booking);
+
+                      const pendingTotal =
+                        getPendingPaymentPreviewTotal(booking);
+
+                      const showPayButton =
+                        hasPendingPayment &&
+                        booking.paymentStatus !== 'paid' &&
+                        !eventDateHasPassed &&
+                        !hasExpired &&
+                        booking.totalPrice > 0 &&
+                        pendingTotal > 0;
+
+                      const showCancelButton = false;
+
+                      const showReceiptButton =
+                        booking.paymentStatus === 'paid';
+                      const hasQR =
+                        (booking.status === 'confirmed' ||
+                          booking.status === 'completed') &&
+                        (booking.paymentStatus === 'paid' || isFree) &&
+                        qrAllowedBookings.has(booking._id);
+
+                      if (
+                        !showPayButton &&
+                        !showCancelButton &&
+                        !showReceiptButton &&
+                        !hasQR
+                      )
+                        return null;
+
+                      return (
+                        <View
+                          style={{
+                            flexDirection: isRTL ? 'row-reverse' : 'row',
+                            justifyContent: 'space-between',
+                            marginTop: 14,
+                            gap: 12,
+                          }}
                         >
-                          {isRTL
-                            ? 'في انتظار موافقة مقدم الخدمة'
-                            : 'Awaiting vendor confirmation'}
-                        </Text>
-                      </View>
-                    )}
-
-                  {/* Pay Now, Cancel, and Receipt Buttons */}
-                  {(() => {
-                    // Only return early if booking is cancelled
-                    if (booking.status === 'cancelled') {
-                      return null;
-                    }
-
-                    const isFree = isFreeBooking(booking);
-                    const hasPendingPayment =
-                      getConfirmedPendingServices(booking).length > 0;
-                    const hasExpired = hasPaymentWindowExpired(booking);
-                    const eventDateHasPassed = hasEventDatePassed(booking);
-
-                    const pendingTotal = getPendingPaymentPreviewTotal(booking);
-
-                    const showPayButton =
-                      hasPendingPayment &&
-                      booking.paymentStatus !== 'paid' &&
-                      !eventDateHasPassed &&
-                      !hasExpired &&
-                      booking.totalPrice > 0 &&
-                      pendingTotal > 0;
-
-                    const showCancelButton = false;
-
-                    const showReceiptButton = booking.paymentStatus === 'paid';
-                    const hasQR =
-                      (booking.status === 'confirmed' ||
-                        booking.status === 'completed') &&
-                      (booking.paymentStatus === 'paid' || isFree) &&
-                      qrAllowedBookings.has(booking._id);
-
-                    if (!showPayButton && !showCancelButton && !showReceiptButton && !hasQR) return null;
-
-                    return (
-                      <View
-                        style={{
-                          flexDirection: isRTL ? 'row-reverse' : 'row',
-                          justifyContent: 'space-between',
-                          marginTop: 14,
-                          gap: 12,
-                        }}
-                      >
-                        {/* View Receipt Button */}
-                        {showReceiptButton && (
-                          <TouchableOpacity
-                            style={{
-                              flex: 1,
-                              flexDirection: isRTL ? 'row-reverse' : 'row',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              backgroundColor: '#fff',
-                              borderWidth: 1.5,
-                              borderColor: colors.primary,
-                              paddingVertical: 10,
-                              paddingHorizontal: 12,
-                              borderRadius: 8,
-                              gap: 8,
-                            }}
-                            onPress={() => {
-                              setSelectedReceiptBooking(booking);
-                              setShowReceiptModal(true);
-                            }}
-                          >
-                            <Text
+                          {/* View Receipt Button */}
+                          {showReceiptButton && (
+                            <TouchableOpacity
                               style={{
-                                color: colors.primary,
-                                fontSize: 13,
-                                fontWeight: '600',
+                                flex: 1,
+                                flexDirection: isRTL ? 'row-reverse' : 'row',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                backgroundColor: '#fff',
+                                borderWidth: 1.5,
+                                borderColor: colors.primary,
+                                paddingVertical: 10,
+                                paddingHorizontal: 12,
+                                borderRadius: 8,
+                                gap: 8,
+                              }}
+                              onPress={() => {
+                                setSelectedReceiptBooking(booking);
+                                setShowReceiptModal(true);
                               }}
                             >
-                              {isRTL ? 'الفاتورة' : 'Receipt'}
-                            </Text>
-                            <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth={2.5}>
-                              <Path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" strokeLinecap="round" strokeLinejoin="round"/>
-                              <Polyline points="14 2 14 8 20 8" strokeLinecap="round" strokeLinejoin="round"/>
-                              <Line x1="16" y1="13" x2="8" y2="13" strokeLinecap="round" strokeLinejoin="round"/>
-                              <Line x1="16" y1="17" x2="8" y2="17" strokeLinecap="round" strokeLinejoin="round"/>
-                              <Polyline points="10 9 9 9 8 9" strokeLinecap="round" strokeLinejoin="round"/>
-                            </Svg>
-                          </TouchableOpacity>
-                        )}
+                              <Text
+                                style={{
+                                  color: colors.primary,
+                                  fontSize: 13,
+                                  fontWeight: '600',
+                                }}
+                              >
+                                {isRTL ? 'الفاتورة' : 'Receipt'}
+                              </Text>
+                              <Svg
+                                width={14}
+                                height={14}
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke={colors.primary}
+                                strokeWidth={2.5}
+                              >
+                                <Path
+                                  d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                                <Polyline
+                                  points="14 2 14 8 20 8"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                                <Line
+                                  x1="16"
+                                  y1="13"
+                                  x2="8"
+                                  y2="13"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                                <Line
+                                  x1="16"
+                                  y1="17"
+                                  x2="8"
+                                  y2="17"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                                <Polyline
+                                  points="10 9 9 9 8 9"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </Svg>
+                            </TouchableOpacity>
+                          )}
 
-                        {/* Create/View QR Code Button */}
-                        {hasQR && (
-                          <TouchableOpacity
-                            style={{
-                              flex: 1,
-                              flexDirection: isRTL ? 'row-reverse' : 'row',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              backgroundColor: colors.primary,
-                              paddingVertical: 10,
-                              paddingHorizontal: 12,
-                              borderRadius: 8,
-                              gap: 8,
-                            }}
-                            onPress={() => handleQRCode(booking)}
-                          >
-                            <Text
+                          {/* Create/View QR Code Button */}
+                          {hasQR && (
+                            <TouchableOpacity
                               style={{
-                                color: '#fff',
-                                fontSize: 13,
-                                fontWeight: '600',
+                                flex: 1,
+                                flexDirection: isRTL ? 'row-reverse' : 'row',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                backgroundColor: colors.primary,
+                                paddingVertical: 10,
+                                paddingHorizontal: 12,
+                                borderRadius: 8,
+                                gap: 8,
                               }}
+                              onPress={() => handleQRCode(booking)}
                             >
-                              {isRTL ? 'رمز QR' : 'QR Code'}
-                            </Text>
-                            <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-                              <Rect x="3" y="3" width="6" height="6" rx="1" />
-                              <Rect x="15" y="3" width="6" height="6" rx="1" />
-                              <Rect x="3" y="15" width="6" height="6" rx="1" />
-                              <Path d="M16 16h1v1h-1zm3 0h2v1h-2zm-3 3h2v2h-2zm6 1h1v1h-1zm-2-4h2v2h-2zm-3 0h1v2h-1z" fill="#fff" />
-                            </Svg>
-                          </TouchableOpacity>
-                        )}
+                              <Text
+                                style={{
+                                  color: '#fff',
+                                  fontSize: 13,
+                                  fontWeight: '600',
+                                }}
+                              >
+                                {isRTL ? 'رمز QR' : 'QR Code'}
+                              </Text>
+                              <Svg
+                                width={14}
+                                height={14}
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="#fff"
+                                strokeWidth={2.5}
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <Rect x="3" y="3" width="6" height="6" rx="1" />
+                                <Rect
+                                  x="15"
+                                  y="3"
+                                  width="6"
+                                  height="6"
+                                  rx="1"
+                                />
+                                <Rect
+                                  x="3"
+                                  y="15"
+                                  width="6"
+                                  height="6"
+                                  rx="1"
+                                />
+                                <Path
+                                  d="M16 16h1v1h-1zm3 0h2v1h-2zm-3 3h2v2h-2zm6 1h1v1h-1zm-2-4h2v2h-2zm-3 0h1v2h-1z"
+                                  fill="#fff"
+                                />
+                              </Svg>
+                            </TouchableOpacity>
+                          )}
 
-                        {/* Pay Now Button */}
-                        {showPayButton && (
-                          <TouchableOpacity
-                            style={{
-                              flex: 1,
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              backgroundColor: colors.primary,
-                              paddingVertical: 10,
-                              paddingHorizontal: 12,
-                              borderRadius: 8,
-                              gap: 8,
-                            }}
-                            onPress={() => handlePayNow(booking)}
-                            disabled={payingBookings.has(booking._id)}
-                          >
-                            {payingBookings.has(booking._id) ? (
-                              <ActivityIndicator size="small" color="#fff" />
-                            ) : (
-                              <>
-                                <Text
-                                  style={{
-                                    color: '#fff',
-                                    fontSize: 13,
-                                    fontWeight: '600',
-                                  }}
-                                >
-                                  {isRTL ? 'ادفع الآن' : 'Pay Now'}
-                                </Text>
-                              </>
-                            )}
-                          </TouchableOpacity>
-                        )}
+                          {/* Pay Now Button */}
+                          {showPayButton && (
+                            <TouchableOpacity
+                              style={{
+                                flex: 1,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                backgroundColor: colors.primary,
+                                paddingVertical: 10,
+                                paddingHorizontal: 12,
+                                borderRadius: 8,
+                                gap: 8,
+                              }}
+                              onPress={() => handlePayNow(booking)}
+                              disabled={payingBookings.has(booking._id)}
+                            >
+                              {payingBookings.has(booking._id) ? (
+                                <ActivityIndicator size="small" color="#fff" />
+                              ) : (
+                                <>
+                                  <Text
+                                    style={{
+                                      color: '#fff',
+                                      fontSize: 13,
+                                      fontWeight: '600',
+                                    }}
+                                  >
+                                    {isRTL ? 'ادفع الآن' : 'Pay Now'}
+                                  </Text>
+                                </>
+                              )}
+                            </TouchableOpacity>
+                          )}
 
-                        {/* Cancel Order Button */}
-                        {showCancelButton && (
-                          <TouchableOpacity
-                            style={{
-                              flex: (showPayButton || showReceiptButton || hasQR) ? 0.5 : 1,
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              backgroundColor: '#fff',
-                              borderWidth: 1.5,
-                              borderColor: '#dc3545',
-                              paddingVertical: 10,
-                              paddingHorizontal: 12,
-                              borderRadius: 8,
-                              gap: 6,
-                            }}
-                            onPress={() => handleCancelBooking(booking._id)}
-                            disabled={cancellingBookings.has(booking._id)}
-                          >
-                            {cancellingBookings.has(booking._id) ? (
-                              <ActivityIndicator size="small" color="#dc3545" />
-                            ) : (
-                              <>
-                                <Text style={{ fontSize: 14, color: '#dc3545', fontWeight: 'bold' }}>✕</Text>
-                                <Text
-                                  style={{
-                                    color: '#dc3545',
-                                    fontSize: 13,
-                                    fontWeight: '600',
-                                  }}
-                                >
-                                  {isRTL ? 'إلغاء' : 'Cancel'}
-                                </Text>
-                              </>
-                            )}
-                          </TouchableOpacity>
-                        )}
-                      </View>
-                    );
-                  })()}
+                          {/* Cancel Order Button */}
+                          {showCancelButton && (
+                            <TouchableOpacity
+                              style={{
+                                flex:
+                                  showPayButton || showReceiptButton || hasQR
+                                    ? 0.5
+                                    : 1,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                backgroundColor: '#fff',
+                                borderWidth: 1.5,
+                                borderColor: '#dc3545',
+                                paddingVertical: 10,
+                                paddingHorizontal: 12,
+                                borderRadius: 8,
+                                gap: 6,
+                              }}
+                              onPress={() => handleCancelBooking(booking._id)}
+                              disabled={cancellingBookings.has(booking._id)}
+                            >
+                              {cancellingBookings.has(booking._id) ? (
+                                <ActivityIndicator
+                                  size="small"
+                                  color="#dc3545"
+                                />
+                              ) : (
+                                <>
+                                  <Text
+                                    style={{
+                                      fontSize: 14,
+                                      color: '#dc3545',
+                                      fontWeight: 'bold',
+                                    }}
+                                  >
+                                    ✕
+                                  </Text>
+                                  <Text
+                                    style={{
+                                      color: '#dc3545',
+                                      fontSize: 13,
+                                      fontWeight: '600',
+                                    }}
+                                  >
+                                    {isRTL ? 'إلغاء' : 'Cancel'}
+                                  </Text>
+                                </>
+                              )}
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      );
+                    })()}
 
-                  {/* Action Buttons removed - each service now has its own buttons */}
+                    {/* Action Buttons removed - each service now has its own buttons */}
                   </View>
                 </View>
               ))
@@ -1474,18 +1828,18 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                 setSelectedBooking(null);
                 setSelectedQRCode(null);
               }}
-               onSuccess={(_updatedQR, updatedGuestLimit) => {
-                 if (selectedBooking) {
-                   setBookings(prevBookings =>
-                     prevBookings.map(b =>
-                       b._id === selectedBooking._id
-                         ? { ...b, guestLimit: updatedGuestLimit }
-                         : b
-                     )
-                   );
-                 }
-                 loadBookings();
-               }}
+              onSuccess={(_updatedQR, updatedGuestLimit) => {
+                if (selectedBooking) {
+                  setBookings(prevBookings =>
+                    prevBookings.map(b =>
+                      b._id === selectedBooking._id
+                        ? { ...b, guestLimit: updatedGuestLimit }
+                        : b,
+                    ),
+                  );
+                }
+                loadBookings();
+              }}
             />
           )}
 
@@ -1527,8 +1881,9 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                       selectedReceiptBooking.myFatoorahPayment?.referenceId,
                     services: getReceiptServices(selectedReceiptBooking),
                     paidAt:
-                      selectedReceiptBooking.services?.find((s: any) => s.paidAt)
-                        ?.paidAt ||
+                      selectedReceiptBooking.services?.find(
+                        (s: any) => s.paidAt,
+                      )?.paidAt ||
                       selectedReceiptBooking.updatedAt ||
                       selectedReceiptBooking.createdAt,
                   }

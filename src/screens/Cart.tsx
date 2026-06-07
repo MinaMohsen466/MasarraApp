@@ -12,7 +12,13 @@ import {
   Animated,
   PanResponder,
 } from 'react-native';
-import Svg, { Path, Circle, Line, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, {
+  Path,
+  Circle,
+  Line,
+  Rect,
+  Text as SvgText,
+} from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../constants/colors';
@@ -49,9 +55,7 @@ interface CartProps {
   onNavigate?: (route: string) => void;
 }
 
-const Cart: React.FC<CartProps> = ({
-  onNavigate,
-}) => {
+const Cart: React.FC<CartProps> = ({ onNavigate }) => {
   const { isRTL, t } = useLanguage();
   const { user, isLoggedIn, token } = useAuth();
   const insets = useSafeAreaInsets();
@@ -59,8 +63,8 @@ const Cart: React.FC<CartProps> = ({
   const [loading, setLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   // Swipe-to-delete animated values
-  const swipeAnims = useRef<{[key: string]: Animated.Value}>({}).current;
-  const [showInfo, setShowInfo] = useState<{[key: string]: boolean}>({});
+  const swipeAnims = useRef<{ [key: string]: Animated.Value }>({}).current;
+  const [showInfo, setShowInfo] = useState<{ [key: string]: boolean }>({});
   const [showSuccessScreen, setShowSuccessScreen] = useState(false);
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
   const [showAddressSelection, setShowAddressSelection] = useState(false);
@@ -194,8 +198,6 @@ const Cart: React.FC<CartProps> = ({
     }
   }, [isLoggedIn, cartItems.length]);
 
-
-
   // Helper to convert /public/ paths to full URLs (same as EditProfile and UserProfile)
   const getImageUri = (uri: string | null | undefined) => {
     if (!uri) return null;
@@ -230,124 +232,145 @@ const Cart: React.FC<CartProps> = ({
     }
   };
 
-
-
   // Swipe-to-delete helpers
-  const getSwipeAnim = useCallback((itemId: string) => {
-    if (!swipeAnims[itemId]) {
-      swipeAnims[itemId] = new Animated.Value(0);
-    }
-    return swipeAnims[itemId];
-  }, [swipeAnims]);
+  const getSwipeAnim = useCallback(
+    (itemId: string) => {
+      if (!swipeAnims[itemId]) {
+        swipeAnims[itemId] = new Animated.Value(0);
+      }
+      return swipeAnims[itemId];
+    },
+    [swipeAnims],
+  );
 
-  const resetSwipe = useCallback((itemId: string) => {
-    const translateX = getSwipeAnim(itemId);
-    Animated.spring(translateX, {
-      toValue: 0,
-      useNativeDriver: true,
-      tension: 100,
-      friction: 10,
-    }).start();
-  }, [getSwipeAnim]);
+  const resetSwipe = useCallback(
+    (itemId: string) => {
+      const translateX = getSwipeAnim(itemId);
+      Animated.spring(translateX, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 100,
+        friction: 10,
+      }).start();
+    },
+    [getSwipeAnim],
+  );
 
-  const confirmAndDelete = useCallback((itemId: string) => {
-    // Snap to revealed position first
-    const translateX = getSwipeAnim(itemId);
-    Animated.spring(translateX, {
-      toValue: isRTL ? 80 : -80,
-      useNativeDriver: true,
-      tension: 100,
-      friction: 10,
-    }).start();
+  const confirmAndDelete = useCallback(
+    (itemId: string) => {
+      // Snap to revealed position first
+      const translateX = getSwipeAnim(itemId);
+      Animated.spring(translateX, {
+        toValue: isRTL ? 80 : -80,
+        useNativeDriver: true,
+        tension: 100,
+        friction: 10,
+      }).start();
 
-    // Show confirmation dialog
-    const buttons = [
-      {
-        text: t('remove'),
-        style: 'destructive' as const,
-        onPress: async () => {
-          // Animate card off-screen then delete
-          Animated.timing(translateX, {
-            toValue: isRTL ? 500 : -500,
-            duration: 200,
-            useNativeDriver: true,
-          }).start(async () => {
-            await removeFromCart(itemId);
-            await loadCart();
-            delete swipeAnims[itemId];
-            if (panResponders.current[itemId]) {
-              delete panResponders.current[itemId];
+      // Show confirmation dialog
+      const buttons = [
+        {
+          text: t('remove'),
+          style: 'destructive' as const,
+          onPress: async () => {
+            // Animate card off-screen then delete
+            Animated.timing(translateX, {
+              toValue: isRTL ? 500 : -500,
+              duration: 200,
+              useNativeDriver: true,
+            }).start(async () => {
+              await removeFromCart(itemId);
+              await loadCart();
+              delete swipeAnims[itemId];
+              if (panResponders.current[itemId]) {
+                delete panResponders.current[itemId];
+              }
+            });
+          },
+        },
+        {
+          text: t('cancel'),
+          style: 'cancel' as const,
+          onPress: () => {
+            // Reset card position
+            resetSwipe(itemId);
+          },
+        },
+      ];
+      setAlertTitle(t('confirmDelete'));
+      setAlertMessage(t('removeItemMessage'));
+      setAlertButtons(isRTL ? buttons : buttons.reverse());
+      setAlertVisible(true);
+    },
+    [isRTL, getSwipeAnim, resetSwipe, t, swipeAnims],
+  );
+
+  const createPanResponder = useCallback(
+    (itemId: string) => {
+      const translateX = getSwipeAnim(itemId);
+      const REVEAL_THRESHOLD = 50;
+      const DELETE_THRESHOLD = 150;
+      return PanResponder.create({
+        onStartShouldSetPanResponder: () => false,
+        onMoveShouldSetPanResponder: (_, gestureState) => {
+          return (
+            Math.abs(gestureState.dx) > 10 && Math.abs(gestureState.dy) < 20
+          );
+        },
+        onPanResponderMove: (_, gestureState) => {
+          if (isRTL) {
+            if (gestureState.dx > 0) {
+              translateX.setValue(gestureState.dx);
+            } else {
+              translateX.setValue(Math.max(gestureState.dx, 0));
             }
-          });
-        },
-      },
-      {
-        text: t('cancel'),
-        style: 'cancel' as const,
-        onPress: () => {
-          // Reset card position
-          resetSwipe(itemId);
-        },
-      },
-    ];
-    setAlertTitle(t('confirmDelete'));
-    setAlertMessage(t('removeItemMessage'));
-    setAlertButtons(isRTL ? buttons : buttons.reverse());
-    setAlertVisible(true);
-  }, [isRTL, getSwipeAnim, resetSwipe, t, swipeAnims]);
-
-  const createPanResponder = useCallback((itemId: string) => {
-    const translateX = getSwipeAnim(itemId);
-    const REVEAL_THRESHOLD = 50;
-    const DELETE_THRESHOLD = 150;
-    return PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (_, gestureState) => {
-        return Math.abs(gestureState.dx) > 10 && Math.abs(gestureState.dy) < 20;
-      },
-      onPanResponderMove: (_, gestureState) => {
-        if (isRTL) {
-          if (gestureState.dx > 0) {
-            translateX.setValue(gestureState.dx);
           } else {
-            translateX.setValue(Math.max(gestureState.dx, 0));
+            if (gestureState.dx < 0) {
+              translateX.setValue(gestureState.dx);
+            } else {
+              translateX.setValue(Math.min(gestureState.dx, 0));
+            }
           }
-        } else {
-          if (gestureState.dx < 0) {
-            translateX.setValue(gestureState.dx);
-          } else {
-            translateX.setValue(Math.min(gestureState.dx, 0));
+        },
+        onPanResponderRelease: (_, gestureState) => {
+          const absX = Math.abs(gestureState.dx);
+          // Full swipe → show confirmation
+          if (absX > DELETE_THRESHOLD) {
+            confirmAndDelete(itemId);
+            return;
           }
-        }
-      },
-      onPanResponderRelease: (_, gestureState) => {
-        const absX = Math.abs(gestureState.dx);
-        // Full swipe → show confirmation
-        if (absX > DELETE_THRESHOLD) {
-          confirmAndDelete(itemId);
-          return;
-        }
-        // Partial swipe → reveal/hide delete button
-        const targetOpen = isRTL
-          ? gestureState.dx > REVEAL_THRESHOLD ? 80 : 0
-          : gestureState.dx < -REVEAL_THRESHOLD ? -80 : 0;
-        Animated.spring(translateX, {
-          toValue: targetOpen,
-          useNativeDriver: true,
-          tension: 100,
-          friction: 10,
-        }).start();
-      },
-    });
-  }, [isRTL, getSwipeAnim, confirmAndDelete]);
+          // Partial swipe → reveal/hide delete button
+          const targetOpen = isRTL
+            ? gestureState.dx > REVEAL_THRESHOLD
+              ? 80
+              : 0
+            : gestureState.dx < -REVEAL_THRESHOLD
+            ? -80
+            : 0;
+          Animated.spring(translateX, {
+            toValue: targetOpen,
+            useNativeDriver: true,
+            tension: 100,
+            friction: 10,
+          }).start();
+        },
+      });
+    },
+    [isRTL, getSwipeAnim, confirmAndDelete],
+  );
 
-  const panResponders = useRef<{[key: string]: ReturnType<typeof PanResponder.create>}>({});
-  const getPanResponder = useCallback((itemId: string) => {
-    if (!panResponders.current[itemId]) {
-      panResponders.current[itemId] = createPanResponder(itemId);
-    }
-    return panResponders.current[itemId];
-  }, [createPanResponder]);
+  const panResponders = useRef<{
+    [key: string]: ReturnType<typeof PanResponder.create>;
+  }>({});
+  const getPanResponder = useCallback(
+    (itemId: string) => {
+      if (!panResponders.current[itemId]) {
+        panResponders.current[itemId] = createPanResponder(itemId);
+      }
+      return panResponders.current[itemId];
+    },
+    [createPanResponder],
+  );
 
   const handleInfoPress = useCallback((itemId: string) => {
     setShowInfo(prev => ({ ...prev, [itemId]: !prev[itemId] }));
@@ -426,11 +449,11 @@ const Cart: React.FC<CartProps> = ({
       const couponData =
         appliedCoupon && couponDiscount > 0
           ? {
-            code: appliedCoupon.code,
-            discountAmount: couponDiscount,
-            originalPrice: calculateTotalBeforeDiscount(),
-            deductFrom: appliedCoupon.deductFrom || 'vendor',
-          }
+              code: appliedCoupon.code,
+              discountAmount: couponDiscount,
+              originalPrice: calculateTotalBeforeDiscount(),
+              deductFrom: appliedCoupon.deductFrom || 'vendor',
+            }
           : undefined;
 
       // Step 1: Create ONE booking for all items (payment status will be 'pending')
@@ -594,14 +617,14 @@ const Cart: React.FC<CartProps> = ({
       const supplierShares =
         suppliers.length > 0
           ? calculateSupplierShares(
-            successfullyBookedItems.map(item => ({
-              vendorId: item.vendorId,
-              totalPrice: item.totalPrice || item.price,
-              price: item.price,
-              quantity: item.quantity,
-            })),
-            suppliers,
-          )
+              successfullyBookedItems.map(item => ({
+                vendorId: item.vendorId,
+                totalPrice: item.totalPrice || item.price,
+                price: item.price,
+                quantity: item.quantity,
+              })),
+              suppliers,
+            )
           : undefined;
 
       // Step 6: Prepare customer info for payment
@@ -614,7 +637,7 @@ const Cart: React.FC<CartProps> = ({
       if (!customerEmail && !customerMobile) {
         throw new Error(
           t('emailOrPhoneRequired') ||
-          'Email or phone number is required for payment',
+            'Email or phone number is required for payment',
         );
       }
 
@@ -687,19 +710,35 @@ const Cart: React.FC<CartProps> = ({
     const successfullyBookedItems = cartItems.filter(item =>
       successfullyBookedItemIds.includes(item._id),
     );
-    const amount = successfullyBookedItems.reduce((total, item) => total + (item.totalPrice ?? item.price * item.quantity), 0) + calculateDeliveryCharges() - couponDiscount;
+    const amount =
+      successfullyBookedItems.reduce(
+        (total, item) =>
+          total + (item.totalPrice ?? item.price * item.quantity),
+        0,
+      ) +
+      calculateDeliveryCharges() -
+      couponDiscount;
 
     setSuccessReceiptData({
       status: 'success',
       bookingId: createdBookingIds[0] || '',
       amount: parseFloat(Math.max(0, amount).toFixed(3)) || 0,
       currency: 'KWD',
-      services: successfullyBookedItems.length > 0 ? successfullyBookedItems.map(item => ({
-        name: isRTL ? (item.nameAr || item.name) : item.name,
-        quantity: item.quantity,
-        total: item.totalPrice ?? item.price * item.quantity
-      })) : [{ name: isRTL ? 'الطلب الخاص بك' : 'Your Order', quantity: 1, total: 0 }],
-      paidAt: new Date()
+      services:
+        successfullyBookedItems.length > 0
+          ? successfullyBookedItems.map(item => ({
+              name: isRTL ? item.nameAr || item.name : item.name,
+              quantity: item.quantity,
+              total: item.totalPrice ?? item.price * item.quantity,
+            }))
+          : [
+              {
+                name: isRTL ? 'الطلب الخاص بك' : 'Your Order',
+                quantity: 1,
+                total: 0,
+              },
+            ],
+      paidAt: new Date(),
     });
 
     // Remove only the successfully booked items from cart
@@ -784,7 +823,7 @@ const Cart: React.FC<CartProps> = ({
     setAlertTitle(t('paymentCancelled') || 'Payment Cancelled');
     setAlertMessage(
       t('paymentCancelledMessage') ||
-      'Payment was cancelled. Your cart items are still saved.',
+        'Payment was cancelled. Your cart items are still saved.',
     );
     setAlertButtons([{ text: t('ok'), style: 'default' }]);
     setAlertVisible(true);
@@ -882,14 +921,16 @@ const Cart: React.FC<CartProps> = ({
         setCouponDiscount(result.discountAmount);
         setCouponMessage(
           isRTL
-            ? `تم تطبيق الخصم بنجاح! توفير ${result.coupon.discountType === 'percentage'
-              ? result.coupon.discountValue + '%'
-              : result.coupon.discountValue + ' د.ك'
-            }`
-            : `Coupon applied successfully! Discount ${result.coupon.discountType === 'percentage'
-              ? result.coupon.discountValue + '%'
-              : 'KD ' + result.coupon.discountValue
-            }`,
+            ? `تم تطبيق الخصم بنجاح! توفير ${
+                result.coupon.discountType === 'percentage'
+                  ? result.coupon.discountValue + '%'
+                  : result.coupon.discountValue + ' د.ك'
+              }`
+            : `Coupon applied successfully! Discount ${
+                result.coupon.discountType === 'percentage'
+                  ? result.coupon.discountValue + '%'
+                  : 'KD ' + result.coupon.discountValue
+              }`,
         );
       } else {
         setCouponError(
@@ -932,9 +973,15 @@ const Cart: React.FC<CartProps> = ({
   if (!isLoggedIn) {
     return (
       <>
-        <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
+        <StatusBar
+          backgroundColor="#00a19c"
+          barStyle="light-content"
+          translucent={false}
+        />
         <View style={{ flex: 1, backgroundColor: colors.primary }}>
-          <View style={{ height: insets.top, backgroundColor: colors.primary }} />
+          <View
+            style={{ height: insets.top, backgroundColor: colors.primary }}
+          />
           <View style={styles.loginFullPageContainer}>
             <ScrollView
               style={styles.loginScrollContainer}
@@ -943,14 +990,40 @@ const Cart: React.FC<CartProps> = ({
             >
               {/* Curved Header Background Block with topographic waves & integrated navigation */}
               <View style={styles.loginHeaderBlock}>
-                <Svg width="100%" height="100%" viewBox="0 0 375 130" preserveAspectRatio="none" style={styles.loginTopographicSvg}>
-                  <Path d="M-20 25 C80 70 180 15 300 60 T400 40" stroke="rgba(255,255,255,0.08)" strokeWidth={1.5} fill="none" />
-                  <Path d="M-20 45 C80 90 180 25 300 80 T400 60" stroke="rgba(255,255,255,0.12)" strokeWidth={1.5} fill="none" />
-                  <Path d="M-20 65 C80 110 180 35 300 100 T400 80" stroke="rgba(255,255,255,0.15)" strokeWidth={2} fill="none" />
+                <Svg
+                  width="100%"
+                  height="100%"
+                  viewBox="0 0 375 130"
+                  preserveAspectRatio="none"
+                  style={styles.loginTopographicSvg}
+                >
+                  <Path
+                    d="M-20 25 C80 70 180 15 300 60 T400 40"
+                    stroke="rgba(255,255,255,0.08)"
+                    strokeWidth={1.5}
+                    fill="none"
+                  />
+                  <Path
+                    d="M-20 45 C80 90 180 25 300 80 T400 60"
+                    stroke="rgba(255,255,255,0.12)"
+                    strokeWidth={1.5}
+                    fill="none"
+                  />
+                  <Path
+                    d="M-20 65 C80 110 180 35 300 100 T400 80"
+                    stroke="rgba(255,255,255,0.15)"
+                    strokeWidth={2}
+                    fill="none"
+                  />
                 </Svg>
 
                 {/* Overlay Navigation Bar */}
-                <View style={[styles.loginOverlayBar, isRTL && styles.loginOverlayBarRTL]}>
+                <View
+                  style={[
+                    styles.loginOverlayBar,
+                    isRTL && styles.loginOverlayBarRTL,
+                  ]}
+                >
                   <TouchableOpacity
                     style={styles.loginBackButtonCircle}
                     onPress={handleBack}
@@ -958,7 +1031,7 @@ const Cart: React.FC<CartProps> = ({
                   >
                     <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
                       <Path
-                        d={isRTL ? "M9 5l7 7-7 7" : "M15 19l-7-7 7-7"}
+                        d={isRTL ? 'M9 5l7 7-7 7' : 'M15 19l-7-7 7-7'}
                         stroke={colors.textWhite}
                         strokeWidth={2.5}
                         strokeLinecap="round"
@@ -967,7 +1040,13 @@ const Cart: React.FC<CartProps> = ({
                     </Svg>
                   </TouchableOpacity>
 
-                  <Text style={[styles.headerTitle, { color: colors.textWhite }, isRTL && styles.headerTitleRTL]}>
+                  <Text
+                    style={[
+                      styles.headerTitle,
+                      { color: colors.textWhite },
+                      isRTL && styles.headerTitleRTL,
+                    ]}
+                  >
                     {t('myCart')}
                   </Text>
 
@@ -977,8 +1056,16 @@ const Cart: React.FC<CartProps> = ({
 
               {/* Curved Wave Divider (Transitions header to card background) */}
               <View style={styles.loginCurveDivider}>
-                <Svg height="40" width="100%" viewBox="0 0 375 40" preserveAspectRatio="none">
-                  <Path d="M0,25 C100,55 250,0 375,25 L375,40 L0,40 Z" fill={colors.backgroundCard} />
+                <Svg
+                  height="40"
+                  width="100%"
+                  viewBox="0 0 375 40"
+                  preserveAspectRatio="none"
+                >
+                  <Path
+                    d="M0,25 C100,55 250,0 375,25 L375,40 L0,40 Z"
+                    fill={colors.backgroundCard}
+                  />
                 </Svg>
               </View>
 
@@ -1000,14 +1087,17 @@ const Cart: React.FC<CartProps> = ({
                 <Text
                   style={[
                     styles.loginPromptTitle,
-                    isRTL && styles.loginPromptTitleRTL
+                    isRTL && styles.loginPromptTitleRTL,
                   ]}
                 >
                   {isRTL ? 'سلة التسوق' : 'My Cart'}
                 </Text>
 
                 <Text
-                  style={[styles.loginPromptText, isRTL && styles.loginPromptTextRTL]}
+                  style={[
+                    styles.loginPromptText,
+                    isRTL && styles.loginPromptTextRTL,
+                  ]}
                 >
                   {isRTL
                     ? 'الرجاء تسجيل الدخول لعرض سلة التسوق الخاصة بك'
@@ -1021,6 +1111,202 @@ const Cart: React.FC<CartProps> = ({
                 >
                   <Text style={styles.loginSubmitButtonText}>
                     {isRTL ? 'تسجيل الدخول' : 'Sign In'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </>
+    );
+  }
+
+  // If user is logged in, but cart is empty, show empty cart page
+  if (isLoggedIn && !loading && cartItems.length === 0) {
+    return (
+      <>
+        <StatusBar
+          backgroundColor="#00a19c"
+          barStyle="light-content"
+          translucent={false}
+        />
+        <View style={{ flex: 1, backgroundColor: colors.primary }}>
+          <View
+            style={{ height: insets.top, backgroundColor: colors.primary }}
+          />
+          <View style={styles.loginFullPageContainer}>
+            <ScrollView
+              style={styles.loginScrollContainer}
+              contentContainerStyle={styles.loginContentContainer}
+              showsVerticalScrollIndicator={false}
+            >
+              {/* Curved Header Background Block with topographic waves & integrated navigation */}
+              <View style={styles.loginHeaderBlock}>
+                <Svg
+                  width="100%"
+                  height="100%"
+                  viewBox="0 0 375 130"
+                  preserveAspectRatio="none"
+                  style={styles.loginTopographicSvg}
+                >
+                  <Path
+                    d="M-20 25 C80 70 180 15 300 60 T400 40"
+                    stroke="rgba(255,255,255,0.08)"
+                    strokeWidth={1.5}
+                    fill="none"
+                  />
+                  <Path
+                    d="M-20 45 C80 90 180 25 300 80 T400 60"
+                    stroke="rgba(255,255,255,0.12)"
+                    strokeWidth={1.5}
+                    fill="none"
+                  />
+                  <Path
+                    d="M-20 65 C80 110 180 35 300 100 T400 80"
+                    stroke="rgba(255,255,255,0.15)"
+                    strokeWidth={2}
+                    fill="none"
+                  />
+                </Svg>
+
+                {/* Overlay Navigation Bar */}
+                <View
+                  style={[
+                    styles.loginOverlayBar,
+                    isRTL && styles.loginOverlayBarRTL,
+                  ]}
+                >
+                  <TouchableOpacity
+                    style={styles.loginBackButtonCircle}
+                    onPress={handleBack}
+                    activeOpacity={0.8}
+                  >
+                    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                      <Path
+                        d={isRTL ? 'M9 5l7 7-7 7' : 'M15 19l-7-7 7-7'}
+                        stroke={colors.textWhite}
+                        strokeWidth={2.5}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </Svg>
+                  </TouchableOpacity>
+
+                  <Text
+                    style={[
+                      styles.headerTitle,
+                      { color: colors.textWhite },
+                      isRTL && styles.headerTitleRTL,
+                    ]}
+                  >
+                    {t('myCart')}
+                  </Text>
+
+                  {/* Profile Button on the right for logged in user */}
+                  <TouchableOpacity
+                    style={[
+                      styles.profileButton,
+                      { borderColor: colors.textWhite },
+                    ]}
+                    onPress={handleUserIconPress}
+                    activeOpacity={0.6}
+                    hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+                  >
+                    {user?.profilePicture && !imageError ? (
+                      <Image
+                        source={{
+                          uri: getImageUri(user.profilePicture) || undefined,
+                        }}
+                        style={styles.profileIcon}
+                        resizeMode="cover"
+                        onError={() => setImageError(true)}
+                      />
+                    ) : (
+                      <Svg
+                        width={22}
+                        height={22}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                      >
+                        <Path
+                          d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"
+                          stroke={colors.textWhite}
+                          strokeWidth={2.2}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <Circle
+                          cx="12"
+                          cy="7"
+                          r="4"
+                          stroke={colors.textWhite}
+                          strokeWidth={2.2}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </Svg>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Curved Wave Divider (Transitions header to card background) */}
+              <View style={styles.loginCurveDivider}>
+                <Svg
+                  height="40"
+                  width="100%"
+                  viewBox="0 0 375 40"
+                  preserveAspectRatio="none"
+                >
+                  <Path
+                    d="M0,25 C100,55 250,0 375,25 L375,40 L0,40 Z"
+                    fill={colors.backgroundCard}
+                  />
+                </Svg>
+              </View>
+
+              {/* Empty Prompt Section */}
+              <View style={styles.loginPromptContainer}>
+                {/* Circular Container with Shopping Basket Icon */}
+                <View style={styles.loginPlaceholderCircle}>
+                  <Svg width={44} height={44} viewBox="0 0 24 24" fill="none">
+                    <Path
+                      d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                      stroke={colors.primary}
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </Svg>
+                </View>
+
+                <Text
+                  style={[
+                    styles.loginPromptTitle,
+                    isRTL && styles.loginPromptTitleRTL,
+                  ]}
+                >
+                  {isRTL ? 'سلتك فارغة' : 'Your Cart is Empty'}
+                </Text>
+
+                <Text
+                  style={[
+                    styles.loginPromptText,
+                    isRTL && styles.loginPromptTextRTL,
+                  ]}
+                >
+                  {isRTL
+                    ? 'اكتشف خدماتنا وباقاتنا المميزة لجعل مناسبتك فريدة ومميزة.'
+                    : 'Explore our premium services and packages to make your occasion special.'}
+                </Text>
+
+                <TouchableOpacity
+                  style={styles.loginSubmitButton}
+                  onPress={() => onNavigate && onNavigate('home')}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.loginSubmitButtonText}>
+                    {isRTL ? 'اكتشف الخدمات' : 'EXPLORE SERVICES'}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -1050,9 +1336,24 @@ const Cart: React.FC<CartProps> = ({
           onPress={() => setShowInfo({})}
         />
       )}
-      <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
+      <StatusBar
+        backgroundColor="#00a19c"
+        barStyle="light-content"
+        translucent={false}
+      />
       {/* Header */}
-      <View style={[styles.header, isRTL && styles.headerRTL, { paddingTop: Platform.OS === 'android' ? (insets.top > 0 ? insets.top : 8) + 8 : insets.top + 8 }]}>
+      <View
+        style={[
+          styles.header,
+          isRTL && styles.headerRTL,
+          {
+            paddingTop:
+              Platform.OS === 'android'
+                ? (insets.top > 0 ? insets.top : 8) + 8
+                : insets.top + 8,
+          },
+        ]}
+      >
         {/* Back Button */}
         <TouchableOpacity
           onPress={handleBack}
@@ -1060,14 +1361,9 @@ const Cart: React.FC<CartProps> = ({
           activeOpacity={0.6}
           hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
         >
-          <Svg
-            width={20}
-            height={20}
-            viewBox="0 0 24 24"
-            fill="none"
-          >
+          <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
             <Path
-              d={isRTL ? "M9 5l7 7-7 7" : "M15 19l-7-7 7-7"}
+              d={isRTL ? 'M9 5l7 7-7 7' : 'M15 19l-7-7 7-7'}
               stroke={colors.primary}
               strokeWidth={2.5}
               strokeLinecap="round"
@@ -1124,68 +1420,6 @@ const Cart: React.FC<CartProps> = ({
         <View style={styles.centerContent}>
           <Text style={styles.emptyText}>{t('loading')}</Text>
         </View>
-      ) : cartItems.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <View style={styles.emptyTopSection}>
-            <View style={styles.emptyBasketWrapper}>
-              <Svg width={180} height={180} viewBox="0 0 100 100">
-                {/* Floating premium design shapes */}
-                {/* Gold Star */}
-                <Path d="M 25 24 L 26.5 27 L 29.5 27 L 27 29 L 28 32 L 25 30.5 L 22 32 L 23 29 L 20.5 27 L 23.5 27 Z" fill="#b89753" opacity={0.85} />
-                
-                {/* Gold Circle */}
-                <Circle cx="80" cy="28" r="3.5" stroke="#b89753" strokeWidth={1.5} fill="none" opacity={0.85} />
-                
-                {/* Teal Cross */}
-                <Line x1="14" y1="52" x2="20" y2="52" stroke={colors.primary} strokeWidth={1.8} strokeLinecap="round" />
-                <Line x1="17" y1="49" x2="17" y2="55" stroke={colors.primary} strokeWidth={1.8} strokeLinecap="round" />
-                
-                {/* Shopping Bag Handle */}
-                <Path d="M 38 38 C 38 22, 62 22, 62 38" stroke={colors.primaryDark} strokeWidth={2.8} strokeLinecap="round" fill="none" />
-                
-                {/* Shopping Bag Body */}
-                <Rect x="27" y="38" width="46" height="42" rx="6" stroke={colors.primaryDark} strokeWidth={2.8} fill={colors.backgroundCard} />
-                
-                {/* Geometric lines on shopping bag */}
-                <Path d="M 37 54 L 63 54" stroke={colors.primary} strokeWidth={1.5} strokeLinecap="round" opacity={0.4} />
-                <Path d="M 43 62 L 57 62" stroke={colors.primary} strokeWidth={1.5} strokeLinecap="round" opacity={0.4} />
-
-                {/* Overlapping Badge (representing 0 items in cart) */}
-                <Circle cx="73" cy="74" r="13" stroke={colors.primaryDark} strokeWidth={2.5} fill={colors.background} />
-                <Circle cx="73" cy="74" r="13" stroke={colors.primary} strokeWidth={1.2} strokeDasharray="3,2" fill="none" />
-                <SvgText x="73" y="78.5" fontSize="12" fontWeight="bold" fill={colors.primaryDark} textAnchor="middle">0</SvgText>
-              </Svg>
-            </View>
-          </View>
-
-          {/* Curved Transition Wave */}
-          <View style={styles.curveContainer}>
-            <Svg height="60" width="100%" viewBox="0 0 375 60" preserveAspectRatio="none" style={styles.curveSvg}>
-              <Path d="M0 60 Q 187.5 10 375 60 L 375 60 L 0 60 Z" fill={colors.primary} />
-            </Svg>
-          </View>
-
-          <View style={styles.emptyBottomSection}>
-            <Text style={styles.emptyTitle}>
-              {isRTL ? 'سلتك فارغة' : 'Your Cart is Empty'}
-            </Text>
-            <Text style={styles.emptySubtitle}>
-              {isRTL 
-                ? 'اكتشف خدماتنا وباقاتنا المميزة لجعل مناسبتك فريدة ومميزة.' 
-                : "Explore our premium services and packages to make your occasion special."}
-            </Text>
-
-            <TouchableOpacity
-              style={styles.emptyCtaButton}
-              onPress={() => onNavigate && onNavigate('home')}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.emptyCtaText}>
-                {isRTL ? 'اكتشف الخدمات' : 'EXPLORE SERVICES'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
       ) : (
         <>
           <ScrollView
@@ -1198,16 +1432,25 @@ const Cart: React.FC<CartProps> = ({
               const isItemOld = item.timeSlot?.start
                 ? new Date(item.timeSlot.start) < now
                 : item.selectedDate &&
-                new Date(item.selectedDate).toDateString() <
-                now.toDateString();
+                  new Date(item.selectedDate).toDateString() <
+                    now.toDateString();
 
               const panHandler = getPanResponder(item._id);
               const translateX = getSwipeAnim(item._id);
               return (
-                <View key={item._id} style={[styles.swipeCardWrapper, { zIndex: showInfo[item._id] ? 999 : 1 }]}>
+                <View
+                  key={item._id}
+                  style={[
+                    styles.swipeCardWrapper,
+                    { zIndex: showInfo[item._id] ? 999 : 1 },
+                  ]}
+                >
                   {/* Delete button behind the card - full height */}
                   <TouchableOpacity
-                    style={[styles.swipeDeleteBehind, isRTL && styles.swipeDeleteBehindRTL]}
+                    style={[
+                      styles.swipeDeleteBehind,
+                      isRTL && styles.swipeDeleteBehindRTL,
+                    ]}
                     onPress={() => confirmAndDelete(item._id)}
                     activeOpacity={0.7}
                   >
@@ -1222,158 +1465,228 @@ const Cart: React.FC<CartProps> = ({
                     </Svg>
                   </TouchableOpacity>
                   <Animated.View
-                    style={[styles.cartCard, { marginBottom: 0, transform: [{ translateX }] }]}
+                    style={[
+                      styles.cartCard,
+                      { marginBottom: 0, transform: [{ translateX }] },
+                    ]}
                     {...panHandler.panHandlers}
                   >
-                  {/* Old Booking Warning Badge */}
-                  {isItemOld && (
-                    <View
-                      style={[
-                        styles.oldBookingBadge,
-                        isRTL
-                          ? styles.oldBookingBadgeRTL
-                          : styles.oldBookingBadgeLTR,
-                      ]}
-                    >
-                      <Text style={styles.oldBookingText}>
-                        {t('pastTimeWarning')}
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* Item Header with Image, Title, and info button */}
-                  <View
-                    style={[styles.itemHeader, isRTL && styles.itemHeaderRTL]}
-                  >
-                    {item.image && (
-                      <Image
-                        source={{ uri: getServiceImageUrl(item.image) }}
-                        style={[styles.itemImage, isRTL && styles.itemImageRTL]}
-                        resizeMode="cover"
-                      />
-                    )}
-                    <View
-                      style={[
-                        styles.itemHeaderText,
-                        isRTL && styles.itemHeaderTextRTL,
-                      ]}
-                    >
-                      <Text
-                        style={[styles.itemName, isRTL && styles.itemNameRTL]}
-                      >
-                        {isRTL && item.nameAr ? item.nameAr : item.name}
-                      </Text>
-                      {item.vendorName && (
-                        <Text
-                          style={[
-                            styles.vendorName,
-                            isRTL && styles.vendorNameRTL,
-                          ]}
-                        >
-                          {item.vendorName}
-                        </Text>
-                      )}
-
-                      {/* Selected Options / Custom Inputs */}
-                      {item.customInputs && item.customInputs.length > 0 && (
-                        <View
-                          style={[
-                            styles.optionsContainer,
-                            isRTL && styles.optionsContainerRTL,
-                          ]}
-                        >
-                          {item.customInputs.map((input, index) => {
-                            const renderOptionDetail = (
-                              opt: {
-                                label: string;
-                                labelAr?: string;
-                                value: string | number;
-                                valueAr?: string | number;
-                                price?: number;
-                              },
-                              optKey: string | number,
-                            ) => {
-                              const hasPrice = typeof opt.price === 'number' && opt.price > 0;
-                              return (
-                                <View
-                                  key={optKey}
-                                  style={[
-                                    styles.optionRow,
-                                    isRTL && styles.optionRowRTL,
-                                  ]}
-                                >
-                                  <Text
-                                    style={[
-                                      styles.optionBullet,
-                                      isRTL && styles.optionBulletRTL,
-                                    ]}
-                                  >
-                                    •
-                                  </Text>
-                                  <Text
-                                    style={[
-                                      styles.optionText,
-                                      isRTL && styles.optionTextRTL,
-                                    ]}
-                                  >
-                                    <Text style={styles.optionLabel}>
-                                      {isRTL && opt.labelAr ? opt.labelAr : opt.label}:{' '}
-                                    </Text>
-                                    <Text style={styles.optionValue}>
-                                      {isRTL && opt.valueAr ? opt.valueAr : opt.value}
-                                    </Text>
-                                    {hasPrice && (
-                                      <Text style={styles.optionPrice}>
-                                        {` (+${opt.price?.toFixed(3)} ${isRTL ? 'د.ك' : 'KD'
-                                          })`}
-                                      </Text>
-                                    )}
-                                  </Text>
-                                </View>
-                              );
-                            };
-
-                            if (Array.isArray(input)) {
-                              return input.map((opt, subIndex) =>
-                                renderOptionDetail(opt, `${index}-${subIndex}`),
-                              );
-                            } else if (input && input.label) {
-                              return renderOptionDetail(input, index);
-                            }
-                            return null;
-                          })}
-                        </View>
-                      )}
-                    </View>
-
-                    {/* Quantity Selector - Rendered on the opposite end next to the header info */}
-                    {item.maxBookingsPerSlot === -1 && (
+                    {/* Old Booking Warning Badge */}
+                    {isItemOld && (
                       <View
-                        style={{
-                          flexDirection: isRTL ? 'row-reverse' : 'row',
-                          alignItems: 'center',
-                          alignSelf: 'center',
-                          marginLeft: isRTL ? 0 : 12,
-                          marginRight: isRTL ? 12 : 0,
-                          gap: 6,
-                        }}
+                        style={[
+                          styles.oldBookingBadge,
+                          isRTL
+                            ? styles.oldBookingBadgeRTL
+                            : styles.oldBookingBadgeLTR,
+                        ]}
                       >
-                        <TouchableOpacity
+                        <Text style={styles.oldBookingText}>
+                          {t('pastTimeWarning')}
+                        </Text>
+                      </View>
+                    )}
+
+                    {/* Item Header with Image, Title, and info button */}
+                    <View
+                      style={[styles.itemHeader, isRTL && styles.itemHeaderRTL]}
+                    >
+                      {item.image && (
+                        <Image
+                          source={{ uri: getServiceImageUrl(item.image) }}
+                          style={[
+                            styles.itemImage,
+                            isRTL && styles.itemImageRTL,
+                          ]}
+                          resizeMode="cover"
+                        />
+                      )}
+                      <View
+                        style={[
+                          styles.itemHeaderText,
+                          isRTL && styles.itemHeaderTextRTL,
+                        ]}
+                      >
+                        <Text
+                          style={[styles.itemName, isRTL && styles.itemNameRTL]}
+                        >
+                          {isRTL && item.nameAr ? item.nameAr : item.name}
+                        </Text>
+                        {item.vendorName && (
+                          <Text
+                            style={[
+                              styles.vendorName,
+                              isRTL && styles.vendorNameRTL,
+                            ]}
+                          >
+                            {item.vendorName}
+                          </Text>
+                        )}
+
+                        {/* Selected Options / Custom Inputs */}
+                        {item.customInputs && item.customInputs.length > 0 && (
+                          <View
+                            style={[
+                              styles.optionsContainer,
+                              isRTL && styles.optionsContainerRTL,
+                            ]}
+                          >
+                            {item.customInputs.map((input, index) => {
+                              const renderOptionDetail = (
+                                opt: {
+                                  label: string;
+                                  labelAr?: string;
+                                  value: string | number;
+                                  valueAr?: string | number;
+                                  price?: number;
+                                },
+                                optKey: string | number,
+                              ) => {
+                                const hasPrice =
+                                  typeof opt.price === 'number' &&
+                                  opt.price > 0;
+                                return (
+                                  <View
+                                    key={optKey}
+                                    style={[
+                                      styles.optionRow,
+                                      isRTL && styles.optionRowRTL,
+                                    ]}
+                                  >
+                                    <Text
+                                      style={[
+                                        styles.optionBullet,
+                                        isRTL && styles.optionBulletRTL,
+                                      ]}
+                                    >
+                                      •
+                                    </Text>
+                                    <Text
+                                      style={[
+                                        styles.optionText,
+                                        isRTL && styles.optionTextRTL,
+                                      ]}
+                                    >
+                                      <Text style={styles.optionLabel}>
+                                        {isRTL && opt.labelAr
+                                          ? opt.labelAr
+                                          : opt.label}
+                                        :{' '}
+                                      </Text>
+                                      <Text style={styles.optionValue}>
+                                        {isRTL && opt.valueAr
+                                          ? opt.valueAr
+                                          : opt.value}
+                                      </Text>
+                                      {hasPrice && (
+                                        <Text style={styles.optionPrice}>
+                                          {` (+${opt.price?.toFixed(3)} ${
+                                            isRTL ? 'د.ك' : 'KD'
+                                          })`}
+                                        </Text>
+                                      )}
+                                    </Text>
+                                  </View>
+                                );
+                              };
+
+                              if (Array.isArray(input)) {
+                                return input.map((opt, subIndex) =>
+                                  renderOptionDetail(
+                                    opt,
+                                    `${index}-${subIndex}`,
+                                  ),
+                                );
+                              } else if (input && input.label) {
+                                return renderOptionDetail(input, index);
+                              }
+                              return null;
+                            })}
+                          </View>
+                        )}
+                      </View>
+
+                      {/* Quantity Selector - Rendered on the opposite end next to the header info */}
+                      {item.maxBookingsPerSlot === -1 && (
+                        <View
                           style={{
-                            width: 22,
-                            height: 22,
-                            borderRadius: 4,
-                            backgroundColor: colors.primary,
-                            justifyContent: 'center',
+                            flexDirection: isRTL ? 'row-reverse' : 'row',
                             alignItems: 'center',
+                            alignSelf: 'center',
+                            marginLeft: isRTL ? 0 : 12,
+                            marginRight: isRTL ? 12 : 0,
+                            gap: 6,
                           }}
-                          onPress={async () => {
-                            if (item.quantity > 1) {
+                        >
+                          <TouchableOpacity
+                            style={{
+                              width: 22,
+                              height: 22,
+                              borderRadius: 4,
+                              backgroundColor: colors.primary,
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                            }}
+                            onPress={async () => {
+                              if (item.quantity > 1) {
+                                try {
+                                  const updatedCart =
+                                    await updateCartItemQuantity(
+                                      item._id,
+                                      item.quantity - 1,
+                                    );
+                                  if (updatedCart) {
+                                    setCartItems([...updatedCart]);
+                                  }
+                                } catch (error) {
+                                  console.error(
+                                    'Error updating quantity:',
+                                    error,
+                                  );
+                                }
+                              }
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            <Text
+                              style={{
+                                color: colors.textWhite,
+                                fontSize: 12,
+                                fontWeight: 'bold',
+                                lineHeight: 16,
+                              }}
+                            >
+                              -
+                            </Text>
+                          </TouchableOpacity>
+
+                          <Text
+                            style={{
+                              fontSize: 13,
+                              fontWeight: '600',
+                              color: colors.textDark,
+                              minWidth: 18,
+                              textAlign: 'center',
+                            }}
+                          >
+                            {item.quantity}
+                          </Text>
+
+                          <TouchableOpacity
+                            style={{
+                              width: 22,
+                              height: 22,
+                              borderRadius: 4,
+                              backgroundColor: colors.primary,
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                            }}
+                            onPress={async () => {
                               try {
                                 const updatedCart =
                                   await updateCartItemQuantity(
                                     item._id,
-                                    item.quantity - 1,
+                                    item.quantity + 1,
                                   );
                                 if (updatedCart) {
                                   setCartItems([...updatedCart]);
@@ -1384,376 +1697,500 @@ const Cart: React.FC<CartProps> = ({
                                   error,
                                 );
                               }
-                            }
-                          }}
-                          activeOpacity={0.7}
-                        >
-                          <Text
-                            style={{
-                              color: colors.textWhite,
-                              fontSize: 12,
-                              fontWeight: 'bold',
-                              lineHeight: 16,
                             }}
+                            activeOpacity={0.7}
                           >
-                            -
-                          </Text>
-                        </TouchableOpacity>
-
-                        <Text
-                          style={{
-                            fontSize: 13,
-                            fontWeight: '600',
-                            color: colors.textDark,
-                            minWidth: 18,
-                            textAlign: 'center',
-                          }}
-                        >
-                          {item.quantity}
-                        </Text>
-
-                        <TouchableOpacity
-                          style={{
-                            width: 22,
-                            height: 22,
-                            borderRadius: 4,
-                            backgroundColor: colors.primary,
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                          }}
-                          onPress={async () => {
-                            try {
-                              const updatedCart =
-                                await updateCartItemQuantity(
-                                  item._id,
-                                  item.quantity + 1,
-                                );
-                              if (updatedCart) {
-                                setCartItems([...updatedCart]);
-                              }
-                            } catch (error) {
-                              console.error(
-                                'Error updating quantity:',
-                                error,
-                              );
-                            }
-                          }}
-                          activeOpacity={0.7}
-                        >
-                          <Text
-                            style={{
-                              color: colors.textWhite,
-                              fontSize: 12,
-                              fontWeight: 'bold',
-                              lineHeight: 16,
-                            }}
-                          >
-                            +
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
-                    )}
-                    {/* Info button */}
-                    <TouchableOpacity
-                      style={{
-                        paddingLeft: isRTL ? 0 : 8,
-                        paddingRight: isRTL ? 8 : 0,
-                        alignSelf: 'flex-start',
-                        marginTop: 2,
-                      }}
-                      onPress={() => handleInfoPress(item._id)}
-                      activeOpacity={0.6}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    >
-                      <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-                        <Path
-                          d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"
-                          stroke={colors.primary}
-                          strokeWidth={2}
-                        />
-                        <Path
-                          d="M12 16v-4"
-                          stroke={colors.primary}
-                          strokeWidth={2}
-                          strokeLinecap="round"
-                        />
-                        <Path
-                          d="M12 8h.01"
-                          stroke={colors.primary}
-                          strokeWidth={2}
-                          strokeLinecap="round"
-                        />
-                      </Svg>
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Inline Info Section */}
-                  {showInfo[item._id] && (
-                    <View style={[styles.infoDropdown, isRTL && styles.infoDropdownRTL]}>
-                      <Text style={[styles.infoDropdownTitle, isRTL && styles.infoDropdownTitleRTL]}>
-                        {isRTL ? 'بيانات الخدمة' : 'Service Details'}
-                      </Text>
-
-                      <View style={[styles.infoDropdownRow, isRTL && styles.infoDropdownRowRTL]}>
-                        <Text style={[styles.infoDropdownLabel, isRTL && styles.infoDropdownLabelRTL]}>
-                          {isRTL ? 'الاسم:' : 'Name:'}
-                        </Text>
-                        <Text style={[styles.infoDropdownValue, isRTL && styles.infoDropdownValueRTL]}>
-                          {isRTL && item.nameAr ? item.nameAr : item.name}
-                        </Text>
-                      </View>
-
-                      {item.vendorName ? (
-                        <View style={[styles.infoDropdownRow, isRTL && styles.infoDropdownRowRTL]}>
-                          <Text style={[styles.infoDropdownLabel, isRTL && styles.infoDropdownLabelRTL]}>
-                            {isRTL ? 'المورد:' : 'Vendor:'}
-                          </Text>
-                          <Text style={[styles.infoDropdownValue, isRTL && styles.infoDropdownValueRTL]}>
-                            {item.vendorName}
-                          </Text>
-                        </View>
-                      ) : null}
-
-                      <View style={[styles.infoDropdownRow, isRTL && styles.infoDropdownRowRTL]}>
-                        <Text style={[styles.infoDropdownLabel, isRTL && styles.infoDropdownLabelRTL]}>
-                          {isRTL ? 'التاريخ:' : 'Date:'}
-                        </Text>
-                        <Text style={[styles.infoDropdownValue, isRTL && styles.infoDropdownValueRTL]}>
-                          {item.selectedDate
-                            ? new Date(item.selectedDate).toLocaleDateString(
-                                isRTL ? 'ar-KW' : 'en-US',
-                                { day: '2-digit', month: '2-digit', year: 'numeric' }
-                              )
-                            : '-'}
-                        </Text>
-                      </View>
-
-                      <View style={[styles.infoDropdownRow, isRTL && styles.infoDropdownRowRTL]}>
-                        <Text style={[styles.infoDropdownLabel, isRTL && styles.infoDropdownLabelRTL]}>
-                          {isRTL ? 'الوقت:' : 'Time:'}
-                        </Text>
-                        <Text style={[styles.infoDropdownValue, isRTL && styles.infoDropdownValueRTL]}>
-                          {item.selectedTime || '-'}
-                        </Text>
-                      </View>
-
-                      <View style={[styles.infoDropdownRow, isRTL && styles.infoDropdownRowRTL]}>
-                        <Text style={[styles.infoDropdownLabel, isRTL && styles.infoDropdownLabelRTL]}>
-                          {isRTL ? 'آلية الحجز:' : 'Booking Type:'}
-                        </Text>
-                        <Text style={[styles.infoDropdownValue, isRTL && styles.infoDropdownValueRTL]}>
-                          {item.availabilityStatus === 'pending_confirmation'
-                            ? (isRTL ? 'يتطلب موافقة المورد' : 'Requires vendor confirmation')
-                            : (isRTL ? 'تأكيد تلقائي فوري' : 'Instant automatic booking')}
-                        </Text>
-                      </View>
-
-                      <View style={[styles.infoDropdownRow, isRTL && styles.infoDropdownRowRTL]}>
-                        <Text style={[styles.infoDropdownLabel, isRTL && styles.infoDropdownLabelRTL]}>
-                          {isRTL ? 'السعر الأساسي:' : 'Base Price:'}
-                        </Text>
-                        <Text style={[styles.infoDropdownValue, isRTL && styles.infoDropdownValueRTL]}>
-                          {item.price.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
-                        </Text>
-                      </View>
-
-                      {item.moreInfo ? (
-                        <View style={[styles.infoDropdownRow, isRTL && styles.infoDropdownRowRTL]}>
-                          <Text style={[styles.infoDropdownLabel, isRTL && styles.infoDropdownLabelRTL]}>
-                            {isRTL ? 'ملاحظات الحجز:' : 'Booking Notes:'}
-                          </Text>
-                          <Text style={[styles.infoDropdownValue, isRTL && styles.infoDropdownValueRTL]}>
-                            {item.moreInfo}
-                          </Text>
-                        </View>
-                      ) : null}
-
-                      {item.customInputs && item.customInputs.length > 0 && (
-                        <View style={{ marginTop: 4, borderTopWidth: 1, borderTopColor: 'rgba(0, 161, 156, 0.1)', paddingTop: 4 }}>
-                          <Text style={[styles.infoDropdownTitle, isRTL && styles.infoDropdownTitleRTL, { borderBottomWidth: 0, paddingBottom: 0, marginBottom: 4, fontSize: 11 }]}>
-                            {isRTL ? 'الخيارات الإضافية:' : 'Additional Options:'}
-                          </Text>
-                          {item.customInputs.map((input, index) => {
-                            const renderInputDetail = (
-                              opt: {
-                                label: string;
-                                labelAr?: string;
-                                value: string | number;
-                                valueAr?: string | number;
-                                price?: number;
-                              },
-                              optKey: string | number,
-                            ) => {
-                              const label = isRTL && opt.labelAr ? opt.labelAr : opt.label;
-                              const value = isRTL && opt.valueAr ? opt.valueAr : opt.value;
-                              const priceText = opt.price && opt.price > 0 
-                                ? ` (+${opt.price.toFixed(3)} ${isRTL ? 'د.ك' : 'KD'})` 
-                                : '';
-                              return (
-                                <View key={optKey} style={[styles.infoDropdownRow, isRTL && styles.infoDropdownRowRTL, { marginBottom: 3 }]}>
-                                  <Text style={[styles.infoDropdownLabel, isRTL && styles.infoDropdownLabelRTL, { width: 90 }]}>
-                                    {label}:
-                                  </Text>
-                                  <Text style={[styles.infoDropdownValue, isRTL && styles.infoDropdownValueRTL]}>
-                                    {value}{priceText}
-                                  </Text>
-                                </View>
-                              );
-                            };
-
-                            if (Array.isArray(input)) {
-                              return input.map((opt, subIndex) => opt && renderInputDetail(opt, `${index}-${subIndex}`));
-                            } else if (input && input.label) {
-                              return renderInputDetail(input, index);
-                            }
-                            return null;
-                          })}
+                            <Text
+                              style={{
+                                color: colors.textWhite,
+                                fontSize: 12,
+                                fontWeight: 'bold',
+                                lineHeight: 16,
+                              }}
+                            >
+                              +
+                            </Text>
+                          </TouchableOpacity>
                         </View>
                       )}
-                    </View>
-                  )}
-
-                   {/* Date and Time */}
-                  <View
-                    style={[
-                      styles.dateTimeSection,
-                      isRTL && styles.dateTimeSectionRTL,
-                    ]}
-                  >
-                    <View
-                      style={[
-                        styles.dateTimeRow,
-                        isRTL && styles.dateTimeRowRTL,
-                      ]}
-                    >
-                      {isRTL && (
-                        <Text style={styles.dateTimeText}>
-                          {item.selectedDate
-                            ? new Date(item.selectedDate).toLocaleDateString(
-                              isRTL ? 'ar-KW' : 'en-US',
-                              {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: 'numeric',
-                              },
-                            )
-                            : '-'}
-                        </Text>
-                      )}
-                      <Svg
-                        width={16}
-                        height={16}
-                        viewBox="0 0 24 24"
-                        fill="none"
+                      {/* Info button */}
+                      <TouchableOpacity
+                        style={{
+                          paddingLeft: isRTL ? 0 : 8,
+                          paddingRight: isRTL ? 8 : 0,
+                          alignSelf: 'flex-start',
+                          marginTop: 2,
+                        }}
+                        onPress={() => handleInfoPress(item._id)}
+                        activeOpacity={0.6}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                       >
-                        <Path
-                          d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z"
-                          stroke={colors.primary}
-                          strokeWidth={1.8}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </Svg>
-                      {!isRTL && (
-                        <Text style={styles.dateTimeText}>
-                          {item.selectedDate
-                            ? new Date(item.selectedDate).toLocaleDateString(
-                              isRTL ? 'ar-KW' : 'en-US',
-                              {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: 'numeric',
-                              },
-                            )
-                            : '-'}
-                        </Text>
-                      )}
+                        <Svg
+                          width={22}
+                          height={22}
+                          viewBox="0 0 24 24"
+                          fill="none"
+                        >
+                          <Path
+                            d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"
+                            stroke={colors.primary}
+                            strokeWidth={2}
+                          />
+                          <Path
+                            d="M12 16v-4"
+                            stroke={colors.primary}
+                            strokeWidth={2}
+                            strokeLinecap="round"
+                          />
+                          <Path
+                            d="M12 8h.01"
+                            stroke={colors.primary}
+                            strokeWidth={2}
+                            strokeLinecap="round"
+                          />
+                        </Svg>
+                      </TouchableOpacity>
                     </View>
 
-                    <View
-                      style={[
-                        styles.dateTimeRow,
-                        isRTL && styles.dateTimeRowRTL,
-                      ]}
-                    >
-                      {isRTL && (
-                        <Text style={styles.dateTimeText}>
-                          {item.selectedTime || '-'}
-                        </Text>
-                      )}
-                      <Svg
-                        width={16}
-                        height={16}
-                        viewBox="0 0 24 24"
-                        fill="none"
-                      >
-                        <Path
-                          d="M12 7v6l4 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                          stroke={colors.primary}
-                          strokeWidth={1.8}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </Svg>
-                      {!isRTL && (
-                        <Text style={styles.dateTimeText}>
-                          {item.selectedTime || '-'}
-                        </Text>
-                      )}
-                    </View>
-                  </View>
-
-                  {/* Amount and Delivery */}
-                  <View style={styles.priceSection}>
-                    {/* Unit Price Row - Show only for items with quantity support and quantity > 1 */}
-                    {item.maxBookingsPerSlot === -1 && item.quantity > 1 && (
+                    {/* Inline Info Section */}
+                    {showInfo[item._id] && (
                       <View
                         style={[
-                          styles.priceRow,
-                          isRTL && styles.priceRowRTL,
+                          styles.infoDropdown,
+                          isRTL && styles.infoDropdownRTL,
                         ]}
                       >
                         <Text
                           style={[
-                            styles.priceLabel,
-                            { fontSize: 11, color: colors.textSecondary },
+                            styles.infoDropdownTitle,
+                            isRTL && styles.infoDropdownTitleRTL,
                           ]}
                         >
-                          {isRTL ? 'سعر الوحدة' : 'Unit Price'}
+                          {isRTL ? 'بيانات الخدمة' : 'Service Details'}
                         </Text>
-                        <Text
+
+                        <View
                           style={[
-                            styles.priceValue,
-                            { fontSize: 12, color: colors.textSecondary },
+                            styles.infoDropdownRow,
+                            isRTL && styles.infoDropdownRowRTL,
                           ]}
                         >
-                          {item.price.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
-                        </Text>
+                          <Text
+                            style={[
+                              styles.infoDropdownLabel,
+                              isRTL && styles.infoDropdownLabelRTL,
+                            ]}
+                          >
+                            {isRTL ? 'الاسم:' : 'Name:'}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.infoDropdownValue,
+                              isRTL && styles.infoDropdownValueRTL,
+                            ]}
+                          >
+                            {isRTL && item.nameAr ? item.nameAr : item.name}
+                          </Text>
+                        </View>
+
+                        {item.vendorName ? (
+                          <View
+                            style={[
+                              styles.infoDropdownRow,
+                              isRTL && styles.infoDropdownRowRTL,
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.infoDropdownLabel,
+                                isRTL && styles.infoDropdownLabelRTL,
+                              ]}
+                            >
+                              {isRTL ? 'المورد:' : 'Vendor:'}
+                            </Text>
+                            <Text
+                              style={[
+                                styles.infoDropdownValue,
+                                isRTL && styles.infoDropdownValueRTL,
+                              ]}
+                            >
+                              {item.vendorName}
+                            </Text>
+                          </View>
+                        ) : null}
+
+                        <View
+                          style={[
+                            styles.infoDropdownRow,
+                            isRTL && styles.infoDropdownRowRTL,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.infoDropdownLabel,
+                              isRTL && styles.infoDropdownLabelRTL,
+                            ]}
+                          >
+                            {isRTL ? 'التاريخ:' : 'Date:'}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.infoDropdownValue,
+                              isRTL && styles.infoDropdownValueRTL,
+                            ]}
+                          >
+                            {item.selectedDate
+                              ? new Date(item.selectedDate).toLocaleDateString(
+                                  isRTL ? 'ar-KW' : 'en-US',
+                                  {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    year: 'numeric',
+                                  },
+                                )
+                              : '-'}
+                          </Text>
+                        </View>
+
+                        <View
+                          style={[
+                            styles.infoDropdownRow,
+                            isRTL && styles.infoDropdownRowRTL,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.infoDropdownLabel,
+                              isRTL && styles.infoDropdownLabelRTL,
+                            ]}
+                          >
+                            {isRTL ? 'الوقت:' : 'Time:'}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.infoDropdownValue,
+                              isRTL && styles.infoDropdownValueRTL,
+                            ]}
+                          >
+                            {item.selectedTime || '-'}
+                          </Text>
+                        </View>
+
+                        <View
+                          style={[
+                            styles.infoDropdownRow,
+                            isRTL && styles.infoDropdownRowRTL,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.infoDropdownLabel,
+                              isRTL && styles.infoDropdownLabelRTL,
+                            ]}
+                          >
+                            {isRTL ? 'آلية الحجز:' : 'Booking Type:'}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.infoDropdownValue,
+                              isRTL && styles.infoDropdownValueRTL,
+                            ]}
+                          >
+                            {item.availabilityStatus === 'pending_confirmation'
+                              ? isRTL
+                                ? 'يتطلب موافقة المورد'
+                                : 'Requires vendor confirmation'
+                              : isRTL
+                              ? 'تأكيد تلقائي فوري'
+                              : 'Instant automatic booking'}
+                          </Text>
+                        </View>
+
+                        <View
+                          style={[
+                            styles.infoDropdownRow,
+                            isRTL && styles.infoDropdownRowRTL,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.infoDropdownLabel,
+                              isRTL && styles.infoDropdownLabelRTL,
+                            ]}
+                          >
+                            {isRTL ? 'السعر الأساسي:' : 'Base Price:'}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.infoDropdownValue,
+                              isRTL && styles.infoDropdownValueRTL,
+                            ]}
+                          >
+                            {item.price.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
+                          </Text>
+                        </View>
+
+                        {item.moreInfo ? (
+                          <View
+                            style={[
+                              styles.infoDropdownRow,
+                              isRTL && styles.infoDropdownRowRTL,
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.infoDropdownLabel,
+                                isRTL && styles.infoDropdownLabelRTL,
+                              ]}
+                            >
+                              {isRTL ? 'ملاحظات الحجز:' : 'Booking Notes:'}
+                            </Text>
+                            <Text
+                              style={[
+                                styles.infoDropdownValue,
+                                isRTL && styles.infoDropdownValueRTL,
+                              ]}
+                            >
+                              {item.moreInfo}
+                            </Text>
+                          </View>
+                        ) : null}
+
+                        {item.customInputs && item.customInputs.length > 0 && (
+                          <View
+                            style={{
+                              marginTop: 4,
+                              borderTopWidth: 1,
+                              borderTopColor: 'rgba(0, 161, 156, 0.1)',
+                              paddingTop: 4,
+                            }}
+                          >
+                            <Text
+                              style={[
+                                styles.infoDropdownTitle,
+                                isRTL && styles.infoDropdownTitleRTL,
+                                {
+                                  borderBottomWidth: 0,
+                                  paddingBottom: 0,
+                                  marginBottom: 4,
+                                  fontSize: 11,
+                                },
+                              ]}
+                            >
+                              {isRTL
+                                ? 'الخيارات الإضافية:'
+                                : 'Additional Options:'}
+                            </Text>
+                            {item.customInputs.map((input, index) => {
+                              const renderInputDetail = (
+                                opt: {
+                                  label: string;
+                                  labelAr?: string;
+                                  value: string | number;
+                                  valueAr?: string | number;
+                                  price?: number;
+                                },
+                                optKey: string | number,
+                              ) => {
+                                const label =
+                                  isRTL && opt.labelAr
+                                    ? opt.labelAr
+                                    : opt.label;
+                                const value =
+                                  isRTL && opt.valueAr
+                                    ? opt.valueAr
+                                    : opt.value;
+                                const priceText =
+                                  opt.price && opt.price > 0
+                                    ? ` (+${opt.price.toFixed(3)} ${
+                                        isRTL ? 'د.ك' : 'KD'
+                                      })`
+                                    : '';
+                                return (
+                                  <View
+                                    key={optKey}
+                                    style={[
+                                      styles.infoDropdownRow,
+                                      isRTL && styles.infoDropdownRowRTL,
+                                      { marginBottom: 3 },
+                                    ]}
+                                  >
+                                    <Text
+                                      style={[
+                                        styles.infoDropdownLabel,
+                                        isRTL && styles.infoDropdownLabelRTL,
+                                        { width: 90 },
+                                      ]}
+                                    >
+                                      {label}:
+                                    </Text>
+                                    <Text
+                                      style={[
+                                        styles.infoDropdownValue,
+                                        isRTL && styles.infoDropdownValueRTL,
+                                      ]}
+                                    >
+                                      {value}
+                                      {priceText}
+                                    </Text>
+                                  </View>
+                                );
+                              };
+
+                              if (Array.isArray(input)) {
+                                return input.map(
+                                  (opt, subIndex) =>
+                                    opt &&
+                                    renderInputDetail(
+                                      opt,
+                                      `${index}-${subIndex}`,
+                                    ),
+                                );
+                              } else if (input && input.label) {
+                                return renderInputDetail(input, index);
+                              }
+                              return null;
+                            })}
+                          </View>
+                        )}
                       </View>
                     )}
 
-                    {/* Total Amount Row */}
+                    {/* Date and Time */}
                     <View
                       style={[
-                        styles.priceRow,
-                        isRTL && styles.priceRowRTL,
+                        styles.dateTimeSection,
+                        isRTL && styles.dateTimeSectionRTL,
                       ]}
                     >
-                      <Text style={styles.priceLabel}>{t('amount')}</Text>
                       <View
-                        style={{
-                          flexDirection: isRTL ? 'row-reverse' : 'row',
-                          alignItems: 'center',
-                        }}
+                        style={[
+                          styles.dateTimeRow,
+                          isRTL && styles.dateTimeRowRTL,
+                        ]}
                       >
-                        <Text style={styles.priceValue}>
-                          {(
-                            item.totalPrice ?? item.price * item.quantity
-                          ).toFixed(3)}{' '}
-                          {isRTL ? 'د.ك' : 'KD'}
-                        </Text>
-                        {item.availabilityStatus ===
-                          'pending_confirmation' && (
+                        {isRTL && (
+                          <Text style={styles.dateTimeText}>
+                            {item.selectedDate
+                              ? new Date(item.selectedDate).toLocaleDateString(
+                                  isRTL ? 'ar-KW' : 'en-US',
+                                  {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    year: 'numeric',
+                                  },
+                                )
+                              : '-'}
+                          </Text>
+                        )}
+                        <Svg
+                          width={16}
+                          height={16}
+                          viewBox="0 0 24 24"
+                          fill="none"
+                        >
+                          <Path
+                            d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z"
+                            stroke={colors.primary}
+                            strokeWidth={1.8}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </Svg>
+                        {!isRTL && (
+                          <Text style={styles.dateTimeText}>
+                            {item.selectedDate
+                              ? new Date(item.selectedDate).toLocaleDateString(
+                                  isRTL ? 'ar-KW' : 'en-US',
+                                  {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    year: 'numeric',
+                                  },
+                                )
+                              : '-'}
+                          </Text>
+                        )}
+                      </View>
+
+                      <View
+                        style={[
+                          styles.dateTimeRow,
+                          isRTL && styles.dateTimeRowRTL,
+                        ]}
+                      >
+                        {isRTL && (
+                          <Text style={styles.dateTimeText}>
+                            {item.selectedTime || '-'}
+                          </Text>
+                        )}
+                        <Svg
+                          width={16}
+                          height={16}
+                          viewBox="0 0 24 24"
+                          fill="none"
+                        >
+                          <Path
+                            d="M12 7v6l4 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                            stroke={colors.primary}
+                            strokeWidth={1.8}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </Svg>
+                        {!isRTL && (
+                          <Text style={styles.dateTimeText}>
+                            {item.selectedTime || '-'}
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+
+                    {/* Amount and Delivery */}
+                    <View style={styles.priceSection}>
+                      {/* Unit Price Row - Show only for items with quantity support and quantity > 1 */}
+                      {item.maxBookingsPerSlot === -1 && item.quantity > 1 && (
+                        <View
+                          style={[styles.priceRow, isRTL && styles.priceRowRTL]}
+                        >
+                          <Text
+                            style={[
+                              styles.priceLabel,
+                              { fontSize: 11, color: colors.textSecondary },
+                            ]}
+                          >
+                            {isRTL ? 'سعر الوحدة' : 'Unit Price'}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.priceValue,
+                              { fontSize: 12, color: colors.textSecondary },
+                            ]}
+                          >
+                            {item.price.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
+                          </Text>
+                        </View>
+                      )}
+
+                      {/* Total Amount Row */}
+                      <View
+                        style={[styles.priceRow, isRTL && styles.priceRowRTL]}
+                      >
+                        <Text style={styles.priceLabel}>{t('amount')}</Text>
+                        <View
+                          style={{
+                            flexDirection: isRTL ? 'row-reverse' : 'row',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <Text style={styles.priceValue}>
+                            {(
+                              item.totalPrice ?? item.price * item.quantity
+                            ).toFixed(3)}{' '}
+                            {isRTL ? 'د.ك' : 'KD'}
+                          </Text>
+                          {item.availabilityStatus ===
+                            'pending_confirmation' && (
                             <Text
                               style={{
                                 fontSize: 10,
@@ -1765,44 +2202,38 @@ const Cart: React.FC<CartProps> = ({
                               ({t('afterConfirmation')})
                             </Text>
                           )}
+                        </View>
+                      </View>
+
+                      {/* Delivery Charges Row */}
+                      <View
+                        style={[styles.priceRow, isRTL && styles.priceRowRTL]}
+                      >
+                        <Text style={styles.priceLabel}>
+                          {t('deliveryCharges')}
+                        </Text>
+                        {item.availabilityStatus === 'pending_confirmation' ? (
+                          <Text
+                            style={[
+                              styles.deliveryChargeValue,
+                              { color: colors.textSecondary, fontSize: 12 },
+                            ]}
+                          >
+                            {t('afterConfirmation')}
+                          </Text>
+                        ) : item.maxBookingsPerSlot === -1 ? (
+                          <Text style={styles.deliveryChargeValue}>
+                            {(item.deliveryFee ?? 0).toFixed(3)}{' '}
+                            {isRTL ? 'د.ك' : 'KD'}
+                          </Text>
+                        ) : (
+                          <Text style={styles.deliveryChargeValue}>
+                            {(0).toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
+                          </Text>
+                        )}
                       </View>
                     </View>
-
-                    {/* Delivery Charges Row */}
-                    <View
-                      style={[
-                        styles.priceRow,
-                        isRTL && styles.priceRowRTL,
-                      ]}
-                    >
-                      <Text style={styles.priceLabel}>
-                        {t('deliveryCharges')}
-                      </Text>
-                      {item.availabilityStatus ===
-                        'pending_confirmation' ? (
-                        <Text
-                          style={[
-                            styles.deliveryChargeValue,
-                            { color: colors.textSecondary, fontSize: 12 },
-                          ]}
-                        >
-                          {t('afterConfirmation')}
-                        </Text>
-                      ) : item.maxBookingsPerSlot === -1 ? (
-                        <Text style={styles.deliveryChargeValue}>
-                          {(item.deliveryFee ?? 0).toFixed(3)}{' '}
-                          {isRTL ? 'د.ك' : 'KD'}
-                        </Text>
-                      ) : (
-                        <Text style={styles.deliveryChargeValue}>
-                          {(0).toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
-                        </Text>
-                      )}
-                    </View>
-                  </View>
-
-
-                </Animated.View>
+                  </Animated.View>
                 </View>
               );
             })}
@@ -1866,7 +2297,7 @@ const Cart: React.FC<CartProps> = ({
                     style={[
                       styles.applyButton,
                       (isApplyingCoupon || !couponCode.trim()) &&
-                      styles.applyButtonDisabled,
+                        styles.applyButtonDisabled,
                     ]}
                     onPress={handleApplyCoupon}
                     disabled={isApplyingCoupon || !couponCode.trim()}
@@ -1951,8 +2382,6 @@ const Cart: React.FC<CartProps> = ({
           </View>
         </>
       )}
-
-
 
       {/* Address Selection Modal */}
       <AddressSelection

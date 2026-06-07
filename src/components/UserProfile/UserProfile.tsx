@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Image, ScrollView, StatusBar } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  ScrollView,
+  StatusBar,
+} from 'react-native';
 import Svg, { Path, Circle, Rect, Line, Polyline } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -176,11 +183,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
   }
 
   if (showOrderHistory) {
-    return (
-      <OrderHistory
-        onBack={() => setShowOrderHistory(false)}
-      />
-    );
+    return <OrderHistory onBack={() => setShowOrderHistory(false)} />;
   }
 
   // Show My Events screen
@@ -192,9 +195,15 @@ const UserProfile: React.FC<UserProfileProps> = ({
   if (!user) {
     return (
       <>
-        <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
+        <StatusBar
+          backgroundColor="#00a19c"
+          barStyle="light-content"
+          translucent={false}
+        />
         <View style={{ flex: 1, backgroundColor: colors.primary }}>
-          <View style={{ height: insets.top, backgroundColor: colors.primary }} />
+          <View
+            style={{ height: insets.top, backgroundColor: colors.primary }}
+          />
           <View style={styles.fullPageContainer}>
             <ScrollView
               style={styles.scrollContainer}
@@ -203,14 +212,40 @@ const UserProfile: React.FC<UserProfileProps> = ({
             >
               {/* Curved Header Background Block with topographic waves & integrated navigation */}
               <View style={styles.profileHeaderBlock}>
-                <Svg width="100%" height="100%" viewBox="0 0 375 130" preserveAspectRatio="none" style={styles.topographicSvg}>
-                  <Path d="M-20 25 C80 70 180 15 300 60 T400 40" stroke="rgba(255,255,255,0.08)" strokeWidth={1.5} fill="none" />
-                  <Path d="M-20 45 C80 90 180 25 300 80 T400 60" stroke="rgba(255,255,255,0.12)" strokeWidth={1.5} fill="none" />
-                  <Path d="M-20 65 C80 110 180 35 300 100 T400 80" stroke="rgba(255,255,255,0.15)" strokeWidth={2} fill="none" />
+                <Svg
+                  width="100%"
+                  height="100%"
+                  viewBox="0 0 375 130"
+                  preserveAspectRatio="none"
+                  style={styles.topographicSvg}
+                >
+                  <Path
+                    d="M-20 25 C80 70 180 15 300 60 T400 40"
+                    stroke="rgba(255,255,255,0.08)"
+                    strokeWidth={1.5}
+                    fill="none"
+                  />
+                  <Path
+                    d="M-20 45 C80 90 180 25 300 80 T400 60"
+                    stroke="rgba(255,255,255,0.12)"
+                    strokeWidth={1.5}
+                    fill="none"
+                  />
+                  <Path
+                    d="M-20 65 C80 110 180 35 300 100 T400 80"
+                    stroke="rgba(255,255,255,0.15)"
+                    strokeWidth={2}
+                    fill="none"
+                  />
                 </Svg>
 
                 {/* Overlay Navigation Bar */}
-                <View style={[styles.headerOverlayBar, isRTL && styles.headerOverlayBarRTL]}>
+                <View
+                  style={[
+                    styles.headerOverlayBar,
+                    isRTL && styles.headerOverlayBarRTL,
+                  ]}
+                >
                   {onBack && (
                     <TouchableOpacity
                       style={styles.headerBackButtonCircle}
@@ -224,23 +259,37 @@ const UserProfile: React.FC<UserProfileProps> = ({
                       />
                     </TouchableOpacity>
                   )}
-                  <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
-                    {isRTL ? 'الملف الشخصي' : 'Profile'}
-                  </Text>
-                  <View style={styles.headerSpacer} />
                 </View>
               </View>
 
               {/* Curved Wave Divider (Transitions header to card background) */}
               <View style={styles.profileCurveDivider}>
-                <Svg height="40" width="100%" viewBox="0 0 375 40" preserveAspectRatio="none">
-                  <Path d="M0,25 C100,55 250,0 375,25 L375,40 L0,40 Z" fill={colors.backgroundCard} />
+                <Svg
+                  height="40"
+                  width="100%"
+                  viewBox="0 0 375 40"
+                  preserveAspectRatio="none"
+                >
+                  <Path
+                    d="M0,25 C100,55 250,0 375,25 L375,40 L0,40 Z"
+                    fill={colors.backgroundCard}
+                  />
                 </Svg>
               </View>
 
               {/* Login Prompt Section */}
               <View style={[styles.loginPromptContainer, { paddingTop: 0 }]}>
-                <View style={[styles.profilePlaceholder, { marginTop: -50, borderWidth: 3, borderColor: '#FFFFFF', backgroundColor: '#E2E8F0' }]}>
+                <View
+                  style={[
+                    styles.profilePlaceholder,
+                    {
+                      marginTop: -50,
+                      borderWidth: 3,
+                      borderColor: '#FFFFFF',
+                      backgroundColor: '#E2E8F0',
+                    },
+                  ]}
+                >
                   <Image
                     source={require('../../imgs/user.png')}
                     style={styles.profileIcon}
@@ -251,14 +300,17 @@ const UserProfile: React.FC<UserProfileProps> = ({
                   style={[
                     styles.loginPromptTitle,
                     isRTL && styles.loginPromptTitleRTL,
-                    { color: colors.primaryDark, fontWeight: '700' }
+                    { color: colors.primaryDark, fontWeight: '700' },
                   ]}
                 >
                   {isRTL ? 'مرحباً بك!' : 'Welcome!'}
                 </Text>
 
                 <Text
-                  style={[styles.loginPromptText, isRTL && styles.loginPromptTextRTL]}
+                  style={[
+                    styles.loginPromptText,
+                    isRTL && styles.loginPromptTextRTL,
+                  ]}
                 >
                   {isRTL
                     ? 'الرجاء تسجيل الدخول للوصول إلى لوحة التحكم الخاصة بك'
@@ -266,7 +318,15 @@ const UserProfile: React.FC<UserProfileProps> = ({
                 </Text>
 
                 <TouchableOpacity
-                  style={[styles.loginButton, { borderRadius: 24, height: 46, justifyContent: 'center', paddingVertical: 0 }]}
+                  style={[
+                    styles.loginButton,
+                    {
+                      borderRadius: 24,
+                      height: 46,
+                      justifyContent: 'center',
+                      paddingVertical: 0,
+                    },
+                  ]}
                   onPress={handleLogin}
                   activeOpacity={0.8}
                 >
@@ -284,237 +344,476 @@ const UserProfile: React.FC<UserProfileProps> = ({
 
   return (
     <>
-      <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
+      <StatusBar
+        backgroundColor="#00a19c"
+        barStyle="light-content"
+        translucent={false}
+      />
       <View style={{ flex: 1, backgroundColor: colors.primary }}>
         <View style={{ height: insets.top, backgroundColor: colors.primary }} />
         <View style={styles.fullPageContainer}>
-      {/* Scrollable Content */}
-      <ScrollView
-        style={styles.scrollContainer}
-        contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Curved Header Background Block with topographic waves & integrated navigation */}
-        <View style={styles.profileHeaderBlock}>
-          <Svg width="100%" height="100%" viewBox="0 0 375 130" preserveAspectRatio="none" style={styles.topographicSvg}>
-            <Path d="M-20 25 C80 70 180 15 300 60 T400 40" stroke="rgba(255,255,255,0.08)" strokeWidth={1.5} fill="none" />
-            <Path d="M-20 45 C80 90 180 25 300 80 T400 60" stroke="rgba(255,255,255,0.12)" strokeWidth={1.5} fill="none" />
-            <Path d="M-20 65 C80 110 180 35 300 100 T400 80" stroke="rgba(255,255,255,0.15)" strokeWidth={2} fill="none" />
-          </Svg>
-
-          {/* Overlay Navigation Bar */}
-          <View style={[styles.headerOverlayBar, isRTL && styles.headerOverlayBarRTL]}>
-            {onBack && (
-              <TouchableOpacity
-                style={styles.headerBackButtonCircle}
-                onPress={onBack}
-                activeOpacity={0.8}
+          {/* Scrollable Content */}
+          <ScrollView
+            style={styles.scrollContainer}
+            contentContainerStyle={styles.contentContainer}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Curved Header Background Block with topographic waves & integrated navigation */}
+            <View style={styles.profileHeaderBlock}>
+              <Svg
+                width="100%"
+                height="100%"
+                viewBox="0 0 375 130"
+                preserveAspectRatio="none"
+                style={styles.topographicSvg}
               >
-                <Icon
-                  name={isRTL ? 'chevron-forward' : 'chevron-back'}
-                  size={20}
-                  color={colors.textWhite}
+                <Path
+                  d="M-20 25 C80 70 180 15 300 60 T400 40"
+                  stroke="rgba(255,255,255,0.08)"
+                  strokeWidth={1.5}
+                  fill="none"
                 />
-              </TouchableOpacity>
-            )}
-            <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
-              {isRTL ? 'الملف الشخصي' : 'Profile'}
-            </Text>
-            <View style={styles.headerSpacer} />
-          </View>
-        </View>
-
-        {/* Curved Wave Divider (Transitions header to card background) */}
-        <View style={styles.profileCurveDivider}>
-          <Svg height="40" width="100%" viewBox="0 0 375 40" preserveAspectRatio="none">
-            <Path d="M0,25 C100,55 250,0 375,25 L375,40 L0,40 Z" fill={colors.backgroundCard} />
-          </Svg>
-        </View>
-
-        {/* User Info Section (centered: avatar, name, email, address) */}
-        <View style={styles.userInfoSection}>
-          <View style={styles.profileImageContainer}>
-            {user.profilePicture || profilePicture ? (
-              <Image
-                source={{
-                  uri:
-                    getImageUri(user.profilePicture || profilePicture) ||
-                    undefined,
-                }}
-                style={styles.profileImage}
-                resizeMode="cover"
-                onError={e => {
-                  console.log('Image load error:', e.nativeEvent.error);
-                }}
-              />
-            ) : (
-              <View style={styles.profileImagePlaceholder}>
-                <Text style={styles.profileImagePlaceholderText}>
-                  {(user.name || userName || 'U').charAt(0).toUpperCase()}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          <Text style={[styles.userNameCentered, isRTL && styles.userNameCenteredRTL]}>
-            {user.name || userName}
-          </Text>
-
-          <Text style={[styles.userEmailCentered, isRTL && styles.userEmailCenteredRTL]}>
-            {user.email || _userEmail || (isRTL ? 'لا يوجد بريد إلكتروني' : 'No email address')}
-          </Text>
-
-          {/* Location row */}
-          <View style={[styles.userLocationRow, isRTL && styles.userLocationRowRTL]}>
-            <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#666666" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-              <Circle cx={12} cy={10} r={3} />
-            </Svg>
-            <Text style={[styles.userLocationText, isRTL && styles.userLocationTextRTL]}>
-              {defaultAddress || (isRTL ? 'الكويت' : 'Kuwait')}
-            </Text>
-          </View>
-        </View>
-
-        {/* Menu Options */}
-        <View style={styles.menuSection}>
-          <View style={styles.menuContainer}>
-            {/* Edit Profile */}
-            <TouchableOpacity
-              style={[styles.menuItemRow, isRTL && styles.menuItemRowRTL]}
-              onPress={handleEditProfile}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.menuItemLeft, isRTL && styles.menuItemLeftRTL]}>
-                <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#4B5563" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <Path d="M12 20h9" />
-                  <Path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                </Svg>
-                <Text style={[styles.menuItemText, isRTL && styles.menuItemTextRTL]}>
-                  {isRTL ? 'تعديل الملف الشخصي' : 'Edit Profile'}
-                </Text>
-              </View>
-              <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-                <Path d={isRTL ? "M15 18l-6-6 6-6" : "M9 18l6-6-6-6"} />
+                <Path
+                  d="M-20 45 C80 90 180 25 300 80 T400 60"
+                  stroke="rgba(255,255,255,0.12)"
+                  strokeWidth={1.5}
+                  fill="none"
+                />
+                <Path
+                  d="M-20 65 C80 110 180 35 300 100 T400 80"
+                  stroke="rgba(255,255,255,0.15)"
+                  strokeWidth={2}
+                  fill="none"
+                />
               </Svg>
-            </TouchableOpacity>
 
-            <View style={styles.menuDivider} />
+              {/* Overlay Navigation Bar */}
+              <View
+                style={[
+                  styles.headerOverlayBar,
+                  isRTL && styles.headerOverlayBarRTL,
+                ]}
+              >
+                {onBack && (
+                  <TouchableOpacity
+                    style={styles.headerBackButtonCircle}
+                    onPress={onBack}
+                    activeOpacity={0.8}
+                  >
+                    <Icon
+                      name={isRTL ? 'chevron-forward' : 'chevron-back'}
+                      size={20}
+                      color={colors.textWhite}
+                    />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
 
-            {/* Address */}
-            <TouchableOpacity
-              style={[styles.menuItemRow, isRTL && styles.menuItemRowRTL]}
-              onPress={handleAddress}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.menuItemLeft, isRTL && styles.menuItemLeftRTL]}>
-                <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#4B5563" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            {/* Curved Wave Divider (Transitions header to card background) */}
+            <View style={styles.profileCurveDivider}>
+              <Svg
+                height="40"
+                width="100%"
+                viewBox="0 0 375 40"
+                preserveAspectRatio="none"
+              >
+                <Path
+                  d="M0,25 C100,55 250,0 375,25 L375,40 L0,40 Z"
+                  fill={colors.backgroundCard}
+                />
+              </Svg>
+            </View>
+
+            {/* User Info Section (centered: avatar, name, email, address) */}
+            <View style={styles.userInfoSection}>
+              <View style={styles.profileImageContainer}>
+                {user.profilePicture || profilePicture ? (
+                  <Image
+                    source={{
+                      uri:
+                        getImageUri(user.profilePicture || profilePicture) ||
+                        undefined,
+                    }}
+                    style={styles.profileImage}
+                    resizeMode="cover"
+                    onError={e => {
+                      console.log('Image load error:', e.nativeEvent.error);
+                    }}
+                  />
+                ) : (
+                  <View style={styles.profileImagePlaceholder}>
+                    <Text style={styles.profileImagePlaceholderText}>
+                      {(user.name || userName || 'U').charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              <Text
+                style={[
+                  styles.userNameCentered,
+                  isRTL && styles.userNameCenteredRTL,
+                ]}
+              >
+                {user.name || userName}
+              </Text>
+
+              <Text
+                style={[
+                  styles.userEmailCentered,
+                  isRTL && styles.userEmailCenteredRTL,
+                ]}
+              >
+                {user.email ||
+                  _userEmail ||
+                  (isRTL ? 'لا يوجد بريد إلكتروني' : 'No email address')}
+              </Text>
+
+              {/* Location row */}
+              <View
+                style={[
+                  styles.userLocationRow,
+                  isRTL && styles.userLocationRowRTL,
+                ]}
+              >
+                <Svg
+                  width={14}
+                  height={14}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#666666"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                   <Circle cx={12} cy={10} r={3} />
                 </Svg>
-                <Text style={[styles.menuItemText, isRTL && styles.menuItemTextRTL]}>
-                  {isRTL ? 'العنوان' : 'Address'}
+                <Text
+                  style={[
+                    styles.userLocationText,
+                    isRTL && styles.userLocationTextRTL,
+                  ]}
+                >
+                  {defaultAddress || (isRTL ? 'الكويت' : 'Kuwait')}
                 </Text>
               </View>
-              <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-                <Path d={isRTL ? "M15 18l-6-6 6-6" : "M9 18l6-6-6-6"} />
-              </Svg>
-            </TouchableOpacity>
+            </View>
 
-            <View style={styles.menuDivider} />
-
-            {/* Order History */}
-            <TouchableOpacity
-              style={[styles.menuItemRow, isRTL && styles.menuItemRowRTL]}
-              onPress={handleOrderHistory}
-              activeOpacity={0.7}
+            <Text
+              style={[styles.pageBodyTitle, isRTL && styles.pageBodyTitleRTL]}
             >
-              <View style={[styles.menuItemLeft, isRTL && styles.menuItemLeftRTL]}>
-                <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#4B5563" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <Rect x={4} y={4} width={16} height={16} rx={2} />
-                  <Path d="M9 9h6M9 13h6M9 17h4" />
-                </Svg>
-                <Text style={[styles.menuItemText, isRTL && styles.menuItemTextRTL]}>
-                  {isRTL ? 'سجل الطلبات' : 'Order History'}
-                </Text>
+              {isRTL ? 'الملف الشخصي' : 'Profile'}
+            </Text>
+
+            {/* Menu Options */}
+            <View style={styles.menuSection}>
+              <View style={styles.menuContainer}>
+                {/* Edit Profile */}
+                <TouchableOpacity
+                  style={[styles.menuItemRow, isRTL && styles.menuItemRowRTL]}
+                  onPress={handleEditProfile}
+                  activeOpacity={0.7}
+                >
+                  <View
+                    style={[
+                      styles.menuItemLeft,
+                      isRTL && styles.menuItemLeftRTL,
+                    ]}
+                  >
+                    <Svg
+                      width={20}
+                      height={20}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#4B5563"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <Path d="M12 20h9" />
+                      <Path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                    </Svg>
+                    <Text
+                      style={[
+                        styles.menuItemText,
+                        isRTL && styles.menuItemTextRTL,
+                      ]}
+                    >
+                      {isRTL ? 'تعديل الملف الشخصي' : 'Edit Profile'}
+                    </Text>
+                  </View>
+                  <Svg
+                    width={14}
+                    height={14}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#A0AEC0"
+                    strokeWidth={2.5}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <Path d={isRTL ? 'M15 18l-6-6 6-6' : 'M9 18l6-6-6-6'} />
+                  </Svg>
+                </TouchableOpacity>
+
+                <View style={styles.menuDivider} />
+
+                {/* Address */}
+                <TouchableOpacity
+                  style={[styles.menuItemRow, isRTL && styles.menuItemRowRTL]}
+                  onPress={handleAddress}
+                  activeOpacity={0.7}
+                >
+                  <View
+                    style={[
+                      styles.menuItemLeft,
+                      isRTL && styles.menuItemLeftRTL,
+                    ]}
+                  >
+                    <Svg
+                      width={20}
+                      height={20}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#4B5563"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                      <Circle cx={12} cy={10} r={3} />
+                    </Svg>
+                    <Text
+                      style={[
+                        styles.menuItemText,
+                        isRTL && styles.menuItemTextRTL,
+                      ]}
+                    >
+                      {isRTL ? 'العنوان' : 'Address'}
+                    </Text>
+                  </View>
+                  <Svg
+                    width={14}
+                    height={14}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#A0AEC0"
+                    strokeWidth={2.5}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <Path d={isRTL ? 'M15 18l-6-6 6-6' : 'M9 18l6-6-6-6'} />
+                  </Svg>
+                </TouchableOpacity>
+
+                <View style={styles.menuDivider} />
+
+                {/* Order History */}
+                <TouchableOpacity
+                  style={[styles.menuItemRow, isRTL && styles.menuItemRowRTL]}
+                  onPress={handleOrderHistory}
+                  activeOpacity={0.7}
+                >
+                  <View
+                    style={[
+                      styles.menuItemLeft,
+                      isRTL && styles.menuItemLeftRTL,
+                    ]}
+                  >
+                    <Svg
+                      width={20}
+                      height={20}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#4B5563"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <Rect x={4} y={4} width={16} height={16} rx={2} />
+                      <Path d="M9 9h6M9 13h6M9 17h4" />
+                    </Svg>
+                    <Text
+                      style={[
+                        styles.menuItemText,
+                        isRTL && styles.menuItemTextRTL,
+                      ]}
+                    >
+                      {isRTL ? 'سجل الطلبات' : 'Order History'}
+                    </Text>
+                  </View>
+                  <Svg
+                    width={14}
+                    height={14}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#A0AEC0"
+                    strokeWidth={2.5}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <Path d={isRTL ? 'M15 18l-6-6 6-6' : 'M9 18l6-6-6-6'} />
+                  </Svg>
+                </TouchableOpacity>
+
+                <View style={styles.menuDivider} />
+
+                {/* My Events */}
+                <TouchableOpacity
+                  style={[styles.menuItemRow, isRTL && styles.menuItemRowRTL]}
+                  onPress={handleMyEvents}
+                  activeOpacity={0.7}
+                >
+                  <View
+                    style={[
+                      styles.menuItemLeft,
+                      isRTL && styles.menuItemLeftRTL,
+                    ]}
+                  >
+                    <Svg
+                      width={20}
+                      height={20}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#4B5563"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <Rect x={3} y={4} width={18} height={18} rx={2} ry={2} />
+                      <Line x1={16} y1={2} x2={16} y2={6} />
+                      <Line x1={8} y1={2} x2={8} y2={6} />
+                      <Line x1={3} y1={10} x2={21} y2={10} />
+                    </Svg>
+                    <Text
+                      style={[
+                        styles.menuItemText,
+                        isRTL && styles.menuItemTextRTL,
+                      ]}
+                    >
+                      {isRTL ? 'فعالياتي' : 'My Events'}
+                    </Text>
+                  </View>
+                  <Svg
+                    width={14}
+                    height={14}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#A0AEC0"
+                    strokeWidth={2.5}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <Path d={isRTL ? 'M15 18l-6-6 6-6' : 'M9 18l6-6-6-6'} />
+                  </Svg>
+                </TouchableOpacity>
+
+                <View style={styles.menuDivider} />
+
+                {/* Wishlist */}
+                <TouchableOpacity
+                  style={[styles.menuItemRow, isRTL && styles.menuItemRowRTL]}
+                  onPress={handleWishlist}
+                  activeOpacity={0.7}
+                >
+                  <View
+                    style={[
+                      styles.menuItemLeft,
+                      isRTL && styles.menuItemLeftRTL,
+                    ]}
+                  >
+                    <Svg
+                      width={20}
+                      height={20}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#4B5563"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <Path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                    </Svg>
+                    <Text
+                      style={[
+                        styles.menuItemText,
+                        isRTL && styles.menuItemTextRTL,
+                      ]}
+                    >
+                      {isRTL ? 'قائمة الأمنيات' : 'Wishlist'}
+                    </Text>
+                  </View>
+                  <Svg
+                    width={14}
+                    height={14}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#A0AEC0"
+                    strokeWidth={2.5}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <Path d={isRTL ? 'M15 18l-6-6 6-6' : 'M9 18l6-6-6-6'} />
+                  </Svg>
+                </TouchableOpacity>
               </View>
-              <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-                <Path d={isRTL ? "M15 18l-6-6 6-6" : "M9 18l6-6-6-6"} />
-              </Svg>
-            </TouchableOpacity>
 
-            <View style={styles.menuDivider} />
-
-            {/* My Events */}
-            <TouchableOpacity
-              style={[styles.menuItemRow, isRTL && styles.menuItemRowRTL]}
-              onPress={handleMyEvents}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.menuItemLeft, isRTL && styles.menuItemLeftRTL]}>
-                <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#4B5563" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <Rect x={3} y={4} width={18} height={18} rx={2} ry={2} />
-                  <Line x1={16} y1={2} x2={16} y2={6} />
-                  <Line x1={8} y1={2} x2={8} y2={6} />
-                  <Line x1={3} y1={10} x2={21} y2={10} />
-                </Svg>
-                <Text style={[styles.menuItemText, isRTL && styles.menuItemTextRTL]}>
-                  {isRTL ? 'فعالياتي' : 'My Events'}
-                </Text>
+              {/* Logout Separate Card Container */}
+              <View style={styles.logoutCardContainer}>
+                <TouchableOpacity
+                  style={[styles.menuItemRow, isRTL && styles.menuItemRowRTL]}
+                  onPress={handleLogout}
+                  activeOpacity={0.7}
+                >
+                  <View
+                    style={[
+                      styles.menuItemLeft,
+                      isRTL && styles.menuItemLeftRTL,
+                    ]}
+                  >
+                    <Svg
+                      width={20}
+                      height={20}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#E53935"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <Path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                      <Polyline points="16 17 21 12 16 7" />
+                      <Line x1={21} y1={12} x2={9} y2={12} />
+                    </Svg>
+                    <Text
+                      style={[
+                        styles.menuItemTextLogout,
+                        isRTL && styles.menuItemTextLogoutRTL,
+                      ]}
+                    >
+                      {isRTL ? 'تسجيل الخروج' : 'Logout'}
+                    </Text>
+                  </View>
+                  <Svg
+                    width={14}
+                    height={14}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#E53935"
+                    strokeWidth={2.5}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <Path d={isRTL ? 'M15 18l-6-6 6-6' : 'M9 18l6-6-6-6'} />
+                  </Svg>
+                </TouchableOpacity>
               </View>
-              <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-                <Path d={isRTL ? "M15 18l-6-6 6-6" : "M9 18l6-6-6-6"} />
-              </Svg>
-            </TouchableOpacity>
-
-            <View style={styles.menuDivider} />
-
-            {/* Wishlist */}
-            <TouchableOpacity
-              style={[styles.menuItemRow, isRTL && styles.menuItemRowRTL]}
-              onPress={handleWishlist}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.menuItemLeft, isRTL && styles.menuItemLeftRTL]}>
-                <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#4B5563" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <Path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                </Svg>
-                <Text style={[styles.menuItemText, isRTL && styles.menuItemTextRTL]}>
-                  {isRTL ? 'قائمة الأمنيات' : 'Wishlist'}
-                </Text>
-              </View>
-              <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#A0AEC0" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-                <Path d={isRTL ? "M15 18l-6-6 6-6" : "M9 18l6-6-6-6"} />
-              </Svg>
-            </TouchableOpacity>
-          </View>
-
-          {/* Logout Separate Card Container */}
-          <View style={styles.logoutCardContainer}>
-            <TouchableOpacity
-              style={[styles.menuItemRow, isRTL && styles.menuItemRowRTL]}
-              onPress={handleLogout}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.menuItemLeft, isRTL && styles.menuItemLeftRTL]}>
-                <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#E53935" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <Path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <Polyline points="16 17 21 12 16 7" />
-                  <Line x1={21} y1={12} x2={9} y2={12} />
-                </Svg>
-                <Text style={[styles.menuItemTextLogout, isRTL && styles.menuItemTextLogoutRTL]}>
-                  {isRTL ? 'تسجيل الخروج' : 'Logout'}
-                </Text>
-              </View>
-              <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#E53935" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-                <Path d={isRTL ? "M15 18l-6-6 6-6" : "M9 18l6-6-6-6"} />
-              </Svg>
-            </TouchableOpacity>
-          </View>
+            </View>
+          </ScrollView>
         </View>
-      </ScrollView>
-    </View>
-    </View>
+      </View>
     </>
   );
 };

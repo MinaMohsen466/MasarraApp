@@ -94,19 +94,49 @@ const Wishlist: React.FC<Props> = ({ onBack, onSelectService }) => {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.primary }}>
-      <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
+      <StatusBar
+        backgroundColor="#00a19c"
+        barStyle="light-content"
+        translucent={false}
+      />
       <View style={{ height: insets.top, backgroundColor: colors.primary }} />
       <View style={[styles.container, { position: 'relative' }]}>
         {/* Curved Header Background Block with topographic waves & integrated navigation */}
         <View style={styles.profileHeaderBlock}>
-          <Svg width="100%" height="100%" viewBox="0 0 375 110" preserveAspectRatio="none" style={styles.topographicSvg}>
-            <Path d="M-20 20 C80 55 180 12 300 45 T400 35" stroke="rgba(255,255,255,0.08)" strokeWidth={1.5} fill="none" />
-            <Path d="M-20 35 C80 70 180 20 300 60 T400 50" stroke="rgba(255,255,255,0.12)" strokeWidth={1.5} fill="none" />
-            <Path d="M-20 50 C80 85 180 28 300 75 T400 65" stroke="rgba(255,255,255,0.15)" strokeWidth={2} fill="none" />
+          <Svg
+            width="100%"
+            height="100%"
+            viewBox="0 0 375 110"
+            preserveAspectRatio="none"
+            style={styles.topographicSvg}
+          >
+            <Path
+              d="M-20 20 C80 55 180 12 300 45 T400 35"
+              stroke="rgba(255,255,255,0.08)"
+              strokeWidth={1.5}
+              fill="none"
+            />
+            <Path
+              d="M-20 35 C80 70 180 20 300 60 T400 50"
+              stroke="rgba(255,255,255,0.12)"
+              strokeWidth={1.5}
+              fill="none"
+            />
+            <Path
+              d="M-20 50 C80 85 180 28 300 75 T400 65"
+              stroke="rgba(255,255,255,0.15)"
+              strokeWidth={2}
+              fill="none"
+            />
           </Svg>
 
           {/* Overlay Navigation Bar */}
-          <View style={[styles.headerOverlayBar, isRTL && styles.headerOverlayBarRTL]}>
+          <View
+            style={[
+              styles.headerOverlayBar,
+              isRTL && styles.headerOverlayBarRTL,
+            ]}
+          >
             {onBack && (
               <TouchableOpacity
                 style={styles.headerBackButtonCircle}
@@ -120,19 +150,27 @@ const Wishlist: React.FC<Props> = ({ onBack, onSelectService }) => {
                 />
               </TouchableOpacity>
             )}
-            <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
-              {isRTL ? `المفضلة (${items.length})` : `Wishlist (${items.length})`}
-            </Text>
-            <View style={styles.headerSpacer} />
           </View>
         </View>
 
         {/* Curved Wave Divider (Transitions header to card background) */}
         <View style={styles.profileCurveDivider}>
-          <Svg height="30" width="100%" viewBox="0 0 375 30" preserveAspectRatio="none">
-            <Path d="M0,20 C100,40 250,0 375,20 L375,30 L0,30 Z" fill={colors.background} />
+          <Svg
+            height="30"
+            width="100%"
+            viewBox="0 0 375 30"
+            preserveAspectRatio="none"
+          >
+            <Path
+              d="M0,20 C100,40 250,0 375,20 L375,30 L0,30 Z"
+              fill={colors.background}
+            />
           </Svg>
         </View>
+
+        <Text style={[styles.pageBodyTitle, isRTL && styles.pageBodyTitleRTL]}>
+          {isRTL ? `المفضلة (${items.length})` : `Wishlist (${items.length})`}
+        </Text>
 
         {/* Content body */}
         {!items || items.length === 0 ? (

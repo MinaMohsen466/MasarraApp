@@ -240,11 +240,14 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
               <Text style={[styles.title, isRTL && styles.titleRTL]}>
                 {isRTL ? 'تغيير كلمة المرور' : 'Change Password'}
               </Text>
-              <View style={[styles.titleUnderline, isRTL && styles.titleUnderlineRTL]} />
+              <View
+                style={[
+                  styles.titleUnderline,
+                  isRTL && styles.titleUnderlineRTL,
+                ]}
+              />
             </View>
-            <Text
-              style={[styles.subtitle, isRTL && styles.subtitleRTL]}
-            >
+            <Text style={[styles.subtitle, isRTL && styles.subtitleRTL]}>
               {isRTL
                 ? 'الرجاء إدخال كلمة المرور الحالية والجديدة'
                 : 'Please enter your current and new password'}
@@ -256,21 +259,36 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
             {/* Current Password - Only show in normal mode */}
             {mode === 'normal' && (
               <View style={styles.inputContainer}>
-                <Text
-                  style={[styles.label, isRTL && styles.labelRTL]}
-                >
+                <Text style={[styles.label, isRTL && styles.labelRTL]}>
                   {isRTL ? 'كلمة المرور الحالية' : 'Current Password'}
                 </Text>
-                <View style={[styles.sleekInputWrapper, isRTL && styles.sleekInputWrapperRTL, currentActive && styles.sleekInputWrapperActive]}>
+                <View
+                  style={[
+                    styles.sleekInputWrapper,
+                    isRTL && styles.sleekInputWrapperRTL,
+                    currentActive && styles.sleekInputWrapperActive,
+                  ]}
+                >
                   <Icon
                     name="lock-open-outline"
                     size={18}
                     color={currentActive ? colors.primary : '#9CA3AF'}
-                    style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
+                    style={[
+                      styles.sleekInputIcon,
+                      isRTL && styles.sleekInputIconRTL,
+                    ]}
                   />
-                  <View style={[styles.sleekInputDivider, isRTL && styles.sleekInputDividerRTL]} />
+                  <View
+                    style={[
+                      styles.sleekInputDivider,
+                      isRTL && styles.sleekInputDividerRTL,
+                    ]}
+                  />
                   <TextInput
-                    style={[styles.sleekTextInput, isRTL && styles.sleekTextInputRTL]}
+                    style={[
+                      styles.sleekTextInput,
+                      isRTL && styles.sleekTextInputRTL,
+                    ]}
                     value={currentPassword}
                     onChangeText={setCurrentPassword}
                     placeholder={
@@ -318,21 +336,36 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
             {/* Reset Code - Only show in forgot mode after OTP sent */}
             {mode === 'forgot' && otpSent && (
               <View style={styles.inputContainer}>
-                <Text
-                  style={[styles.label, isRTL && styles.labelRTL]}
-                >
+                <Text style={[styles.label, isRTL && styles.labelRTL]}>
                   {isRTL ? 'رمز إعادة التعيين' : 'Reset Code'}
                 </Text>
-                <View style={[styles.sleekInputWrapper, isRTL && styles.sleekInputWrapperRTL, codeActive && styles.sleekInputWrapperActive]}>
+                <View
+                  style={[
+                    styles.sleekInputWrapper,
+                    isRTL && styles.sleekInputWrapperRTL,
+                    codeActive && styles.sleekInputWrapperActive,
+                  ]}
+                >
                   <Icon
                     name="key-outline"
                     size={18}
                     color={codeActive ? colors.primary : '#9CA3AF'}
-                    style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
+                    style={[
+                      styles.sleekInputIcon,
+                      isRTL && styles.sleekInputIconRTL,
+                    ]}
                   />
-                  <View style={[styles.sleekInputDivider, isRTL && styles.sleekInputDividerRTL]} />
+                  <View
+                    style={[
+                      styles.sleekInputDivider,
+                      isRTL && styles.sleekInputDividerRTL,
+                    ]}
+                  />
                   <TextInput
-                    style={[styles.sleekTextInput, isRTL && styles.sleekTextInputRTL]}
+                    style={[
+                      styles.sleekTextInput,
+                      isRTL && styles.sleekTextInputRTL,
+                    ]}
                     value={resetCode}
                     onChangeText={setResetCode}
                     placeholder={
@@ -360,16 +393,33 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
               <Text style={[styles.label, isRTL && styles.labelRTL]}>
                 {isRTL ? 'كلمة المرور الجديدة' : 'New Password'}
               </Text>
-              <View style={[styles.sleekInputWrapper, isRTL && styles.sleekInputWrapperRTL, newActive && styles.sleekInputWrapperActive]}>
+              <View
+                style={[
+                  styles.sleekInputWrapper,
+                  isRTL && styles.sleekInputWrapperRTL,
+                  newActive && styles.sleekInputWrapperActive,
+                ]}
+              >
                 <Icon
                   name="lock-closed-outline"
                   size={18}
                   color={newActive ? colors.primary : '#9CA3AF'}
-                  style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
+                  style={[
+                    styles.sleekInputIcon,
+                    isRTL && styles.sleekInputIconRTL,
+                  ]}
                 />
-                <View style={[styles.sleekInputDivider, isRTL && styles.sleekInputDividerRTL]} />
+                <View
+                  style={[
+                    styles.sleekInputDivider,
+                    isRTL && styles.sleekInputDividerRTL,
+                  ]}
+                />
                 <TextInput
-                  style={[styles.sleekTextInput, isRTL && styles.sleekTextInputRTL]}
+                  style={[
+                    styles.sleekTextInput,
+                    isRTL && styles.sleekTextInputRTL,
+                  ]}
                   value={newPassword}
                   onChangeText={setNewPassword}
                   placeholder={
@@ -404,16 +454,33 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
               <Text style={[styles.label, isRTL && styles.labelRTL]}>
                 {isRTL ? 'تأكيد كلمة المرور' : 'Confirm Password'}
               </Text>
-              <View style={[styles.sleekInputWrapper, isRTL && styles.sleekInputWrapperRTL, confirmActive && styles.sleekInputWrapperActive]}>
+              <View
+                style={[
+                  styles.sleekInputWrapper,
+                  isRTL && styles.sleekInputWrapperRTL,
+                  confirmActive && styles.sleekInputWrapperActive,
+                ]}
+              >
                 <Icon
                   name="lock-closed-outline"
                   size={18}
                   color={confirmActive ? colors.primary : '#9CA3AF'}
-                  style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
+                  style={[
+                    styles.sleekInputIcon,
+                    isRTL && styles.sleekInputIconRTL,
+                  ]}
                 />
-                <View style={[styles.sleekInputDivider, isRTL && styles.sleekInputDividerRTL]} />
+                <View
+                  style={[
+                    styles.sleekInputDivider,
+                    isRTL && styles.sleekInputDividerRTL,
+                  ]}
+                />
                 <TextInput
-                  style={[styles.sleekTextInput, isRTL && styles.sleekTextInputRTL]}
+                  style={[
+                    styles.sleekTextInput,
+                    isRTL && styles.sleekTextInputRTL,
+                  ]}
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   placeholder={

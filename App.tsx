@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { View, StatusBar } from "react-native";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { View, StatusBar, BackHandler, PanResponder, Dimensions } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import { useSiteSettings } from "./src/hooks/useSiteSettings";
 import { QueryClient, QueryClientProvider, focusManager } from '@tanstack/react-query';
@@ -80,7 +80,7 @@ function AppContent() {
     setCurrentRoute(route);
   };
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     // Handle back navigation based on current route
     if (currentRoute === 'service-details') {
       // Route back based on where the service was opened from
@@ -131,7 +131,74 @@ function AppContent() {
     } else {
       setCurrentRoute('home');
     }
-  };
+  }, [currentRoute, selectedServiceOrigin, selectedPackageOrigin, selectedOccasionOrigin]);
+
+  // Keep references to latest route and back handler for PanResponder to prevent stale state issues
+  const currentRouteRef = useRef(currentRoute);
+  const handleBackRef = useRef(handleBack);
+
+  useEffect(() => {
+    currentRouteRef.current = currentRoute;
+    handleBackRef.current = handleBack;
+  }, [currentRoute, handleBack]);
+
+  // Initialize Android back button/gesture handling
+  useEffect(() => {
+    const handleHardwareBack = () => {
+      if (currentRoute === 'home') {
+        return false; // Exit app
+      }
+      handleBack();
+      return true; // Intercept
+    };
+
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      handleHardwareBack
+    );
+
+    return () => {
+      subscription.remove();
+    };
+  }, [currentRoute, handleBack]);
+
+  // Initialize edge swipe-back gesture responder
+  const SCREEN_WIDTH = Dimensions.get('window').width;
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        const { x0, dx, dy } = gestureState;
+
+        if (currentRouteRef.current === 'home') {
+          return false;
+        }
+
+        // Swipe from left edge (LTR back gesture)
+        const isNearLeftEdge = x0 < 40;
+        // Swipe from right edge (RTL back gesture)
+        const isNearRightEdge = x0 > SCREEN_WIDTH - 40;
+
+        // Must be horizontal gesture: moved more than 10px horizontally and horizontal movement is dominant
+        const isHorizontalMove = Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.5;
+
+        return (isNearLeftEdge && dx > 0 && isHorizontalMove) ||
+               (isNearRightEdge && dx < 0 && isHorizontalMove);
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        const { x0, dx } = gestureState;
+        const isNearLeftEdge = x0 < 40;
+        const isNearRightEdge = x0 > SCREEN_WIDTH - 40;
+
+        if (isNearLeftEdge && dx > 50) {
+          handleBackRef.current();
+        } else if (isNearRightEdge && dx < -50) {
+          handleBackRef.current();
+        }
+      },
+      onPanResponderTerminate: () => {},
+    })
+  ).current;
 
   const handleVendorSelect = (vendorId: string, vendorName: string) => {
     setSelectedVendorId(vendorId);
@@ -295,7 +362,7 @@ function AppContent() {
             {showSplash ? (
               <SplashScreen onFinish={() => setShowSplash(false)} />
             ) : shouldRenderWithoutSafeArea ? (
-              <View style={{ flex: 1 }}>
+              <View style={{ flex: 1 }} {...panResponder.panHandlers}>
                 {renderScreen()}
                 {showBottomNav && currentRoute !== 'cart' && currentRoute !== 'auth' && (
                   <>
@@ -311,7 +378,7 @@ function AppContent() {
               <SafeAreaView style={{ flex: 1, backgroundColor: dynamicBgColor }}>
                 <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
                 {shouldShowHeader && <Header onNavigate={handleNavigation} />}
-                <View style={{ flex: 1 }}>
+                <View style={{ flex: 1 }} {...panResponder.panHandlers}>
                   {renderScreen()}
                 </View>
                 {showBottomNav && currentRoute !== 'auth' && (

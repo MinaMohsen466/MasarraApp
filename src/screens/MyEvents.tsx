@@ -179,17 +179,17 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
         // Create a set of booking IDs that have QR codes for O(1) lookup
         const qrCodesList = qrCodesResponse.qrCodes || [];
         const bookingsWithQRSet = new Set(
-          qrCodesList.filter(qr => qr.qrUrl).map(qr => qr.booking)
+          qrCodesList.filter(qr => qr.qrUrl).map(qr => qr.booking),
         );
 
         // Only keep bookings that have QR codes
         bookingsWithQR = allBookings.filter(booking =>
-          bookingsWithQRSet.has(booking._id)
+          bookingsWithQRSet.has(booking._id),
         );
       } else {
         // Fallback: Check each booking individually since bulk API is not available on production server yet
         const qrChecks = await Promise.all(
-          allBookings.map(async (booking) => {
+          allBookings.map(async booking => {
             try {
               const qr = await getQRCodeByBooking(token, booking._id);
               if (qr && qr.qrUrl) {
@@ -199,7 +199,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
               // Ignore
             }
             return null;
-          })
+          }),
         );
         bookingsWithQR = qrChecks.filter((b): b is MyEvent => b !== null);
       }
@@ -476,7 +476,9 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
             {getVendorName(item) ? (
               <Text style={styles.eventVendor}>
                 {isRTL ? 'مقدم الخدمة: ' : 'Vendor: '}
-                <Text style={styles.eventVendorName}>{getVendorName(item)}</Text>
+                <Text style={styles.eventVendorName}>
+                  {getVendorName(item)}
+                </Text>
               </Text>
             ) : null}
           </View>
@@ -485,29 +487,41 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
             onPress={() => setExpandedEventId(isExpanded ? null : item._id)}
             activeOpacity={0.7}
           >
-            <Icon name="ellipsis-vertical" size={18} color={colors.textSecondary} />
+            <Icon
+              name="ellipsis-vertical"
+              size={18}
+              color={colors.textSecondary}
+            />
           </TouchableOpacity>
         </View>
 
         <View style={styles.eventMetaRow}>
           <View style={styles.eventDateBadge}>
             <Icon name="calendar-outline" size={14} color={colors.primary} />
-            <Text style={styles.eventDateText}>{formatDate(item.eventDate)}</Text>
+            <Text style={styles.eventDateText}>
+              {formatDate(item.eventDate)}
+            </Text>
           </View>
-          
+
           <View style={styles.guestCountBadge}>
             <Icon name="people-outline" size={14} color="#475569" />
             <Text style={styles.guestCountText}>
-              {isRTL 
+              {isRTL
                 ? `الضيوف: ${item.guests?.length || 0}/${item.guestLimit || 0}`
                 : `Guests: ${item.guests?.length || 0}/${item.guestLimit || 0}`}
             </Text>
           </View>
 
-          <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
+          <View
+            style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}
+          >
             <Text style={[styles.statusText, { color: statusStyle.text }]}>
-              {isRTL 
-                ? (item.status === 'confirmed' ? 'مؤكد' : item.status === 'pending' ? 'قيد الانتظار' : 'ملغي')
+              {isRTL
+                ? item.status === 'confirmed'
+                  ? 'مؤكد'
+                  : item.status === 'pending'
+                  ? 'قيد الانتظار'
+                  : 'ملغي'
                 : item.status.charAt(0).toUpperCase() + item.status.slice(1)}
             </Text>
           </View>
@@ -588,7 +602,11 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
   if (loading) {
     return (
       <>
-        <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
+        <StatusBar
+          backgroundColor="#00a19c"
+          barStyle="light-content"
+          translucent={false}
+        />
         <View style={{ flex: 1, backgroundColor: colors.primary }}>
           <View
             style={{ height: insets.top, backgroundColor: colors.primary }}
@@ -596,14 +614,40 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
           <View style={[styles.container, { position: 'relative' }]}>
             {/* Curved Header Background Block with topographic waves & integrated navigation */}
             <View style={styles.profileHeaderBlock}>
-              <Svg width="100%" height="100%" viewBox="0 0 375 110" preserveAspectRatio="none" style={styles.topographicSvg}>
-                <Path d="M-20 20 C80 55 180 12 300 45 T400 35" stroke="rgba(255,255,255,0.08)" strokeWidth={1.5} fill="none" />
-                <Path d="M-20 35 C80 70 180 20 300 60 T400 50" stroke="rgba(255,255,255,0.12)" strokeWidth={1.5} fill="none" />
-                <Path d="M-20 50 C80 85 180 28 300 75 T400 65" stroke="rgba(255,255,255,0.15)" strokeWidth={2} fill="none" />
+              <Svg
+                width="100%"
+                height="100%"
+                viewBox="0 0 375 110"
+                preserveAspectRatio="none"
+                style={styles.topographicSvg}
+              >
+                <Path
+                  d="M-20 20 C80 55 180 12 300 45 T400 35"
+                  stroke="rgba(255,255,255,0.08)"
+                  strokeWidth={1.5}
+                  fill="none"
+                />
+                <Path
+                  d="M-20 35 C80 70 180 20 300 60 T400 50"
+                  stroke="rgba(255,255,255,0.12)"
+                  strokeWidth={1.5}
+                  fill="none"
+                />
+                <Path
+                  d="M-20 50 C80 85 180 28 300 75 T400 65"
+                  stroke="rgba(255,255,255,0.15)"
+                  strokeWidth={2}
+                  fill="none"
+                />
               </Svg>
 
               {/* Overlay Navigation Bar */}
-              <View style={[styles.headerOverlayBar, isRTL && styles.headerOverlayBarRTL]}>
+              <View
+                style={[
+                  styles.headerOverlayBar,
+                  isRTL && styles.headerOverlayBarRTL,
+                ]}
+              >
                 {onBack && (
                   <TouchableOpacity
                     style={styles.headerBackButtonCircle}
@@ -617,19 +661,29 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
                     />
                   </TouchableOpacity>
                 )}
-                <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
-                  {isRTL ? 'فعالياتي' : 'My Events'}
-                </Text>
-                <View style={styles.headerSpacer} />
               </View>
             </View>
 
             {/* Curved Wave Divider (Transitions header to card background) */}
             <View style={styles.profileCurveDivider}>
-              <Svg height="30" width="100%" viewBox="0 0 375 30" preserveAspectRatio="none">
-                <Path d="M0,20 C100,40 250,0 375,20 L375,30 L0,30 Z" fill={colors.background} />
+              <Svg
+                height="30"
+                width="100%"
+                viewBox="0 0 375 30"
+                preserveAspectRatio="none"
+              >
+                <Path
+                  d="M0,20 C100,40 250,0 375,20 L375,30 L0,30 Z"
+                  fill={colors.background}
+                />
               </Svg>
             </View>
+
+            <Text
+              style={[styles.pageBodyTitle, isRTL && styles.pageBodyTitleRTL]}
+            >
+              {isRTL ? 'فعالياتي' : 'My Events'}
+            </Text>
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.primary} />
             </View>
@@ -641,20 +695,50 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
 
   return (
     <>
-      <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
+      <StatusBar
+        backgroundColor="#00a19c"
+        barStyle="light-content"
+        translucent={false}
+      />
       <View style={{ flex: 1, backgroundColor: colors.primary }}>
         <View style={{ height: insets.top, backgroundColor: colors.primary }} />
         <View style={[styles.container, { position: 'relative' }]}>
           {/* Curved Header Background Block with topographic waves & integrated navigation */}
           <View style={styles.profileHeaderBlock}>
-            <Svg width="100%" height="100%" viewBox="0 0 375 110" preserveAspectRatio="none" style={styles.topographicSvg}>
-              <Path d="M-20 20 C80 55 180 12 300 45 T400 35" stroke="rgba(255,255,255,0.08)" strokeWidth={1.5} fill="none" />
-              <Path d="M-20 35 C80 70 180 20 300 60 T400 50" stroke="rgba(255,255,255,0.12)" strokeWidth={1.5} fill="none" />
-              <Path d="M-20 50 C80 85 180 28 300 75 T400 65" stroke="rgba(255,255,255,0.15)" strokeWidth={2} fill="none" />
+            <Svg
+              width="100%"
+              height="100%"
+              viewBox="0 0 375 110"
+              preserveAspectRatio="none"
+              style={styles.topographicSvg}
+            >
+              <Path
+                d="M-20 20 C80 55 180 12 300 45 T400 35"
+                stroke="rgba(255,255,255,0.08)"
+                strokeWidth={1.5}
+                fill="none"
+              />
+              <Path
+                d="M-20 35 C80 70 180 20 300 60 T400 50"
+                stroke="rgba(255,255,255,0.12)"
+                strokeWidth={1.5}
+                fill="none"
+              />
+              <Path
+                d="M-20 50 C80 85 180 28 300 75 T400 65"
+                stroke="rgba(255,255,255,0.15)"
+                strokeWidth={2}
+                fill="none"
+              />
             </Svg>
 
             {/* Overlay Navigation Bar */}
-            <View style={[styles.headerOverlayBar, isRTL && styles.headerOverlayBarRTL]}>
+            <View
+              style={[
+                styles.headerOverlayBar,
+                isRTL && styles.headerOverlayBarRTL,
+              ]}
+            >
               {onBack && (
                 <TouchableOpacity
                   style={styles.headerBackButtonCircle}
@@ -668,19 +752,29 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
                   />
                 </TouchableOpacity>
               )}
-              <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
-                {isRTL ? 'فعالياتي' : 'My Events'}
-              </Text>
-              <View style={styles.headerSpacer} />
             </View>
           </View>
 
           {/* Curved Wave Divider (Transitions header to card background) */}
           <View style={styles.profileCurveDivider}>
-            <Svg height="30" width="100%" viewBox="0 0 375 30" preserveAspectRatio="none">
-              <Path d="M0,20 C100,40 250,0 375,20 L375,30 L0,30 Z" fill={colors.background} />
+            <Svg
+              height="30"
+              width="100%"
+              viewBox="0 0 375 30"
+              preserveAspectRatio="none"
+            >
+              <Path
+                d="M0,20 C100,40 250,0 375,20 L375,30 L0,30 Z"
+                fill={colors.background}
+              />
             </Svg>
           </View>
+
+          <Text
+            style={[styles.pageBodyTitle, isRTL && styles.pageBodyTitleRTL]}
+          >
+            {isRTL ? 'فعالياتي' : 'My Events'}
+          </Text>
 
           {/* Date and Occasion Filters */}
           <View style={styles.filterSection}>
@@ -689,7 +783,12 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
               onPress={() => setShowDatePicker(true)}
               activeOpacity={0.8}
             >
-              <Icon name="calendar-outline" size={16} color={colors.primary} style={isRTL ? { marginLeft: 6 } : { marginRight: 6 }} />
+              <Icon
+                name="calendar-outline"
+                size={16}
+                color={colors.primary}
+                style={isRTL ? { marginLeft: 6 } : { marginRight: 6 }}
+              />
               <Text style={styles.dateFilterText} numberOfLines={1}>
                 {selectedDate
                   ? selectedDate.toLocaleDateString('en-US', {
@@ -697,7 +796,9 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
                       day: '2-digit',
                       year: 'numeric',
                     })
-                  : (isRTL ? 'تحديد التاريخ' : 'Select Date')}
+                  : isRTL
+                  ? 'تحديد التاريخ'
+                  : 'Select Date'}
               </Text>
               {selectedDate ? (
                 <TouchableOpacity
@@ -716,7 +817,12 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
               onPress={() => setShowOccasionPicker(true)}
               activeOpacity={0.8}
             >
-              <Icon name="funnel-outline" size={16} color={colors.primary} style={isRTL ? { marginLeft: 6 } : { marginRight: 6 }} />
+              <Icon
+                name="funnel-outline"
+                size={16}
+                color={colors.primary}
+                style={isRTL ? { marginLeft: 6 } : { marginRight: 6 }}
+              />
               <Text
                 style={styles.occasionFilterText}
                 numberOfLines={1}
@@ -808,10 +914,12 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
           <OccasionSelector
             visible={showOccasionPicker}
             onClose={() => setShowOccasionPicker(false)}
-            onSelect={(occasion) => {
+            onSelect={occasion => {
               setSelectedOccasion(isRTL ? occasion.nameAr : occasion.name);
             }}
-            selectedOccasion={occasions.find(o => (isRTL ? o.nameAr : o.name) === selectedOccasion)}
+            selectedOccasion={occasions.find(
+              o => (isRTL ? o.nameAr : o.name) === selectedOccasion,
+            )}
           />
         </View>
       </View>

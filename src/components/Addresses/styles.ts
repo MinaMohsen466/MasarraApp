@@ -452,7 +452,7 @@ export const styles = StyleSheet.create({
     fontWeight: '700',
   },
   profileHeaderBlock: {
-    height: 110,
+    height: 50,
     backgroundColor: colors.primary,
     position: 'relative',
     overflow: 'hidden',
@@ -474,12 +474,11 @@ export const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
+    bottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
     backgroundColor: 'transparent',
     zIndex: 1,
   },
@@ -517,6 +516,19 @@ export const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     marginHorizontal: 8,
+  },
+  pageBodyTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.primaryDark,
+    marginHorizontal: 16,
+    marginTop: 10,
+    marginBottom: 16,
+    textAlign: 'left',
+  },
+  pageBodyTitleRTL: {
+    fontFamily: 'System',
+    textAlign: 'right',
   },
 });
 

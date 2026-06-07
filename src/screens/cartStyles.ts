@@ -849,7 +849,7 @@ export const styles = StyleSheet.create({
     height: 46,
     justifyContent: 'center',
     paddingHorizontal: 40,
-    borderRadius: 24,
+    borderRadius: 10,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,

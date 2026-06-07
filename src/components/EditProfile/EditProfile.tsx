@@ -418,7 +418,11 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
 
   return (
     <>
-      <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
+      <StatusBar
+        backgroundColor="#00a19c"
+        barStyle="light-content"
+        translucent={false}
+      />
       <View style={{ flex: 1, backgroundColor: colors.primary }}>
         <View style={{ height: insets.top, backgroundColor: colors.primary }} />
         <View
@@ -431,14 +435,40 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
           >
             {/* Curved Header Background Block with topographic waves & integrated navigation */}
             <View style={styles.profileHeaderBlock}>
-              <Svg width="100%" height="100%" viewBox="0 0 375 110" preserveAspectRatio="none" style={styles.topographicSvg}>
-                <Path d="M-20 20 C80 55 180 12 300 45 T400 35" stroke="rgba(255,255,255,0.08)" strokeWidth={1.5} fill="none" />
-                <Path d="M-20 35 C80 70 180 20 300 60 T400 50" stroke="rgba(255,255,255,0.12)" strokeWidth={1.5} fill="none" />
-                <Path d="M-20 50 C80 85 180 28 300 75 T400 65" stroke="rgba(255,255,255,0.15)" strokeWidth={2} fill="none" />
+              <Svg
+                width="100%"
+                height="100%"
+                viewBox="0 0 375 110"
+                preserveAspectRatio="none"
+                style={styles.topographicSvg}
+              >
+                <Path
+                  d="M-20 20 C80 55 180 12 300 45 T400 35"
+                  stroke="rgba(255,255,255,0.08)"
+                  strokeWidth={1.5}
+                  fill="none"
+                />
+                <Path
+                  d="M-20 35 C80 70 180 20 300 60 T400 50"
+                  stroke="rgba(255,255,255,0.12)"
+                  strokeWidth={1.5}
+                  fill="none"
+                />
+                <Path
+                  d="M-20 50 C80 85 180 28 300 75 T400 65"
+                  stroke="rgba(255,255,255,0.15)"
+                  strokeWidth={2}
+                  fill="none"
+                />
               </Svg>
 
               {/* Overlay Navigation Bar */}
-              <View style={[styles.headerOverlayBar, isRTL && styles.headerOverlayBarRTL]}>
+              <View
+                style={[
+                  styles.headerOverlayBar,
+                  isRTL && styles.headerOverlayBarRTL,
+                ]}
+              >
                 {onBack && (
                   <TouchableOpacity
                     style={styles.headerBackButtonCircle}
@@ -452,19 +482,29 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
                     />
                   </TouchableOpacity>
                 )}
-                <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
-                  {isRTL ? 'تعديل الملف الشخصي' : 'Edit Profile'}
-                </Text>
-                <View style={styles.headerSpacer} />
               </View>
             </View>
 
             {/* Curved Wave Divider (Transitions header to page background colors.background) */}
             <View style={styles.profileCurveDivider}>
-              <Svg height="30" width="100%" viewBox="0 0 375 30" preserveAspectRatio="none">
-                <Path d="M0,20 C100,40 250,0 375,20 L375,30 L0,30 Z" fill={colors.background} />
+              <Svg
+                height="30"
+                width="100%"
+                viewBox="0 0 375 30"
+                preserveAspectRatio="none"
+              >
+                <Path
+                  d="M0,20 C100,40 250,0 375,20 L375,30 L0,30 Z"
+                  fill={colors.background}
+                />
               </Svg>
             </View>
+
+            <Text
+              style={[styles.pageBodyTitle, isRTL && styles.pageBodyTitleRTL]}
+            >
+              {isRTL ? 'تعديل الملف الشخصي' : 'Edit Profile'}
+            </Text>
             {/* Personal Information Section */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
@@ -501,35 +541,73 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
                 <View style={styles.viewMode}>
                   {/* Full Name Row */}
                   <View style={[styles.infoRow, isRTL && styles.infoRowRTL]}>
-                    <View style={[styles.infoIconContainer, isRTL && styles.infoIconContainerRTL]}>
-                      <Icon name="person-outline" size={18} color={colors.primary} />
+                    <View
+                      style={[
+                        styles.infoIconContainer,
+                        isRTL && styles.infoIconContainerRTL,
+                      ]}
+                    >
+                      <Icon
+                        name="person-outline"
+                        size={18}
+                        color={colors.primary}
+                      />
                     </View>
-                    <View style={[styles.infoContent, isRTL && styles.infoContentRTL]}>
-                      <Text style={[styles.infoLabel, isRTL && styles.infoLabelRTL]}>
+                    <View
+                      style={[
+                        styles.infoContent,
+                        isRTL && styles.infoContentRTL,
+                      ]}
+                    >
+                      <Text
+                        style={[styles.infoLabel, isRTL && styles.infoLabelRTL]}
+                      >
                         {isRTL ? 'الاسم الكامل' : 'Full Name'}
                       </Text>
-                      <Text style={[styles.infoValue, isRTL && styles.infoValueRTL]}>
+                      <Text
+                        style={[styles.infoValue, isRTL && styles.infoValueRTL]}
+                      >
                         {user?.name || (isRTL ? 'غير متوفر' : 'Not provided')}
                       </Text>
                     </View>
                   </View>
 
-                  <View style={[styles.infoDivider, isRTL && styles.infoDividerRTL]} />
+                  <View
+                    style={[styles.infoDivider, isRTL && styles.infoDividerRTL]}
+                  />
 
                   {/* Phone Number Row */}
                   <View style={[styles.infoRow, isRTL && styles.infoRowRTL]}>
-                    <View style={[styles.infoIconContainer, isRTL && styles.infoIconContainerRTL]}>
-                      <Icon name="call-outline" size={18} color={colors.primary} />
+                    <View
+                      style={[
+                        styles.infoIconContainer,
+                        isRTL && styles.infoIconContainerRTL,
+                      ]}
+                    >
+                      <Icon
+                        name="call-outline"
+                        size={18}
+                        color={colors.primary}
+                      />
                     </View>
-                    <View style={[styles.infoContent, isRTL && styles.infoContentRTL]}>
-                      <Text style={[styles.infoLabel, isRTL && styles.infoLabelRTL]}>
+                    <View
+                      style={[
+                        styles.infoContent,
+                        isRTL && styles.infoContentRTL,
+                      ]}
+                    >
+                      <Text
+                        style={[styles.infoLabel, isRTL && styles.infoLabelRTL]}
+                      >
                         {isRTL ? 'رقم الهاتف' : 'Phone Number'}
                       </Text>
                       <Text
                         style={[
                           styles.infoValue,
                           isRTL && styles.infoValueRTL,
-                          (user?.phone && user.phone.trim() !== '') ? { textAlign: 'left', writingDirection: 'ltr' } : null
+                          user?.phone && user.phone.trim() !== ''
+                            ? { textAlign: 'left', writingDirection: 'ltr' }
+                            : null,
                         ]}
                       >
                         {user?.phone && user.phone.trim() !== ''
@@ -541,18 +619,38 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
                     </View>
                   </View>
 
-                  <View style={[styles.infoDivider, isRTL && styles.infoDividerRTL]} />
+                  <View
+                    style={[styles.infoDivider, isRTL && styles.infoDividerRTL]}
+                  />
 
                   {/* Email Address Row */}
                   <View style={[styles.infoRow, isRTL && styles.infoRowRTL]}>
-                    <View style={[styles.infoIconContainer, isRTL && styles.infoIconContainerRTL]}>
-                      <Icon name="mail-outline" size={18} color={colors.primary} />
+                    <View
+                      style={[
+                        styles.infoIconContainer,
+                        isRTL && styles.infoIconContainerRTL,
+                      ]}
+                    >
+                      <Icon
+                        name="mail-outline"
+                        size={18}
+                        color={colors.primary}
+                      />
                     </View>
-                    <View style={[styles.infoContent, isRTL && styles.infoContentRTL]}>
-                      <Text style={[styles.infoLabel, isRTL && styles.infoLabelRTL]}>
+                    <View
+                      style={[
+                        styles.infoContent,
+                        isRTL && styles.infoContentRTL,
+                      ]}
+                    >
+                      <Text
+                        style={[styles.infoLabel, isRTL && styles.infoLabelRTL]}
+                      >
                         {isRTL ? 'البريد الإلكتروني' : 'Email Address'}
                       </Text>
-                      <Text style={[styles.infoValue, isRTL && styles.infoValueRTL]}>
+                      <Text
+                        style={[styles.infoValue, isRTL && styles.infoValueRTL]}
+                      >
                         {user?.email || (isRTL ? 'غير متوفر' : 'Not provided')}
                       </Text>
                     </View>
@@ -582,14 +680,18 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
                           </Text>
                         )}
                       </TouchableOpacity>
-                      
+
                       {/* Camera upload overlay badge at bottom-right */}
                       <TouchableOpacity
                         style={styles.cameraBadge}
                         onPress={handleChoosePhoto}
                         activeOpacity={0.8}
                       >
-                        <Icon name="camera" size={16} color={colors.textWhite} />
+                        <Icon
+                          name="camera"
+                          size={16}
+                          color={colors.textWhite}
+                        />
                       </TouchableOpacity>
 
                       {/* Remove photo icon at top-left */}
@@ -599,12 +701,18 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
                           onPress={handleRemovePhoto}
                           activeOpacity={0.8}
                         >
-                          <Icon name="close" size={12} color={colors.textWhite} />
+                          <Icon
+                            name="close"
+                            size={12}
+                            color={colors.textWhite}
+                          />
                         </TouchableOpacity>
                       )}
                     </View>
-                    
-                    <Text style={[styles.photoHint, isRTL && styles.photoHintRTL]}>
+
+                    <Text
+                      style={[styles.photoHint, isRTL && styles.photoHintRTL]}
+                    >
                       {isRTL
                         ? 'انقر على الصورة لتغييرها (JPG, PNG حتى 10 ميجابايت)'
                         : 'Tap photo to change (JPG, PNG up to 10MB)'}
@@ -618,21 +726,38 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
                         style={[
                           styles.inputLabel,
                           isRTL && styles.inputLabelRTL,
-                          { marginBottom: 6, fontSize: 13, color: '#6B7280' }
+                          { marginBottom: 6, fontSize: 13, color: '#6B7280' },
                         ]}
                       >
                         {isRTL ? 'الاسم الكامل' : 'Full Name'}
                       </Text>
-                      <View style={[styles.sleekInputWrapper, isRTL && styles.sleekInputWrapperRTL, nameActive && styles.sleekInputWrapperActive]}>
+                      <View
+                        style={[
+                          styles.sleekInputWrapper,
+                          isRTL && styles.sleekInputWrapperRTL,
+                          nameActive && styles.sleekInputWrapperActive,
+                        ]}
+                      >
                         <Icon
                           name="person-outline"
                           size={18}
                           color={nameActive ? colors.primary : '#9CA3AF'}
-                          style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
+                          style={[
+                            styles.sleekInputIcon,
+                            isRTL && styles.sleekInputIconRTL,
+                          ]}
                         />
-                        <View style={[styles.sleekInputDivider, isRTL && styles.sleekInputDividerRTL]} />
+                        <View
+                          style={[
+                            styles.sleekInputDivider,
+                            isRTL && styles.sleekInputDividerRTL,
+                          ]}
+                        />
                         <TextInput
-                          style={[styles.sleekTextInput, isRTL && styles.sleekTextInputRTL]}
+                          style={[
+                            styles.sleekTextInput,
+                            isRTL && styles.sleekTextInputRTL,
+                          ]}
                           value={name}
                           onChangeText={setName}
                           placeholder={isRTL ? 'أدخل الاسم' : 'Enter name'}
@@ -648,27 +773,43 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
                         style={[
                           styles.inputLabel,
                           isRTL && styles.inputLabelRTL,
-                          { marginBottom: 6, fontSize: 13, color: '#6B7280' }
+                          { marginBottom: 6, fontSize: 13, color: '#6B7280' },
                         ]}
                       >
                         {isRTL ? 'رقم الهاتف' : 'Phone Number'}
                       </Text>
-                      <View style={[styles.sleekInputWrapper, isRTL && styles.sleekInputWrapperRTL, phoneActive && styles.sleekInputWrapperActive]}>
+                      <View
+                        style={[
+                          styles.sleekInputWrapper,
+                          isRTL && styles.sleekInputWrapperRTL,
+                          phoneActive && styles.sleekInputWrapperActive,
+                        ]}
+                      >
                         <Icon
                           name="call-outline"
                           size={18}
                           color={phoneActive ? colors.primary : '#9CA3AF'}
-                          style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
+                          style={[
+                            styles.sleekInputIcon,
+                            isRTL && styles.sleekInputIconRTL,
+                          ]}
                         />
-                        <View style={[styles.sleekInputDivider, isRTL && styles.sleekInputDividerRTL]} />
+                        <View
+                          style={[
+                            styles.sleekInputDivider,
+                            isRTL && styles.sleekInputDividerRTL,
+                          ]}
+                        />
                         <TextInput
                           style={[
                             styles.sleekTextInput,
-                            { textAlign: 'left', writingDirection: 'ltr' }
+                            { textAlign: 'left', writingDirection: 'ltr' },
                           ]}
                           value={phone}
                           onChangeText={setPhone}
-                          placeholder={isRTL ? 'أدخل رقم الهاتف' : 'Enter phone'}
+                          placeholder={
+                            isRTL ? 'أدخل رقم الهاتف' : 'Enter phone'
+                          }
                           placeholderTextColor="#9CA3AF"
                           keyboardType="phone-pad"
                           onFocus={() => setPhoneActive(true)}
@@ -727,15 +868,41 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
               onPress={handleChangePassword}
               activeOpacity={0.7}
             >
-              <View style={[styles.settingsCardInner, isRTL && styles.settingsCardInnerRTL]}>
-                <View style={[styles.settingsIconContainer, styles.passwordIconBg, isRTL && styles.settingsIconContainerRTL]}>
+              <View
+                style={[
+                  styles.settingsCardInner,
+                  isRTL && styles.settingsCardInnerRTL,
+                ]}
+              >
+                <View
+                  style={[
+                    styles.settingsIconContainer,
+                    styles.passwordIconBg,
+                    isRTL && styles.settingsIconContainerRTL,
+                  ]}
+                >
                   <Icon name="key-outline" size={20} color={colors.primary} />
                 </View>
-                <View style={[styles.settingsTextContainer, isRTL && styles.settingsTextContainerRTL]}>
-                  <Text style={[styles.settingsTitle, isRTL && styles.settingsTitleRTL]}>
+                <View
+                  style={[
+                    styles.settingsTextContainer,
+                    isRTL && styles.settingsTextContainerRTL,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.settingsTitle,
+                      isRTL && styles.settingsTitleRTL,
+                    ]}
+                  >
                     {isRTL ? 'تغيير كلمة المرور' : 'Change Password'}
                   </Text>
-                  <Text style={[styles.settingsSubtitle, isRTL && styles.settingsSubtitleRTL]}>
+                  <Text
+                    style={[
+                      styles.settingsSubtitle,
+                      isRTL && styles.settingsSubtitleRTL,
+                    ]}
+                  >
                     {isRTL
                       ? 'كلمة المرور الخاصة بك آمنة ومشفرة.'
                       : 'Your password is secure and encrypted.'}
@@ -755,15 +922,42 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
               onPress={handleDeleteAccount}
               activeOpacity={0.7}
             >
-              <View style={[styles.settingsCardInner, isRTL && styles.settingsCardInnerRTL]}>
-                <View style={[styles.settingsIconContainer, styles.deleteIconBg, isRTL && styles.settingsIconContainerRTL]}>
+              <View
+                style={[
+                  styles.settingsCardInner,
+                  isRTL && styles.settingsCardInnerRTL,
+                ]}
+              >
+                <View
+                  style={[
+                    styles.settingsIconContainer,
+                    styles.deleteIconBg,
+                    isRTL && styles.settingsIconContainerRTL,
+                  ]}
+                >
                   <Icon name="trash-outline" size={20} color={colors.error} />
                 </View>
-                <View style={[styles.settingsTextContainer, isRTL && styles.settingsTextContainerRTL]}>
-                  <Text style={[styles.settingsTitle, styles.deleteTitleText, isRTL && styles.settingsTitleRTL]}>
+                <View
+                  style={[
+                    styles.settingsTextContainer,
+                    isRTL && styles.settingsTextContainerRTL,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.settingsTitle,
+                      styles.deleteTitleText,
+                      isRTL && styles.settingsTitleRTL,
+                    ]}
+                  >
                     {isRTL ? 'حذف الحساب' : 'Delete Account'}
                   </Text>
-                  <Text style={[styles.settingsSubtitle, isRTL && styles.settingsSubtitleRTL]}>
+                  <Text
+                    style={[
+                      styles.settingsSubtitle,
+                      isRTL && styles.settingsSubtitleRTL,
+                    ]}
+                  >
                     {isRTL
                       ? 'حذف حسابك بشكل دائم. هذا الإجراء لا يمكن التراجع عنه'
                       : 'Permanently delete your account. This action cannot be undone'}
