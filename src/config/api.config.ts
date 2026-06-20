@@ -76,15 +76,15 @@ export const getImageUrl = (
   }
   // If it starts with /public/, use it as is
   else if (basePath.startsWith('/public/')) {
-    url = `${API_BASE_URL}${basePath}`;
+    url = `${API_URL}${basePath}`;
   }
   // If it starts with public/ (without leading slash), add the slash
   else if (basePath.startsWith('public/')) {
-    url = `${API_BASE_URL}/${basePath}`;
+    url = `${API_URL}/${basePath}`;
   }
   // Otherwise, assume it's just a filename and add /public/ prefix
   else {
-    url = `${API_BASE_URL}/public/${basePath}`;
+    url = `${API_URL}/public/${basePath}`;
   }
 
   // Append existing parameters first (like ?updated=timestamp from AuthContext)

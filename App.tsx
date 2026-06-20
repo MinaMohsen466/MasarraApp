@@ -3,10 +3,13 @@ import { View, StatusBar, BackHandler, PanResponder, Dimensions } from "react-na
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import { useSiteSettings } from "./src/hooks/useSiteSettings";
 import { QueryClient, QueryClientProvider, focusManager } from '@tanstack/react-query';
-import { LanguageProvider } from "./src/contexts/LanguageContext";
+import { LanguageProvider, useLanguage } from "./src/contexts/LanguageContext";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
-import { SocketProvider } from "./src/contexts/SocketContext";
+import { SocketProvider, useSocket } from "./src/contexts/SocketContext";
 import { DateProvider } from "./src/contexts/DateContext";
+import { NotificationProvider, useNotification } from "./src/contexts/NotificationContext";
+import { CustomAlert } from "./src/components/CustomAlert/CustomAlert";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import colors from './src/constants/colors';
 import { AppState, AppStateStatus } from 'react-native';
 
@@ -59,6 +62,205 @@ const queryClient = new QueryClient({
   },
 });
 
+const SocketNotificationListener: React.FC<{
+  setCurrentRoute: (route: string) => void;
+}> = ({ setCurrentRoute }) => {
+  const { socket } = useSocket();
+  const { isRTL } = useLanguage();
+  const { addNotification } = useNotification();
+  const [notificationVisible, setNotificationVisible] = useState(false);
+  const [notificationTitle, setNotificationTitle] = useState('');
+  const [notificationMessage, setNotificationMessage] = useState('');
+  const [notificationButtons, setNotificationButtons] = useState<any[]>([]);
+
+  const showAlert = useCallback((title: string, message: string, buttons: any[]) => {
+    setNotificationTitle(title);
+    setNotificationMessage(message);
+    setNotificationButtons(buttons);
+    setNotificationVisible(true);
+  }, []);
+
+  useEffect(() => {
+    if (!socket) {
+      return () => {}; // Return dummy cleanup function to satisfy TS7030
+    }
+
+    // Legacy booking_notification handler
+    const handleBookingNotification = (data: any) => {
+      console.log('Received booking notification via socket:', data);
+      
+      const title = isRTL ? data.title : data.titleEn;
+      const message = isRTL ? data.message : data.messageEn;
+      
+      // Save notification to history and show top banner
+      addNotification({
+        title: data.title || (isRTL ? 'إشعار الحجز' : 'Booking Notification'),
+        titleEn: data.titleEn || 'Booking Notification',
+        message: data.message || '',
+        messageEn: data.messageEn || '',
+        type: data.type || 'booking_notification',
+        bookingId: data.bookingId || data.id
+      }).catch(err => console.error('Failed to add socket booking notification:', err));
+
+      const buttons: Array<{
+        text: string;
+        onPress?: () => void;
+        style?: 'default' | 'cancel' | 'destructive';
+      }> = [
+        {
+          text: isRTL ? 'إغلاق' : 'Close',
+          style: 'cancel',
+          onPress: () => {},
+        }
+      ];
+
+      if (data.type === 'booking_confirmed') {
+        buttons.unshift({
+          text: isRTL ? 'عرض الطلب والدفع' : 'View Order & Pay',
+          style: 'default',
+          onPress: async () => {
+            try {
+              await AsyncStorage.setItem('openOrderHistory', '1');
+              setCurrentRoute('profile');
+            } catch (err) {
+              console.error('Error redirecting to order history:', err);
+            }
+          }
+        });
+      } else if (data.type === 'booking_created') {
+        buttons.unshift({
+          text: isRTL ? 'عرض حجوزاتي' : 'View My Bookings',
+          style: 'default',
+          onPress: async () => {
+            try {
+              await AsyncStorage.setItem('openOrderHistory', '1');
+              setCurrentRoute('profile');
+            } catch (err) {
+              console.error('Error redirecting to order history:', err);
+            }
+          }
+        });
+      }
+
+      showAlert(title || 'Notification', message || '', buttons);
+    };
+
+    // Payment confirmed notification
+    const handlePaymentConfirmed = (data: any) => {
+      console.log('Payment confirmed notification:', data);
+      const title = isRTL ? '✅ تم تأكيد الدفع' : '✅ Payment Confirmed';
+      const message = isRTL
+        ? (data.messageAr || 'تم تأكيد دفعك بنجاح! حجزك مؤكد الآن.')
+        : (data.messageEn || 'Your payment was confirmed! Your booking is now confirmed.');
+      
+      // Save notification to history and show top banner
+      addNotification({
+        title: isRTL ? 'تم تأكيد الدفع' : 'Payment Confirmed',
+        titleEn: 'Payment Confirmed',
+        message: data.messageAr || 'تم تأكيد دفعك بنجاح! حجزك مؤكد الآن.',
+        messageEn: data.messageEn || 'Your payment was confirmed! Your booking is now confirmed.',
+        type: 'booking_payment_confirmed',
+        bookingId: data.bookingId || data.id
+      }).catch(err => console.error('Failed to add payment socket notification:', err));
+
+      showAlert(title, message, [
+        {
+          text: isRTL ? 'عرض حجوزاتي' : 'View My Bookings',
+          style: 'default',
+          onPress: async () => {
+            try {
+              await AsyncStorage.setItem('openOrderHistory', '1');
+              setCurrentRoute('profile');
+            } catch (err) {
+              console.error('Error redirecting to order history:', err);
+            }
+          }
+        },
+        {
+          text: isRTL ? 'إغلاق' : 'Close',
+          style: 'cancel',
+        }
+      ]);
+    };
+
+    // Vendor confirmed notification
+    const handleVendorConfirmed = (data: any) => {
+      console.log('Vendor confirmed notification:', data);
+      const title = isRTL ? '🎉 تم قبول الحجز' : '🎉 Booking Confirmed';
+      const message = isRTL
+        ? (data.messageAr || 'قبل البائع حجزك!')
+        : (data.messageEn || 'Vendor confirmed your booking!');
+      
+      // Save notification to history and show top banner
+      addNotification({
+        title: isRTL ? 'تم قبول الحجز' : 'Booking Confirmed',
+        titleEn: 'Booking Confirmed',
+        message: data.messageAr || 'قبل البائع حجزك!',
+        messageEn: data.messageEn || 'Vendor confirmed your booking!',
+        type: 'booking_confirmed_by_vendor',
+        bookingId: data.bookingId || data.id
+      }).catch(err => console.error('Failed to add vendor confirmation socket notification:', err));
+
+      const buttons: any[] = [
+        {
+          text: isRTL ? 'إغلاق' : 'Close',
+          style: 'cancel',
+        }
+      ];
+
+      if (data.requiresPayment) {
+        buttons.unshift({
+          text: isRTL ? 'الدفع الآن' : 'Pay Now',
+          style: 'default',
+          onPress: async () => {
+            try {
+              await AsyncStorage.setItem('openOrderHistory', '1');
+              setCurrentRoute('profile');
+            } catch (err) {
+              console.error('Error redirecting to order history:', err);
+            }
+          }
+        });
+      } else {
+        buttons.unshift({
+          text: isRTL ? 'عرض حجوزاتي' : 'View My Bookings',
+          style: 'default',
+          onPress: async () => {
+            try {
+              await AsyncStorage.setItem('openOrderHistory', '1');
+              setCurrentRoute('profile');
+            } catch (err) {
+              console.error('Error redirecting to order history:', err);
+            }
+          }
+        });
+      }
+
+      showAlert(title, message, buttons);
+    };
+
+    socket.on('booking_notification', handleBookingNotification);
+    socket.on('booking_payment_confirmed', handlePaymentConfirmed);
+    socket.on('booking_confirmed_by_vendor', handleVendorConfirmed);
+
+    return () => {
+      socket.off('booking_notification', handleBookingNotification);
+      socket.off('booking_payment_confirmed', handlePaymentConfirmed);
+      socket.off('booking_confirmed_by_vendor', handleVendorConfirmed);
+    };
+  }, [socket, isRTL, setCurrentRoute, showAlert, addNotification]);
+
+  return (
+    <CustomAlert
+      visible={notificationVisible}
+      title={notificationTitle}
+      message={notificationMessage}
+      buttons={notificationButtons}
+      onClose={() => setNotificationVisible(false)}
+    />
+  );
+};
+
 function AppContent() {
   const { data: siteSettings } = useSiteSettings();
   const [isBannerDismissed, setIsBannerDismissed] = useState<boolean>(false);
@@ -68,13 +270,49 @@ function AppContent() {
   const [selectedVendorId, setSelectedVendorId] = useState<string | undefined>(undefined);
   const [selectedVendorName, setSelectedVendorName] = useState<string | undefined>(undefined);
   const [selectedServiceId, setSelectedServiceId] = useState<string | undefined>(undefined);
-  const [selectedServiceOrigin, setSelectedServiceOrigin] = useState<'home' | 'services' | 'vendor-services' | 'occasion-services' | undefined>(undefined);
+  const [selectedServiceOrigin, setSelectedServiceOrigin] = useState<'home' | 'services' | 'vendor-services' | 'occasion-services' | 'cart' | undefined>(undefined);
   const [selectedPackageId, setSelectedPackageId] = useState<string | undefined>(undefined);
-  const [selectedPackageOrigin, setSelectedPackageOrigin] = useState<'packages' | 'vendor-services' | undefined>(undefined);
+  const [selectedPackageOrigin, setSelectedPackageOrigin] = useState<'packages' | 'vendor-services' | 'cart' | undefined>(undefined);
   const [selectedOccasionId, setSelectedOccasionId] = useState<string | undefined>(undefined);
   const [selectedOccasionName, setSelectedOccasionName] = useState<string | undefined>(undefined);
   const [selectedOccasionOrigin, setSelectedOccasionOrigin] = useState<'home' | 'occasions' | undefined>(undefined);
   const [selectedSearchDate, setSelectedSearchDate] = useState<Date | undefined>(undefined);
+  const [editCartItemId, setEditCartItemId] = useState<string | undefined>(undefined);
+
+  const { checkBookingsStatusChanges, registerNavigationHandler } = useNotification();
+  const { token, user } = useAuth();
+  const prevUserRef = useRef(user);
+
+  useEffect(() => {
+    if (prevUserRef.current && !user) {
+      setCurrentRoute('home');
+    }
+    prevUserRef.current = user;
+  }, [user]);
+
+  // Register navigation handler
+  useEffect(() => {
+    registerNavigationHandler(handleNavigation);
+  }, [registerNavigationHandler]);
+
+  // Check booking status changes when app starts or foregrounds
+  useEffect(() => {
+    if (!token) {
+      return () => {};
+    }
+
+    checkBookingsStatusChanges(token);
+
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'active') {
+        checkBookingsStatusChanges(token);
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [token, checkBookingsStatusChanges]);
 
   const handleNavigation = (route: string) => {
     setCurrentRoute(route);
@@ -94,6 +332,9 @@ function AppContent() {
         case 'vendor-services':
           setCurrentRoute('vendor-services');
           break;
+        case 'cart':
+          setCurrentRoute('cart');
+          break;
         case 'services':
         default:
           setCurrentRoute('services');
@@ -101,17 +342,21 @@ function AppContent() {
       }
       setSelectedServiceId(undefined);
       setSelectedServiceOrigin(undefined);
+      setEditCartItemId(undefined);
     } else if (currentRoute === 'package-details') {
       // Route back based on where the package was opened from
       if (selectedPackageOrigin === 'packages') {
         setCurrentRoute('packages');
       } else if (selectedPackageOrigin === 'vendor-services') {
         setCurrentRoute('vendor-services');
+      } else if (selectedPackageOrigin === 'cart') {
+        setCurrentRoute('cart');
       } else {
         setCurrentRoute('home');
       }
       setSelectedPackageId(undefined);
       setSelectedPackageOrigin(undefined);
+      setEditCartItemId(undefined);
     } else if (currentRoute === 'occasion-services') {
       // Go back to the origin (home or occasions)
       if (selectedOccasionOrigin === 'home') {
@@ -300,6 +545,7 @@ function AppContent() {
             serviceId={selectedServiceId!}
             onBack={handleBack}
             onNavigate={handleNavigation}
+            editCartItemId={editCartItemId}
           />
         );
       case 'package-details':
@@ -308,6 +554,7 @@ function AppContent() {
             packageId={selectedPackageId!}
             onBack={handleBack}
             onNavigate={handleNavigation}
+            editCartItemId={editCartItemId}
           />
         );
       case 'cart':
@@ -315,8 +562,18 @@ function AppContent() {
           <Cart
             onBack={handleBack}
             onNavigate={handleNavigation}
-            onViewDetails={(serviceId) => handleServiceSelect(serviceId, 'services')}
-            onViewPackageDetails={(packageId) => handlePackageSelect(packageId, 'packages')}
+            onEditService={(serviceId, cartItemId) => {
+              setSelectedServiceId(serviceId);
+              setEditCartItemId(cartItemId);
+              setSelectedServiceOrigin('cart');
+              setCurrentRoute('service-details');
+            }}
+            onEditPackage={(packageId, cartItemId) => {
+              setSelectedPackageId(packageId);
+              setEditCartItemId(cartItemId);
+              setSelectedPackageOrigin('cart');
+              setCurrentRoute('package-details');
+            }}
           />
         );
       case 'about':
@@ -355,47 +612,42 @@ function AppContent() {
       : colors.backgroundHome;
 
   return (
-    <LanguageProvider>
-      <DateProvider>
-        <AuthProvider onLogout={() => setCurrentRoute('home')}>
-          <SocketProvider>
-            {showSplash ? (
-              <SplashScreen onFinish={() => setShowSplash(false)} />
-            ) : shouldRenderWithoutSafeArea ? (
-              <View style={{ flex: 1 }} {...panResponder.panHandlers}>
-                {renderScreen()}
-                {showBottomNav && currentRoute !== 'cart' && currentRoute !== 'auth' && (
-                  <>
-                    <BottomNavigation
-                      activeRoute={currentRoute}
-                      onNavigate={handleNavigation}
-                    />
-                    <View style={{ height: 20, backgroundColor: colors.backgroundHome }} />
-                  </>
-                )}
-              </View>
-            ) : (
-              <SafeAreaView style={{ flex: 1, backgroundColor: dynamicBgColor }}>
-                <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
-                {shouldShowHeader && <Header onNavigate={handleNavigation} />}
-                <View style={{ flex: 1 }} {...panResponder.panHandlers}>
-                  {renderScreen()}
-                </View>
-                {showBottomNav && currentRoute !== 'auth' && (
-                  <>
-                    <BottomNavigation
-                      activeRoute={currentRoute}
-                      onNavigate={handleNavigation}
-                    />
-                    <View style={{ height: 20, backgroundColor: '#ffffff' }} />
-                  </>
-                )}
-              </SafeAreaView>
-            )}
-          </SocketProvider>
-        </AuthProvider>
-      </DateProvider>
-    </LanguageProvider>
+    <SocketProvider>
+      <SocketNotificationListener setCurrentRoute={setCurrentRoute} />
+      {showSplash ? (
+        <SplashScreen onFinish={() => setShowSplash(false)} />
+      ) : shouldRenderWithoutSafeArea ? (
+        <View style={{ flex: 1 }} {...panResponder.panHandlers}>
+          {renderScreen()}
+          {showBottomNav && currentRoute !== 'cart' && currentRoute !== 'auth' && (
+            <>
+              <BottomNavigation
+                activeRoute={currentRoute}
+                onNavigate={handleNavigation}
+              />
+              <View style={{ height: 20, backgroundColor: colors.backgroundHome }} />
+            </>
+          )}
+        </View>
+      ) : (
+        <SafeAreaView style={{ flex: 1, backgroundColor: dynamicBgColor }}>
+          <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
+          {shouldShowHeader && <Header onNavigate={handleNavigation} />}
+          <View style={{ flex: 1 }} {...panResponder.panHandlers}>
+            {renderScreen()}
+          </View>
+          {showBottomNav && currentRoute !== 'auth' && (
+            <>
+              <BottomNavigation
+                activeRoute={currentRoute}
+                onNavigate={handleNavigation}
+              />
+              <View style={{ height: 20, backgroundColor: '#ffffff' }} />
+            </>
+          )}
+        </SafeAreaView>
+      )}
+    </SocketProvider>
   );
 }
 
@@ -403,7 +655,15 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider>
-        <AppContent />
+        <LanguageProvider>
+          <NotificationProvider>
+            <AuthProvider>
+              <DateProvider>
+                <AppContent />
+              </DateProvider>
+            </AuthProvider>
+          </NotificationProvider>
+        </LanguageProvider>
       </SafeAreaProvider>
     </QueryClientProvider>
   );

@@ -11,9 +11,10 @@ import {
 import { WebView } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../constants/colors';
 import { useLanguage } from '../contexts/LanguageContext';
-import { getPaymentStatus } from '../services/paymentApi';
+import { API_URL } from '../config/api.config';
 
 interface PaymentWebViewProps {
   visible: boolean;
@@ -40,6 +41,67 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
   const [error, setError] = useState(false);
   const [verifyingPayment, setVerifyingPayment] = useState(false);
   const webViewRef = useRef<WebView>(null);
+  const verifyingRef = useRef(false);
+
+  // Shared helper function to verify payment status on the server
+  // Uses the /payment/callback endpoint which supports both v2 and v3 PaymentIds
+  const verifyPayment = async (paymentId: string) => {
+    try {
+      setVerifyingPayment(true);
+
+      // Wait a moment for server to process the payment
+      await new Promise<void>(resolve => setTimeout(resolve, 2500));
+
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) {
+        onPaymentError('Authentication required. Please log in and check your orders.');
+        return;
+      }
+
+      // Use the /payment/callback endpoint which uses v2 GetPaymentStatus
+      // and correctly handles PaymentIds from 3DS redirects
+      const response = await fetch(`${API_URL}/payment/callback?paymentId=${encodeURIComponent(paymentId)}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const result = await response.json();
+      console.log('Payment callback verification result:', result);
+
+      if (result.success && result.invoiceStatus === 'Paid') {
+        console.log('Payment verified as PAID via callback!');
+        onPaymentSuccess();
+      } else if (result.success && result.data?.InvoiceStatus === 'Paid') {
+        console.log('Payment verified as PAID!');
+        onPaymentSuccess();
+      } else {
+        const status = result.invoiceStatus || result.data?.InvoiceStatus || 'Unknown';
+        console.log('Payment not confirmed. Status:', status);
+        if (status === 'Pending') {
+          // Payment might still be processing - treat as success and let server reconcile
+          console.log('Payment Pending - treating as potential success, user should check orders');
+          onPaymentError(
+            'Payment is being processed. Please check your order history for confirmation.'
+          );
+        } else {
+          onPaymentError(
+            result.message || `Payment not completed. Status: ${status}`
+          );
+        }
+      }
+    } catch (err) {
+      console.error('Error verifying payment:', err);
+      onPaymentError(
+        'Payment verification failed. Please check your order history to confirm payment status.'
+      );
+    } finally {
+      setVerifyingPayment(false);
+      verifyingRef.current = false;
+    }
+  };
 
   // Handle navigation state changes to detect payment completion
   const handleNavigationStateChange = async (navState: any) => {
@@ -48,6 +110,11 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
 
     // Check if redirected to success/callback URL
     if (url.includes('/payment/callback') || url.includes('/payment/success')) {
+      if (verifyingRef.current) {
+        console.log('Payment verification already in progress, ignoring duplicate event');
+        return;
+      }
+      verifyingRef.current = true;
       console.log('Payment callback detected! Verifying payment status...');
 
       // Extract paymentId from URL query parameters (manual parsing for React Native compatibility)
@@ -63,37 +130,14 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
 
         if (paymentId) {
           console.log('Payment ID extracted:', paymentId);
-          setVerifyingPayment(true);
-
-          // Wait a moment for server to process
-          await new Promise<void>(resolve => setTimeout(resolve, 2000));
-
-          // Verify payment status with backend
-          try {
-            const result = await getPaymentStatus(paymentId);
-            console.log('Payment verification result:', result);
-
-            if (result.success && result.data?.InvoiceStatus === 'Paid') {
-              console.log('Payment verified as PAID!');
-              onPaymentSuccess();
-            } else {
-              console.log('Payment not confirmed:', result.data?.InvoiceStatus);
-              onPaymentError('Payment verification failed');
-            }
-          } catch (err) {
-            console.error('Error verifying payment:', err);
-            // Still call success as we detected the callback
-            onPaymentSuccess();
-          } finally {
-            setVerifyingPayment(false);
-          }
+          await verifyPayment(paymentId);
         } else {
-          console.log('No payment ID found in URL, calling success anyway');
-          onPaymentSuccess();
+          console.log('No payment ID found in URL');
+          onPaymentError('No payment identifier found in callback URL.');
         }
       } catch (err) {
         console.error('Error parsing callback URL:', err);
-        onPaymentSuccess();
+        onPaymentError('Error parsing payment callback URL.');
       }
       return;
     }
@@ -206,13 +250,27 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
                   onNavigationStateChange={handleNavigationStateChange}
                   onError={handleError}
                   onHttpError={handleHttpError}
-                  onMessage={event => {
+                  onMessage={async event => {
                     // Handle messages from embedded payment form
                     try {
                       const message = JSON.parse(event.nativeEvent.data);
                       console.log('WebView message:', message);
                       if (message.type === 'PAYMENT_SUCCESS') {
-                        onPaymentSuccess();
+                        // Extract payment ID if it is passed in the postMessage payload
+                        const paymentId = 
+                          message.data?.PaymentId || 
+                          message.data?.data?.PaymentId || 
+                          message.data?.InvoiceId ||
+                          message.data?.data?.InvoiceId ||
+                          message.data?.invoiceId;
+
+                        if (paymentId) {
+                          console.log('Extracted payment ID from onMessage:', paymentId);
+                          await verifyPayment(String(paymentId));
+                        } else {
+                          console.log('No payment ID found in message payload, calling error');
+                          onPaymentError('Failed to verify payment status: Missing payment identifier.');
+                        }
                       } else if (message.type === 'PAYMENT_ERROR') {
                         onPaymentError(message.message || 'Payment failed');
                       }

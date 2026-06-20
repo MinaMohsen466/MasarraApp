@@ -826,5 +826,139 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       color: colors.primary,
       letterSpacing: 0.3,
     },
+
+    /* Pending Confirmation Notice */
+    pendingConfirmationContainer: {
+      backgroundColor: colors.backgroundCard,
+      borderRadius: 8,
+      padding: 16,
+      marginBottom: 12,
+      borderLeftWidth: 3,
+      borderLeftColor: colors.primary,
+    },
+    pendingConfirmationTitle: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: colors.primary,
+      marginBottom: 4,
+    },
+    pendingConfirmationText: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      lineHeight: 18,
+    },
+
+    /* Delivery Fee */
+    deliveryFeeText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      marginTop: 4,
+    },
+
+    /* Hide Price Text */
+    hidePriceText: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      fontStyle: 'italic',
+    },
+
+    /* Dynamic Total Price */
+    totalPriceContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginTop: 4,
+    },
+    totalPriceLabel: {
+      fontSize: 11,
+      color: colors.textSecondary,
+      fontWeight: '600',
+    },
+    totalPriceValue: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: colors.primary,
+    },
+
+    /* Restaurant Menu Item Selector */
+    menuItemContainer: {
+      marginTop: 8,
+    },
+    menuItemRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: colors.backgroundLight,
+      borderRadius: 10,
+      paddingVertical: 10,
+      paddingHorizontal: 14,
+      marginBottom: 8,
+    },
+    menuItemRowRTL: {
+      flexDirection: 'row-reverse',
+    },
+    menuItemInfo: {
+      flex: 1,
+    },
+    menuItemName: {
+      fontSize: 14,
+      color: colors.textDark,
+      fontWeight: '500',
+    },
+    menuItemPrice: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.primary,
+      marginTop: 2,
+    },
+    menuItemStepper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    menuItemStepperButton: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      borderWidth: 2,
+      borderColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    menuItemStepperButtonDisabled: {
+      opacity: 0.4,
+    },
+    menuItemStepperButtonText: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.primary,
+      lineHeight: 20,
+    },
+    menuItemQuantity: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.textDark,
+      minWidth: 24,
+      textAlign: 'center',
+    },
+
+    /* Video Overlay for Carousel */
+    videoSlide: {
+      width: SCREEN_WIDTH,
+      height: carouselHeight,
+      position: 'relative',
+      backgroundColor: '#000',
+    },
+    videoPlayOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    },
   });
 };

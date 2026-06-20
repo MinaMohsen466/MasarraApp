@@ -600,11 +600,7 @@ export const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#FF4B4B',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
+    opacity: 0,
   },
   swipeDeleteBehindRTL: {
     right: undefined,
@@ -613,8 +609,8 @@ export const styles = StyleSheet.create({
   infoDropdown: {
     position: 'absolute',
     top: 42,
+    left: 8,
     right: 8,
-    width: 280,
     backgroundColor: '#FFFFFF',
     borderRadius: 10,
     padding: 12,
@@ -628,8 +624,6 @@ export const styles = StyleSheet.create({
     elevation: 8,
   },
   infoDropdownRTL: {
-    right: undefined,
-    left: 8,
   },
   infoDropdownTitle: {
     fontSize: 12,
@@ -647,9 +641,19 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     marginBottom: 6,
     width: '100%',
+    alignItems: 'flex-start',
   },
   infoDropdownRowRTL: {
     flexDirection: 'row-reverse',
+  },
+  infoDropdownRowText: {
+    fontSize: 11,
+    color: colors.textDark,
+    marginBottom: 6,
+    textAlign: 'left',
+  },
+  infoDropdownRowTextRTL: {
+    textAlign: 'right',
   },
   infoDropdownLabel: {
     fontSize: 11,
@@ -664,8 +668,8 @@ export const styles = StyleSheet.create({
   infoDropdownValue: {
     fontSize: 11,
     color: colors.textSecondary,
-    flex: 1,
     lineHeight: 14,
+    flex: 1,
   },
   infoDropdownValueRTL: {
     textAlign: 'right',

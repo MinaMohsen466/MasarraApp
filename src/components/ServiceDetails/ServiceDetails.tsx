@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import {
   Easing,
   StatusBar,
 } from 'react-native';
+import { WebView } from 'react-native-webview';
 import Svg, { Path } from 'react-native-svg';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -32,7 +33,7 @@ import {
   isWishlisted,
   WishlistItem,
 } from '../../services/wishlist';
-import { addToCart, CartItem } from '../../services/cart';
+import { addToCart, updateCartItem, CartItem } from '../../services/cart';
 import DatePickerModal, {
   clearDatePickerCacheForService,
 } from '../DatePickerModal/DatePickerModal';
@@ -52,12 +53,14 @@ interface ServiceDetailsProps {
   serviceId: string;
   onBack?: () => void;
   onNavigate?: (route: string) => void;
+  editCartItemId?: string;
 }
 
 const ServiceDetails: React.FC<ServiceDetailsProps> = ({
   serviceId,
   onBack,
   onNavigate,
+  editCartItemId,
 }) => {
   const { width: SCREEN_WIDTH } = useWindowDimensions();
   const styles = createStyles(SCREEN_WIDTH);
@@ -82,6 +85,8 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [userToken, setUserToken] = useState<string | null>(null);
+  const [originalDate, setOriginalDate] = useState<Date | null>(null);
+  const [originalTime, setOriginalTime] = useState<string | null>(null);
 
   // Availability state - track if selected time slot is available
   const [isTimeSlotAvailable, setIsTimeSlotAvailable] = useState<boolean>(true);
@@ -89,12 +94,15 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
 
   // Custom inputs state - stores selected option index for each custom input
   const [customInputSelections, setCustomInputSelections] = useState<{
-    [key: string]: number | string | number[];
+    [key: string]: number | string | number[] | { [key: string]: number };
   }>({});
   // State to control which custom inputs are expanded
   const [expandedCustomInputs, setExpandedCustomInputs] = useState<{
     [key: string]: boolean;
   }>({});
+
+  // Video playback state
+  const [playingVideoIndex, setPlayingVideoIndex] = useState<number | null>(null);
 
   // Loading state for add to cart
   const [isAddingToCart, setIsAddingToCart] = useState(false);
@@ -126,6 +134,18 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
     new Animated.ValueXY({ x: 0, y: 0 }),
   ).current;
   const flyingIconScale = useRef(new Animated.Value(1)).current;
+
+  // Fetch services and find the selected service - Load first for faster UI
+  const { data: services, isLoading } = useQuery({
+    queryKey: ['services'],
+    queryFn: fetchServices,
+    staleTime: 15 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+
+  const service = (services as any)?.find((s: any) => s._id === serviceId);
   const addToCartButtonRef = useRef<View>(null);
 
   // Helper function to check if selected date/time is in the past
@@ -181,7 +201,6 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
           // From App.tsx: there's a 20px View below the BottomNavigation
 
           const bottomViewHeight = 20; // View below BottomNav in App.tsx
-          const navPaddingTop = isTabletDevice ? 16 : 12;    // paddingVertical top
           const navPaddingBottom = isTabletDevice ? 24 : 18;  // paddingBottom overrides paddingVertical bottom
           const navItemPaddingVertical = isTabletDevice ? 12 : 8;
           const navIconSize = isTabletDevice ? 36 : 28;
@@ -189,7 +208,6 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
 
           // Total nav bar height = paddingTop + paddingBottom + navItem content height
           // navItem content height = paddingVertical*2 + iconSize
-          const navBarTotalHeight = navPaddingTop + navPaddingBottom + navItemPaddingVertical * 2 + navIconSize;
 
           // The icon center Y from screen bottom:
           // bottomViewHeight + navPaddingBottom + navItemPaddingVertical + iconSize/2
@@ -268,6 +286,77 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
     loadUserData();
   }, []);
 
+  // Load existing cart item for editing and pre-fill selections
+  React.useEffect(() => {
+    const loadCartItemForEdit = async () => {
+      if (!editCartItemId) return;
+      try {
+        const { getCart } = require('../../services/cart');
+        const cart = await getCart();
+        const item = cart.find((i: any) => i._id === editCartItemId);
+        if (item) {
+          // Pre-fill date and time
+          if (item.selectedDate) {
+            const dateObj = new Date(item.selectedDate);
+            setSelectedDate(dateObj);
+            setOriginalDate(dateObj);
+          }
+          if (item.selectedTime) {
+            setSelectedTime(item.selectedTime);
+            setOriginalTime(item.selectedTime);
+          }
+          // Pre-fill custom inputs
+          if (item.customInputs && Array.isArray(item.customInputs) && service?.customInputs) {
+            const initialSelections: any = {};
+            service.customInputs.forEach((input: any) => {
+              const inputId = input._id || input.label;
+              const matchingInputs = item.customInputs.filter(
+                (ci: any) => ci.label === input.label
+              );
+
+              if (matchingInputs.length > 0) {
+                if (input.type === 'radio-single') {
+                  const val = matchingInputs[0].value;
+                  const idx = input.options.indexOf(val);
+                  if (idx >= 0) {
+                    initialSelections[inputId] = idx;
+                  }
+                } else if (input.type === 'radio-multiple') {
+                  const indices = matchingInputs
+                    .map((ci: any) => input.options.indexOf(ci.value))
+                    .filter((idx: number) => idx >= 0);
+                  initialSelections[inputId] = indices;
+                } else if (input.type === 'restaurant-menu') {
+                  const menuSelections: { [key: string]: number } = {};
+                  matchingInputs.forEach((ci: any) => {
+                    const parts = String(ci.value).split(/ [×xX]/);
+                    if (parts.length >= 2) {
+                      const optName = parts[0].trim();
+                      const qty = parseInt(parts[1].trim(), 10) || 0;
+                      if (qty > 0) {
+                        menuSelections[optName] = qty;
+                      }
+                    }
+                  });
+                  initialSelections[inputId] = menuSelections;
+                } else if (input.type === 'text' || input.type === 'number') {
+                  initialSelections[inputId] = matchingInputs[0].value;
+                }
+              }
+            });
+            setCustomInputSelections(initialSelections);
+          }
+        }
+      } catch (err) {
+        console.error('Error loading cart item for edit:', err);
+      }
+    };
+
+    if (service) {
+      loadCartItemForEdit();
+    }
+  }, [editCartItemId, service]);
+
   // Check if the user has purchased the service
   React.useEffect(() => {
     const checkPurchaseStatus = async () => {
@@ -328,15 +417,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
     fetchUserReview();
   }, [serviceId, userToken]);
 
-  // Fetch services and find the selected service - Load first for faster UI
-  const { data: services, isLoading } = useQuery({
-    queryKey: ['services'],
-    queryFn: fetchServices,
-    staleTime: 15 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
-  });
+
 
   // Load reviews in parallel using React Query for better caching
   const { data: reviewsData, refetch: refetchReviews } = useQuery<any>({
@@ -423,12 +504,114 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
     });
   };
 
-  const service = (services as any)?.find((s: any) => s._id === serviceId);
+  // ── Menu helpers ──────────────────────────────────────────
+  const serviceHasMenu = (svc: any) =>
+    Array.isArray(svc?.customInputs) &&
+    svc.customInputs.some((i: any) => i.type === 'restaurant-menu');
 
-  // Initialize dot animations for service images
-  if (service?.images && dotAnimations.length !== service.images.length) {
+  const menuItemCount = (map: any): number =>
+    Object.values(map || {}).reduce((sum: number, q: any) => sum + (Number(q) || 0), 0) as number;
+
+  const menuSurcharge = (input: any, map: any) => {
+    let total = 0;
+    Object.entries(map || {}).forEach(([opt, qty]: [string, any]) => {
+      const idx = input.options.indexOf(opt);
+      if (idx >= 0 && input.optionPrices?.[idx]) {
+        total += input.optionPrices[idx] * (Number(qty) || 0);
+      }
+    });
+    return total;
+  };
+
+  // ── Dynamic total price ───────────────────────────────────
+  const calculateTotalPrice = () => {
+    if (!service) return 0;
+    const origPrice = Number(service.price) || 0;
+    let basePrice = origPrice;
+    if (service.isOnSale && (service.salePrice || service.discountPercentage)) {
+      if (service.discountPercentage && Number(service.discountPercentage) > 0) {
+        const pct = Number(service.discountPercentage) || 0;
+        basePrice = +(origPrice * (1 - Math.min(Math.max(pct, 0), 100) / 100));
+      } else if (service.salePrice && Number(service.salePrice) > 0) {
+        basePrice = Number(service.salePrice);
+      }
+    }
+    let total = basePrice;
+    // Add custom input option prices
+    service.customInputs?.forEach((input: any) => {
+      const inputId = input._id || input.label;
+      const sel = customInputSelections[inputId];
+      if (input.type === 'radio-single' && typeof sel === 'number') {
+        const price = Number(input.optionPrices?.[sel] ?? 0);
+        if (price > 0) total += price;
+      } else if (input.type === 'radio-multiple' && Array.isArray(sel)) {
+        (sel as number[]).forEach((idx: number) => {
+          const price = Number(input.optionPrices?.[idx] ?? 0);
+          if (price > 0) total += price;
+        });
+      } else if (input.type === 'restaurant-menu' && sel && typeof sel === 'object' && !Array.isArray(sel)) {
+        total += menuSurcharge(input, sel);
+      }
+    });
+    return Math.round((total + Number.EPSILON) * 100) / 100;
+  };
+
+  const totalPrice = useMemo(() => calculateTotalPrice(), [service, customInputSelections]);
+
+  // Check if a priced option has been selected (for hidePrice logic)
+  const hasSelectedPricedOption = () => {
+    if (!service?.customInputs) return false;
+    return service.customInputs.some((input: any) => {
+      const inputId = input._id || input.label;
+      const sel = customInputSelections[inputId];
+      if (input.type === 'radio-single' && typeof sel === 'number') {
+        return Number(input.optionPrices?.[sel]) > 0;
+      }
+      if (input.type === 'radio-multiple' && Array.isArray(sel) && sel.length > 0) {
+        return (sel as number[]).some(
+          (idx: number) => Number(input.optionPrices?.[idx]) > 0,
+        );
+      }
+      if (input.type === 'restaurant-menu' && sel && typeof sel === 'object' && !Array.isArray(sel)) {
+        return menuItemCount(sel) > 0;
+      }
+      return false;
+    });
+  };
+
+  // ── canProceed (matches client web logic) ─────────────────
+  const canProceed =
+    !!selectedDate &&
+    !!selectedTime &&
+    !isTimeInPast() &&
+    isTimeSlotAvailable &&
+    !checkingAvailability &&
+    !isAddingToCart &&
+    (!service?.hidePrice || hasSelectedPricedOption()) &&
+    (!serviceHasMenu(service) ||
+      (service.customInputs || []).some(
+        (i: any) =>
+          i.type === 'restaurant-menu' &&
+          menuItemCount(customInputSelections[i._id || i.label]) > 0,
+      ));
+
+  // Build combined media items (images + videos)
+  const mediaItems = useMemo(() => {
+    if (!service) return [];
+    const items: Array<{ type: 'image' | 'video'; src: string }> = [];
+    (service.images || []).forEach((src: string) => {
+      if (src && src.trim()) items.push({ type: 'image', src: src.trim() });
+    });
+    (service.videos || []).forEach((src: string) => {
+      if (src && src.trim()) items.push({ type: 'video', src: src.trim() });
+    });
+    return items;
+  }, [service]);
+
+  // Initialize dot animations for service media items
+  if (mediaItems.length > 0 && dotAnimations.length !== mediaItems.length) {
     dotAnimations.length = 0;
-    service.images.forEach(() => {
+    mediaItems.forEach(() => {
       dotAnimations.push(new Animated.Value(0));
     });
   }
@@ -447,28 +630,42 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
     }
   }, [currentImageIndex, dotAnimations.length]);
 
-  // Auto-scroll slideshow effect for service details
+  // Auto-scroll slideshow effect for service details - paused when playing a video
   useEffect(() => {
-    if (!service || !service.images || service.images.length <= 1) return;
-
-    const interval = setInterval(() => {
-      setCurrentImageIndex(prevIndex => {
-        const nextIndex = (prevIndex + 1) % service.images.length;
-        flatListRef.current?.scrollToIndex({
-          index: nextIndex,
-          animated: true,
+    if (mediaItems.length > 1 && playingVideoIndex === null) {
+      const interval = setInterval(() => {
+        setCurrentImageIndex(prevIndex => {
+          const nextIndex = (prevIndex + 1) % mediaItems.length;
+          flatListRef.current?.scrollToIndex({
+            index: nextIndex,
+            animated: true,
+          });
+          return nextIndex;
         });
-        return nextIndex;
-      });
-    }, 5000); // Change slide every 5 seconds
+      }, 5000); // Change slide every 5 seconds
 
-    return () => clearInterval(interval);
-  }, [service?.images?.length]);
+      return () => clearInterval(interval);
+    }
+    return undefined;
+  }, [mediaItems.length, playingVideoIndex]);
 
   // Check availability whenever date or time changes
   React.useEffect(() => {
     const checkAvailability = async () => {
       if (!selectedDate || !selectedTime || !service) {
+        setIsTimeSlotAvailable(true);
+        return;
+      }
+
+      // If the selected slot is the same as the original slot we are editing,
+      // consider it available to allow updating options without blocking.
+      if (
+        editCartItemId &&
+        originalDate &&
+        originalTime &&
+        selectedDate.toDateString() === originalDate.toDateString() &&
+        selectedTime === originalTime
+      ) {
         setIsTimeSlotAvailable(true);
         return;
       }
@@ -497,6 +694,9 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
         // Compare dates properly
         const selectedDateStr = selectedDate.toDateString();
         const cartItemsForThisSlot = localCart.filter((cartItem: any) => {
+          if (editCartItemId && cartItem._id === editCartItemId) {
+            return false;
+          }
           const cartDate =
             typeof cartItem.selectedDate === 'string'
               ? new Date(cartItem.selectedDate)
@@ -542,7 +742,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
     };
 
     checkAvailability();
-  }, [selectedDate, selectedTime, service, userToken]);
+  }, [selectedDate, selectedTime, service, userToken, editCartItemId, originalDate, originalTime]);
 
   // check wishlist state
   React.useEffect(() => {
@@ -614,16 +814,92 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
     }
   }
 
-  // Render image carousel item
-  const renderImageItem = ({
+  // Render media carousel item (images + videos)
+  const renderMediaItem = ({
     item,
+    index,
   }: {
-    item: string;
+    item: { type: 'image' | 'video'; src: string };
+    index: number;
   }) => {
+    if (item.type === 'video') {
+      return (
+        <View style={styles.videoSlide}>
+          {playingVideoIndex === index ? (
+            <WebView
+              source={{
+                html: `
+                  <!DOCTYPE html>
+                  <html>
+                  <head>
+                    <style>
+                      body, html {
+                        margin: 0;
+                        padding: 0;
+                        width: 100%;
+                        height: 100%;
+                        background-color: black;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        overflow: hidden;
+                      }
+                      video {
+                        width: 100%;
+                        height: 100%;
+                        object-fit: contain;
+                      }
+                    </style>
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+                  </head>
+                  <body>
+                    <video src="${getServiceImageUrl(item.src)}" controls autoplay playsinline></video>
+                  </body>
+                  </html>
+                `
+              }}
+              style={styles.carouselImage}
+              allowsInlineMediaPlayback={true}
+              mediaPlaybackRequiresUserAction={false}
+              javaScriptEnabled={true}
+              domStorageEnabled={true}
+              scalesPageToFit={true}
+            />
+          ) : (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setPlayingVideoIndex(index)}
+              style={{ flex: 1 }}
+            >
+              <Image
+                source={{ uri: getServiceImageUrl(item.src) }}
+                style={styles.carouselImage}
+                resizeMode="cover"
+              />
+              <View style={styles.videoPlayOverlay}>
+                <Svg width={48} height={48} viewBox="0 0 24 24" fill="none">
+                  <Path
+                    d="M8 5v14l11-7z"
+                    fill="#FFFFFF"
+                    stroke="#FFFFFF"
+                    strokeWidth={1}
+                  />
+                </Svg>
+              </View>
+            </TouchableOpacity>
+          )}
+          {hasDiscount && discountPercent > 0 && (
+            <View style={styles.imageDiscountBadge}>
+              <Text style={styles.imageDiscountText}>{discountPercent}%</Text>
+            </View>
+          )}
+        </View>
+      );
+    }
     return (
       <View style={styles.imageSlide}>
         <Image
-          source={{ uri: getServiceImageUrl(item) }}
+          source={{ uri: getServiceImageUrl(item.src) }}
           style={styles.carouselImage}
           resizeMode="cover"
         />
@@ -874,13 +1150,13 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
             SCREEN_WIDTH >= 600 ? insets.bottom + 280 : insets.bottom + 180,
         }}
       >
-        {/* Image Carousel */}
-        {service.images && service.images.length > 0 && (
+        {/* Media Carousel (Images + Videos) */}
+        {mediaItems.length > 0 ? (
           <View style={styles.carouselContainer}>
             <FlatList
               ref={flatListRef}
-              data={service.images}
-              renderItem={renderImageItem}
+              data={mediaItems}
+              renderItem={renderMediaItem}
               keyExtractor={(_item, index) => index.toString()}
               horizontal
               pagingEnabled
@@ -893,6 +1169,10 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                   event.nativeEvent.contentOffset.x / SCREEN_WIDTH,
                 );
                 setCurrentImageIndex(index);
+                // Stop video when scrolling away
+                if (playingVideoIndex !== null && playingVideoIndex !== index) {
+                  setPlayingVideoIndex(null);
+                }
               }}
               getItemLayout={(_, index) => ({
                 length: SCREEN_WIDTH,
@@ -902,9 +1182,9 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
             />
 
             {/* Pagination Dots */}
-            {service.images.length > 1 && (
+            {mediaItems.length > 1 && (
               <View style={styles.paginationContainer}>
-                {service.images.map((_, index) => {
+                {mediaItems.map((_, index) => {
                   const isActive = index === currentImageIndex;
                   const animValue = dotAnimations[index] || new Animated.Value(0);
 
@@ -935,6 +1215,30 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
               </View>
             )}
           </View>
+        ) : (
+          <View
+            style={[
+              styles.carouselContainer,
+              {
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor: 'rgba(0, 161, 156, 0.05)',
+              },
+            ]}
+          >
+            <Svg width={80} height={80} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                stroke={colors.primary}
+                strokeWidth={1.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
+            <Text style={{ marginTop: 12, color: colors.primary, fontSize: 14, fontWeight: '500' }}>
+              {isRTL ? 'لا توجد صور أو فيديوهات متاحة' : 'No images or videos available'}
+            </Text>
+          </View>
         )}
 
         {/* Service Info Section */}
@@ -954,56 +1258,101 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
           {/* Price Badge */}
           <View style={styles.priceBadge}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.priceLabel}>
-                {isRTL ? 'السعر يبدأ من' : 'Price starts from'}
-              </Text>
-
-              {service.isOnSale === true &&
-              ((service.salePrice &&
-                service.salePrice > 0 &&
-                service.salePrice < service.price) ||
-                (service.discountPercentage &&
-                  service.discountPercentage > 0)) ? (
-                <View style={{ gap: 4 }}>
-                  {/* Sale Price */}
-                  <Text style={styles.priceValue}>
-                    {(() => {
-                      // Priority: use salePrice if available, otherwise calculate from discountPercentage
-                      const finalPrice =
-                        service.salePrice &&
-                        service.salePrice > 0 &&
-                        service.salePrice < service.price
-                          ? service.salePrice
-                          : service.price *
-                            (1 - (service.discountPercentage || 0) / 100);
-                      return `${finalPrice.toFixed(3)} ${isRTL ? 'د.ك' : 'KD'}`;
-                    })()}{' '}
-                    <Text style={styles.priceUnit}>
-                      {isRTL ? 'يومياً' : 'per day'}
+              {service.hidePrice ? (
+                // hidePrice mode: show price only after selecting a priced option
+                hasSelectedPricedOption() ? (
+                  <View>
+                    <Text style={styles.totalPriceLabel}>
+                      {isRTL ? 'الإجمالي' : 'Total'}
                     </Text>
+                    <Text style={styles.totalPriceValue}>
+                      {totalPrice.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={styles.hidePriceText}>
+                    {isRTL
+                      ? 'اختر خياراً واحداً على الأقل لرؤية السعر'
+                      : 'Select at least one option to see the price.'}
+                  </Text>
+                )
+              ) : (
+                <>
+                  <Text style={styles.priceLabel}>
+                    {isRTL ? 'السعر يبدأ من' : 'Price starts from'}
                   </Text>
 
-                  {/* Original Price (strikethrough) */}
-                  <Text
-                    style={[
-                      styles.priceValue,
-                      {
-                        textDecorationLine: 'line-through',
-                        color: '#999',
-                        fontSize: 14,
-                      },
-                    ]}
-                  >
-                    {service.price.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
-                  </Text>
-                </View>
-              ) : (
-                <Text style={styles.priceValue}>
-                  {service.price.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}{' '}
-                  <Text style={styles.priceUnit}>
-                    {isRTL ? 'يومياً' : 'per day'}
-                  </Text>
-                </Text>
+                  {service.isOnSale === true &&
+                  ((service.salePrice &&
+                    service.salePrice > 0 &&
+                    service.salePrice < service.price) ||
+                    (service.discountPercentage &&
+                      service.discountPercentage > 0)) ? (
+                    <View style={{ gap: 4 }}>
+                      {/* Sale Price (dynamic total) */}
+                      <Text style={styles.priceValue}>
+                        {totalPrice.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}{' '}
+                        <Text style={styles.priceUnit}>
+                          {isRTL ? 'يومياً' : 'per day'}
+                        </Text>
+                      </Text>
+
+                      {/* Original Price (strikethrough) */}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text
+                          style={[
+                            styles.priceValue,
+                            {
+                              textDecorationLine: 'line-through',
+                              color: '#999',
+                              fontSize: 14,
+                            },
+                          ]}
+                        >
+                          {service.price.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
+                        </Text>
+                        {discountPercent > 0 && (
+                          <View style={{ backgroundColor: colors.primary, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 }}>
+                            <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>
+                              {discountPercent}% {isRTL ? 'خصم' : 'OFF'}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  ) : (
+                    <View>
+                      <Text style={styles.priceValue}>
+                        {totalPrice.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}{' '}
+                        <Text style={styles.priceUnit}>
+                          {isRTL ? 'يومياً' : 'per day'}
+                        </Text>
+                      </Text>
+                      {totalPrice !== service.price && (
+                        <Text
+                          style={[
+                            styles.priceValue,
+                            {
+                              textDecorationLine: 'line-through',
+                              color: '#999',
+                              fontSize: 14,
+                            },
+                          ]}
+                        >
+                          {service.price.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
+                        </Text>
+                      )}
+                    </View>
+                  )}
+
+                  {/* Delivery Fee */}
+                  {service.addressRequired && service.deliveryFee > 0 && (
+                    <Text style={styles.deliveryFeeText}>
+                      + {service.deliveryFee.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}{' '}
+                      {isRTL ? 'رسوم التوصيل' : 'Delivery Fee'}
+                    </Text>
+                  )}
+                </>
               )}
             </View>
             <View style={styles.ratingContainer}>
@@ -1047,18 +1396,38 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
 
               <View style={styles.policiesGrid}>
                 {service.policies.map((policyItem: any, index: number) => {
-                  const policy = policyItem.policy;
-                  const policyName = isRTL ? policy.nameAr : policy.name;
-                  const description =
-                    policy.descriptions && policy.descriptions.length > 0
-                      ? isRTL
-                        ? policy.descriptions[0].textAr
-                        : policy.descriptions[0].text
-                      : '';
+                  // Handle both old and new policy structure for backward compatibility
+                  const policy = policyItem.policy || policyItem;
+                  const policyName = isRTL && policy.nameAr ? policy.nameAr : policy.name;
+
+                  // Priority: customText > selectedDescription > first description
+                  const hasCustomText = policyItem.customText && policyItem.customText.trim();
+                  const hasCustomTextAr = policyItem.customTextAr && policyItem.customTextAr.trim();
+                  const selectedDescription = policyItem.selectedDescriptionId
+                    ? policy.descriptions?.find(
+                        (desc: any) => desc._id === policyItem.selectedDescriptionId,
+                      )
+                    : null;
+
+                  const description = hasCustomText
+                    ? isRTL && hasCustomTextAr
+                      ? policyItem.customTextAr
+                      : policyItem.customText
+                    : selectedDescription
+                    ? isRTL && selectedDescription.textAr
+                      ? selectedDescription.textAr
+                      : selectedDescription.text
+                    : policy.descriptions && policy.descriptions.length > 0
+                    ? isRTL
+                      ? policy.descriptions[0].textAr
+                      : policy.descriptions[0].text
+                    : isRTL && policy.descriptionAr
+                    ? policy.descriptionAr
+                    : policy.description || '';
 
                   return (
                     <View
-                      key={index}
+                      key={policy._id || index}
                       style={[styles.policyCard, isRTL && styles.policyCardRTL]}
                     >
                       <View
@@ -1086,21 +1455,37 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                         >
                           {policyName}
                         </Text>
-                        <Text
-                          style={[
-                            styles.policyDescription,
-                            isRTL && styles.policyDescriptionRTL,
-                          ]}
-                          numberOfLines={2}
-                          ellipsizeMode="tail"
-                        >
-                          {description}
-                        </Text>
+                        {description ? (
+                          <Text
+                            style={[
+                              styles.policyDescription,
+                              isRTL && styles.policyDescriptionRTL,
+                            ]}
+                            numberOfLines={2}
+                            ellipsizeMode="tail"
+                          >
+                            {description}
+                          </Text>
+                        ) : null}
                       </View>
                     </View>
                   );
                 })}
               </View>
+            </View>
+          )}
+
+          {/* Pending Confirmation Notice */}
+          {service?.availabilityStatus === 'pending_confirmation' && (
+            <View style={styles.pendingConfirmationContainer}>
+              <Text style={[styles.pendingConfirmationTitle, isRTL && styles.descriptionTextRTL]}>
+                {isRTL ? 'في انتظار التأكيد' : 'Pending Confirmation'}
+              </Text>
+              <Text style={[styles.pendingConfirmationText, isRTL && styles.descriptionTextRTL]}>
+                {isRTL
+                  ? 'هذه الخدمة تتطلب تأكيد من المورد — الأوقات المتاحة المعروضة قد تكون مبدئية حتى يتم التأكيد.'
+                  : 'This service requires vendor confirmation — shown availability may be tentative until confirmed.'}
+              </Text>
             </View>
           )}
 
@@ -1265,14 +1650,15 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
 
               {/* Each Custom Input as Separate Option */}
               {service.customInputs.map((input: any, _index: number) => {
+                const inputId = input._id || input.label || `input_${_index}`;
                 const inputLabel = isRTL ? input.labelAr : input.label;
                 const inputType = input.type;
                 const inputOptions = isRTL ? input.optionsAr : input.options;
-                const isExpanded = expandedCustomInputs[input._id] || false;
-                const selectedValue = customInputSelections[input._id];
+                const isExpanded = expandedCustomInputs[inputId] || false;
+                const selectedValue = customInputSelections[inputId];
 
                 return (
-                  <View key={input._id} style={styles.optionCardContainer}>
+                  <View key={inputId} style={styles.optionCardContainer}>
                     {/* Add Option Button - shows the label and toggle */}
                     <TouchableOpacity
                       style={[
@@ -1283,7 +1669,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                       onPress={() => {
                         setExpandedCustomInputs({
                           ...expandedCustomInputs,
-                          [input._id]: !isExpanded,
+                          [inputId]: !isExpanded,
                         });
                       }}
                     >
@@ -1335,7 +1721,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                             onChangeText={text => {
                               setCustomInputSelections({
                                 ...customInputSelections,
-                                [input._id]: text,
+                                [inputId]: text,
                               });
                             }}
                             textAlign={isRTL ? 'right' : 'left'}
@@ -1365,7 +1751,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                               ) {
                                 setCustomInputSelections({
                                   ...customInputSelections,
-                                  [input._id]: num as any,
+                                  [inputId]: num as any,
                                 });
                               }
                             }}
@@ -1412,12 +1798,12 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                         const newSelections = {
                                           ...customInputSelections,
                                         };
-                                        delete newSelections[input._id];
+                                        delete newSelections[inputId];
                                         setCustomInputSelections(newSelections);
                                       } else {
                                         setCustomInputSelections({
                                           ...customInputSelections,
-                                          [input._id]: newArray,
+                                          [inputId]: newArray,
                                         });
                                       }
                                     } else {
@@ -1426,12 +1812,12 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                         const newSelections = {
                                           ...customInputSelections,
                                         };
-                                        delete newSelections[input._id];
+                                        delete newSelections[inputId];
                                         setCustomInputSelections(newSelections);
                                       } else {
                                         setCustomInputSelections({
                                           ...customInputSelections,
-                                          [input._id]: optIndex,
+                                          [inputId]: optIndex,
                                         });
                                       }
                                     }
@@ -1482,6 +1868,105 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                               );
                             },
                           )}
+                      </View>
+                    )}
+
+                    {/* Restaurant Menu */}
+                    {isExpanded && inputType === 'restaurant-menu' && (
+                      <View style={styles.menuItemContainer}>
+                        {(input.options || []).map(
+                          (option: string, optIndex: number) => {
+                            const labelText =
+                              isRTL && input.optionsAr?.[optIndex]
+                                ? input.optionsAr[optIndex]
+                                : option;
+                            const menuMap =
+                              (customInputSelections[inputId] as {
+                                [key: string]: number;
+                              }) || {};
+                            const qty = Number(menuMap[option]) || 0;
+                            const price =
+                              input.optionPrices?.[optIndex] || 0;
+
+                            const setMenuQty = (
+                              opt: string,
+                              newQty: number,
+                            ) => {
+                              const next = { ...menuMap };
+                              if (newQty > 0) next[opt] = newQty;
+                              else delete next[opt];
+                              setCustomInputSelections({
+                                ...customInputSelections,
+                                [inputId]: next,
+                              });
+                            };
+
+                            return (
+                              <View
+                                key={optIndex}
+                                style={[
+                                  styles.menuItemRow,
+                                  isRTL && styles.menuItemRowRTL,
+                                ]}
+                              >
+                                <View style={styles.menuItemInfo}>
+                                  <Text style={styles.menuItemName}>
+                                    {labelText}
+                                  </Text>
+                                  {price > 0 && (
+                                    <Text style={styles.menuItemPrice}>
+                                      +{price.toFixed(3)}{' '}
+                                      {isRTL ? 'د.ك' : 'KD'}
+                                    </Text>
+                                  )}
+                                </View>
+                                <View style={styles.menuItemStepper}>
+                                  <TouchableOpacity
+                                    style={[
+                                      styles.menuItemStepperButton,
+                                      qty <= 0 &&
+                                        styles.menuItemStepperButtonDisabled,
+                                    ]}
+                                    onPress={() =>
+                                      setMenuQty(
+                                        option,
+                                        Math.max(0, qty - 1),
+                                      )
+                                    }
+                                    disabled={qty <= 0}
+                                    activeOpacity={0.7}
+                                  >
+                                    <Text
+                                      style={
+                                        styles.menuItemStepperButtonText
+                                      }
+                                    >
+                                      −
+                                    </Text>
+                                  </TouchableOpacity>
+                                  <Text style={styles.menuItemQuantity}>
+                                    {qty}
+                                  </Text>
+                                  <TouchableOpacity
+                                    style={styles.menuItemStepperButton}
+                                    onPress={() =>
+                                      setMenuQty(option, qty + 1)
+                                    }
+                                    activeOpacity={0.7}
+                                  >
+                                    <Text
+                                      style={
+                                        styles.menuItemStepperButtonText
+                                      }
+                                    >
+                                      +
+                                    </Text>
+                                  </TouchableOpacity>
+                                </View>
+                              </View>
+                            );
+                          },
+                        )}
                       </View>
                     )}
                   </View>
@@ -1602,7 +2087,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                           <View key={review._id} style={styles.reviewCardHorizontal}>
                             <View style={styles.reviewHeader}>
                               <View style={styles.reviewUserInfo}>
-                                {review.user.profilePicture ? (
+                                {review.user?.profilePicture ? (
                                   <Image
                                     source={{
                                       uri: getImageUrl(review.user.profilePicture),
@@ -1612,7 +2097,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                 ) : (
                                   <View style={styles.reviewUserAvatarPlaceholder}>
                                     <Text style={styles.reviewUserAvatarText}>
-                                      {review.user.name.charAt(0).toUpperCase()}
+                                      {(review.user?.name || 'M').charAt(0).toUpperCase()}
                                     </Text>
                                   </View>
                                 )}
@@ -1631,7 +2116,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                       ]}
                                       numberOfLines={1}
                                     >
-                                      {review.user.name}
+                                      {review.user?.name || (isRTL ? 'مستخدم محذوف' : 'Deleted User')}
                                     </Text>
                                   </View>
                                   <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
@@ -1665,7 +2150,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                 }}
                               >
                                 {/* Delete Button - Only show for current user's reviews */}
-                                {currentUserId && review.user._id === currentUserId && (
+                                {currentUserId && review.user?._id === currentUserId && (
                                   <TouchableOpacity
                                     style={{
                                       padding: 6,
@@ -1790,22 +2275,10 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
           ref={addToCartButtonRef}
           style={[
             styles.addToCartButton,
-            (!selectedDate ||
-              !selectedTime ||
-              isTimeInPast() ||
-              !isTimeSlotAvailable ||
-              checkingAvailability ||
-              isAddingToCart) && { opacity: 0.5 },
+            !canProceed && { opacity: 0.5 },
           ]}
           activeOpacity={0.85}
-          disabled={
-            !selectedDate ||
-            !selectedTime ||
-            isTimeInPast() ||
-            !isTimeSlotAvailable ||
-            checkingAvailability ||
-            isAddingToCart
-          }
+          disabled={!canProceed}
           onPress={async () => {
             if (!service) return;
 
@@ -1931,29 +2404,30 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
               const slotStart = new Date(slotStartUTC);
               const slotEnd = new Date(slotEndUTC);
 
-              // Calculate total price including custom options
-              // Use salePrice if available, otherwise calculate from discountPercentage, otherwise use regular price
-              let basePrice = service.price;
-              if (service.isOnSale) {
-                if (
-                  service.salePrice &&
-                  service.salePrice > 0 &&
-                  service.salePrice < service.price
-                ) {
-                  basePrice = service.salePrice;
-                } else if (
-                  service.discountPercentage &&
-                  service.discountPercentage > 0
-                ) {
-                  basePrice =
-                    service.price * (1 - service.discountPercentage / 100);
+              // Calculate total price using the dynamic calculateTotalPrice function
+              const computedTotalPrice = calculateTotalPrice();
+              const basePrice = (() => {
+                let bp = service.price;
+                if (service.isOnSale) {
+                  if (
+                    service.salePrice &&
+                    service.salePrice > 0 &&
+                    service.salePrice < service.price
+                  ) {
+                    bp = service.salePrice;
+                  } else if (
+                    service.discountPercentage &&
+                    service.discountPercentage > 0
+                  ) {
+                    bp = service.price * (1 - service.discountPercentage / 100);
+                  }
                 }
-              }
-
-              let totalPrice = basePrice;
+                return bp;
+              })();
               const selectedCustomInputs = (
                 service.customInputs?.map((input: any) => {
-                  const selectedValue = customInputSelections[input._id];
+                  const inputId = input._id || input.label;
+                  const selectedValue = customInputSelections[inputId];
 
                   // Handle radio buttons (single and multiple)
                   if (
@@ -1976,7 +2450,6 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                           const optionPrice = Number(
                             input.optionPrices[index] ?? 0,
                           );
-                          totalPrice += optionPrice; // Add option price to total
                           return {
                             label: String(input.label), // Always use English label for backend matching
                             labelAr: input.labelAr ? String(input.labelAr) : undefined,
@@ -1990,6 +2463,30 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                       // Return single object for radio-single, array for radio-multiple
                       return isMultiple ? selectedOptions : selectedOptions[0];
                     }
+                  }
+                  // Handle restaurant-menu inputs
+                  else if (
+                    input.type === 'restaurant-menu' &&
+                    selectedValue &&
+                    typeof selectedValue === 'object' &&
+                    !Array.isArray(selectedValue)
+                  ) {
+                    const menuMap = selectedValue as { [key: string]: number };
+                    const menuEntries = Object.entries(menuMap)
+                      .filter(([, qty]) => Number(qty) > 0)
+                      .map(([opt, qty]) => {
+                        const idx = input.options.indexOf(opt);
+                        const optionAr = idx >= 0 && input.optionsAr?.[idx] ? input.optionsAr[idx] : opt;
+                        const optionPrice = idx >= 0 ? Number(input.optionPrices?.[idx] ?? 0) : 0;
+                        return {
+                          label: String(input.label),
+                          labelAr: input.labelAr ? String(input.labelAr) : undefined,
+                          value: `${opt} ×${qty}` as string | number,
+                          valueAr: `${optionAr} ×${qty}` as string | number,
+                          price: optionPrice * Number(qty),
+                        };
+                      });
+                    if (menuEntries.length > 0) return menuEntries;
                   }
                   // Handle text and number inputs
                   else if (
@@ -2008,7 +2505,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
 
                   return null;
                 }) ?? []
-              ).filter(
+              ).flat().filter(
                 (
                   v,
                 ): v is {
@@ -2029,8 +2526,8 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                   service.images && service.images.length > 0
                     ? service.images[0]
                     : undefined,
-                price: basePrice, // Use sale price or regular price
-                totalPrice: totalPrice, // Total price including custom options
+                price: basePrice,
+                totalPrice: computedTotalPrice, // Total price including custom options (dynamic)
                 quantity: 1, // Default quantity is 1, user can change in Cart (for unlimited services)
                 selectedDate,
                 selectedTime,
@@ -2046,17 +2543,38 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                 deliveryFee: service.deliveryFee || 0, // Pass delivery fee from service
               };
 
-              // Add to local storage cart
-              await addToCart(cartItem);
+              if (editCartItemId) {
+                // Update cart item in local storage
+                await updateCartItem(editCartItemId, {
+                  selectedDate,
+                  selectedTime,
+                  customInputs: selectedCustomInputs.filter(
+                    v => v !== null && v !== undefined,
+                  ),
+                  totalPrice: computedTotalPrice,
+                  price: basePrice,
+                  timeSlot: {
+                    start: slotStart,
+                    end: slotEnd,
+                  },
+                });
 
-              // Trigger animation
-              triggerAddToCartAnimation();
+                if (onBack) {
+                  onBack();
+                }
+              } else {
+                // Add to local storage cart
+                await addToCart(cartItem);
 
-              // Reset date, time, and custom inputs after successful add to cart
-              setSelectedDate(null);
-              setSelectedTime(null);
-              setCustomInputSelections({});
-              setExpandedCustomInputs({});
+                // Trigger animation
+                triggerAddToCartAnimation();
+
+                // Reset date, time, and custom inputs after successful add to cart
+                setSelectedDate(null);
+                setSelectedTime(null);
+                setCustomInputSelections({});
+                setExpandedCustomInputs({});
+              }
 
               // Success - silently added to cart, no alert
             } catch (error: any) {
@@ -2091,21 +2609,39 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
             }
           }}
         >
-          <Svg
-            width={22}
-            height={22}
-            viewBox="0 0 24 24"
-            fill="none"
-            style={{ marginRight: 8 }}
-          >
-            <Path
-              d="M9 2L7 6M17 6L15 2M2 6h20l-2 14H4L2 6z"
-              stroke={colors.textWhite}
-              strokeWidth={1.8}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </Svg>
+          {editCartItemId ? (
+            <Svg
+              width={22}
+              height={22}
+              viewBox="0 0 24 24"
+              fill="none"
+              style={{ marginRight: 8 }}
+            >
+              <Path
+                d="M5 13l4 4L19 7"
+                stroke={colors.textWhite}
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
+          ) : (
+            <Svg
+              width={22}
+              height={22}
+              viewBox="0 0 24 24"
+              fill="none"
+              style={{ marginRight: 8 }}
+            >
+              <Path
+                d="M9 2L7 6M17 6L15 2M2 6h20l-2 14H4L2 6z"
+                stroke={colors.textWhite}
+                strokeWidth={1.8}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
+          )}
           <Text style={styles.addToCartButtonText}>
             {checkingAvailability
               ? isRTL
@@ -2115,6 +2651,10 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
               ? isRTL
                 ? 'جاري الإضافة...'
                 : 'ADDING...'
+              : editCartItemId
+              ? isRTL
+                ? 'حفظ التغييرات'
+                : 'SAVE CHANGES'
               : isRTL
               ? 'أضف إلى السلة'
               : 'ADD TO CART'}

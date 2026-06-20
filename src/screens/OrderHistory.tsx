@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   StatusBar,
   Dimensions,
+  RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -24,6 +25,7 @@ import {
 } from '../services/paymentApi';
 import { useLanguage } from '../contexts/LanguageContext';
 import { orderHistoryStyles as styles } from './orderHistoryStyles';
+import { useNotification } from '../contexts/NotificationContext';
 import { QRFormModal } from '../components/QRCodeCard/QRFormModal';
 import { CustomAlert } from '../components/CustomAlert';
 import PaymentWebView from '../components/PaymentWebView';
@@ -42,6 +44,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
   const { isRTL } = useLanguage();
   const insets = useSafeAreaInsets();
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const { checkBookingsStatusChanges } = useNotification();
+  const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [qrModalVisible, setQrModalVisible] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
@@ -101,6 +105,15 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
     loadBookings();
   }, []);
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await loadBookings();
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+
   // Derive filteredBookings directly during render to prevent state-update lag and visual flashing
   const filteredBookings = React.useMemo(() => {
     return filterBookingsByStatus(bookings, selectedFilter);
@@ -141,6 +154,9 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       );
       setBookings(sortedBookings);
+
+      // Check for changes in background
+      checkBookingsStatusChanges(token);
 
       // End loading immediately so user sees bookings right away
       setLoading(false);
@@ -793,7 +809,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
                 isRTL && styles.headerOverlayBarRTL,
               ]}
             >
-              {onBack && (
+              {onBack ? (
                 <TouchableOpacity
                   style={styles.headerBackButtonCircle}
                   onPress={onBack}
@@ -805,7 +821,11 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
                     color={colors.textWhite}
                   />
                 </TouchableOpacity>
+              ) : (
+                <View style={styles.headerSpacer} />
               )}
+
+              <View style={styles.headerSpacer} />
             </View>
           </View>
 
@@ -928,6 +948,14 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
             style={styles.scrollView}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={colors.primary}
+                colors={[colors.primary]}
+              />
+            }
           >
             {filteredBookings.length === 0 ? (
               <View style={styles.emptyContainer}>
@@ -1180,11 +1208,17 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
                                               isRTL && opt.valueAr
                                                 ? opt.valueAr
                                                 : opt.value;
-                                            const displayValue = Array.isArray(
-                                              rawValue,
-                                            )
-                                              ? rawValue.join(', ')
-                                              : rawValue;
+                                            const displayValue =
+                                              rawValue && typeof rawValue === 'object'
+                                                ? Array.isArray(rawValue)
+                                                  ? rawValue.join(', ')
+                                                  : Object.entries(rawValue)
+                                                      .filter(([, q]) => Number(q) > 0)
+                                                      .map(([optName, q]) => `${optName} ×${q}`)
+                                                      .join(', ')
+                                                : rawValue !== undefined && rawValue !== null
+                                                ? String(rawValue)
+                                                : '';
                                             const hasPrice =
                                               typeof opt.price === 'number' &&
                                               opt.price > 0;
@@ -1894,6 +1928,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
               setSelectedReceiptBooking(null);
             }}
           />
+
         </View>
       </View>
     </>

@@ -31,7 +31,7 @@ import { colors } from '../../constants/colors';
 import { createStyles } from './styles';
 import DatePickerModal from '../DatePickerModal/DatePickerModal';
 import TimePickerModal from '../TimePickerModal/TimePickerModal';
-import { addToCart } from '../../services/cart';
+import { addToCart, updateCartItem } from '../../services/cart';
 import {
   checkTimeSlotAvailability,
   getUserBookings,
@@ -53,12 +53,14 @@ interface PackageDetailsProps {
   packageId: string;
   onBack?: () => void;
   onNavigate?: (route: string) => void;
+  editCartItemId?: string;
 }
 
 const PackageDetails: React.FC<PackageDetailsProps> = ({
   packageId,
   onBack,
   onNavigate,
+  editCartItemId,
 }) => {
   const { width: SCREEN_WIDTH } = useWindowDimensions();
   const styles = createStyles(SCREEN_WIDTH);
@@ -83,6 +85,8 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [userToken, setUserToken] = useState<string | null>(null);
+  const [originalDate, setOriginalDate] = useState<Date | null>(null);
+  const [originalTime, setOriginalTime] = useState<string | null>(null);
   const [isTimeSlotAvailable, setIsTimeSlotAvailable] = useState<boolean>(true);
   const [checkingAvailability, setCheckingAvailability] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
@@ -160,6 +164,35 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
     };
     loadUserData();
   }, []);
+
+  // Load existing cart item for editing and pre-fill selections
+  useEffect(() => {
+    const loadCartItemForEdit = async () => {
+      if (!editCartItemId) return;
+      try {
+        const { getCart } = require('../../services/cart');
+        const cart = await getCart();
+        const item = cart.find((i: any) => i._id === editCartItemId);
+        if (item) {
+          if (item.selectedDate) {
+            const dateObj = new Date(item.selectedDate);
+            setSelectedDate(dateObj);
+            setOriginalDate(dateObj);
+          }
+          if (item.selectedTime) {
+            setSelectedTime(item.selectedTime);
+            setOriginalTime(item.selectedTime);
+          }
+        }
+      } catch (err) {
+        console.error('Error loading cart item for edit in PackageDetails:', err);
+      }
+    };
+
+    if (packageData) {
+      loadCartItemForEdit();
+    }
+  }, [editCartItemId, packageData]);
 
   // Load reviews using React Query for better caching
   const { data: reviewsData, refetch: refetchReviews } = useQuery<ReviewsResponse | null>({
@@ -268,7 +301,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
     if (selectedDate && selectedTime && packageData?.service?._id) {
       checkAvailability();
     }
-  }, [selectedDate, selectedTime]);
+  }, [selectedDate, selectedTime, editCartItemId, originalDate, originalTime]);
 
   const checkAvailability = async () => {
     if (
@@ -278,6 +311,18 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
       !packageData?.vendor?._id
     )
       return;
+
+    // If editing and date/time haven't changed, bypass backend check
+    if (
+      editCartItemId &&
+      originalDate &&
+      originalTime &&
+      selectedDate.toDateString() === originalDate.toDateString() &&
+      selectedTime === originalTime
+    ) {
+      setIsTimeSlotAvailable(true);
+      return;
+    }
 
     setCheckingAvailability(true);
     try {
@@ -431,30 +476,42 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
         slotEnd = new Date(slotEndUTC);
       }
 
-      await addToCart({
-        _id: `cart_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        serviceId: packageData!._id,
-        vendorId: packageData!.vendor._id,
-        name: isRTL ? packageData!.nameAr : packageData!.name,
-        nameAr: packageData!.nameAr,
-        selectedDate: selectedDate,
-        selectedTime: selectedTime,
-        timeSlot: { start: slotStart, end: slotEnd }, // Use parsed Date objects
-        price:
-          packageData!.discountPrice > 0
-            ? packageData!.totalPrice - packageData!.discountPrice
-            : packageData!.totalPrice,
-        image: packageData!.images?.[0] || '',
-        vendorName: packageData!.vendor?.displayName || '',
-        quantity: 1,
-        isPackage: true,
-        mainServiceId: packageData!.service._id, // Main limited service for availability checking
-        packageName: packageData!.name, // Store package name
-        packageNameAr: packageData!.nameAr, // Store package name in Arabic
-      });
+      if (editCartItemId) {
+        await updateCartItem(editCartItemId, {
+          selectedDate: selectedDate,
+          selectedTime: selectedTime,
+          timeSlot: { start: slotStart, end: slotEnd },
+        });
 
-      // Show success animation
-      triggerAddToCartAnimation();
+        if (onBack) {
+          onBack();
+        }
+      } else {
+        await addToCart({
+          _id: `cart_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          serviceId: packageData!._id,
+          vendorId: packageData!.vendor._id,
+          name: isRTL ? packageData!.nameAr : packageData!.name,
+          nameAr: packageData!.nameAr,
+          selectedDate: selectedDate,
+          selectedTime: selectedTime,
+          timeSlot: { start: slotStart, end: slotEnd }, // Use parsed Date objects
+          price:
+            packageData!.discountPrice > 0
+              ? packageData!.totalPrice - packageData!.discountPrice
+              : packageData!.totalPrice,
+          image: packageData!.images?.[0] || '',
+          vendorName: packageData!.vendor?.displayName || '',
+          quantity: 1,
+          isPackage: true,
+          mainServiceId: packageData!.service._id, // Main limited service for availability checking
+          packageName: packageData!.name, // Store package name
+          packageNameAr: packageData!.nameAr, // Store package name in Arabic
+        });
+
+        // Show success animation
+        triggerAddToCartAnimation();
+      }
     } catch (err: any) {
       showAlert(
         isRTL ? 'خطأ' : 'Error',
@@ -1527,7 +1584,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                               isRTL && { flexDirection: 'row-reverse' },
                             ]}
                           >
-                            {review.user.profilePicture ? (
+                            {review.user?.profilePicture ? (
                               <Image
                                 source={{
                                   uri: getImageUrl(review.user.profilePicture),
@@ -1537,7 +1594,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                             ) : (
                               <View style={styles.reviewUserAvatarPlaceholder}>
                                 <Text style={styles.reviewUserAvatarText}>
-                                  {review.user.name.charAt(0).toUpperCase()}
+                                  {(review.user?.name || 'M').charAt(0).toUpperCase()}
                                 </Text>
                               </View>
                             )}
@@ -1556,7 +1613,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                                   ]}
                                   numberOfLines={1}
                                 >
-                                  {review.user.name}
+                                  {review.user?.name || (isRTL ? 'مستخدم محذوف' : 'Deleted User')}
                                 </Text>
                               </View>
                               <View
@@ -1601,7 +1658,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                             }}
                           >
                             {/* Delete Button - Only show for current user's reviews */}
-                            {currentUserId && review.user._id === currentUserId && (
+                            {currentUserId && review.user?._id === currentUserId && (
                               <TouchableOpacity
                                 style={{
                                   padding: 6,
@@ -1789,29 +1846,54 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
             <ActivityIndicator color="#fff" />
           ) : (
             <>
-              <Svg
-                width={20}
-                height={20}
-                viewBox="0 0 24 24"
-                fill="none"
-                style={{
-                  marginRight: isRTL ? 0 : 8,
-                  marginLeft: isRTL ? 8 : 0,
-                }}
-              >
-                <Path
-                  d="M9 2L7 6M17 6L15 2M2 6h20l-2 14H4L2 6z"
-                  stroke="#fff"
-                  strokeWidth={1.8}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </Svg>
+              {editCartItemId ? (
+                <Svg
+                  width={20}
+                  height={20}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  style={{
+                    marginRight: isRTL ? 0 : 8,
+                    marginLeft: isRTL ? 8 : 0,
+                  }}
+                >
+                  <Path
+                    d="M5 13l4 4L19 7"
+                    stroke="#fff"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              ) : (
+                <Svg
+                  width={20}
+                  height={20}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  style={{
+                    marginRight: isRTL ? 0 : 8,
+                    marginLeft: isRTL ? 8 : 0,
+                  }}
+                >
+                  <Path
+                    d="M9 2L7 6M17 6L15 2M2 6h20l-2 14H4L2 6z"
+                    stroke="#fff"
+                    strokeWidth={1.8}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              )}
               <Text style={styles.addToCartButtonText}>
                 {isAddingToCart
                   ? isRTL
                     ? 'جاري الإضافة...'
                     : 'ADDING...'
+                  : editCartItemId
+                  ? isRTL
+                    ? 'حفظ التغييرات'
+                    : 'SAVE CHANGES'
                   : isRTL
                   ? 'أضف إلى السلة'
                   : 'ADD TO CART'}

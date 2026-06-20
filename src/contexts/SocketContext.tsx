@@ -63,7 +63,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         }
 
         // Use the API base URL for socket connection
-        const serverUrl = API_BASE_URL.replace('/api', '');
+        const serverUrl = API_BASE_URL;
 
         const newSocket = io(serverUrl, {
           auth: {

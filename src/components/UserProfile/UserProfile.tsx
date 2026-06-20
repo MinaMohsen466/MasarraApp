@@ -6,6 +6,9 @@ import {
   Image,
   ScrollView,
   StatusBar,
+  Modal,
+  Switch,
+  StyleSheet,
 } from 'react-native';
 import Svg, { Path, Circle, Rect, Line, Polyline } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,6 +22,7 @@ import Wishlist from '../Wishlist/Wishlist';
 import OrderHistory from '../../screens/OrderHistory';
 import MyEvents from '../../screens/MyEvents';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useNotification } from '../../contexts/NotificationContext';
 
 import { API_URL } from '../../config/api.config';
 import { fetchAddresses } from '../../services/api';
@@ -52,6 +56,27 @@ const UserProfile: React.FC<UserProfileProps> = ({
   const [showOrderHistory, setShowOrderHistory] = useState(false);
   const [showMyEvents, setShowMyEvents] = useState(false);
   const [defaultAddress, setDefaultAddress] = useState<string | null>(null);
+
+  const [showNotifications, setShowNotifications] = useState(false);
+  const {
+    notifications,
+    unreadCount,
+    notificationsEnabled,
+    toggleNotificationsEnabled,
+    markAllAsRead,
+    clearNotifications,
+    handleNotificationPress,
+  } = useNotification();
+
+  const handleOpenNotifications = async () => {
+    setShowNotifications(true);
+    await markAllAsRead();
+  };
+
+  const handleCloseNotifications = async () => {
+    setShowNotifications(false);
+    await markAllAsRead();
+  };
 
   // Check for edit profile flag when component mounts
   useEffect(() => {
@@ -159,7 +184,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
 
     // If it's a server path (starts with /public), prepend the base URL
     if (uri.startsWith('/public')) {
-      return `${API_URL.replace('/api', '')}${uri}`;
+      return `${API_URL}${uri}`;
     }
 
     return uri;
@@ -394,7 +419,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
                   isRTL && styles.headerOverlayBarRTL,
                 ]}
               >
-                {onBack && (
+                {onBack ? (
                   <TouchableOpacity
                     style={styles.headerBackButtonCircle}
                     onPress={onBack}
@@ -406,7 +431,39 @@ const UserProfile: React.FC<UserProfileProps> = ({
                       color={colors.textWhite}
                     />
                   </TouchableOpacity>
+                ) : (
+                  <View style={styles.headerSpacer} />
                 )}
+
+                <TouchableOpacity
+                  style={[
+                    styles.headerBackButtonCircle,
+                    { position: 'relative' }
+                  ]}
+                  onPress={handleOpenNotifications}
+                  activeOpacity={0.8}
+                >
+                  <Icon
+                    name="notifications-outline"
+                    size={20}
+                    color={colors.textWhite}
+                  />
+                  {unreadCount > 0 && (
+                    <View
+                      style={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        width: 9,
+                        height: 9,
+                        borderRadius: 4.5,
+                        backgroundColor: '#EF4444',
+                        borderWidth: 1.5,
+                        borderColor: colors.primary,
+                      }}
+                    />
+                  )}
+                </TouchableOpacity>
               </View>
             </View>
 
@@ -814,8 +871,307 @@ const UserProfile: React.FC<UserProfileProps> = ({
           </ScrollView>
         </View>
       </View>
+
+      {/* Notifications List Modal */}
+      <Modal
+        visible={showNotifications}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={handleCloseNotifications}
+      >
+        <View style={notifStyles.overlay}>
+          <View style={notifStyles.container}>
+            {/* Header */}
+            <View style={[notifStyles.header, isRTL && notifStyles.headerRTL]}>
+              <Text style={notifStyles.headerTitle}>
+                {isRTL ? 'الإشعارات' : 'Notifications'}
+              </Text>
+              
+              <View style={[notifStyles.headerActions, isRTL && notifStyles.headerActionsRTL]}>
+                {notifications.length > 0 && (
+                  <TouchableOpacity 
+                    style={notifStyles.clearButton} 
+                    onPress={clearNotifications}
+                  >
+                    <Text style={notifStyles.clearButtonText}>
+                      {isRTL ? 'مسح الكل' : 'Clear All'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity 
+                  style={notifStyles.closeButton} 
+                  onPress={handleCloseNotifications}
+                >
+                  <Icon name="close" size={24} color="#334155" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Enable/Disable Notifications Toggle Switch */}
+            <View style={[notifStyles.toggleRow, isRTL && notifStyles.toggleRowRTL]}>
+              <View style={[notifStyles.toggleLabelContainer, isRTL && notifStyles.toggleLabelContainerRTL]}>
+                <Icon 
+                  name={notificationsEnabled ? "notifications-outline" : "notifications-off-outline"} 
+                  size={20} 
+                  color={notificationsEnabled ? colors.primary : "#64748b"} 
+                  style={isRTL ? { marginLeft: 8 } : { marginRight: 8 }}
+                />
+                <Text style={notifStyles.toggleLabel}>
+                  {isRTL ? 'تفعيل الإشعارات' : 'Enable Notifications'}
+                </Text>
+              </View>
+              <Switch
+                value={notificationsEnabled}
+                onValueChange={toggleNotificationsEnabled}
+                trackColor={{ false: '#cbd5e1', true: '#9bf0ec' }}
+                thumbColor={notificationsEnabled ? colors.primary : '#f4f3f4'}
+                ios_backgroundColor="#cbd5e1"
+              />
+            </View>
+
+            {/* Content */}
+            <ScrollView 
+              contentContainerStyle={notifStyles.scrollContent}
+              showsVerticalScrollIndicator={false}
+            >
+              {notifications.length === 0 ? (
+                <View style={notifStyles.emptyState}>
+                  <Icon name="notifications-off-outline" size={64} color="#cbd5e1" />
+                  <Text style={notifStyles.emptyText}>
+                    {isRTL ? 'لا توجد إشعارات حالياً' : 'No notifications yet'}
+                  </Text>
+                </View>
+              ) : (
+                notifications.map(notif => (
+                  <TouchableOpacity
+                    key={notif.id}
+                    style={[
+                      notifStyles.card,
+                      !notif.read && notifStyles.unreadCard,
+                      isRTL && notifStyles.cardRTL
+                    ]}
+                    activeOpacity={0.8}
+                    onPress={async () => {
+                      setShowNotifications(false);
+                      await handleNotificationPress(notif);
+                    }}
+                  >
+                    {/* Status Icon */}
+                    <View style={[
+                      notifStyles.cardIconContainer,
+                      isRTL ? { marginLeft: 12 } : { marginRight: 12 }
+                    ]}>
+                      <Icon 
+                        name={
+                          notif.type === 'booking_confirmed_by_vendor' || notif.type === 'booking_confirmed'
+                            ? 'checkmark-circle'
+                            : notif.type === 'booking_payment_confirmed'
+                            ? 'ribbon'
+                            : notif.type === 'booking_rejected_by_vendor'
+                            ? 'close-circle'
+                            : notif.type === 'vendor_uploaded'
+                            ? 'cloud-done'
+                            : 'notifications'
+                        } 
+                        size={24} 
+                        color={
+                          notif.type === 'booking_confirmed_by_vendor' || notif.type === 'booking_confirmed'
+                            ? '#0284C7'
+                            : notif.type === 'booking_payment_confirmed'
+                            ? '#16A34A'
+                            : notif.type === 'booking_rejected_by_vendor'
+                            ? '#DC2626'
+                            : notif.type === 'vendor_uploaded'
+                            ? '#CA8A04'
+                            : colors.primary
+                        } 
+                      />
+                    </View>
+
+                    {/* Title & Message */}
+                    <View style={notifStyles.cardTextContainer}>
+                      <View style={[notifStyles.cardHeaderRow, isRTL && notifStyles.cardHeaderRowRTL]}>
+                        <Text style={[notifStyles.cardTitle, !notif.read && notifStyles.unreadText, isRTL && notifStyles.textRight]}>
+                          {isRTL ? notif.title : notif.titleEn}
+                        </Text>
+                        {!notif.read && <View style={notifStyles.unreadDot} />}
+                      </View>
+                      <Text style={[notifStyles.cardMessage, isRTL && notifStyles.textRight]}>
+                        {isRTL ? notif.message : notif.messageEn}
+                      </Text>
+                      <Text style={[notifStyles.cardTime, isRTL && notifStyles.textRight]}>
+                        {new Date(notif.createdAt).toLocaleDateString(isRTL ? 'ar-KW' : 'en-KW', {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </>
   );
 };
+
+const notifStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'flex-end',
+  },
+  container: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    height: '80%',
+    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  headerRTL: {
+    flexDirection: 'row-reverse',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  headerActionsRTL: {
+    flexDirection: 'row-reverse',
+  },
+  clearButton: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  clearButtonText: {
+    fontSize: 14,
+    color: '#ef4444',
+    fontWeight: '600',
+  },
+  closeButton: {
+    padding: 4,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: '#f8fafc',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+  },
+  toggleRowRTL: {
+    flexDirection: 'row-reverse',
+  },
+  toggleLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  toggleLabelContainerRTL: {
+    flexDirection: 'row-reverse',
+  },
+  toggleLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#334155',
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 40,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 80,
+  },
+  emptyText: {
+    marginTop: 16,
+    fontSize: 15,
+    color: '#64748b',
+    fontWeight: '500',
+  },
+  card: {
+    flexDirection: 'row',
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+  },
+  cardRTL: {
+    flexDirection: 'row-reverse',
+  },
+  unreadCard: {
+    backgroundColor: '#f8fafc',
+    borderColor: '#e2e8f0',
+  },
+  cardIconContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardTextContainer: {
+    flex: 1,
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  cardHeaderRowRTL: {
+    flexDirection: 'row-reverse',
+  },
+  cardTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#334155',
+  },
+  unreadText: {
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  unreadDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#3b82f6',
+  },
+  cardMessage: {
+    fontSize: 13,
+    color: '#64748b',
+    lineHeight: 18,
+    marginBottom: 6,
+  },
+  cardTime: {
+    fontSize: 10,
+    color: '#94a3b8',
+  },
+  textRight: {
+    textAlign: 'right',
+  },
+});
 
 export default UserProfile;

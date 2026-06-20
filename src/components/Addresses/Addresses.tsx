@@ -39,15 +39,20 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     name: '',
+    city: '',
+    block: '',
     street: '',
     houseNumber: '',
     floorNumber: '',
-    city: '',
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [addressToDelete, setAddressToDelete] = useState<any>(null);
   const [activeField, setActiveField] = useState<string | null>(null);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertButtons, setAlertButtons] = useState<any[]>([]);
   const pageStatusBar = (
     <StatusBar
       backgroundColor="#00a19c"
@@ -74,7 +79,20 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
 
   const handleSubmit = async () => {
     if (!token) return;
-    if (!form.name || !form.street || !form.city) return;
+    
+    // Validate required fields (name, city, block, street, houseNumber)
+    if (!form.name.trim() || !form.city.trim() || !form.block.trim() || !form.street.trim() || !form.houseNumber.trim()) {
+      setAlertTitle(isRTL ? 'حقول مطلوبة' : 'Required Fields');
+      setAlertMessage(
+        isRTL
+          ? 'يرجى ملء جميع الحقول المطلوبة: الاسم، المدينة، القطعة، الشارع، ورقم المنزل'
+          : 'Please fill in all required fields: Name, City, Block, Street, and House Number'
+      );
+      setAlertButtons([{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }]);
+      setAlertVisible(true);
+      return;
+    }
+
     setLoading(true);
     try {
       if (editingId) {
@@ -93,10 +111,11 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
       setShowForm(false);
       setForm({
         name: '',
+        city: '',
+        block: '',
         street: '',
         houseNumber: '',
         floorNumber: '',
-        city: '',
       });
       setEditingId(null);
     } catch {
@@ -110,10 +129,11 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
     setEditingId(addr._id);
     setForm({
       name: addr.name || '',
+      city: addr.city || '',
+      block: addr.block || '',
       street: addr.street || '',
       houseNumber: addr.houseNumber || '',
       floorNumber: addr.floorNumber || '',
-      city: addr.city || '',
     });
     setShowForm(true);
   };
@@ -352,6 +372,7 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
                     onPress={() => {
                       setForm({
                         name: '',
+                        block: '',
                         street: '',
                         houseNumber: '',
                         floorNumber: '',
@@ -543,6 +564,7 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
                     onPress={() => {
                       setForm({
                         name: '',
+                        block: '',
                         street: '',
                         houseNumber: '',
                         floorNumber: '',
@@ -591,6 +613,7 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
                   </Text>
                 </View>
                 <View style={styles.modalBody}>
+                  {/* Name Input */}
                   <View
                     style={[
                       styles.modalInputWrapper,
@@ -618,8 +641,8 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
                     <TextInput
                       placeholder={
                         isRTL
-                          ? 'الاسم (مثل: المنزل، العمل)'
-                          : 'Name (e.g. Home, Work)'
+                          ? 'الاسم (مثل: المنزل، العمل) *'
+                          : 'Name (e.g. Home, Work) *'
                       }
                       value={form.name}
                       onChangeText={t => setForm(s => ({ ...s, name: t }))}
@@ -632,6 +655,86 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
                       onBlur={() => setActiveField(null)}
                     />
                   </View>
+
+                  {/* City Input */}
+                  <View
+                    style={[
+                      styles.modalInputWrapper,
+                      isRTL && styles.modalInputWrapperRTL,
+                      activeField === 'city' && styles.modalInputWrapperActive,
+                    ]}
+                  >
+                    <Icon
+                      name="location-outline"
+                      size={18}
+                      color={
+                        activeField === 'city' ? colors.primary : '#94A3B8'
+                      }
+                      style={[
+                        styles.modalInputIcon,
+                        isRTL && styles.modalInputIconRTL,
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.modalInputDivider,
+                        isRTL && styles.modalInputDividerRTL,
+                      ]}
+                    />
+                    <TextInput
+                      placeholder={isRTL ? 'المنطقة / المدينة *' : 'Area / City *'}
+                      value={form.city}
+                      onChangeText={t => setForm(s => ({ ...s, city: t }))}
+                      style={[
+                        styles.modalTextInput,
+                        isRTL && styles.modalTextInputRTL,
+                      ]}
+                      placeholderTextColor="#94A3B8"
+                      onFocus={() => setActiveField('city')}
+                      onBlur={() => setActiveField(null)}
+                    />
+                  </View>
+
+                  {/* Block Input */}
+                  <View
+                    style={[
+                      styles.modalInputWrapper,
+                      isRTL && styles.modalInputWrapperRTL,
+                      activeField === 'block' && styles.modalInputWrapperActive,
+                    ]}
+                  >
+                    <Icon
+                      name="grid-outline"
+                      size={18}
+                      color={
+                        activeField === 'block' ? colors.primary : '#94A3B8'
+                      }
+                      style={[
+                        styles.modalInputIcon,
+                        isRTL && styles.modalInputIconRTL,
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.modalInputDivider,
+                        isRTL && styles.modalInputDividerRTL,
+                      ]}
+                    />
+                    <TextInput
+                      placeholder={isRTL ? 'القطعة *' : 'Block *'}
+                      value={form.block}
+                      onChangeText={t => setForm(s => ({ ...s, block: t }))}
+                      style={[
+                        styles.modalTextInput,
+                        isRTL && styles.modalTextInputRTL,
+                      ]}
+                      placeholderTextColor="#94A3B8"
+                      onFocus={() => setActiveField('block')}
+                      onBlur={() => setActiveField(null)}
+                    />
+                  </View>
+
+                  {/* Street Input */}
                   <View
                     style={[
                       styles.modalInputWrapper,
@@ -658,7 +761,7 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
                       ]}
                     />
                     <TextInput
-                      placeholder={isRTL ? 'الشارع' : 'Street'}
+                      placeholder={isRTL ? 'الشارع *' : 'Street *'}
                       value={form.street}
                       onChangeText={t => setForm(s => ({ ...s, street: t }))}
                       style={[
@@ -670,6 +773,8 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
                       onBlur={() => setActiveField(null)}
                     />
                   </View>
+
+                  {/* House Number Input */}
                   <View
                     style={[
                       styles.modalInputWrapper,
@@ -698,7 +803,7 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
                       ]}
                     />
                     <TextInput
-                      placeholder={isRTL ? 'رقم المنزل' : 'House Number'}
+                      placeholder={isRTL ? 'رقم المنزل *' : 'House Number *'}
                       value={form.houseNumber}
                       onChangeText={t =>
                         setForm(s => ({ ...s, houseNumber: t }))
@@ -712,6 +817,8 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
                       onBlur={() => setActiveField(null)}
                     />
                   </View>
+
+                  {/* Floor Number Input */}
                   <View
                     style={[
                       styles.modalInputWrapper,
@@ -740,7 +847,7 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
                       ]}
                     />
                     <TextInput
-                      placeholder={isRTL ? 'رقم الطابق' : 'Floor Number'}
+                      placeholder={isRTL ? 'رقم الطابق (اختياري)' : 'Floor Number (Optional)'}
                       value={form.floorNumber}
                       onChangeText={t =>
                         setForm(s => ({ ...s, floorNumber: t }))
@@ -751,43 +858,6 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
                       ]}
                       placeholderTextColor="#94A3B8"
                       onFocus={() => setActiveField('floorNumber')}
-                      onBlur={() => setActiveField(null)}
-                    />
-                  </View>
-                  <View
-                    style={[
-                      styles.modalInputWrapper,
-                      isRTL && styles.modalInputWrapperRTL,
-                      activeField === 'city' && styles.modalInputWrapperActive,
-                    ]}
-                  >
-                    <Icon
-                      name="location-outline"
-                      size={18}
-                      color={
-                        activeField === 'city' ? colors.primary : '#94A3B8'
-                      }
-                      style={[
-                        styles.modalInputIcon,
-                        isRTL && styles.modalInputIconRTL,
-                      ]}
-                    />
-                    <View
-                      style={[
-                        styles.modalInputDivider,
-                        isRTL && styles.modalInputDividerRTL,
-                      ]}
-                    />
-                    <TextInput
-                      placeholder={isRTL ? 'المدينة' : 'City'}
-                      value={form.city}
-                      onChangeText={t => setForm(s => ({ ...s, city: t }))}
-                      style={[
-                        styles.modalTextInput,
-                        isRTL && styles.modalTextInputRTL,
-                      ]}
-                      placeholderTextColor="#94A3B8"
-                      onFocus={() => setActiveField('city')}
                       onBlur={() => setActiveField(null)}
                     />
                   </View>
@@ -848,6 +918,14 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
             setShowDeleteAlert(false);
             setAddressToDelete(null);
           }}
+        />
+
+        <CustomAlert
+          visible={alertVisible}
+          title={alertTitle}
+          message={alertMessage}
+          buttons={alertButtons}
+          onClose={() => setAlertVisible(false)}
         />
       </View>
     </View>

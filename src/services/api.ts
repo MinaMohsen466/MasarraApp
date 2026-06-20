@@ -397,6 +397,7 @@ export const createAddress = async (
   address: {
     name: string;
     street: string;
+    block?: string;
     houseNumber?: string;
     floorNumber?: string;
     city: string;
@@ -434,6 +435,7 @@ export const updateAddress = async (
   address: {
     name: string;
     street: string;
+    block?: string;
     houseNumber?: string;
     floorNumber?: string;
     city: string;

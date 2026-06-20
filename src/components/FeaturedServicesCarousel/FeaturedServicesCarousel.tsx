@@ -122,7 +122,7 @@ const FeaturedServicesCarousel: React.FC<FeaturedServicesCarouselProps> = ({
                 style={styles.featuredImage}
                 resizeMode="cover"
               />
-              {hasDiscount && discountPercent > 0 && (
+              {hasDiscount && discountPercent > 0 && !item.hidePrice && (
                 <View style={styles.discountBadge}>
                   <Text style={styles.discountText}>{discountPercent}%</Text>
                 </View>

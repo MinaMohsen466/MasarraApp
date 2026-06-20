@@ -301,6 +301,30 @@ export async function updateCartItemQuantity(
   }
 }
 
+// Update cart item (for edit functionality)
+export async function updateCartItem(
+  cartItemId: string,
+  updates: Partial<CartItem>,
+): Promise<CartItem[]> {
+  try {
+    const currentCart = await getCart();
+    const itemIndex = currentCart.findIndex(item => item._id === cartItemId);
+
+    if (itemIndex !== -1) {
+      currentCart[itemIndex] = {
+        ...currentCart[itemIndex],
+        ...updates,
+      };
+
+      await saveCart(currentCart);
+      return currentCart;
+    }
+    return currentCart;
+  } catch (e) {
+    throw e;
+  }
+}
+
 // Clear cart (for current user)
 export async function clearCart(): Promise<CartItem[]> {
   try {
@@ -481,35 +505,44 @@ export async function createBookingsFromCart(
       hasItemsNeedingConfirmation,
     );
 
-    // Helper function to convert customInputs
+    // Helper function to convert customInputs to key-value object format expected by backend validator
     const convertCustomInputs = (item: CartItem) => {
-      const flattened: any[] = [];
+      const obj: Record<string, any> = {};
       if (item.customInputs && Array.isArray(item.customInputs)) {
         item.customInputs.forEach(input => {
-          if (Array.isArray(input)) {
-            input.forEach(option => {
-              if (option) {
-                flattened.push({
-                  label: option.label,
-                  labelAr: option.labelAr,
-                  value: option.value,
-                  valueAr: option.valueAr,
-                  price: option.price,
-                });
+          const inputsList = Array.isArray(input) ? input : [input];
+          
+          inputsList.forEach(option => {
+            if (!option) return;
+            const { label, value } = option;
+            
+            // Check if value is formatted as "Option ×Qty" or "Option xQty"
+            const menuMatch = typeof value === 'string' && value.match(/(.+) [×xX](\d+)/);
+            if (menuMatch) {
+              const itemName = menuMatch[1].trim();
+              const qty = parseInt(menuMatch[2], 10) || 0;
+              if (!obj[label]) {
+                obj[label] = {};
               }
-            });
-          } else if (input) {
-            flattened.push({
-              label: input.label,
-              labelAr: input.labelAr,
-              value: input.value,
-              valueAr: input.valueAr,
-              price: input.price,
-            });
-          }
+              if (typeof obj[label] !== 'object' || Array.isArray(obj[label])) {
+                obj[label] = {};
+              }
+              obj[label][itemName] = qty;
+            } else {
+              // Handle single option, multi-select array, or text/number input
+              if (label in obj) {
+                if (!Array.isArray(obj[label])) {
+                  obj[label] = [obj[label]];
+                }
+                obj[label].push(value);
+              } else {
+                obj[label] = value;
+              }
+            }
+          });
         });
       }
-      return flattened;
+      return obj;
     };
 
     // Create ONE booking for ALL cart items
@@ -519,8 +552,7 @@ export async function createBookingsFromCart(
       const packagesArray: any[] = [];
 
       cartItems.forEach(item => {
-        const itemDelivery =
-          item.maxBookingsPerSlot === -1 ? item.deliveryFee || 0 : 0;
+        const itemDelivery = item.deliveryFee || 0;
         const itemTotal = (item.totalPrice || item.price) + itemDelivery;
 
         if (item.isPackage) {
@@ -562,8 +594,7 @@ export async function createBookingsFromCart(
 
       // Calculate total price for the combined booking
       let combinedTotalPrice = cartItems.reduce((total, item) => {
-        const itemDelivery =
-          item.maxBookingsPerSlot === -1 ? item.deliveryFee || 0 : 0;
+        const itemDelivery = item.deliveryFee || 0;
         return total + (item.totalPrice || item.price) + itemDelivery;
       }, 0);
 

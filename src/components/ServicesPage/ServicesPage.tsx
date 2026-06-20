@@ -373,7 +373,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
           )}
 
           {/* Discount Badge */}
-          {hasDiscount && (
+          {hasDiscount && !item.hidePrice && (
             <View style={styles.discountBadge}>
               <Text style={styles.discountText}>{discountPercent}%</Text>
             </View>
@@ -416,37 +416,50 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
             style={[styles.priceRatingRow, isRTL && styles.priceRatingRowRTL]}
           >
             <View style={styles.priceColumn}>
-              <Text style={[styles.priceLabel, isRTL && styles.priceLabelRTL]}>
-                {isRTL ? 'السعر يبدأ من' : 'Price starts from'}
-              </Text>
-              {hasDiscount ? (
-                <View style={{ gap: 2 }}>
-                  <Text
-                    style={[styles.priceValue, isRTL && styles.priceValueRTL]}
-                  >
-                    {isRTL
-                      ? `${finalPrice.toFixed(3)} د.ك`
-                      : `${finalPrice.toFixed(3)} KD`}
+              {item.hidePrice ? (
+                <>
+                  <Text style={[styles.priceLabel, isRTL && styles.priceLabelRTL]}>
+                    {isRTL ? 'السعر' : 'Price'}
                   </Text>
-                  <Text
-                    style={[
-                      styles.originalPrice,
-                      isRTL && styles.originalPriceRTL,
-                    ]}
-                  >
-                    {isRTL
-                      ? `${originalPrice.toFixed(3)} د.ك`
-                      : `${originalPrice.toFixed(3)} KD`}
+                  <Text style={[styles.priceValue, isRTL && styles.priceValueRTL, { fontSize: 13, color: colors.textSecondary }]}>
+                    {isRTL ? 'يختلف حسب الاختيار' : 'Varies by selection'}
                   </Text>
-                </View>
+                </>
               ) : (
-                <Text
-                  style={[styles.priceValue, isRTL && styles.priceValueRTL]}
-                >
-                  {isRTL
-                    ? `${item.price.toFixed(3)} د.ك`
-                    : `${item.price.toFixed(3)} KD`}
-                </Text>
+                <>
+                  <Text style={[styles.priceLabel, isRTL && styles.priceLabelRTL]}>
+                    {isRTL ? 'السعر يبدأ من' : 'Price starts from'}
+                  </Text>
+                  {hasDiscount ? (
+                    <View style={{ gap: 2 }}>
+                      <Text
+                        style={[styles.priceValue, isRTL && styles.priceValueRTL]}
+                      >
+                        {isRTL
+                          ? `${finalPrice.toFixed(3)} د.ك`
+                          : `${finalPrice.toFixed(3)} KD`}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.originalPrice,
+                          isRTL && styles.originalPriceRTL,
+                        ]}
+                      >
+                        {isRTL
+                          ? `${originalPrice.toFixed(3)} د.ك`
+                          : `${originalPrice.toFixed(3)} KD`}
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text
+                      style={[styles.priceValue, isRTL && styles.priceValueRTL]}
+                    >
+                      {isRTL
+                        ? `${item.price.toFixed(3)} د.ك`
+                        : `${item.price.toFixed(3)} KD`}
+                    </Text>
+                  )}
+                </>
               )}
             </View>
             <View style={[styles.ratingRow, isRTL && styles.ratingRowRTL]}>

@@ -12,6 +12,7 @@ import {
   Platform,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { fetchAddresses, createAddress } from '../../services/api';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -20,6 +21,7 @@ interface Address {
   _id: string;
   name: string;
   street: string;
+  block?: string;
   houseNumber?: string;
   floorNumber?: string;
   city: string;
@@ -52,12 +54,14 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
   // New address form state
   const [showAddForm, setShowAddForm] = useState(false);
   const [isAddingAddress, setIsAddingAddress] = useState(false);
+  const [activeField, setActiveField] = useState<string | null>(null);
   const [newAddress, setNewAddress] = useState({
     name: '',
+    city: '',
+    block: '',
     street: '',
     houseNumber: '',
     floorNumber: '',
-    city: '',
   });
   const [formError, setFormError] = useState('');
 
@@ -67,10 +71,11 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
       setShowAddForm(false);
       setNewAddress({
         name: '',
+        city: '',
+        block: '',
         street: '',
         houseNumber: '',
         floorNumber: '',
-        city: '',
       });
       setFormError('');
     }
@@ -105,16 +110,32 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
   const handleAddNewAddress = async () => {
     if (!newAddress.name.trim()) {
       setFormError(
-        isRTL ? 'يرجى إدخال اسم العنوان' : 'Please enter address name',
+        isRTL ? 'يرجى إدخال اسم العنوان *' : 'Please enter address name *',
+      );
+      return;
+    }
+    if (!newAddress.city.trim()) {
+      setFormError(
+        isRTL ? 'يرجى إدخال المنطقة / المدينة *' : 'Please enter area / city *',
+      );
+      return;
+    }
+    if (!newAddress.block.trim()) {
+      setFormError(
+        isRTL ? 'يرجى إدخال القطعة *' : 'Please enter block *',
       );
       return;
     }
     if (!newAddress.street.trim()) {
-      setFormError(isRTL ? 'يرجى إدخال الشارع' : 'Please enter street');
+      setFormError(
+        isRTL ? 'يرجى إدخال الشارع *' : 'Please enter street *',
+      );
       return;
     }
-    if (!newAddress.city.trim()) {
-      setFormError(isRTL ? 'يرجى إدخال المدينة' : 'Please enter city');
+    if (!newAddress.houseNumber.trim()) {
+      setFormError(
+        isRTL ? 'يرجى إدخال رقم المنزل *' : 'Please enter house number *',
+      );
       return;
     }
 
@@ -124,10 +145,11 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
     try {
       const createdAddress = await createAddress(token, {
         name: newAddress.name.trim(),
-        street: newAddress.street.trim(),
-        houseNumber: newAddress.houseNumber.trim() || undefined,
-        floorNumber: newAddress.floorNumber.trim() || undefined,
         city: newAddress.city.trim(),
+        block: newAddress.block.trim(),
+        street: newAddress.street.trim(),
+        houseNumber: newAddress.houseNumber.trim(),
+        floorNumber: newAddress.floorNumber.trim() || undefined,
         isDefault: addresses.length === 0,
       });
 
@@ -136,10 +158,11 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
       setShowAddForm(false);
       setNewAddress({
         name: '',
+        city: '',
+        block: '',
         street: '',
         houseNumber: '',
         floorNumber: '',
-        city: '',
       });
     } catch (error: any) {
       setFormError(
@@ -177,73 +200,194 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
       <ScrollView
         style={styles.formScroll}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 30 }}
+        contentContainerStyle={{ paddingBottom: 40 }}
         keyboardShouldPersistTaps="handled"
       >
+        {/* Name Input */}
         <Text style={[styles.inputLabel, isRTL && styles.inputLabelRTL]}>
           {isRTL ? 'اسم العنوان *' : 'Address Name *'}
         </Text>
-        <TextInput
-          style={[styles.input, isRTL && styles.inputRTL]}
-          placeholder={isRTL ? 'مثال: المنزل، العمل' : 'e.g. Home, Work'}
-          placeholderTextColor="#999"
-          value={newAddress.name}
-          onChangeText={text =>
-            setNewAddress(prev => ({ ...prev, name: text }))
-          }
-        />
+        <View
+          style={[
+            styles.inputWrapper,
+            isRTL && styles.inputWrapperRTL,
+            activeField === 'name' && styles.inputWrapperActive,
+          ]}
+        >
+          <Icon
+            name="pricetag-outline"
+            size={18}
+            color={activeField === 'name' ? colors.primary : '#94A3B8'}
+            style={[styles.inputIcon, isRTL && styles.inputIconRTL]}
+          />
+          <View style={[styles.inputDivider, isRTL && styles.inputDividerRTL]} />
+          <TextInput
+            style={[styles.textInput, isRTL && styles.textInputRTL]}
+            placeholder={isRTL ? 'مثال: المنزل، العمل' : 'e.g. Home, Work'}
+            placeholderTextColor="#94A3B8"
+            value={newAddress.name}
+            onChangeText={text =>
+              setNewAddress(prev => ({ ...prev, name: text }))
+            }
+            onFocus={() => setActiveField('name')}
+            onBlur={() => setActiveField(null)}
+          />
+        </View>
 
+        {/* City/Area Input */}
+        <Text style={[styles.inputLabel, isRTL && styles.inputLabelRTL]}>
+          {isRTL ? 'المنطقة / المدينة *' : 'Area / City *'}
+        </Text>
+        <View
+          style={[
+            styles.inputWrapper,
+            isRTL && styles.inputWrapperRTL,
+            activeField === 'city' && styles.inputWrapperActive,
+          ]}
+        >
+          <Icon
+            name="location-outline"
+            size={18}
+            color={activeField === 'city' ? colors.primary : '#94A3B8'}
+            style={[styles.inputIcon, isRTL && styles.inputIconRTL]}
+          />
+          <View style={[styles.inputDivider, isRTL && styles.inputDividerRTL]} />
+          <TextInput
+            style={[styles.textInput, isRTL && styles.textInputRTL]}
+            placeholder={isRTL ? 'المنطقة أو المدينة' : 'Area or City'}
+            placeholderTextColor="#94A3B8"
+            value={newAddress.city}
+            onChangeText={text =>
+              setNewAddress(prev => ({ ...prev, city: text }))
+            }
+            onFocus={() => setActiveField('city')}
+            onBlur={() => setActiveField(null)}
+          />
+        </View>
+
+        {/* Block Input */}
+        <Text style={[styles.inputLabel, isRTL && styles.inputLabelRTL]}>
+          {isRTL ? 'القطعة *' : 'Block *'}
+        </Text>
+        <View
+          style={[
+            styles.inputWrapper,
+            isRTL && styles.inputWrapperRTL,
+            activeField === 'block' && styles.inputWrapperActive,
+          ]}
+        >
+          <Icon
+            name="grid-outline"
+            size={18}
+            color={activeField === 'block' ? colors.primary : '#94A3B8'}
+            style={[styles.inputIcon, isRTL && styles.inputIconRTL]}
+          />
+          <View style={[styles.inputDivider, isRTL && styles.inputDividerRTL]} />
+          <TextInput
+            style={[styles.textInput, isRTL && styles.textInputRTL]}
+            placeholder={isRTL ? 'رقم القطعة' : 'Block number'}
+            placeholderTextColor="#94A3B8"
+            value={newAddress.block}
+            onChangeText={text =>
+              setNewAddress(prev => ({ ...prev, block: text }))
+            }
+            onFocus={() => setActiveField('block')}
+            onBlur={() => setActiveField(null)}
+          />
+        </View>
+
+        {/* Street Input */}
         <Text style={[styles.inputLabel, isRTL && styles.inputLabelRTL]}>
           {isRTL ? 'الشارع *' : 'Street *'}
         </Text>
-        <TextInput
-          style={[styles.input, isRTL && styles.inputRTL]}
-          placeholder={isRTL ? 'اسم الشارع' : 'Street name'}
-          placeholderTextColor="#999"
-          value={newAddress.street}
-          onChangeText={text =>
-            setNewAddress(prev => ({ ...prev, street: text }))
-          }
-        />
+        <View
+          style={[
+            styles.inputWrapper,
+            isRTL && styles.inputWrapperRTL,
+            activeField === 'street' && styles.inputWrapperActive,
+          ]}
+        >
+          <Icon
+            name="map-outline"
+            size={18}
+            color={activeField === 'street' ? colors.primary : '#94A3B8'}
+            style={[styles.inputIcon, isRTL && styles.inputIconRTL]}
+          />
+          <View style={[styles.inputDivider, isRTL && styles.inputDividerRTL]} />
+          <TextInput
+            style={[styles.textInput, isRTL && styles.textInputRTL]}
+            placeholder={isRTL ? 'اسم أو رقم الشارع' : 'Street name or number'}
+            placeholderTextColor="#94A3B8"
+            value={newAddress.street}
+            onChangeText={text =>
+              setNewAddress(prev => ({ ...prev, street: text }))
+            }
+            onFocus={() => setActiveField('street')}
+            onBlur={() => setActiveField(null)}
+          />
+        </View>
 
+        {/* House Number Input */}
         <Text style={[styles.inputLabel, isRTL && styles.inputLabelRTL]}>
-          {isRTL ? 'رقم المنزل' : 'House Number'}
+          {isRTL ? 'رقم المنزل *' : 'House Number *'}
         </Text>
-        <TextInput
-          style={[styles.input, isRTL && styles.inputRTL]}
-          placeholder={isRTL ? 'اختياري' : 'Optional'}
-          placeholderTextColor="#999"
-          value={newAddress.houseNumber}
-          onChangeText={text =>
-            setNewAddress(prev => ({ ...prev, houseNumber: text }))
-          }
-        />
+        <View
+          style={[
+            styles.inputWrapper,
+            isRTL && styles.inputWrapperRTL,
+            activeField === 'houseNumber' && styles.inputWrapperActive,
+          ]}
+        >
+          <Icon
+            name="business-outline"
+            size={18}
+            color={activeField === 'houseNumber' ? colors.primary : '#94A3B8'}
+            style={[styles.inputIcon, isRTL && styles.inputIconRTL]}
+          />
+          <View style={[styles.inputDivider, isRTL && styles.inputDividerRTL]} />
+          <TextInput
+            style={[styles.textInput, isRTL && styles.textInputRTL]}
+            placeholder={isRTL ? 'رقم المنزل' : 'House number'}
+            placeholderTextColor="#94A3B8"
+            value={newAddress.houseNumber}
+            onChangeText={text =>
+              setNewAddress(prev => ({ ...prev, houseNumber: text }))
+            }
+            onFocus={() => setActiveField('houseNumber')}
+            onBlur={() => setActiveField(null)}
+          />
+        </View>
 
+        {/* Floor Number Input */}
         <Text style={[styles.inputLabel, isRTL && styles.inputLabelRTL]}>
-          {isRTL ? 'رقم الطابق' : 'Floor Number'}
+          {isRTL ? 'رقم الطابق (اختياري)' : 'Floor Number (Optional)'}
         </Text>
-        <TextInput
-          style={[styles.input, isRTL && styles.inputRTL]}
-          placeholder={isRTL ? 'اختياري' : 'Optional'}
-          placeholderTextColor="#999"
-          value={newAddress.floorNumber}
-          onChangeText={text =>
-            setNewAddress(prev => ({ ...prev, floorNumber: text }))
-          }
-        />
-
-        <Text style={[styles.inputLabel, isRTL && styles.inputLabelRTL]}>
-          {isRTL ? 'المدينة *' : 'City *'}
-        </Text>
-        <TextInput
-          style={[styles.input, isRTL && styles.inputRTL]}
-          placeholder={isRTL ? 'المدينة' : 'City'}
-          placeholderTextColor="#999"
-          value={newAddress.city}
-          onChangeText={text =>
-            setNewAddress(prev => ({ ...prev, city: text }))
-          }
-        />
+        <View
+          style={[
+            styles.inputWrapper,
+            isRTL && styles.inputWrapperRTL,
+            activeField === 'floorNumber' && styles.inputWrapperActive,
+          ]}
+        >
+          <Icon
+            name="layers-outline"
+            size={18}
+            color={activeField === 'floorNumber' ? colors.primary : '#94A3B8'}
+            style={[styles.inputIcon, isRTL && styles.inputIconRTL]}
+          />
+          <View style={[styles.inputDivider, isRTL && styles.inputDividerRTL]} />
+          <TextInput
+            style={[styles.textInput, isRTL && styles.textInputRTL]}
+            placeholder={isRTL ? 'مثال: الطابق الأرضي، الثاني' : 'e.g. Ground, 2nd floor'}
+            placeholderTextColor="#94A3B8"
+            value={newAddress.floorNumber}
+            onChangeText={text =>
+              setNewAddress(prev => ({ ...prev, floorNumber: text }))
+            }
+            onFocus={() => setActiveField('floorNumber')}
+            onBlur={() => setActiveField(null)}
+          />
+        </View>
 
         {formError ? <Text style={styles.errorText}>{formError}</Text> : null}
       </ScrollView>
@@ -373,6 +517,8 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
                               isRTL && styles.addressTextRTL,
                             ]}
                           >
+                            {address.block &&
+                              `${isRTL ? 'القطعة' : 'Block'} ${address.block}, `}
                             {address.street}
                             {address.houseNumber &&
                               `, ${isRTL ? 'منزل' : 'House'} ${
@@ -445,8 +591,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    minHeight: '40%',
-    maxHeight: '80%',
+    minHeight: '65%',
+    maxHeight: '85%',
   },
   header: {
     flexDirection: 'row',
@@ -613,17 +759,57 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   inputLabelRTL: { textAlign: 'right' },
-  input: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 15,
-    color: colors.textDark,
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1.5,
-    borderColor: '#E0E0E0',
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 52,
+    marginBottom: 4,
   },
-  inputRTL: { textAlign: 'right' },
+  inputWrapperRTL: {
+    flexDirection: 'row-reverse',
+  },
+  inputWrapperActive: {
+    borderColor: colors.primary,
+    backgroundColor: '#FFFFFF',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  inputIcon: {
+    marginRight: 10,
+  },
+  inputIconRTL: {
+    marginRight: 0,
+    marginLeft: 10,
+  },
+  inputDivider: {
+    width: 1,
+    height: 20,
+    backgroundColor: '#E2E8F0',
+    marginRight: 12,
+  },
+  inputDividerRTL: {
+    marginRight: 0,
+    marginLeft: 12,
+  },
+  textInput: {
+    flex: 1,
+    fontSize: 14.5,
+    color: colors.textDark,
+    paddingVertical: 8,
+    textAlign: 'left',
+  },
+  textInputRTL: {
+    textAlign: 'right',
+    fontFamily: 'System',
+  },
   errorText: {
     color: '#FF4444',
     fontSize: 13,

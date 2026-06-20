@@ -15,15 +15,13 @@ import {
 import Svg, {
   Path,
   Circle,
-  Line,
-  Rect,
-  Text as SvgText,
 } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../constants/colors';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationContext';
 import {
   getCart,
   removeFromCart,
@@ -53,11 +51,14 @@ interface CartProps {
   onViewDetails?: (serviceId: string) => void;
   onViewPackageDetails?: (packageId: string) => void;
   onNavigate?: (route: string) => void;
+  onEditService?: (serviceId: string, cartItemId: string) => void;
+  onEditPackage?: (packageId: string, cartItemId: string) => void;
 }
 
-const Cart: React.FC<CartProps> = ({ onNavigate }) => {
+const Cart: React.FC<CartProps> = ({ onNavigate, onEditService, onEditPackage }) => {
   const { isRTL, t } = useLanguage();
   const { user, isLoggedIn, token } = useAuth();
+  const { addNotification } = useNotification();
   const insets = useSafeAreaInsets();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -214,7 +215,7 @@ const Cart: React.FC<CartProps> = ({ onNavigate }) => {
 
     // If it's a server path (starts with /public), prepend the base URL
     if (uri.startsWith('/public')) {
-      return `${API_URL.replace('/api', '')}${uri}`;
+      return `${API_URL}${uri}`;
     }
 
     return uri;
@@ -309,7 +310,6 @@ const Cart: React.FC<CartProps> = ({ onNavigate }) => {
     (itemId: string) => {
       const translateX = getSwipeAnim(itemId);
       const REVEAL_THRESHOLD = 50;
-      const DELETE_THRESHOLD = 150;
       return PanResponder.create({
         onStartShouldSetPanResponder: () => false,
         onMoveShouldSetPanResponder: (_, gestureState) => {
@@ -334,21 +334,13 @@ const Cart: React.FC<CartProps> = ({ onNavigate }) => {
         },
         onPanResponderRelease: (_, gestureState) => {
           const absX = Math.abs(gestureState.dx);
-          // Full swipe → show confirmation
-          if (absX > DELETE_THRESHOLD) {
+          // If swiped beyond REVEAL_THRESHOLD, trigger delete confirmation
+          if (absX > REVEAL_THRESHOLD) {
             confirmAndDelete(itemId);
-            return;
           }
-          // Partial swipe → reveal/hide delete button
-          const targetOpen = isRTL
-            ? gestureState.dx > REVEAL_THRESHOLD
-              ? 80
-              : 0
-            : gestureState.dx < -REVEAL_THRESHOLD
-            ? -80
-            : 0;
+          // Always snap the card back to the 0 position
           Animated.spring(translateX, {
-            toValue: targetOpen,
+            toValue: 0,
             useNativeDriver: true,
             tension: 100,
             friction: 10,
@@ -449,11 +441,11 @@ const Cart: React.FC<CartProps> = ({ onNavigate }) => {
       const couponData =
         appliedCoupon && couponDiscount > 0
           ? {
-              code: appliedCoupon.code,
-              discountAmount: couponDiscount,
-              originalPrice: calculateTotalBeforeDiscount(),
-              deductFrom: appliedCoupon.deductFrom || 'vendor',
-            }
+            code: appliedCoupon.code,
+            discountAmount: couponDiscount,
+            originalPrice: calculateTotalBeforeDiscount(),
+            deductFrom: appliedCoupon.deductFrom || 'vendor',
+          }
           : undefined;
 
       // Step 1: Create ONE booking for all items (payment status will be 'pending')
@@ -522,6 +514,15 @@ const Cart: React.FC<CartProps> = ({ onNavigate }) => {
         await clearCart();
         setCartItems([]);
         setIsProcessingCheckout(false);
+
+        addNotification({
+          title: 'تم إنشاء الحجز بنجاح',
+          titleEn: 'Booking Created Successfully',
+          message: 'تم إنشاء حجزك بنجاح وهو بانتظار موافقة مقدم الخدمة.',
+          messageEn: 'Your booking has been created successfully and is awaiting vendor confirmation.',
+          type: 'booking_created',
+          bookingId: bookingId
+        }).catch(err => console.error('Failed to add booking created notification:', err));
 
         setAlertTitle(isRTL ? 'تم إنشاء الحجز' : 'Booking Created');
         setAlertMessage(
@@ -617,14 +618,14 @@ const Cart: React.FC<CartProps> = ({ onNavigate }) => {
       const supplierShares =
         suppliers.length > 0
           ? calculateSupplierShares(
-              successfullyBookedItems.map(item => ({
-                vendorId: item.vendorId,
-                totalPrice: item.totalPrice || item.price,
-                price: item.price,
-                quantity: item.quantity,
-              })),
-              suppliers,
-            )
+            successfullyBookedItems.map(item => ({
+              vendorId: item.vendorId,
+              totalPrice: item.totalPrice || item.price,
+              price: item.price,
+              quantity: item.quantity,
+            })),
+            suppliers,
+          )
           : undefined;
 
       // Step 6: Prepare customer info for payment
@@ -637,7 +638,7 @@ const Cart: React.FC<CartProps> = ({ onNavigate }) => {
       if (!customerEmail && !customerMobile) {
         throw new Error(
           t('emailOrPhoneRequired') ||
-            'Email or phone number is required for payment',
+          'Email or phone number is required for payment',
         );
       }
 
@@ -727,17 +728,17 @@ const Cart: React.FC<CartProps> = ({ onNavigate }) => {
       services:
         successfullyBookedItems.length > 0
           ? successfullyBookedItems.map(item => ({
-              name: isRTL ? item.nameAr || item.name : item.name,
-              quantity: item.quantity,
-              total: item.totalPrice ?? item.price * item.quantity,
-            }))
+            name: isRTL ? item.nameAr || item.name : item.name,
+            quantity: item.quantity,
+            total: item.totalPrice ?? item.price * item.quantity,
+          }))
           : [
-              {
-                name: isRTL ? 'الطلب الخاص بك' : 'Your Order',
-                quantity: 1,
-                total: 0,
-              },
-            ],
+            {
+              name: isRTL ? 'الطلب الخاص بك' : 'Your Order',
+              quantity: 1,
+              total: 0,
+            },
+          ],
       paidAt: new Date(),
     });
 
@@ -760,12 +761,158 @@ const Cart: React.FC<CartProps> = ({ onNavigate }) => {
       setCartItems([]);
     }
 
+    addNotification({
+      title: 'تم دفع الحجز بنجاح',
+      titleEn: 'Booking Paid Successfully',
+      message: 'تم تأكيد دفع حجزك بنجاح! حجزك مؤكد الآن.',
+      messageEn: 'Your booking payment was confirmed successfully! Your booking is now confirmed.',
+      type: 'booking_payment_confirmed',
+      bookingId: createdBookingIds[0] || ''
+    }).catch(err => console.error('Failed to add booking paid notification:', err));
+
     setShowSuccessScreen(true);
   };
 
+  // Helper to delete unpaid bookings created during this checkout session
+  const deleteCreatedBookings = async () => {
+    console.log('deleteCreatedBookings - createdBookingIds:', createdBookingIds);
+    console.log('deleteCreatedBookings - userToken exists:', !!userToken);
+
+    if (createdBookingIds && createdBookingIds.length > 0 && userToken) {
+      try {
+        for (const bookingId of createdBookingIds) {
+          console.log('Checking status before deletion for booking:', bookingId);
+
+          // 1. Fetch current booking status from server to prevent race conditions
+          const checkResponse = await fetch(
+            `${API_URL}/bookings/${bookingId}`,
+            {
+              method: 'GET',
+              headers: {
+                Authorization: `Bearer ${userToken}`,
+                'Content-Type': 'application/json',
+              },
+            },
+          );
+
+          if (checkResponse.ok) {
+            const bookingData = await checkResponse.json();
+            console.log('Pre-deletion booking status check:', {
+              id: bookingId,
+              status: bookingData?.status,
+              paymentStatus: bookingData?.paymentStatus,
+            });
+
+            // If the booking is already paid or completed, do NOT delete it.
+            // Instead, transition the user to the success screen!
+            if (
+              bookingData &&
+              (bookingData.paymentStatus === 'paid' ||
+                bookingData.status === 'completed')
+            ) {
+              console.log('Booking already paid/confirmed on server. Redirecting to success screen.');
+
+              // Transition to success screen
+              const successfullyBookedItems = cartItems.filter(item =>
+                successfullyBookedItemIds.includes(item._id),
+              );
+              const amount =
+                successfullyBookedItems.reduce(
+                  (total, item) =>
+                    total + (item.totalPrice ?? item.price * item.quantity),
+                  0,
+                ) +
+                calculateDeliveryCharges() -
+                couponDiscount;
+
+              setSuccessReceiptData({
+                status: 'success',
+                bookingId: bookingId,
+                amount: parseFloat(Math.max(0, amount).toFixed(3)) || 0,
+                currency: 'KWD',
+                services:
+                  successfullyBookedItems.length > 0
+                    ? successfullyBookedItems.map(item => ({
+                      name: isRTL ? item.nameAr || item.name : item.name,
+                      quantity: item.quantity,
+                      total: item.totalPrice ?? item.price * item.quantity,
+                    }))
+                    : [
+                      {
+                        name: isRTL ? 'الطلب الخاص بك' : 'Your Order',
+                        quantity: 1,
+                        total: 0,
+                      },
+                    ],
+                paidAt: new Date(),
+              });
+
+              // Clear only the successfully booked items from cart
+              if (successfullyBookedItemIds.length > 0) {
+                for (const itemId of successfullyBookedItemIds) {
+                  try {
+                    await removeFromCart(itemId);
+                  } catch (error) {
+                    console.error('Error removing item from cart:', itemId, error);
+                  }
+                }
+                const remainingItems = await getCart();
+                setCartItems(remainingItems);
+                setSuccessfullyBookedItemIds([]);
+              } else {
+                await clearCart();
+                setCartItems([]);
+              }
+
+              setShowSuccessScreen(true);
+              setCreatedBookingIds([]);
+              return true; // Indicating success screen was shown
+            }
+          }
+
+          // 2. If it is not paid/confirmed, proceed with deleting the booking
+          console.log('Attempting to delete booking:', bookingId);
+          const deleteResponse = await fetch(
+            `${API_URL}/bookings/${bookingId}`,
+            {
+              method: 'DELETE',
+              headers: {
+                Authorization: `Bearer ${userToken}`,
+                'Content-Type': 'application/json',
+              },
+            },
+          );
+
+          if (deleteResponse.ok) {
+            const deleteData = await deleteResponse.json();
+            console.log(
+              'Booking deleted successfully:',
+              bookingId,
+              deleteData,
+            );
+          } else {
+            console.log('Delete booking failed:', deleteResponse.status);
+          }
+        }
+      } catch (error) {
+        console.error('Error during booking status check/deletion:', error);
+      }
+      // Clear the booking IDs
+      setCreatedBookingIds([]);
+    } else {
+      console.log('No bookings to delete or no token');
+    }
+    return false; // Indicating booking was deleted or skipped
+  };
+
   // Handle payment error from WebView
-  const handlePaymentError = (error: string) => {
+  const handlePaymentError = async (error: string) => {
     setShowPaymentWebView(false);
+
+    // Attempt deletion; if it redirects to success screen, skip error alert
+    const wasSuccessful = await deleteCreatedBookings();
+    if (wasSuccessful) return;
+
     setAlertTitle(t('paymentError') || 'Payment Error');
     setAlertMessage(
       error || t('paymentFailed') || 'Payment failed. Please try again.',
@@ -778,52 +925,15 @@ const Cart: React.FC<CartProps> = ({ onNavigate }) => {
   const handlePaymentClose = async () => {
     setShowPaymentWebView(false);
 
-    // Cancel the booking that was created since payment was not completed
-    console.log('handlePaymentClose - createdBookingIds:', createdBookingIds);
-    console.log('handlePaymentClose - userToken exists:', !!userToken);
-
-    if (createdBookingIds && createdBookingIds.length > 0 && userToken) {
-      try {
-        for (const bookingId of createdBookingIds) {
-          console.log('Attempting to cancel booking:', bookingId);
-
-          // Cancel the booking (this changes booking.status to 'cancelled')
-          const cancelResponse = await fetch(
-            `${API_URL}/bookings/${bookingId}/cancel`,
-            {
-              method: 'PUT',
-              headers: {
-                Authorization: `Bearer ${userToken}`,
-                'Content-Type': 'application/json',
-              },
-            },
-          );
-
-          if (cancelResponse.ok) {
-            const cancelData = await cancelResponse.json();
-            console.log(
-              'Booking cancelled successfully:',
-              bookingId,
-              cancelData,
-            );
-          } else {
-            console.log('Cancel booking failed:', cancelResponse.status);
-          }
-        }
-      } catch (error) {
-        console.error('Error cancelling bookings:', error);
-      }
-      // Clear the booking IDs
-      setCreatedBookingIds([]);
-    } else {
-      console.log('No bookings to cancel or no token');
-    }
+    // Attempt deletion; if it redirects to success screen, skip cancellation alert
+    const wasSuccessful = await deleteCreatedBookings();
+    if (wasSuccessful) return;
 
     // Don't clear cart - user might want to try again
     setAlertTitle(t('paymentCancelled') || 'Payment Cancelled');
     setAlertMessage(
       t('paymentCancelledMessage') ||
-        'Payment was cancelled. Your cart items are still saved.',
+      'Payment was cancelled. Your cart items are still saved.',
     );
     setAlertButtons([{ text: t('ok'), style: 'default' }]);
     setAlertVisible(true);
@@ -846,13 +956,11 @@ const Cart: React.FC<CartProps> = ({ onNavigate }) => {
 
   const calculateDeliveryCharges = () => {
     // Calculate delivery charges for EACH cart item that requires delivery
-    // Each item with maxBookingsPerSlot === -1 gets its deliveryFee from database
     let totalDelivery = 0;
     cartItems.forEach(item => {
       if (
-        (!item.availabilityStatus ||
-          item.availabilityStatus === 'available_now') &&
-        item.maxBookingsPerSlot === -1
+        !item.availabilityStatus ||
+        item.availabilityStatus === 'available_now'
       ) {
         totalDelivery += item.deliveryFee || 0;
       }
@@ -921,16 +1029,14 @@ const Cart: React.FC<CartProps> = ({ onNavigate }) => {
         setCouponDiscount(result.discountAmount);
         setCouponMessage(
           isRTL
-            ? `تم تطبيق الخصم بنجاح! توفير ${
-                result.coupon.discountType === 'percentage'
-                  ? result.coupon.discountValue + '%'
-                  : result.coupon.discountValue + ' د.ك'
-              }`
-            : `Coupon applied successfully! Discount ${
-                result.coupon.discountType === 'percentage'
-                  ? result.coupon.discountValue + '%'
-                  : 'KD ' + result.coupon.discountValue
-              }`,
+            ? `تم تطبيق الخصم بنجاح! توفير ${result.coupon.discountType === 'percentage'
+              ? result.coupon.discountValue + '%'
+              : result.coupon.discountValue + ' د.ك'
+            }`
+            : `Coupon applied successfully! Discount ${result.coupon.discountType === 'percentage'
+              ? result.coupon.discountValue + '%'
+              : 'KD ' + result.coupon.discountValue
+            }`,
         );
       } else {
         setCouponError(
@@ -1423,7 +1529,7 @@ const Cart: React.FC<CartProps> = ({ onNavigate }) => {
       ) : (
         <>
           <ScrollView
-            style={styles.scrollView}
+            style={[styles.scrollView, { zIndex: isAnyInfoOpen ? 1 : 0 }]}
             contentContainerStyle={styles.scrollViewContent}
             showsVerticalScrollIndicator={false}
           >
@@ -1432,11 +1538,16 @@ const Cart: React.FC<CartProps> = ({ onNavigate }) => {
               const isItemOld = item.timeSlot?.start
                 ? new Date(item.timeSlot.start) < now
                 : item.selectedDate &&
-                  new Date(item.selectedDate).toDateString() <
-                    now.toDateString();
+                new Date(item.selectedDate).toDateString() <
+                now.toDateString();
 
               const panHandler = getPanResponder(item._id);
               const translateX = getSwipeAnim(item._id);
+              const swipeOpacity = translateX.interpolate({
+                inputRange: isRTL ? [0, 5, 20] : [-20, -5, 0],
+                outputRange: isRTL ? [0, 0, 1] : [1, 0, 0],
+                extrapolate: 'clamp',
+              });
               return (
                 <View
                   key={item._id}
@@ -1445,14 +1556,13 @@ const Cart: React.FC<CartProps> = ({ onNavigate }) => {
                     { zIndex: showInfo[item._id] ? 999 : 1 },
                   ]}
                 >
-                  {/* Delete button behind the card - full height */}
-                  <TouchableOpacity
+                  {/* Delete indicator behind the card - revealed only during swipe */}
+                  <Animated.View
                     style={[
                       styles.swipeDeleteBehind,
                       isRTL && styles.swipeDeleteBehindRTL,
+                      { opacity: swipeOpacity },
                     ]}
-                    onPress={() => confirmAndDelete(item._id)}
-                    activeOpacity={0.7}
                   >
                     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
                       <Path
@@ -1463,7 +1573,7 @@ const Cart: React.FC<CartProps> = ({ onNavigate }) => {
                         strokeLinejoin="round"
                       />
                     </Svg>
-                  </TouchableOpacity>
+                  </Animated.View>
                   <Animated.View
                     style={[
                       styles.cartCard,
@@ -1492,20 +1602,39 @@ const Cart: React.FC<CartProps> = ({ onNavigate }) => {
                       style={[styles.itemHeader, isRTL && styles.itemHeaderRTL]}
                     >
                       {item.image && (
-                        <Image
-                          source={{ uri: getServiceImageUrl(item.image) }}
-                          style={[
-                            styles.itemImage,
-                            isRTL && styles.itemImageRTL,
-                          ]}
-                          resizeMode="cover"
-                        />
+                        <TouchableOpacity
+                          activeOpacity={0.7}
+                          onPress={() => {
+                            if (item.isPackage) {
+                              onEditPackage && onEditPackage(item.serviceId, item._id);
+                            } else {
+                              onEditService && onEditService(item.serviceId, item._id);
+                            }
+                          }}
+                        >
+                          <Image
+                            source={{ uri: getServiceImageUrl(item.image) }}
+                            style={[
+                              styles.itemImage,
+                              isRTL && styles.itemImageRTL,
+                            ]}
+                            resizeMode="cover"
+                          />
+                        </TouchableOpacity>
                       )}
-                      <View
+                      <TouchableOpacity
                         style={[
                           styles.itemHeaderText,
                           isRTL && styles.itemHeaderTextRTL,
                         ]}
+                        activeOpacity={0.7}
+                        onPress={() => {
+                          if (item.isPackage) {
+                            onEditPackage && onEditPackage(item.serviceId, item._id);
+                          } else {
+                            onEditService && onEditService(item.serviceId, item._id);
+                          }
+                        }}
                       >
                         <Text
                           style={[styles.itemName, isRTL && styles.itemNameRTL]}
@@ -1522,118 +1651,110 @@ const Cart: React.FC<CartProps> = ({ onNavigate }) => {
                             {item.vendorName}
                           </Text>
                         )}
+                      </TouchableOpacity>
 
-                        {/* Selected Options / Custom Inputs */}
-                        {item.customInputs && item.customInputs.length > 0 && (
+                      {/* Controls Group: Quantity, Delete, Info */}
+                      <View
+                        style={{
+                          flexDirection: isRTL ? 'row-reverse' : 'row',
+                          alignItems: 'center',
+                          gap: 10,
+                          alignSelf: 'center',
+                        }}
+                      >
+                        {/* Quantity Selector */}
+                        {item.maxBookingsPerSlot === -1 && (
                           <View
-                            style={[
-                              styles.optionsContainer,
-                              isRTL && styles.optionsContainerRTL,
-                            ]}
-                          >
-                            {item.customInputs.map((input, index) => {
-                              const renderOptionDetail = (
-                                opt: {
-                                  label: string;
-                                  labelAr?: string;
-                                  value: string | number;
-                                  valueAr?: string | number;
-                                  price?: number;
-                                },
-                                optKey: string | number,
-                              ) => {
-                                const hasPrice =
-                                  typeof opt.price === 'number' &&
-                                  opt.price > 0;
-                                return (
-                                  <View
-                                    key={optKey}
-                                    style={[
-                                      styles.optionRow,
-                                      isRTL && styles.optionRowRTL,
-                                    ]}
-                                  >
-                                    <Text
-                                      style={[
-                                        styles.optionBullet,
-                                        isRTL && styles.optionBulletRTL,
-                                      ]}
-                                    >
-                                      •
-                                    </Text>
-                                    <Text
-                                      style={[
-                                        styles.optionText,
-                                        isRTL && styles.optionTextRTL,
-                                      ]}
-                                    >
-                                      <Text style={styles.optionLabel}>
-                                        {isRTL && opt.labelAr
-                                          ? opt.labelAr
-                                          : opt.label}
-                                        :{' '}
-                                      </Text>
-                                      <Text style={styles.optionValue}>
-                                        {isRTL && opt.valueAr
-                                          ? opt.valueAr
-                                          : opt.value}
-                                      </Text>
-                                      {hasPrice && (
-                                        <Text style={styles.optionPrice}>
-                                          {` (+${opt.price?.toFixed(3)} ${
-                                            isRTL ? 'د.ك' : 'KD'
-                                          })`}
-                                        </Text>
-                                      )}
-                                    </Text>
-                                  </View>
-                                );
-                              };
-
-                              if (Array.isArray(input)) {
-                                return input.map((opt, subIndex) =>
-                                  renderOptionDetail(
-                                    opt,
-                                    `${index}-${subIndex}`,
-                                  ),
-                                );
-                              } else if (input && input.label) {
-                                return renderOptionDetail(input, index);
-                              }
-                              return null;
-                            })}
-                          </View>
-                        )}
-                      </View>
-
-                      {/* Quantity Selector - Rendered on the opposite end next to the header info */}
-                      {item.maxBookingsPerSlot === -1 && (
-                        <View
-                          style={{
-                            flexDirection: isRTL ? 'row-reverse' : 'row',
-                            alignItems: 'center',
-                            alignSelf: 'center',
-                            marginLeft: isRTL ? 0 : 12,
-                            marginRight: isRTL ? 12 : 0,
-                            gap: 6,
-                          }}
-                        >
-                          <TouchableOpacity
                             style={{
-                              width: 22,
-                              height: 22,
-                              borderRadius: 4,
-                              backgroundColor: colors.primary,
-                              justifyContent: 'center',
+                              flexDirection: isRTL ? 'row-reverse' : 'row',
                               alignItems: 'center',
+                              backgroundColor: '#EBF5F4',
+                              borderRadius: 16,
+                              padding: 3,
+                              gap: 8,
+                              borderWidth: 1,
+                              borderColor: 'rgba(0, 161, 156, 0.08)',
                             }}
-                            onPress={async () => {
-                              if (item.quantity > 1) {
+                          >
+                            <TouchableOpacity
+                              style={{
+                                width: 24,
+                                height: 24,
+                                borderRadius: 12,
+                                backgroundColor: '#FFFFFF',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                shadowColor: '#000',
+                                shadowOffset: { width: 0, height: 1 },
+                                shadowOpacity: 0.1,
+                                shadowRadius: 1,
+                                elevation: 1,
+                              }}
+                              onPress={async () => {
+                                if (item.quantity > 1) {
+                                  try {
+                                    const updatedCart =
+                                      await updateCartItemQuantity(
+                                        item._id,
+                                        item.quantity - 1,
+                                      );
+                                    if (updatedCart) {
+                                      setCartItems([...updatedCart]);
+                                    }
+                                  } catch (error) {
+                                    console.error(
+                                      'Error updating quantity:',
+                                      error,
+                                    );
+                                  }
+                                }
+                              }}
+                              activeOpacity={0.7}
+                            >
+                              <Text
+                                style={{
+                                  color: colors.primary,
+                                  fontSize: 14,
+                                  fontWeight: 'bold',
+                                  lineHeight: 18,
+                                }}
+                              >
+                                -
+                              </Text>
+                            </TouchableOpacity>
+
+                            <Text
+                              style={{
+                                fontSize: 13,
+                                fontWeight: '700',
+                                color: colors.primaryDark,
+                                minWidth: 16,
+                                textAlign: 'center',
+                              }}
+                            >
+                              {item.quantity}
+                            </Text>
+
+                            <TouchableOpacity
+                              style={{
+                                width: 24,
+                                height: 24,
+                                borderRadius: 12,
+                                backgroundColor: colors.primary,
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                shadowColor: '#000',
+                                shadowOffset: { width: 0, height: 1 },
+                                shadowOpacity: 0.1,
+                                shadowRadius: 1,
+                                elevation: 1,
+                              }}
+                              onPress={async () => {
                                 try {
                                   const updatedCart =
                                     await updateCartItemQuantity(
                                       item._id,
-                                      item.quantity - 1,
+                                      item.quantity + 1,
                                     );
                                   if (updatedCart) {
                                     setCartItems([...updatedCart]);
@@ -1644,113 +1765,170 @@ const Cart: React.FC<CartProps> = ({ onNavigate }) => {
                                     error,
                                   );
                                 }
-                              }
-                            }}
-                            activeOpacity={0.7}
-                          >
-                            <Text
-                              style={{
-                                color: colors.textWhite,
-                                fontSize: 12,
-                                fontWeight: 'bold',
-                                lineHeight: 16,
                               }}
+                              activeOpacity={0.7}
                             >
-                              -
-                            </Text>
-                          </TouchableOpacity>
-
-                          <Text
-                            style={{
-                              fontSize: 13,
-                              fontWeight: '600',
-                              color: colors.textDark,
-                              minWidth: 18,
-                              textAlign: 'center',
-                            }}
-                          >
-                            {item.quantity}
-                          </Text>
-
-                          <TouchableOpacity
-                            style={{
-                              width: 22,
-                              height: 22,
-                              borderRadius: 4,
-                              backgroundColor: colors.primary,
-                              justifyContent: 'center',
-                              alignItems: 'center',
-                            }}
-                            onPress={async () => {
-                              try {
-                                const updatedCart =
-                                  await updateCartItemQuantity(
-                                    item._id,
-                                    item.quantity + 1,
-                                  );
-                                if (updatedCart) {
-                                  setCartItems([...updatedCart]);
-                                }
-                              } catch (error) {
-                                console.error(
-                                  'Error updating quantity:',
-                                  error,
-                                );
-                              }
-                            }}
-                            activeOpacity={0.7}
-                          >
-                            <Text
-                              style={{
-                                color: colors.textWhite,
-                                fontSize: 12,
-                                fontWeight: 'bold',
-                                lineHeight: 16,
-                              }}
-                            >
-                              +
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
-                      )}
-                      {/* Info button */}
-                      <TouchableOpacity
-                        style={{
-                          paddingLeft: isRTL ? 0 : 8,
-                          paddingRight: isRTL ? 8 : 0,
-                          alignSelf: 'flex-start',
-                          marginTop: 2,
-                        }}
-                        onPress={() => handleInfoPress(item._id)}
-                        activeOpacity={0.6}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                      >
-                        <Svg
-                          width={22}
-                          height={22}
-                          viewBox="0 0 24 24"
-                          fill="none"
+                              <Text
+                                style={{
+                                  color: colors.textWhite,
+                                  fontSize: 14,
+                                  fontWeight: 'bold',
+                                  lineHeight: 18,
+                                }}
+                              >
+                                +
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                        {/* Delete button */}
+                        <TouchableOpacity
+                          style={{
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}
+                          onPress={() => confirmAndDelete(item._id)}
+                          activeOpacity={0.6}
+                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                         >
-                          <Path
-                            d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"
-                            stroke={colors.primary}
-                            strokeWidth={2}
-                          />
-                          <Path
-                            d="M12 16v-4"
-                            stroke={colors.primary}
-                            strokeWidth={2}
-                            strokeLinecap="round"
-                          />
-                          <Path
-                            d="M12 8h.01"
-                            stroke={colors.primary}
-                            strokeWidth={2}
-                            strokeLinecap="round"
-                          />
-                        </Svg>
-                      </TouchableOpacity>
+                          <Svg
+                            width={22}
+                            height={22}
+                            viewBox="0 0 24 24"
+                            fill="none"
+                          >
+                            <Path
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              stroke="#FF3B30"
+                              strokeWidth={2}
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </Svg>
+                        </TouchableOpacity>
+                        {/* Info button */}
+                        <TouchableOpacity
+                          style={{
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}
+                          onPress={() => handleInfoPress(item._id)}
+                          activeOpacity={0.6}
+                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        >
+                          <Svg
+                            width={22}
+                            height={22}
+                            viewBox="0 0 24 24"
+                            fill="none"
+                          >
+                            <Path
+                              d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"
+                              stroke={colors.primary}
+                              strokeWidth={2}
+                            />
+                            <Path
+                              d="M12 16v-4"
+                              stroke={colors.primary}
+                              strokeWidth={2}
+                              strokeLinecap="round"
+                            />
+                            <Path
+                              d="M12 8h.01"
+                              stroke={colors.primary}
+                              strokeWidth={2}
+                              strokeLinecap="round"
+                            />
+                          </Svg>
+                        </TouchableOpacity>
+                      </View>
                     </View>
+
+                    {/* Selected Options / Custom Inputs */}
+                    {item.customInputs && item.customInputs.length > 0 && (
+                      <View
+                        style={[
+                          styles.optionsContainer,
+                          isRTL && styles.optionsContainerRTL,
+                          {
+                            marginBottom: 8,
+                            paddingLeft: isRTL ? 4 : (item.image ? 57 : 4),
+                            paddingRight: isRTL ? (item.image ? 57 : 4) : 4,
+                          }
+                        ]}
+                      >
+                        {item.customInputs.map((input, index) => {
+                          const renderOptionDetail = (
+                            opt: {
+                              label: string;
+                              labelAr?: string;
+                              value: string | number;
+                              valueAr?: string | number;
+                              price?: number;
+                            },
+                            optKey: string | number,
+                          ) => {
+                            const hasPrice =
+                              typeof opt.price === 'number' &&
+                              opt.price > 0;
+                            return (
+                              <View
+                                key={optKey}
+                                style={[
+                                  styles.optionRow,
+                                  isRTL && styles.optionRowRTL,
+                                ]}
+                              >
+                                <Text
+                                  style={[
+                                    styles.optionBullet,
+                                    isRTL && styles.optionBulletRTL,
+                                  ]}
+                                >
+                                  •
+                                </Text>
+                                <Text
+                                  style={[
+                                    styles.optionText,
+                                    isRTL && styles.optionTextRTL,
+                                  ]}
+                                >
+                                  <Text style={styles.optionLabel}>
+                                    {isRTL && opt.labelAr
+                                      ? opt.labelAr
+                                      : opt.label}
+                                    :{' '}
+                                  </Text>
+                                  <Text style={styles.optionValue}>
+                                    {isRTL && opt.valueAr
+                                      ? opt.valueAr
+                                      : opt.value}
+                                  </Text>
+                                  {hasPrice && (
+                                    <Text style={styles.optionPrice}>
+                                      {` (+${opt.price?.toFixed(3)} ${isRTL ? 'د.ك' : 'KD'
+                                        })`}
+                                    </Text>
+                                  )}
+                                </Text>
+                              </View>
+                            );
+                          };
+
+                          if (Array.isArray(input)) {
+                            return input.map((opt, subIndex) =>
+                              renderOptionDetail(
+                                opt,
+                                `${index}-${subIndex}`,
+                              ),
+                            );
+                          } else if (input && input.label) {
+                            return renderOptionDetail(input, index);
+                          }
+                          return null;
+                        })}
+                      </View>
+                    )}
 
                     {/* Inline Info Section */}
                     {showInfo[item._id] && (
@@ -1769,76 +1947,21 @@ const Cart: React.FC<CartProps> = ({ onNavigate }) => {
                           {isRTL ? 'بيانات الخدمة' : 'Service Details'}
                         </Text>
 
-                        <View
-                          style={[
-                            styles.infoDropdownRow,
-                            isRTL && styles.infoDropdownRowRTL,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.infoDropdownLabel,
-                              isRTL && styles.infoDropdownLabelRTL,
-                            ]}
-                          >
-                            {isRTL ? 'الاسم:' : 'Name:'}
-                          </Text>
-                          <Text
-                            style={[
-                              styles.infoDropdownValue,
-                              isRTL && styles.infoDropdownValueRTL,
-                            ]}
-                          >
-                            {isRTL && item.nameAr ? item.nameAr : item.name}
-                          </Text>
+                        <View style={[styles.infoDropdownRow, isRTL && styles.infoDropdownRowRTL]}>
+                          <Text style={[styles.infoDropdownLabel, isRTL && styles.infoDropdownLabelRTL]}>{isRTL ? 'الاسم:' : 'Name:'}</Text>
+                          <Text style={[styles.infoDropdownValue, isRTL && styles.infoDropdownValueRTL]}>{isRTL && item.nameAr ? item.nameAr : item.name}</Text>
                         </View>
 
                         {item.vendorName ? (
-                          <View
-                            style={[
-                              styles.infoDropdownRow,
-                              isRTL && styles.infoDropdownRowRTL,
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.infoDropdownLabel,
-                                isRTL && styles.infoDropdownLabelRTL,
-                              ]}
-                            >
-                              {isRTL ? 'المورد:' : 'Vendor:'}
-                            </Text>
-                            <Text
-                              style={[
-                                styles.infoDropdownValue,
-                                isRTL && styles.infoDropdownValueRTL,
-                              ]}
-                            >
-                              {item.vendorName}
-                            </Text>
+                          <View style={[styles.infoDropdownRow, isRTL && styles.infoDropdownRowRTL]}>
+                            <Text style={[styles.infoDropdownLabel, isRTL && styles.infoDropdownLabelRTL]}>{isRTL ? 'المورد:' : 'Vendor:'}</Text>
+                            <Text style={[styles.infoDropdownValue, isRTL && styles.infoDropdownValueRTL]}>{item.vendorName}</Text>
                           </View>
                         ) : null}
 
-                        <View
-                          style={[
-                            styles.infoDropdownRow,
-                            isRTL && styles.infoDropdownRowRTL,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.infoDropdownLabel,
-                              isRTL && styles.infoDropdownLabelRTL,
-                            ]}
-                          >
-                            {isRTL ? 'التاريخ:' : 'Date:'}
-                          </Text>
-                          <Text
-                            style={[
-                              styles.infoDropdownValue,
-                              isRTL && styles.infoDropdownValueRTL,
-                            ]}
-                          >
+                        <View style={[styles.infoDropdownRow, isRTL && styles.infoDropdownRowRTL]}>
+                          <Text style={[styles.infoDropdownLabel, isRTL && styles.infoDropdownLabelRTL]}>{isRTL ? 'التاريخ:' : 'Date:'}</Text>
+                          <Text style={[styles.infoDropdownValue, isRTL && styles.infoDropdownValueRTL]}>
                             {item.selectedDate
                               ? new Date(item.selectedDate).toLocaleDateString(
                                   isRTL ? 'ar-KW' : 'en-US',
@@ -1852,107 +1975,35 @@ const Cart: React.FC<CartProps> = ({ onNavigate }) => {
                           </Text>
                         </View>
 
-                        <View
-                          style={[
-                            styles.infoDropdownRow,
-                            isRTL && styles.infoDropdownRowRTL,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.infoDropdownLabel,
-                              isRTL && styles.infoDropdownLabelRTL,
-                            ]}
-                          >
-                            {isRTL ? 'الوقت:' : 'Time:'}
-                          </Text>
-                          <Text
-                            style={[
-                              styles.infoDropdownValue,
-                              isRTL && styles.infoDropdownValueRTL,
-                            ]}
-                          >
-                            {item.selectedTime || '-'}
-                          </Text>
+                        <View style={[styles.infoDropdownRow, isRTL && styles.infoDropdownRowRTL]}>
+                          <Text style={[styles.infoDropdownLabel, isRTL && styles.infoDropdownLabelRTL]}>{isRTL ? 'الوقت:' : 'Time:'}</Text>
+                          <Text style={[styles.infoDropdownValue, isRTL && styles.infoDropdownValueRTL]}>{item.selectedTime || '-'}</Text>
                         </View>
 
-                        <View
-                          style={[
-                            styles.infoDropdownRow,
-                            isRTL && styles.infoDropdownRowRTL,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.infoDropdownLabel,
-                              isRTL && styles.infoDropdownLabelRTL,
-                            ]}
-                          >
-                            {isRTL ? 'آلية الحجز:' : 'Booking Type:'}
-                          </Text>
-                          <Text
-                            style={[
-                              styles.infoDropdownValue,
-                              isRTL && styles.infoDropdownValueRTL,
-                            ]}
-                          >
+                        <View style={[styles.infoDropdownRow, isRTL && styles.infoDropdownRowRTL]}>
+                          <Text style={[styles.infoDropdownLabel, isRTL && styles.infoDropdownLabelRTL]}>{isRTL ? 'آلية الحجز:' : 'Booking Type:'}</Text>
+                          <Text style={[styles.infoDropdownValue, isRTL && styles.infoDropdownValueRTL]}>
                             {item.availabilityStatus === 'pending_confirmation'
                               ? isRTL
                                 ? 'يتطلب موافقة المورد'
                                 : 'Requires vendor confirmation'
                               : isRTL
-                              ? 'تأكيد تلقائي فوري'
-                              : 'Instant automatic booking'}
+                                ? 'تأكيد تلقائي فوري'
+                                : 'Instant automatic booking'}
                           </Text>
                         </View>
 
-                        <View
-                          style={[
-                            styles.infoDropdownRow,
-                            isRTL && styles.infoDropdownRowRTL,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.infoDropdownLabel,
-                              isRTL && styles.infoDropdownLabelRTL,
-                            ]}
-                          >
-                            {isRTL ? 'السعر الأساسي:' : 'Base Price:'}
-                          </Text>
-                          <Text
-                            style={[
-                              styles.infoDropdownValue,
-                              isRTL && styles.infoDropdownValueRTL,
-                            ]}
-                          >
+                        <View style={[styles.infoDropdownRow, isRTL && styles.infoDropdownRowRTL]}>
+                          <Text style={[styles.infoDropdownLabel, isRTL && styles.infoDropdownLabelRTL]}>{isRTL ? 'السعر الأساسي:' : 'Base Price:'}</Text>
+                          <Text style={[styles.infoDropdownValue, isRTL && styles.infoDropdownValueRTL]}>
                             {item.price.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
                           </Text>
                         </View>
 
                         {item.moreInfo ? (
-                          <View
-                            style={[
-                              styles.infoDropdownRow,
-                              isRTL && styles.infoDropdownRowRTL,
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.infoDropdownLabel,
-                                isRTL && styles.infoDropdownLabelRTL,
-                              ]}
-                            >
-                              {isRTL ? 'ملاحظات الحجز:' : 'Booking Notes:'}
-                            </Text>
-                            <Text
-                              style={[
-                                styles.infoDropdownValue,
-                                isRTL && styles.infoDropdownValueRTL,
-                              ]}
-                            >
-                              {item.moreInfo}
-                            </Text>
+                          <View style={[styles.infoDropdownRow, isRTL && styles.infoDropdownRowRTL]}>
+                            <Text style={[styles.infoDropdownLabel, isRTL && styles.infoDropdownLabelRTL]}>{isRTL ? 'ملاحظات الحجز:' : 'Booking Notes:'}</Text>
+                            <Text style={[styles.infoDropdownValue, isRTL && styles.infoDropdownValueRTL]}>{item.moreInfo}</Text>
                           </View>
                         ) : null}
 
@@ -2002,9 +2053,7 @@ const Cart: React.FC<CartProps> = ({ onNavigate }) => {
                                     : opt.value;
                                 const priceText =
                                   opt.price && opt.price > 0
-                                    ? ` (+${opt.price.toFixed(3)} ${
-                                        isRTL ? 'د.ك' : 'KD'
-                                      })`
+                                    ? ` (+${opt.price.toFixed(3)} ${isRTL ? 'د.ك' : 'KD'})`
                                     : '';
                                 return (
                                   <View
@@ -2012,26 +2061,15 @@ const Cart: React.FC<CartProps> = ({ onNavigate }) => {
                                     style={[
                                       styles.infoDropdownRow,
                                       isRTL && styles.infoDropdownRowRTL,
-                                      { marginBottom: 3 },
+                                      { marginBottom: 4 },
                                     ]}
                                   >
-                                    <Text
-                                      style={[
-                                        styles.infoDropdownLabel,
-                                        isRTL && styles.infoDropdownLabelRTL,
-                                        { width: 90 },
-                                      ]}
-                                    >
-                                      {label}:
-                                    </Text>
-                                    <Text
-                                      style={[
-                                        styles.infoDropdownValue,
-                                        isRTL && styles.infoDropdownValueRTL,
-                                      ]}
-                                    >
+                                    <Text style={[styles.infoDropdownLabel, isRTL && styles.infoDropdownLabelRTL]}>{label}:</Text>
+                                    <Text style={[styles.infoDropdownValue, isRTL && styles.infoDropdownValueRTL]}>
                                       {value}
-                                      {priceText}
+                                      {priceText !== '' && (
+                                        <Text style={styles.optionPrice}> {priceText}</Text>
+                                      )}
                                     </Text>
                                   </View>
                                 );
@@ -2073,13 +2111,13 @@ const Cart: React.FC<CartProps> = ({ onNavigate }) => {
                           <Text style={styles.dateTimeText}>
                             {item.selectedDate
                               ? new Date(item.selectedDate).toLocaleDateString(
-                                  isRTL ? 'ar-KW' : 'en-US',
-                                  {
-                                    day: '2-digit',
-                                    month: '2-digit',
-                                    year: 'numeric',
-                                  },
-                                )
+                                isRTL ? 'ar-KW' : 'en-US',
+                                {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric',
+                                },
+                              )
                               : '-'}
                           </Text>
                         )}
@@ -2101,13 +2139,13 @@ const Cart: React.FC<CartProps> = ({ onNavigate }) => {
                           <Text style={styles.dateTimeText}>
                             {item.selectedDate
                               ? new Date(item.selectedDate).toLocaleDateString(
-                                  isRTL ? 'ar-KW' : 'en-US',
-                                  {
-                                    day: '2-digit',
-                                    month: '2-digit',
-                                    year: 'numeric',
-                                  },
-                                )
+                                isRTL ? 'ar-KW' : 'en-US',
+                                {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric',
+                                },
+                              )
                               : '-'}
                           </Text>
                         )}
@@ -2191,17 +2229,17 @@ const Cart: React.FC<CartProps> = ({ onNavigate }) => {
                           </Text>
                           {item.availabilityStatus ===
                             'pending_confirmation' && (
-                            <Text
-                              style={{
-                                fontSize: 10,
-                                color: '#FF9800',
-                                marginLeft: isRTL ? 0 : 6,
-                                marginRight: isRTL ? 6 : 0,
-                              }}
-                            >
-                              ({t('afterConfirmation')})
-                            </Text>
-                          )}
+                              <Text
+                                style={{
+                                  fontSize: 10,
+                                  color: '#FF9800',
+                                  marginLeft: isRTL ? 0 : 6,
+                                  marginRight: isRTL ? 6 : 0,
+                                }}
+                              >
+                                ({t('afterConfirmation')})
+                              </Text>
+                            )}
                         </View>
                       </View>
 
@@ -2297,7 +2335,7 @@ const Cart: React.FC<CartProps> = ({ onNavigate }) => {
                     style={[
                       styles.applyButton,
                       (isApplyingCoupon || !couponCode.trim()) &&
-                        styles.applyButtonDisabled,
+                      styles.applyButtonDisabled,
                     ]}
                     onPress={handleApplyCoupon}
                     disabled={isApplyingCoupon || !couponCode.trim()}

@@ -8,6 +8,7 @@ import {
   Animated,
   useWindowDimensions,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Rect, Circle } from 'react-native-svg';
@@ -367,7 +368,7 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
               </TouchableOpacity>
 
               {/* Scrollable Menu Items */}
-              <View style={styles.flexContainer}>
+              <ScrollView style={styles.flexContainer} showsVerticalScrollIndicator={false}>
                 {/* Menu Items List */}
                 <View
                   style={[
@@ -419,7 +420,7 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
                     );
                   })}
                 </View>
-              </View>
+              </ScrollView>
 
               {/* Logo Section at Bottom - Fixed at bottom */}
               <View style={styles.logoSection}>

@@ -178,6 +178,8 @@ export const createStyles = (SCREEN_WIDTH: number) => {
     priceColumn: {
       flexDirection: 'column',
       alignItems: 'flex-start',
+      flex: 1,
+      minWidth: 0,
     },
     ratingRow: {
       flexDirection: 'row',
@@ -187,6 +189,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       paddingVertical: 3,
       borderRadius: 6,
       gap: 2,
+      flexShrink: 0,
     },
     ratingRowRTL: {
       flexDirection: 'row-reverse',

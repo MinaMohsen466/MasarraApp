@@ -196,7 +196,7 @@ const AllReviews: React.FC<AllReviewsProps> = ({
               {/* Header: Avatar + Name + Date + Rating + Delete in one row */}
               <View style={styles.reviewHeader}>
                 <View style={styles.reviewUserSection}>
-                  {review.user.profilePicture &&
+                  {review.user?.profilePicture &&
                   !imageErrors.has(review._id) ? (
                     <Image
                       source={{ uri: getImageUrl(review.user.profilePicture) }}
@@ -208,7 +208,7 @@ const AllReviews: React.FC<AllReviewsProps> = ({
                   ) : (
                     <View style={styles.avatarPlaceholder}>
                       <Text style={styles.avatarText}>
-                        {review.user.name.charAt(0).toUpperCase()}
+                        {(review.user?.name || 'M').charAt(0).toUpperCase()}
                       </Text>
                     </View>
                   )}
@@ -218,7 +218,7 @@ const AllReviews: React.FC<AllReviewsProps> = ({
                         style={[styles.userName, isRTL && styles.userNameRTL]}
                         numberOfLines={1}
                       >
-                        {review.user.name}
+                        {review.user?.name || (isRTL ? 'مستخدم محذوف' : 'Deleted User')}
                       </Text>
                       <Text style={styles.separator}>•</Text>
                       <Text style={styles.reviewDate}>
@@ -261,7 +261,7 @@ const AllReviews: React.FC<AllReviewsProps> = ({
                 </Text>
 
                 {/* Delete Button - Only show for current user's reviews */}
-                {currentUserId && review.user._id === currentUserId && (
+                {currentUserId && review.user?._id === currentUserId && (
                   <TouchableOpacity
                     style={styles.deleteButton}
                     onPress={() => handleDeleteReview(review)}

@@ -206,7 +206,11 @@ const Search: React.FC<SearchProps> = ({
             >
               {item.displaySubtitle}
             </Text>
-            {item.price && (
+            {item.hidePrice ? (
+              <Text style={{ fontSize: isTablet ? 14 : 12, color: colors.textSecondary, fontStyle: 'italic' }}>
+                {isRTL ? 'السعر يختلف حسب الاختيار' : 'Price varies by selection'}
+              </Text>
+            ) : item.price && (
               <View style={[styles.priceRow, isRTL && styles.priceRowRTL]}>
                 {hasDiscount ? (
                   <>
@@ -321,7 +325,11 @@ const Search: React.FC<SearchProps> = ({
                 <Text style={styles.ratingText}>{item.rating.toFixed(1)}</Text>
               </View>
             )}
-            {hasDiscount ? (
+            {item.hidePrice ? (
+              <Text style={{ fontSize: 12, color: colors.textSecondary, fontStyle: 'italic' }}>
+                {isRTL ? 'السعر يختلف' : 'Price varies'}
+              </Text>
+            ) : hasDiscount ? (
               <View style={[styles.priceRow, isRTL && styles.priceRowRTL]}>
                 <Text style={styles.trendingPrice}>
                   {finalPrice.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}

@@ -410,7 +410,7 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
 
     // If it's a server path (starts with /public), prepend the base URL
     if (uri.startsWith('/public')) {
-      return `${API_URL.replace('/api', '')}${uri}`;
+      return `${API_URL}${uri}`;
     }
 
     return uri;

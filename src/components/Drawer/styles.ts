@@ -8,10 +8,10 @@ export const createStyles = (screenWidth: number, screenHeight: number) => {
 
   // حساب حجم اللوجو حسب حجم الشاشة
   const logoSize = isSmallScreen
-    ? Math.min(drawerWidth * 0.3, 65)
+    ? Math.min(drawerWidth * 0.25, 50)
     : isMediumScreen
-    ? Math.min(drawerWidth * 0.38, 85)
-    : Math.min(drawerWidth * 0.45, 110);
+    ? Math.min(drawerWidth * 0.32, 70)
+    : Math.min(drawerWidth * 0.4, 90);
 
   return StyleSheet.create({
     // Overlay covering the entire screen
@@ -68,7 +68,7 @@ export const createStyles = (screenWidth: number, screenHeight: number) => {
     menuItem: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: isSmallScreen ? 9 : isMediumScreen ? 12 : 14,
+      paddingVertical: isSmallScreen ? 7 : isMediumScreen ? 9 : 10,
       paddingHorizontal: 25,
       borderBottomWidth: 0.5,
       borderBottomColor: colors.border,
@@ -77,7 +77,7 @@ export const createStyles = (screenWidth: number, screenHeight: number) => {
     // Menu item text
     menuItemText: {
       flex: 1,
-      fontSize: isSmallScreen ? 13 : 16,
+      fontSize: isSmallScreen ? 12 : isMediumScreen ? 13 : 14,
       color: colors.textPrimary,
       fontWeight: '500',
       letterSpacing: 0.3,
@@ -92,7 +92,7 @@ export const createStyles = (screenWidth: number, screenHeight: number) => {
     // Arabic text styling
     arabicText: {
       fontFamily: 'System',
-      fontSize: isSmallScreen ? 13 : 16,
+      fontSize: isSmallScreen ? 12 : isMediumScreen ? 13 : 14,
       textAlign: 'right',
       fontWeight: '600',
     },
@@ -100,8 +100,8 @@ export const createStyles = (screenWidth: number, screenHeight: number) => {
     // Logo section at bottom - ثابت في الأسفل
     logoSection: {
       alignItems: 'center',
-      paddingBottom: isSmallScreen ? 10 : isMediumScreen ? 18 : 25,
-      paddingTop: isSmallScreen ? 8 : isMediumScreen ? 14 : 20,
+      paddingBottom: isSmallScreen ? 8 : isMediumScreen ? 12 : 16,
+      paddingTop: isSmallScreen ? 6 : isMediumScreen ? 10 : 12,
       paddingHorizontal: 10,
       borderTopWidth: 0.5,
       borderTopColor: colors.border,
@@ -127,16 +127,16 @@ export const createStyles = (screenWidth: number, screenHeight: number) => {
 
     // Logo text (MASARRA)
     logoText: {
-      fontSize: isSmallScreen ? 16 : 20,
+      fontSize: isSmallScreen ? 14 : 16,
       fontWeight: 'bold',
       color: colors.primary,
       letterSpacing: 1.5,
-      marginBottom: 5,
+      marginBottom: 4,
     },
 
     // Tagline text
     taglineText: {
-      fontSize: isSmallScreen ? 9 : 11,
+      fontSize: isSmallScreen ? 8 : 9,
       color: colors.primary,
       letterSpacing: 0.8,
       opacity: 0.75,
