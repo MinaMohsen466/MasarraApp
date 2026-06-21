@@ -68,7 +68,7 @@ export const createStyles = (screenWidth: number, screenHeight: number) => {
     menuItem: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: isSmallScreen ? 7 : isMediumScreen ? 9 : 10,
+      paddingVertical: isSmallScreen ? 6 : isMediumScreen ? 8 : 9,
       paddingHorizontal: 25,
       borderBottomWidth: 0.5,
       borderBottomColor: colors.border,
@@ -77,7 +77,7 @@ export const createStyles = (screenWidth: number, screenHeight: number) => {
     // Menu item text
     menuItemText: {
       flex: 1,
-      fontSize: isSmallScreen ? 12 : isMediumScreen ? 13 : 14,
+      fontSize: isSmallScreen ? 13 : isMediumScreen ? 14 : 15,
       color: colors.textPrimary,
       fontWeight: '500',
       letterSpacing: 0.3,
@@ -92,9 +92,45 @@ export const createStyles = (screenWidth: number, screenHeight: number) => {
     // Arabic text styling
     arabicText: {
       fontFamily: 'System',
-      fontSize: isSmallScreen ? 12 : isMediumScreen ? 13 : 14,
+      fontSize: isSmallScreen ? 13 : isMediumScreen ? 14 : 15,
       textAlign: 'right',
       fontWeight: '600',
+    },
+
+    // Dropdown language selection styles
+    dropdownContainer: {
+      backgroundColor: 'rgba(0, 161, 156, 0.03)',
+    },
+    subMenuItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: isSmallScreen ? 5 : isMediumScreen ? 7 : 8,
+      paddingLeft: 56,
+      paddingRight: 25,
+      borderBottomWidth: 0.5,
+      borderBottomColor: colors.border,
+    },
+    subMenuItemRTL: {
+      flexDirection: 'row-reverse',
+      paddingLeft: 25,
+      paddingRight: 56,
+    },
+    subMenuItemActive: {
+      backgroundColor: 'rgba(0, 161, 156, 0.06)',
+    },
+    subMenuItemText: {
+      flex: 1,
+      fontSize: isSmallScreen ? 12 : isMediumScreen ? 13 : 14,
+      color: colors.textSecondary,
+      fontWeight: '500',
+    },
+    subMenuItemTextRTL: {
+      textAlign: 'right',
+      fontFamily: 'System',
+    },
+    subMenuItemTextActive: {
+      color: colors.primary,
+      fontWeight: '700',
     },
 
     // Logo section at bottom - ثابت في الأسفل

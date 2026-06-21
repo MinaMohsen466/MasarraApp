@@ -164,22 +164,35 @@ const Services: React.FC<ServicesProps> = ({ onSelectService, onViewAll }) => {
             <View style={styles.priceColumn}>
               {item.hidePrice ? (
                 <>
-                  <Text style={[styles.priceLabel, isRTL && styles.priceLabelRTL]}>
+                  <Text
+                    style={[styles.priceLabel, isRTL && styles.priceLabelRTL]}
+                  >
                     {isRTL ? 'السعر' : 'Price'}
                   </Text>
-                  <Text style={[styles.priceValue, isRTL && styles.priceValueRTL, { fontSize: 13, color: colors.textSecondary }]}>
+                  <Text
+                    style={[
+                      styles.priceValue,
+                      isRTL && styles.priceValueRTL,
+                      { fontSize: 13, color: colors.textSecondary },
+                    ]}
+                  >
                     {isRTL ? 'يختلف حسب الاختيار' : 'Varies by selection'}
                   </Text>
                 </>
               ) : (
                 <>
-                  <Text style={[styles.priceLabel, isRTL && styles.priceLabelRTL]}>
+                  <Text
+                    style={[styles.priceLabel, isRTL && styles.priceLabelRTL]}
+                  >
                     {isRTL ? 'السعر يبدأ من' : 'Price starts from'}
                   </Text>
                   {hasDiscount ? (
                     <View style={{ gap: 2 }}>
                       <Text
-                        style={[styles.priceValue, isRTL && styles.priceValueRTL]}
+                        style={[
+                          styles.priceValue,
+                          isRTL && styles.priceValueRTL,
+                        ]}
                       >
                         {isRTL
                           ? `${finalPrice.toFixed(3)} د.ك`

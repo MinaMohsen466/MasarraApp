@@ -167,7 +167,11 @@ const Contact: React.FC<ContactProps> = ({
 
   return (
     <>
-      <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
+      <StatusBar
+        backgroundColor="#00a19c"
+        barStyle="light-content"
+        translucent={false}
+      />
       <CustomAlert
         visible={alertVisible}
         title={alertTitle}
@@ -176,7 +180,12 @@ const Contact: React.FC<ContactProps> = ({
         onClose={() => setAlertVisible(false)}
       />
       <View style={contactStyles.container}>
-        <View style={[contactStyles.headerBar, { height: insets.top + 56, paddingTop: insets.top }]}>
+        <View
+          style={[
+            contactStyles.headerBar,
+            { height: insets.top + 56, paddingTop: insets.top },
+          ]}
+        >
           <TouchableOpacity
             onPress={() => onBack && onBack()}
             style={[
@@ -189,13 +198,13 @@ const Contact: React.FC<ContactProps> = ({
             ]}
             activeOpacity={0.8}
           >
-            <Text style={{ fontSize: 37, color: colors.textWhite, lineHeight: 40 }}>
+            <Text
+              style={{ fontSize: 37, color: colors.textWhite, lineHeight: 40 }}
+            >
               {isRTL ? '›' : '‹'}
             </Text>
           </TouchableOpacity>
-          <Text
-            style={contactStyles.headerTitle}
-          >
+          <Text style={contactStyles.headerTitle}>
             {isRTL ? 'اتصل بنا' : 'Contact Us'}
           </Text>
         </View>
@@ -227,7 +236,10 @@ const Contact: React.FC<ContactProps> = ({
               {/* Email Card */}
               {siteSettings.contactEmail && (
                 <TouchableOpacity
-                  style={[contactStyles.contactCard, isRTL && { flexDirection: 'row-reverse' }]}
+                  style={[
+                    contactStyles.contactCard,
+                    isRTL && { flexDirection: 'row-reverse' },
+                  ]}
                   onPress={() =>
                     Linking.openURL(`mailto:${siteSettings.contactEmail}`)
                   }
@@ -251,14 +263,19 @@ const Contact: React.FC<ContactProps> = ({
                       {siteSettings.contactEmail}
                     </Text>
                   </View>
-                  <Text style={{ fontSize: 20, color: '#999' }}>{isRTL ? '‹' : '›'}</Text>
+                  <Text style={{ fontSize: 20, color: '#999' }}>
+                    {isRTL ? '‹' : '›'}
+                  </Text>
                 </TouchableOpacity>
               )}
 
               {/* Phone Card */}
               {siteSettings.contactPhone && (
                 <TouchableOpacity
-                  style={[contactStyles.contactCard, isRTL && { flexDirection: 'row-reverse' }]}
+                  style={[
+                    contactStyles.contactCard,
+                    isRTL && { flexDirection: 'row-reverse' },
+                  ]}
                   onPress={() =>
                     Linking.openURL(`tel:${siteSettings.contactPhone}`)
                   }
@@ -282,7 +299,9 @@ const Contact: React.FC<ContactProps> = ({
                       {siteSettings.contactPhone}
                     </Text>
                   </View>
-                  <Text style={{ fontSize: 20, color: '#999' }}>{isRTL ? '‹' : '›'}</Text>
+                  <Text style={{ fontSize: 20, color: '#999' }}>
+                    {isRTL ? '‹' : '›'}
+                  </Text>
                 </TouchableOpacity>
               )}
             </View>

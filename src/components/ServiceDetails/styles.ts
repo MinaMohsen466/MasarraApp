@@ -440,9 +440,9 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       justifyContent: 'space-between',
       backgroundColor: colors.backgroundLight,
       borderRadius: 10,
-      paddingVertical: 12,
+      paddingVertical: 9,
       paddingHorizontal: 14,
-      marginTop: 10,
+      marginTop: 0,
     },
     addOptionButtonRTL: {
       flexDirection: 'row-reverse',
@@ -489,20 +489,12 @@ export const createStyles = (SCREEN_WIDTH: number) => {
     },
 
     optionCardContainer: {
-      // backgroundColor: '#FFFFFF',
-      // borderRadius: 8,
-      // borderWidth: 1,
-      // borderColor: '#E0E0E0',
-      marginBottom: 12,
-      // overflow: 'hidden',
+      marginBottom: 3,
     },
 
     optionExpandedContent: {
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      //   backgroundColor: '#F9F9F9',
-      //   borderTopWidth: 1,
-      //   borderTopColor: '#E0E0E0',
+      paddingHorizontal: 12,
+      paddingVertical: 6,
     },
 
     /* Custom Inputs Section */
@@ -883,7 +875,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
 
     /* Restaurant Menu Item Selector */
     menuItemContainer: {
-      marginTop: 8,
+      marginTop: 4,
     },
     menuItemRow: {
       flexDirection: 'row',
@@ -891,9 +883,9 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       justifyContent: 'space-between',
       backgroundColor: colors.backgroundLight,
       borderRadius: 10,
-      paddingVertical: 10,
-      paddingHorizontal: 14,
-      marginBottom: 8,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      marginBottom: 6,
     },
     menuItemRowRTL: {
       flexDirection: 'row-reverse',

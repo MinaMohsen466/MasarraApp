@@ -286,7 +286,7 @@ export const canCreateQRCode = async (
 
     const allowedOccasion = settings.allowedOccasions.find(
       (ao: any) =>
-        matchesId(ao.occasion?._id || ao.occasion, occasionId) && ao.isEnabled
+        matchesId(ao.occasion?._id || ao.occasion, occasionId) && ao.isEnabled,
     );
 
     if (!allowedOccasion) return false;
@@ -315,11 +315,13 @@ export const canCreateQRCode = async (
   // 1. Check booking's main occasion
   // Only allow based on main occasion if that occasion has NO categories defined
   if (booking.occasion) {
-    const occasionId = typeof booking.occasion === 'object' ? booking.occasion._id : booking.occasion;
+    const occasionId =
+      typeof booking.occasion === 'object'
+        ? booking.occasion._id
+        : booking.occasion;
     const allowedOccasion = settings.allowedOccasions?.find(
       (ao: any) =>
-        matchesId(ao.occasion?._id || ao.occasion, occasionId) &&
-        ao.isEnabled
+        matchesId(ao.occasion?._id || ao.occasion, occasionId) && ao.isEnabled,
     );
 
     if (allowedOccasion) {
@@ -337,7 +339,11 @@ export const canCreateQRCode = async (
   if (services.length > 0) {
     for (const svc of services) {
       const serviceData = svc.service;
-      if (serviceData && typeof serviceData === 'object' && serviceData.occasions) {
+      if (
+        serviceData &&
+        typeof serviceData === 'object' &&
+        serviceData.occasions
+      ) {
         for (const occ of serviceData.occasions) {
           if (isOccasionCategoryAllowed(occ.occasion, occ.categoryId)) {
             return true;
@@ -356,10 +362,8 @@ export const canCreateQRCode = async (
       if (pkgData && pkgData.occasion) {
         const allowedOccasion = settings.allowedOccasions?.find(
           (ao: any) =>
-            matchesId(
-              ao.occasion?._id || ao.occasion,
-              pkgData.occasion
-            ) && ao.isEnabled
+            matchesId(ao.occasion?._id || ao.occasion, pkgData.occasion) &&
+            ao.isEnabled,
         );
         if (allowedOccasion) {
           const occasionObj =
@@ -374,7 +378,11 @@ export const canCreateQRCode = async (
       if (pkg.servicesIncluded && pkg.servicesIncluded.length > 0) {
         for (const inc of pkg.servicesIncluded) {
           const incService = inc.service;
-          if (incService && typeof incService === 'object' && incService.occasions) {
+          if (
+            incService &&
+            typeof incService === 'object' &&
+            incService.occasions
+          ) {
             for (const occ of incService.occasions) {
               if (isOccasionCategoryAllowed(occ.occasion, occ.categoryId)) {
                 return true;

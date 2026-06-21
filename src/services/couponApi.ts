@@ -37,8 +37,7 @@ export interface ActiveCoupon {
 export const formatActiveCouponLabel = (
   coupon: ActiveCoupon,
   isRTL: boolean,
-): string =>
-  isRTL ? `كوبون : ${coupon.code}` : `Coupon: ${coupon.code}`;
+): string => (isRTL ? `كوبون : ${coupon.code}` : `Coupon: ${coupon.code}`);
 
 /** Get banner messages from SiteSetting */
 export const getBannerMessages = async (): Promise<{
@@ -50,7 +49,7 @@ export const getBannerMessages = async (): Promise<{
     const response = await fetch(`${API_BASE_URL}/settings`);
     const data = await response.json();
     if (!response.ok || !data?.success) return null;
-    
+
     const siteSettings = data.data;
     return {
       text: siteSettings.bannerText || '',
@@ -62,18 +61,20 @@ export const getBannerMessages = async (): Promise<{
   }
 };
 
-export const fetchActiveCouponsFromBanner = async (): Promise<ActiveCoupon[]> => {
+export const fetchActiveCouponsFromBanner = async (): Promise<
+  ActiveCoupon[]
+> => {
   try {
     const response = await fetch(`${API_BASE_URL}/settings`);
     const data = await response.json();
     if (!response.ok || !data?.success) return [];
-    
+
     const siteSettings = data.data;
     if (!siteSettings?.bannerEnabled) return [];
-    
+
     const bannerText = siteSettings.bannerText || '';
     const bannerTextAr = siteSettings.bannerTextAr || '';
-    
+
     // Extract coupon codes from banner text
     const codes = [
       ...new Set([
@@ -81,7 +82,7 @@ export const fetchActiveCouponsFromBanner = async (): Promise<ActiveCoupon[]> =>
         ...parseCouponCodesFromText(bannerTextAr),
       ]),
     ];
-    
+
     // Convert codes to ActiveCoupon format
     return codes.map(code => ({
       code,

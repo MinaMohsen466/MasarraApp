@@ -54,19 +54,24 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
 
       const token = await AsyncStorage.getItem('userToken');
       if (!token) {
-        onPaymentError('Authentication required. Please log in and check your orders.');
+        onPaymentError(
+          'Authentication required. Please log in and check your orders.',
+        );
         return;
       }
 
-      // Use the /payment/callback endpoint which uses v2 GetPaymentStatus
-      // and correctly handles PaymentIds from 3DS redirects
-      const response = await fetch(`${API_URL}/payment/callback?paymentId=${encodeURIComponent(paymentId)}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+      // Use the /payment/status/:paymentId endpoint which exists on the production backend
+      // and correctly handles verifying the payment status from MyFatoorah
+      const response = await fetch(
+        `${API_URL}/payment/status/${encodeURIComponent(paymentId)}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
+      );
 
       const result = await response.json();
       console.log('Payment callback verification result:', result);
@@ -78,24 +83,27 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
         console.log('Payment verified as PAID!');
         onPaymentSuccess();
       } else {
-        const status = result.invoiceStatus || result.data?.InvoiceStatus || 'Unknown';
+        const status =
+          result.invoiceStatus || result.data?.InvoiceStatus || 'Unknown';
         console.log('Payment not confirmed. Status:', status);
         if (status === 'Pending') {
           // Payment might still be processing - treat as success and let server reconcile
-          console.log('Payment Pending - treating as potential success, user should check orders');
+          console.log(
+            'Payment Pending - treating as potential success, user should check orders',
+          );
           onPaymentError(
-            'Payment is being processed. Please check your order history for confirmation.'
+            'Payment is being processed. Please check your order history for confirmation.',
           );
         } else {
           onPaymentError(
-            result.message || `Payment not completed. Status: ${status}`
+            result.message || `Payment not completed. Status: ${status}`,
           );
         }
       }
     } catch (err) {
       console.error('Error verifying payment:', err);
       onPaymentError(
-        'Payment verification failed. Please check your order history to confirm payment status.'
+        'Payment verification failed. Please check your order history to confirm payment status.',
       );
     } finally {
       setVerifyingPayment(false);
@@ -111,7 +119,9 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
     // Check if redirected to success/callback URL
     if (url.includes('/payment/callback') || url.includes('/payment/success')) {
       if (verifyingRef.current) {
-        console.log('Payment verification already in progress, ignoring duplicate event');
+        console.log(
+          'Payment verification already in progress, ignoring duplicate event',
+        );
         return;
       }
       verifyingRef.current = true;
@@ -186,11 +196,7 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
               onPress={onClose}
               activeOpacity={0.7}
             >
-              <Icon
-                name="close"
-                size={24}
-                color={colors.textDark}
-              />
+              <Icon name="close" size={24} color={colors.textDark} />
             </TouchableOpacity>
 
             <Text style={[styles.simpleHeaderTitle, isRTL && styles.rtlText]}>
@@ -225,7 +231,9 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.cancelLink} onPress={onClose}>
-                  <Text style={[styles.cancelLinkText, isRTL && styles.rtlText]}>
+                  <Text
+                    style={[styles.cancelLinkText, isRTL && styles.rtlText]}
+                  >
                     {t('cancel') || 'Cancel'}
                   </Text>
                 </TouchableOpacity>
@@ -257,19 +265,26 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
                       console.log('WebView message:', message);
                       if (message.type === 'PAYMENT_SUCCESS') {
                         // Extract payment ID if it is passed in the postMessage payload
-                        const paymentId = 
-                          message.data?.PaymentId || 
-                          message.data?.data?.PaymentId || 
+                        const paymentId =
+                          message.data?.PaymentId ||
+                          message.data?.data?.PaymentId ||
                           message.data?.InvoiceId ||
                           message.data?.data?.InvoiceId ||
                           message.data?.invoiceId;
 
                         if (paymentId) {
-                          console.log('Extracted payment ID from onMessage:', paymentId);
+                          console.log(
+                            'Extracted payment ID from onMessage:',
+                            paymentId,
+                          );
                           await verifyPayment(String(paymentId));
                         } else {
-                          console.log('No payment ID found in message payload, calling error');
-                          onPaymentError('Failed to verify payment status: Missing payment identifier.');
+                          console.log(
+                            'No payment ID found in message payload, calling error',
+                          );
+                          onPaymentError(
+                            'Failed to verify payment status: Missing payment identifier.',
+                          );
                         }
                       } else if (message.type === 'PAYMENT_ERROR') {
                         onPaymentError(message.message || 'Payment failed');
@@ -315,9 +330,7 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
                   })}
                 />
                 {(loading || verifyingPayment) && (
-                  <View
-                    style={[styles.loadingOverlay, { backgroundColor: colors.background }]}
-                  >
+                  <View style={styles.loadingOverlay}>
                     <ActivityIndicator size="large" color={colors.primary} />
                     <Text style={[styles.loadingText, isRTL && styles.rtlText]}>
                       {verifyingPayment
@@ -333,7 +346,12 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
           </View>
 
           {/* Footer */}
-          <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+          <View
+            style={[
+              styles.footer,
+              { paddingBottom: Math.max(insets.bottom, 12) },
+            ]}
+          >
             <Text style={[styles.secureText, isRTL && styles.rtlText]}>
               {t('securePayment') || 'Secured by MyFatoorah'}
             </Text>
@@ -351,8 +369,8 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    height: '85%',
-    backgroundColor: colors.background,
+    height: '70%',
+    backgroundColor: colors.textWhite,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     overflow: 'hidden',
@@ -368,7 +386,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: colors.background,
+    backgroundColor: colors.textWhite,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0, 0, 0, 0.06)',
   },
@@ -390,15 +408,15 @@ const styles = StyleSheet.create({
   },
   webViewContainer: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.textWhite,
   },
   webView: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.textWhite,
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.background,
+    backgroundColor: colors.textWhite,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -454,7 +472,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    backgroundColor: colors.background,
+    backgroundColor: colors.textWhite,
   },
   secureText: {
     fontSize: 14,

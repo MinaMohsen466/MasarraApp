@@ -358,17 +358,53 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
     >
       {/* Top Header Block with topographic wave lines */}
       <View style={styles.headerBlock}>
-        <Svg width="100%" height="100%" viewBox="0 0 375 130" preserveAspectRatio="none" style={styles.topographicSvg}>
-          <Path d="M-20 60 C80 120 180 20 300 80 T400 60" stroke="rgba(255,255,255,0.08)" strokeWidth={1.5} fill="none" />
-          <Path d="M-20 80 C80 140 180 40 300 100 T400 80" stroke="rgba(255,255,255,0.12)" strokeWidth={1.5} fill="none" />
-          <Path d="M-20 100 C80 160 180 60 300 120 T400 100" stroke="rgba(255,255,255,0.15)" strokeWidth={2} fill="none" />
-          <Path d="M-20 120 C80 180 180 80 300 140 T400 120" stroke="rgba(255,255,255,0.08)" strokeWidth={1} fill="none" />
-          <Path d="M-20 140 C80 200 180 100 300 160 T400 140" stroke="rgba(255,255,255,0.05)" strokeWidth={1} fill="none" />
+        <Svg
+          width="100%"
+          height="100%"
+          viewBox="0 0 375 130"
+          preserveAspectRatio="none"
+          style={styles.topographicSvg}
+        >
+          <Path
+            d="M-20 60 C80 120 180 20 300 80 T400 60"
+            stroke="rgba(255,255,255,0.08)"
+            strokeWidth={1.5}
+            fill="none"
+          />
+          <Path
+            d="M-20 80 C80 140 180 40 300 100 T400 80"
+            stroke="rgba(255,255,255,0.12)"
+            strokeWidth={1.5}
+            fill="none"
+          />
+          <Path
+            d="M-20 100 C80 160 180 60 300 120 T400 100"
+            stroke="rgba(255,255,255,0.15)"
+            strokeWidth={2}
+            fill="none"
+          />
+          <Path
+            d="M-20 120 C80 180 180 80 300 140 T400 120"
+            stroke="rgba(255,255,255,0.08)"
+            strokeWidth={1}
+            fill="none"
+          />
+          <Path
+            d="M-20 140 C80 200 180 100 300 160 T400 140"
+            stroke="rgba(255,255,255,0.05)"
+            strokeWidth={1}
+            fill="none"
+          />
         </Svg>
 
         {/* Top Overlay Navigation/Back Button */}
         {onBack && (
-          <View style={[styles.headerOverlayBar, isRTL && styles.headerOverlayBarRTL]}>
+          <View
+            style={[
+              styles.headerOverlayBar,
+              isRTL && styles.headerOverlayBarRTL,
+            ]}
+          >
             <TouchableOpacity
               style={styles.headerBackButtonCircle}
               onPress={onBack}
@@ -386,37 +422,80 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
 
       {/* Curved Wave Divider */}
       <View style={styles.curveDivider}>
-        <Svg height="60" width="100%" viewBox="0 0 375 60" preserveAspectRatio="none">
-          <Path d="M0,40 C100,80 250,0 375,40 L375,60 L0,60 Z" fill={colors.background} />
+        <Svg
+          height="60"
+          width="100%"
+          viewBox="0 0 375 60"
+          preserveAspectRatio="none"
+        >
+          <Path
+            d="M0,40 C100,80 250,0 375,40 L375,60 L0,60 Z"
+            fill={colors.background}
+          />
         </Svg>
       </View>
 
       {/* Form Container */}
       <View style={styles.formWrapper}>
         {/* Header Title with Custom Accent Line */}
-        <View style={[styles.formHeadingContainer, isRTL && styles.formHeadingContainerRTL]}>
+        <View
+          style={[
+            styles.formHeadingContainer,
+            isRTL && styles.formHeadingContainerRTL,
+          ]}
+        >
           <Text style={[styles.formHeading, isRTL && styles.formHeadingRTL]}>
             {isRTL ? 'إنشاء حساب' : 'Create Account'}
           </Text>
-          <View style={[styles.formHeadingUnderline, isRTL && styles.formHeadingUnderlineRTL]} />
+          <View
+            style={[
+              styles.formHeadingUnderline,
+              isRTL && styles.formHeadingUnderlineRTL,
+            ]}
+          />
         </View>
 
-        <Text style={[styles.label, isRTL && styles.labelRTL, { marginBottom: 12, fontSize: 13, color: colors.textSecondary }]}>
-          {isRTL ? 'الخطوة 1 من 3: المعلومات الأساسية' : 'Step 1 of 3: Basic Information'}
+        <Text
+          style={[
+            styles.label,
+            isRTL && styles.labelRTL,
+            { marginBottom: 12, fontSize: 13, color: colors.textSecondary },
+          ]}
+        >
+          {isRTL
+            ? 'الخطوة 1 من 3: المعلومات الأساسية'
+            : 'Step 1 of 3: Basic Information'}
         </Text>
 
         {/* Full Name */}
-        <Text style={[styles.label, isRTL && styles.labelRTL, { marginBottom: 6, fontSize: 13, color: '#6B7280' }]}>
+        <Text
+          style={[
+            styles.label,
+            isRTL && styles.labelRTL,
+            { marginBottom: 6, fontSize: 13, color: '#6B7280' },
+          ]}
+        >
           {isRTL ? 'الاسم الكامل' : 'Full Name'}
         </Text>
-        <View style={[styles.sleekInputWrapper, isRTL && styles.sleekInputWrapperRTL, nameActive && styles.sleekInputWrapperActive]}>
+        <View
+          style={[
+            styles.sleekInputWrapper,
+            isRTL && styles.sleekInputWrapperRTL,
+            nameActive && styles.sleekInputWrapperActive,
+          ]}
+        >
           <Icon
             name="person-outline"
             size={18}
             color={nameActive ? colors.primary : '#9CA3AF'}
             style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
           />
-          <View style={[styles.sleekInputDivider, isRTL && styles.sleekInputDividerRTL]} />
+          <View
+            style={[
+              styles.sleekInputDivider,
+              isRTL && styles.sleekInputDividerRTL,
+            ]}
+          />
           <TextInput
             ref={ref => {
               if (inputRefs.current) inputRefs.current[0] = ref;
@@ -433,17 +512,34 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
         </View>
 
         {/* Email */}
-        <Text style={[styles.label, isRTL && styles.labelRTL, { marginBottom: 6, fontSize: 13, color: '#6B7280' }]}>
+        <Text
+          style={[
+            styles.label,
+            isRTL && styles.labelRTL,
+            { marginBottom: 6, fontSize: 13, color: '#6B7280' },
+          ]}
+        >
           {isRTL ? 'البريد الإلكتروني' : 'Email'}
         </Text>
-        <View style={[styles.sleekInputWrapper, isRTL && styles.sleekInputWrapperRTL, emailActive && styles.sleekInputWrapperActive]}>
+        <View
+          style={[
+            styles.sleekInputWrapper,
+            isRTL && styles.sleekInputWrapperRTL,
+            emailActive && styles.sleekInputWrapperActive,
+          ]}
+        >
           <Icon
             name="mail-outline"
             size={18}
             color={emailActive ? colors.primary : '#9CA3AF'}
             style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
           />
-          <View style={[styles.sleekInputDivider, isRTL && styles.sleekInputDividerRTL]} />
+          <View
+            style={[
+              styles.sleekInputDivider,
+              isRTL && styles.sleekInputDividerRTL,
+            ]}
+          />
           <TextInput
             ref={ref => {
               if (inputRefs.current) inputRefs.current[1] = ref;
@@ -462,17 +558,34 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
         </View>
 
         {/* Password */}
-        <Text style={[styles.label, isRTL && styles.labelRTL, { marginBottom: 6, fontSize: 13, color: '#6B7280' }]}>
+        <Text
+          style={[
+            styles.label,
+            isRTL && styles.labelRTL,
+            { marginBottom: 6, fontSize: 13, color: '#6B7280' },
+          ]}
+        >
           {isRTL ? 'كلمة المرور' : 'Password'}
         </Text>
-        <View style={[styles.sleekInputWrapper, isRTL && styles.sleekInputWrapperRTL, passwordActive && styles.sleekInputWrapperActive]}>
+        <View
+          style={[
+            styles.sleekInputWrapper,
+            isRTL && styles.sleekInputWrapperRTL,
+            passwordActive && styles.sleekInputWrapperActive,
+          ]}
+        >
           <Icon
             name="lock-closed-outline"
             size={18}
             color={passwordActive ? colors.primary : '#9CA3AF'}
             style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
           />
-          <View style={[styles.sleekInputDivider, isRTL && styles.sleekInputDividerRTL]} />
+          <View
+            style={[
+              styles.sleekInputDivider,
+              isRTL && styles.sleekInputDividerRTL,
+            ]}
+          />
           <TextInput
             ref={ref => {
               if (inputRefs.current) inputRefs.current[2] = ref;
@@ -500,7 +613,9 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
           </TouchableOpacity>
         </View>
         {password.length > 0 && (
-          <View style={[multiStepStyles.passwordRequirements, { marginBottom: 16 }]}>
+          <View
+            style={[multiStepStyles.passwordRequirements, { marginBottom: 16 }]}
+          >
             <Text
               style={[
                 multiStepStyles.requirementText,
@@ -542,17 +657,34 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
         )}
 
         {/* Confirm Password */}
-        <Text style={[styles.label, isRTL && styles.labelRTL, { marginBottom: 6, fontSize: 13, color: '#6B7280' }]}>
+        <Text
+          style={[
+            styles.label,
+            isRTL && styles.labelRTL,
+            { marginBottom: 6, fontSize: 13, color: '#6B7280' },
+          ]}
+        >
           {isRTL ? 'تأكيد كلمة المرور' : 'Confirm Password'}
         </Text>
-        <View style={[styles.sleekInputWrapper, isRTL && styles.sleekInputWrapperRTL, confirmPasswordActive && styles.sleekInputWrapperActive]}>
+        <View
+          style={[
+            styles.sleekInputWrapper,
+            isRTL && styles.sleekInputWrapperRTL,
+            confirmPasswordActive && styles.sleekInputWrapperActive,
+          ]}
+        >
           <Icon
             name="lock-closed-outline"
             size={18}
             color={confirmPasswordActive ? colors.primary : '#9CA3AF'}
             style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
           />
-          <View style={[styles.sleekInputDivider, isRTL && styles.sleekInputDividerRTL]} />
+          <View
+            style={[
+              styles.sleekInputDivider,
+              isRTL && styles.sleekInputDividerRTL,
+            ]}
+          />
           <TextInput
             ref={ref => {
               if (inputRefs.current) inputRefs.current[3] = ref;
@@ -560,7 +692,9 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
             style={[styles.sleekTextInput, isRTL && styles.sleekTextInputRTL]}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
-            placeholder={isRTL ? 'أعد إدخال كلمة المرور' : 'Re-enter your password'}
+            placeholder={
+              isRTL ? 'أعد إدخال كلمة المرور' : 'Re-enter your password'
+            }
             placeholderTextColor="#9CA3AF"
             secureTextEntry={!showConfirmPassword}
             onFocus={() => setConfirmPasswordActive(true)}
@@ -580,7 +714,9 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
           </TouchableOpacity>
         </View>
         {confirmPassword.length > 0 && (
-          <View style={[multiStepStyles.passwordRequirements, { marginBottom: 16 }]}>
+          <View
+            style={[multiStepStyles.passwordRequirements, { marginBottom: 16 }]}
+          >
             <Text
               style={[
                 multiStepStyles.requirementText,
@@ -596,22 +732,55 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
         )}
 
         {/* Phone Number */}
-        <Text style={[styles.label, isRTL && styles.labelRTL, { marginBottom: 6, fontSize: 13, color: '#6B7280' }]}>
+        <Text
+          style={[
+            styles.label,
+            isRTL && styles.labelRTL,
+            { marginBottom: 6, fontSize: 13, color: '#6B7280' },
+          ]}
+        >
           {isRTL ? 'رقم الهاتف' : 'Phone Number'}
         </Text>
-        <View style={[styles.sleekInputWrapper, isRTL && styles.sleekInputWrapperRTL, phoneActive && styles.sleekInputWrapperActive]}>
+        <View
+          style={[
+            styles.sleekInputWrapper,
+            isRTL && styles.sleekInputWrapperRTL,
+            phoneActive && styles.sleekInputWrapperActive,
+          ]}
+        >
           <Icon
             name="call-outline"
             size={18}
             color={phoneActive ? colors.primary : '#9CA3AF'}
             style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
           />
-          <View style={[styles.sleekInputDivider, isRTL && styles.sleekInputDividerRTL]} />
-          
+          <View
+            style={[
+              styles.sleekInputDivider,
+              isRTL && styles.sleekInputDividerRTL,
+            ]}
+          />
+
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Text style={{ fontSize: 15, color: colors.textDark, fontWeight: '600', marginRight: 4 }}>+</Text>
+            <Text
+              style={{
+                fontSize: 15,
+                color: colors.textDark,
+                fontWeight: '600',
+                marginRight: 4,
+              }}
+            >
+              +
+            </Text>
             <TextInput
-              style={{ fontSize: 15, color: colors.textDark, fontWeight: '600', padding: 0, minWidth: 32, textAlign: 'center' }}
+              style={{
+                fontSize: 15,
+                color: colors.textDark,
+                fontWeight: '600',
+                padding: 0,
+                minWidth: 32,
+                textAlign: 'center',
+              }}
               value={countryCode}
               onChangeText={setCountryCode}
               placeholder="965"
@@ -620,7 +789,11 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
               maxLength={4}
               editable={!isLoading}
             />
-            <Text style={{ fontSize: 15, color: '#E5E7EB', marginHorizontal: 6 }}>|</Text>
+            <Text
+              style={{ fontSize: 15, color: '#E5E7EB', marginHorizontal: 6 }}
+            >
+              |
+            </Text>
           </View>
 
           <TextInput
@@ -668,7 +841,11 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
           disabled={isLoading}
         >
           <Text
-            style={[styles.backButtonText, isRTL && styles.backButtonTextRTL, { color: colors.primary, fontWeight: '600' }]}
+            style={[
+              styles.backButtonText,
+              isRTL && styles.backButtonTextRTL,
+              { color: colors.primary, fontWeight: '600' },
+            ]}
           >
             {isRTL ? 'العودة لتسجيل الدخول' : 'Back to Login'}
           </Text>
@@ -685,16 +862,49 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
     >
       {/* Top Header Block with topographic wave lines */}
       <View style={styles.headerBlock}>
-        <Svg width="100%" height="100%" viewBox="0 0 375 130" preserveAspectRatio="none" style={styles.topographicSvg}>
-          <Path d="M-20 60 C80 120 180 20 300 80 T400 60" stroke="rgba(255,255,255,0.08)" strokeWidth={1.5} fill="none" />
-          <Path d="M-20 80 C80 140 180 40 300 100 T400 80" stroke="rgba(255,255,255,0.12)" strokeWidth={1.5} fill="none" />
-          <Path d="M-20 100 C80 160 180 60 300 120 T400 100" stroke="rgba(255,255,255,0.15)" strokeWidth={2} fill="none" />
-          <Path d="M-20 120 C80 180 180 80 300 140 T400 120" stroke="rgba(255,255,255,0.08)" strokeWidth={1} fill="none" />
-          <Path d="M-20 140 C80 200 180 100 300 160 T400 140" stroke="rgba(255,255,255,0.05)" strokeWidth={1} fill="none" />
+        <Svg
+          width="100%"
+          height="100%"
+          viewBox="0 0 375 130"
+          preserveAspectRatio="none"
+          style={styles.topographicSvg}
+        >
+          <Path
+            d="M-20 60 C80 120 180 20 300 80 T400 60"
+            stroke="rgba(255,255,255,0.08)"
+            strokeWidth={1.5}
+            fill="none"
+          />
+          <Path
+            d="M-20 80 C80 140 180 40 300 100 T400 80"
+            stroke="rgba(255,255,255,0.12)"
+            strokeWidth={1.5}
+            fill="none"
+          />
+          <Path
+            d="M-20 100 C80 160 180 60 300 120 T400 100"
+            stroke="rgba(255,255,255,0.15)"
+            strokeWidth={2}
+            fill="none"
+          />
+          <Path
+            d="M-20 120 C80 180 180 80 300 140 T400 120"
+            stroke="rgba(255,255,255,0.08)"
+            strokeWidth={1}
+            fill="none"
+          />
+          <Path
+            d="M-20 140 C80 200 180 100 300 160 T400 140"
+            stroke="rgba(255,255,255,0.05)"
+            strokeWidth={1}
+            fill="none"
+          />
         </Svg>
 
         {/* Top Overlay Navigation/Back Button */}
-        <View style={[styles.headerOverlayBar, isRTL && styles.headerOverlayBarRTL]}>
+        <View
+          style={[styles.headerOverlayBar, isRTL && styles.headerOverlayBarRTL]}
+        >
           <TouchableOpacity
             style={styles.headerBackButtonCircle}
             onPress={() => {
@@ -715,41 +925,93 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
 
       {/* Curved Wave Divider */}
       <View style={styles.curveDivider}>
-        <Svg height="60" width="100%" viewBox="0 0 375 60" preserveAspectRatio="none">
-          <Path d="M0,40 C100,80 250,0 375,40 L375,60 L0,60 Z" fill={colors.background} />
+        <Svg
+          height="60"
+          width="100%"
+          viewBox="0 0 375 60"
+          preserveAspectRatio="none"
+        >
+          <Path
+            d="M0,40 C100,80 250,0 375,40 L375,60 L0,60 Z"
+            fill={colors.background}
+          />
         </Svg>
       </View>
 
       {/* Form Container */}
       <View style={styles.formWrapper}>
         {/* Header Title with Custom Accent Line */}
-        <View style={[styles.formHeadingContainer, isRTL && styles.formHeadingContainerRTL]}>
+        <View
+          style={[
+            styles.formHeadingContainer,
+            isRTL && styles.formHeadingContainerRTL,
+          ]}
+        >
           <Text style={[styles.formHeading, isRTL && styles.formHeadingRTL]}>
             {isRTL ? 'التحقق من البريد' : 'Verify Email'}
           </Text>
-          <View style={[styles.formHeadingUnderline, isRTL && styles.formHeadingUnderlineRTL]} />
+          <View
+            style={[
+              styles.formHeadingUnderline,
+              isRTL && styles.formHeadingUnderlineRTL,
+            ]}
+          />
         </View>
 
         {/* Progress Indicator */}
         <View style={[multiStepStyles.progressContainer, { marginBottom: 20 }]}>
-          <View style={[multiStepStyles.progressDot, multiStepStyles.progressDotActive]} />
+          <View
+            style={[
+              multiStepStyles.progressDot,
+              multiStepStyles.progressDotActive,
+            ]}
+          />
           <View style={multiStepStyles.progressLine} />
-          <View style={[multiStepStyles.progressDot, multiStepStyles.progressDotActive]} />
+          <View
+            style={[
+              multiStepStyles.progressDot,
+              multiStepStyles.progressDotActive,
+            ]}
+          />
           <View style={multiStepStyles.progressLine} />
           <View style={multiStepStyles.progressDot} />
         </View>
 
-        <Text style={[styles.label, isRTL && styles.labelRTL, { marginBottom: 16, fontSize: 13, color: colors.textSecondary }]}>
-          {isRTL ? 'الخطوة 2 من 3: أدخل رمز التحقق' : 'Step 2 of 3: Enter verification code'}
+        <Text
+          style={[
+            styles.label,
+            isRTL && styles.labelRTL,
+            { marginBottom: 16, fontSize: 13, color: colors.textSecondary },
+          ]}
+        >
+          {isRTL
+            ? 'الخطوة 2 من 3: أدخل رمز التحقق'
+            : 'Step 2 of 3: Enter verification code'}
         </Text>
 
-        <Text style={[multiStepStyles.description, isRTL && multiStepStyles.descriptionRTL, { fontSize: 14, color: colors.textSecondary, marginBottom: 24, textAlign: isRTL ? 'right' : 'left' }]}>
+        <Text
+          style={[
+            multiStepStyles.description,
+            isRTL && multiStepStyles.descriptionRTL,
+            {
+              fontSize: 14,
+              color: colors.textSecondary,
+              marginBottom: 24,
+              textAlign: isRTL ? 'right' : 'left',
+            },
+          ]}
+        >
           {isRTL
             ? `تم إرسال رمز مكون من 6 أرقام إلى:\n${email}`
             : `A 6-digit code has been sent to:\n${email}`}
         </Text>
 
-        <View style={[multiStepStyles.otpContainer, isRTL && multiStepStyles.otpContainerRTL]}>
+        <View
+          style={[
+            multiStepStyles.otpContainer,
+            isRTL && multiStepStyles.otpContainerRTL,
+          ]}
+        >
           {otp.map((digit, index) => (
             <TextInput
               key={index}
@@ -800,7 +1062,11 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
           disabled={isLoading}
         >
           <Text
-            style={[styles.backButtonText, isRTL && styles.backButtonTextRTL, { color: colors.primary, fontWeight: '600' }]}
+            style={[
+              styles.backButtonText,
+              isRTL && styles.backButtonTextRTL,
+              { color: colors.primary, fontWeight: '600' },
+            ]}
           >
             {isRTL ? 'رجوع' : 'Back'}
           </Text>
@@ -817,16 +1083,49 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
     >
       {/* Top Header Block with topographic wave lines */}
       <View style={styles.headerBlock}>
-        <Svg width="100%" height="100%" viewBox="0 0 375 130" preserveAspectRatio="none" style={styles.topographicSvg}>
-          <Path d="M-20 60 C80 120 180 20 300 80 T400 60" stroke="rgba(255,255,255,0.08)" strokeWidth={1.5} fill="none" />
-          <Path d="M-20 80 C80 140 180 40 300 100 T400 80" stroke="rgba(255,255,255,0.12)" strokeWidth={1.5} fill="none" />
-          <Path d="M-20 100 C80 160 180 60 300 120 T400 100" stroke="rgba(255,255,255,0.15)" strokeWidth={2} fill="none" />
-          <Path d="M-20 120 C80 180 180 80 300 140 T400 120" stroke="rgba(255,255,255,0.08)" strokeWidth={1} fill="none" />
-          <Path d="M-20 140 C80 200 180 100 300 160 T400 140" stroke="rgba(255,255,255,0.05)" strokeWidth={1} fill="none" />
+        <Svg
+          width="100%"
+          height="100%"
+          viewBox="0 0 375 130"
+          preserveAspectRatio="none"
+          style={styles.topographicSvg}
+        >
+          <Path
+            d="M-20 60 C80 120 180 20 300 80 T400 60"
+            stroke="rgba(255,255,255,0.08)"
+            strokeWidth={1.5}
+            fill="none"
+          />
+          <Path
+            d="M-20 80 C80 140 180 40 300 100 T400 80"
+            stroke="rgba(255,255,255,0.12)"
+            strokeWidth={1.5}
+            fill="none"
+          />
+          <Path
+            d="M-20 100 C80 160 180 60 300 120 T400 100"
+            stroke="rgba(255,255,255,0.15)"
+            strokeWidth={2}
+            fill="none"
+          />
+          <Path
+            d="M-20 120 C80 180 180 80 300 140 T400 120"
+            stroke="rgba(255,255,255,0.08)"
+            strokeWidth={1}
+            fill="none"
+          />
+          <Path
+            d="M-20 140 C80 200 180 100 300 160 T400 140"
+            stroke="rgba(255,255,255,0.05)"
+            strokeWidth={1}
+            fill="none"
+          />
         </Svg>
 
         {/* Top Overlay Navigation/Back Button */}
-        <View style={[styles.headerOverlayBar, isRTL && styles.headerOverlayBarRTL]}>
+        <View
+          style={[styles.headerOverlayBar, isRTL && styles.headerOverlayBarRTL]}
+        >
           <TouchableOpacity
             style={styles.headerBackButtonCircle}
             onPress={() => setStep(2)}
@@ -844,46 +1143,104 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
 
       {/* Curved Wave Divider */}
       <View style={styles.curveDivider}>
-        <Svg height="60" width="100%" viewBox="0 0 375 60" preserveAspectRatio="none">
-          <Path d="M0,40 C100,80 250,0 375,40 L375,60 L0,60 Z" fill={colors.background} />
+        <Svg
+          height="60"
+          width="100%"
+          viewBox="0 0 375 60"
+          preserveAspectRatio="none"
+        >
+          <Path
+            d="M0,40 C100,80 250,0 375,40 L375,60 L0,60 Z"
+            fill={colors.background}
+          />
         </Svg>
       </View>
 
       {/* Form Container */}
       <View style={styles.formWrapper}>
         {/* Header Title with Custom Accent Line */}
-        <View style={[styles.formHeadingContainer, isRTL && styles.formHeadingContainerRTL]}>
+        <View
+          style={[
+            styles.formHeadingContainer,
+            isRTL && styles.formHeadingContainerRTL,
+          ]}
+        >
           <Text style={[styles.formHeading, isRTL && styles.formHeadingRTL]}>
             {isRTL ? 'إضافة عنوان' : 'Add Address'}
           </Text>
-          <View style={[styles.formHeadingUnderline, isRTL && styles.formHeadingUnderlineRTL]} />
+          <View
+            style={[
+              styles.formHeadingUnderline,
+              isRTL && styles.formHeadingUnderlineRTL,
+            ]}
+          />
         </View>
 
         {/* Progress Indicator */}
         <View style={[multiStepStyles.progressContainer, { marginBottom: 20 }]}>
-          <View style={[multiStepStyles.progressDot, multiStepStyles.progressDotActive]} />
+          <View
+            style={[
+              multiStepStyles.progressDot,
+              multiStepStyles.progressDotActive,
+            ]}
+          />
           <View style={multiStepStyles.progressLine} />
-          <View style={[multiStepStyles.progressDot, multiStepStyles.progressDotActive]} />
+          <View
+            style={[
+              multiStepStyles.progressDot,
+              multiStepStyles.progressDotActive,
+            ]}
+          />
           <View style={multiStepStyles.progressLine} />
-          <View style={[multiStepStyles.progressDot, multiStepStyles.progressDotActive]} />
+          <View
+            style={[
+              multiStepStyles.progressDot,
+              multiStepStyles.progressDotActive,
+            ]}
+          />
         </View>
 
-        <Text style={[styles.label, isRTL && styles.labelRTL, { marginBottom: 16, fontSize: 13, color: colors.textSecondary }]}>
-          {isRTL ? 'الخطوة 3 من 3: بيانات العنوان' : 'Step 3 of 3: Address Details'}
+        <Text
+          style={[
+            styles.label,
+            isRTL && styles.labelRTL,
+            { marginBottom: 16, fontSize: 13, color: colors.textSecondary },
+          ]}
+        >
+          {isRTL
+            ? 'الخطوة 3 من 3: بيانات العنوان'
+            : 'Step 3 of 3: Address Details'}
         </Text>
 
         {/* Address Name */}
-        <Text style={[styles.label, isRTL && styles.labelRTL, { marginBottom: 6, fontSize: 13, color: '#6B7280' }]}>
+        <Text
+          style={[
+            styles.label,
+            isRTL && styles.labelRTL,
+            { marginBottom: 6, fontSize: 13, color: '#6B7280' },
+          ]}
+        >
           {isRTL ? 'اسم العنوان' : 'Address Name'}
         </Text>
-        <View style={[styles.sleekInputWrapper, isRTL && styles.sleekInputWrapperRTL, addressNameActive && styles.sleekInputWrapperActive]}>
+        <View
+          style={[
+            styles.sleekInputWrapper,
+            isRTL && styles.sleekInputWrapperRTL,
+            addressNameActive && styles.sleekInputWrapperActive,
+          ]}
+        >
           <Icon
             name="bookmark-outline"
             size={18}
             color={addressNameActive ? colors.primary : '#9CA3AF'}
             style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
           />
-          <View style={[styles.sleekInputDivider, isRTL && styles.sleekInputDividerRTL]} />
+          <View
+            style={[
+              styles.sleekInputDivider,
+              isRTL && styles.sleekInputDividerRTL,
+            ]}
+          />
           <TextInput
             style={[styles.sleekTextInput, isRTL && styles.sleekTextInputRTL]}
             value={addressName}
@@ -897,17 +1254,34 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
         </View>
 
         {/* Street */}
-        <Text style={[styles.label, isRTL && styles.labelRTL, { marginBottom: 6, fontSize: 13, color: '#6B7280' }]}>
+        <Text
+          style={[
+            styles.label,
+            isRTL && styles.labelRTL,
+            { marginBottom: 6, fontSize: 13, color: '#6B7280' },
+          ]}
+        >
           {isRTL ? 'الشارع' : 'Street'}
         </Text>
-        <View style={[styles.sleekInputWrapper, isRTL && styles.sleekInputWrapperRTL, streetActive && styles.sleekInputWrapperActive]}>
+        <View
+          style={[
+            styles.sleekInputWrapper,
+            isRTL && styles.sleekInputWrapperRTL,
+            streetActive && styles.sleekInputWrapperActive,
+          ]}
+        >
           <Icon
             name="location-outline"
             size={18}
             color={streetActive ? colors.primary : '#9CA3AF'}
             style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
           />
-          <View style={[styles.sleekInputDivider, isRTL && styles.sleekInputDividerRTL]} />
+          <View
+            style={[
+              styles.sleekInputDivider,
+              isRTL && styles.sleekInputDividerRTL,
+            ]}
+          />
           <TextInput
             style={[styles.sleekTextInput, isRTL && styles.sleekTextInputRTL]}
             value={street}
@@ -923,19 +1297,42 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
         {/* House Number + Floor Number */}
         <View style={multiStepStyles.rowContainer}>
           <View style={multiStepStyles.halfInput}>
-            <Text style={[styles.label, isRTL && styles.labelRTL, { marginBottom: 6, fontSize: 13, color: '#6B7280' }]}>
+            <Text
+              style={[
+                styles.label,
+                isRTL && styles.labelRTL,
+                { marginBottom: 6, fontSize: 13, color: '#6B7280' },
+              ]}
+            >
               {isRTL ? 'رقم المنزل' : 'House Number'}
             </Text>
-            <View style={[styles.sleekInputWrapper, isRTL && styles.sleekInputWrapperRTL, houseNumberActive && styles.sleekInputWrapperActive]}>
+            <View
+              style={[
+                styles.sleekInputWrapper,
+                isRTL && styles.sleekInputWrapperRTL,
+                houseNumberActive && styles.sleekInputWrapperActive,
+              ]}
+            >
               <Icon
                 name="home-outline"
                 size={16}
                 color={houseNumberActive ? colors.primary : '#9CA3AF'}
-                style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
+                style={[
+                  styles.sleekInputIcon,
+                  isRTL && styles.sleekInputIconRTL,
+                ]}
               />
-              <View style={[styles.sleekInputDivider, isRTL && styles.sleekInputDividerRTL]} />
+              <View
+                style={[
+                  styles.sleekInputDivider,
+                  isRTL && styles.sleekInputDividerRTL,
+                ]}
+              />
               <TextInput
-                style={[styles.sleekTextInput, isRTL && styles.sleekTextInputRTL]}
+                style={[
+                  styles.sleekTextInput,
+                  isRTL && styles.sleekTextInputRTL,
+                ]}
                 value={houseNumber}
                 onChangeText={setHouseNumber}
                 placeholder={isRTL ? 'المنزل' : 'House'}
@@ -949,19 +1346,42 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
           </View>
 
           <View style={multiStepStyles.halfInput}>
-            <Text style={[styles.label, isRTL && styles.labelRTL, { marginBottom: 6, fontSize: 13, color: '#6B7280' }]}>
+            <Text
+              style={[
+                styles.label,
+                isRTL && styles.labelRTL,
+                { marginBottom: 6, fontSize: 13, color: '#6B7280' },
+              ]}
+            >
               {isRTL ? 'رقم الطابق' : 'Floor Number'}
             </Text>
-            <View style={[styles.sleekInputWrapper, isRTL && styles.sleekInputWrapperRTL, floorNumberActive && styles.sleekInputWrapperActive]}>
+            <View
+              style={[
+                styles.sleekInputWrapper,
+                isRTL && styles.sleekInputWrapperRTL,
+                floorNumberActive && styles.sleekInputWrapperActive,
+              ]}
+            >
               <Icon
                 name="layers-outline"
                 size={16}
                 color={floorNumberActive ? colors.primary : '#9CA3AF'}
-                style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
+                style={[
+                  styles.sleekInputIcon,
+                  isRTL && styles.sleekInputIconRTL,
+                ]}
               />
-              <View style={[styles.sleekInputDivider, isRTL && styles.sleekInputDividerRTL]} />
+              <View
+                style={[
+                  styles.sleekInputDivider,
+                  isRTL && styles.sleekInputDividerRTL,
+                ]}
+              />
               <TextInput
-                style={[styles.sleekTextInput, isRTL && styles.sleekTextInputRTL]}
+                style={[
+                  styles.sleekTextInput,
+                  isRTL && styles.sleekTextInputRTL,
+                ]}
                 value={floorNumber}
                 onChangeText={setFloorNumber}
                 placeholder={isRTL ? 'الطابق' : 'Floor'}
@@ -976,17 +1396,34 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
         </View>
 
         {/* City */}
-        <Text style={[styles.label, isRTL && styles.labelRTL, { marginBottom: 6, fontSize: 13, color: '#6B7280' }]}>
+        <Text
+          style={[
+            styles.label,
+            isRTL && styles.labelRTL,
+            { marginBottom: 6, fontSize: 13, color: '#6B7280' },
+          ]}
+        >
           {isRTL ? 'المدينة' : 'City'}
         </Text>
-        <View style={[styles.sleekInputWrapper, isRTL && styles.sleekInputWrapperRTL, cityActive && styles.sleekInputWrapperActive]}>
+        <View
+          style={[
+            styles.sleekInputWrapper,
+            isRTL && styles.sleekInputWrapperRTL,
+            cityActive && styles.sleekInputWrapperActive,
+          ]}
+        >
           <Icon
             name="business-outline"
             size={18}
             color={cityActive ? colors.primary : '#9CA3AF'}
             style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
           />
-          <View style={[styles.sleekInputDivider, isRTL && styles.sleekInputDividerRTL]} />
+          <View
+            style={[
+              styles.sleekInputDivider,
+              isRTL && styles.sleekInputDividerRTL,
+            ]}
+          />
           <TextInput
             style={[styles.sleekTextInput, isRTL && styles.sleekTextInputRTL]}
             value={city}
@@ -1028,7 +1465,11 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
           disabled={isLoading}
         >
           <Text
-            style={[styles.backButtonText, isRTL && styles.backButtonTextRTL, { color: colors.primary, fontWeight: '600' }]}
+            style={[
+              styles.backButtonText,
+              isRTL && styles.backButtonTextRTL,
+              { color: colors.primary, fontWeight: '600' },
+            ]}
           >
             {isRTL ? 'تخطي إضافة العنوان الآن' : 'Skip adding address for now'}
           </Text>
@@ -1052,7 +1493,11 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
 
   return (
     <>
-      <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
+      <StatusBar
+        backgroundColor="#00a19c"
+        barStyle="light-content"
+        translucent={false}
+      />
       <CustomAlert
         visible={alertVisible}
         title={alertTitle}

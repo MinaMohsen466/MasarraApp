@@ -1,5 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { ActiveCoupon, fetchActiveCouponsFromBanner } from '../services/couponApi';
+import {
+  ActiveCoupon,
+  fetchActiveCouponsFromBanner,
+} from '../services/couponApi';
 
 export const useActiveCoupons = () => {
   return useQuery<ActiveCoupon[], Error>({

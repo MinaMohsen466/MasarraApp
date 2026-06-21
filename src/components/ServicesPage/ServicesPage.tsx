@@ -1,9 +1,4 @@
-import React, {
-  useState,
-  useEffect,
-  useMemo,
-  useCallback,
-} from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -418,22 +413,35 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
             <View style={styles.priceColumn}>
               {item.hidePrice ? (
                 <>
-                  <Text style={[styles.priceLabel, isRTL && styles.priceLabelRTL]}>
+                  <Text
+                    style={[styles.priceLabel, isRTL && styles.priceLabelRTL]}
+                  >
                     {isRTL ? 'السعر' : 'Price'}
                   </Text>
-                  <Text style={[styles.priceValue, isRTL && styles.priceValueRTL, { fontSize: 13, color: colors.textSecondary }]}>
+                  <Text
+                    style={[
+                      styles.priceValue,
+                      isRTL && styles.priceValueRTL,
+                      { fontSize: 13, color: colors.textSecondary },
+                    ]}
+                  >
                     {isRTL ? 'يختلف حسب الاختيار' : 'Varies by selection'}
                   </Text>
                 </>
               ) : (
                 <>
-                  <Text style={[styles.priceLabel, isRTL && styles.priceLabelRTL]}>
+                  <Text
+                    style={[styles.priceLabel, isRTL && styles.priceLabelRTL]}
+                  >
                     {isRTL ? 'السعر يبدأ من' : 'Price starts from'}
                   </Text>
                   {hasDiscount ? (
                     <View style={{ gap: 2 }}>
                       <Text
-                        style={[styles.priceValue, isRTL && styles.priceValueRTL]}
+                        style={[
+                          styles.priceValue,
+                          isRTL && styles.priceValueRTL,
+                        ]}
                       >
                         {isRTL
                           ? `${finalPrice.toFixed(3)} د.ك`
@@ -600,7 +608,11 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
   if ((isLoading || loadingVendor) && vendorId) {
     return (
       <View style={styles.pageContainer}>
-        <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
+        <StatusBar
+          backgroundColor="#00a19c"
+          barStyle="light-content"
+          translucent={false}
+        />
         {/* Custom Header with Back Button */}
         <View style={[styles.header, isRTL && styles.headerRTL]}>
           <TouchableOpacity
@@ -692,7 +704,11 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
 
   return (
     <View style={styles.pageContainer}>
-      <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
+      <StatusBar
+        backgroundColor="#00a19c"
+        barStyle="light-content"
+        translucent={false}
+      />
       {/* Custom Header with Back Button */}
       <View style={[styles.header, isRTL && styles.headerRTL]}>
         <TouchableOpacity

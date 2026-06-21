@@ -18,10 +18,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { colors } from '../../constants/colors';
-import {
-  getQRCodeSettings,
-  generateQRCode,
-} from '../../services/qrCodeApi';
+import { getQRCodeSettings, generateQRCode } from '../../services/qrCodeApi';
 import { QRCodeResultModal } from './QRCodeResultModal';
 import { CustomAlert } from '../CustomAlert/CustomAlert';
 import type {
@@ -68,10 +65,7 @@ const QRLoader: React.FC<{ isRTL: boolean }> = ({ isRTL }) => {
         <View style={qrLoaderStyles.innerSquare} />
         {/* Scanning laser line */}
         <Animated.View
-          style={[
-            qrLoaderStyles.scanLine,
-            { transform: [{ translateY }] },
-          ]}
+          style={[qrLoaderStyles.scanLine, { transform: [{ translateY }] }]}
         />
       </View>
       <Text style={qrLoaderStyles.text}>
@@ -462,8 +456,6 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
       setSubmitting(false);
     }
   };
-
-
 
   if (!visible) return null;
 

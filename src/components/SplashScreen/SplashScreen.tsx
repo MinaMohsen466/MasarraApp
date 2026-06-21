@@ -1,5 +1,12 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Image, Animated, Easing, Dimensions, StatusBar } from 'react-native';
+import {
+  View,
+  Image,
+  Animated,
+  Easing,
+  Dimensions,
+  StatusBar,
+} from 'react-native';
 import { colors } from '../../constants/colors';
 
 interface SplashScreenProps {
@@ -117,96 +124,104 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
 
   return (
     <>
-      <StatusBar translucent={true} backgroundColor="transparent" barStyle="light-content" />
-      <Animated.View
-      style={{
-        flex: 1,
-        backgroundColor: backgroundColor,
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: '100%',
-        height: '100%',
-      }}
-    >
-      {/* Decorative circles in background */}
-      <View
-        style={{
-          position: 'absolute',
-          width: '100%',
-          height: '100%',
-          overflow: 'hidden',
-        }}
-      >
-        <Animated.View
-          style={{
-            position: 'absolute',
-            width: 300,
-            height: 300,
-            borderRadius: 150,
-            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-            top: -100,
-            right: -100,
-            transform: [{ scale: pulseAnim }],
-          }}
-        />
-        <Animated.View
-          style={{
-            position: 'absolute',
-            width: 200,
-            height: 200,
-            borderRadius: 100,
-            backgroundColor: 'rgba(255, 255, 255, 0.03)',
-            bottom: -50,
-            left: -50,
-            transform: [{ scale: pulseAnim }],
-          }}
-        />
-      </View>
-
-      {/* Logo Container with animations */}
+      <StatusBar
+        translucent={true}
+        backgroundColor="transparent"
+        barStyle="light-content"
+      />
       <Animated.View
         style={{
+          flex: 1,
+          backgroundColor: backgroundColor,
           alignItems: 'center',
           justifyContent: 'center',
-          opacity: logoOpacity,
-          transform: [
-            { scale: Animated.multiply(logoScale, pulseAnim) },
-            { rotate: spin },
-          ],
+          width: '100%',
+          height: '100%',
         }}
       >
-        <Image
-          source={require('../../imgs/logo.png')}
+        {/* Decorative circles in background */}
+        <View
           style={{
-            width: width * 0.5,
-            height: height * 0.3,
-            maxWidth: 250,
-            maxHeight: 300,
+            position: 'absolute',
+            width: '100%',
+            height: '100%',
+            overflow: 'hidden',
           }}
-          resizeMode="contain"
-        />
-      </Animated.View>
-
-      {/* Loading dots animation */}
-      <View style={{ flexDirection: 'row', marginTop: 40, gap: 8 }}>
-        {[0, 1, 2].map(index => (
+        >
           <Animated.View
-            key={index}
             style={{
-              width: 8,
-              height: 8,
-              borderRadius: 4,
-              backgroundColor: 'rgba(255, 255, 255, 0.6)',
-              opacity: pulseAnim.interpolate({
-                inputRange: [1, 1.05],
-                outputRange:
-                  index === 0 ? [0.4, 1] : index === 1 ? [0.6, 1] : [0.8, 0.4],
-              }),
+              position: 'absolute',
+              width: 300,
+              height: 300,
+              borderRadius: 150,
+              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              top: -100,
+              right: -100,
+              transform: [{ scale: pulseAnim }],
             }}
           />
-        ))}
-      </View>
-    </Animated.View>
+          <Animated.View
+            style={{
+              position: 'absolute',
+              width: 200,
+              height: 200,
+              borderRadius: 100,
+              backgroundColor: 'rgba(255, 255, 255, 0.03)',
+              bottom: -50,
+              left: -50,
+              transform: [{ scale: pulseAnim }],
+            }}
+          />
+        </View>
+
+        {/* Logo Container with animations */}
+        <Animated.View
+          style={{
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: logoOpacity,
+            transform: [
+              { scale: Animated.multiply(logoScale, pulseAnim) },
+              { rotate: spin },
+            ],
+          }}
+        >
+          <Image
+            source={require('../../imgs/logo.png')}
+            style={{
+              width: width * 0.5,
+              height: height * 0.3,
+              maxWidth: 250,
+              maxHeight: 300,
+            }}
+            resizeMode="contain"
+          />
+        </Animated.View>
+
+        {/* Loading dots animation */}
+        <View style={{ flexDirection: 'row', marginTop: 40, gap: 8 }}>
+          {[0, 1, 2].map(index => (
+            <Animated.View
+              key={index}
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: 4,
+                backgroundColor: 'rgba(255, 255, 255, 0.6)',
+                opacity: pulseAnim.interpolate({
+                  inputRange: [1, 1.05],
+                  outputRange:
+                    index === 0
+                      ? [0.4, 1]
+                      : index === 1
+                      ? [0.6, 1]
+                      : [0.8, 0.4],
+                }),
+              }}
+            />
+          ))}
+        </View>
+      </Animated.View>
     </>
   );
 };

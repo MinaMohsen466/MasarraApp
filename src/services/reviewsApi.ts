@@ -161,7 +161,9 @@ export async function checkUserReviewedService(
 
     const reviewsResponse = await getServiceReviews(serviceId, 1, 100);
 
-    const userReview = reviewsResponse.reviews.find(review => review.user?._id === userId);
+    const userReview = reviewsResponse.reviews.find(
+      review => review.user?._id === userId,
+    );
     return userReview || null;
   } catch (error) {
     return null;

@@ -121,15 +121,11 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
       return;
     }
     if (!newAddress.block.trim()) {
-      setFormError(
-        isRTL ? 'يرجى إدخال القطعة *' : 'Please enter block *',
-      );
+      setFormError(isRTL ? 'يرجى إدخال القطعة *' : 'Please enter block *');
       return;
     }
     if (!newAddress.street.trim()) {
-      setFormError(
-        isRTL ? 'يرجى إدخال الشارع *' : 'Please enter street *',
-      );
+      setFormError(isRTL ? 'يرجى إدخال الشارع *' : 'Please enter street *');
       return;
     }
     if (!newAddress.houseNumber.trim()) {
@@ -220,7 +216,9 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
             color={activeField === 'name' ? colors.primary : '#94A3B8'}
             style={[styles.inputIcon, isRTL && styles.inputIconRTL]}
           />
-          <View style={[styles.inputDivider, isRTL && styles.inputDividerRTL]} />
+          <View
+            style={[styles.inputDivider, isRTL && styles.inputDividerRTL]}
+          />
           <TextInput
             style={[styles.textInput, isRTL && styles.textInputRTL]}
             placeholder={isRTL ? 'مثال: المنزل، العمل' : 'e.g. Home, Work'}
@@ -251,7 +249,9 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
             color={activeField === 'city' ? colors.primary : '#94A3B8'}
             style={[styles.inputIcon, isRTL && styles.inputIconRTL]}
           />
-          <View style={[styles.inputDivider, isRTL && styles.inputDividerRTL]} />
+          <View
+            style={[styles.inputDivider, isRTL && styles.inputDividerRTL]}
+          />
           <TextInput
             style={[styles.textInput, isRTL && styles.textInputRTL]}
             placeholder={isRTL ? 'المنطقة أو المدينة' : 'Area or City'}
@@ -282,7 +282,9 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
             color={activeField === 'block' ? colors.primary : '#94A3B8'}
             style={[styles.inputIcon, isRTL && styles.inputIconRTL]}
           />
-          <View style={[styles.inputDivider, isRTL && styles.inputDividerRTL]} />
+          <View
+            style={[styles.inputDivider, isRTL && styles.inputDividerRTL]}
+          />
           <TextInput
             style={[styles.textInput, isRTL && styles.textInputRTL]}
             placeholder={isRTL ? 'رقم القطعة' : 'Block number'}
@@ -313,7 +315,9 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
             color={activeField === 'street' ? colors.primary : '#94A3B8'}
             style={[styles.inputIcon, isRTL && styles.inputIconRTL]}
           />
-          <View style={[styles.inputDivider, isRTL && styles.inputDividerRTL]} />
+          <View
+            style={[styles.inputDivider, isRTL && styles.inputDividerRTL]}
+          />
           <TextInput
             style={[styles.textInput, isRTL && styles.textInputRTL]}
             placeholder={isRTL ? 'اسم أو رقم الشارع' : 'Street name or number'}
@@ -344,7 +348,9 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
             color={activeField === 'houseNumber' ? colors.primary : '#94A3B8'}
             style={[styles.inputIcon, isRTL && styles.inputIconRTL]}
           />
-          <View style={[styles.inputDivider, isRTL && styles.inputDividerRTL]} />
+          <View
+            style={[styles.inputDivider, isRTL && styles.inputDividerRTL]}
+          />
           <TextInput
             style={[styles.textInput, isRTL && styles.textInputRTL]}
             placeholder={isRTL ? 'رقم المنزل' : 'House number'}
@@ -375,10 +381,14 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
             color={activeField === 'floorNumber' ? colors.primary : '#94A3B8'}
             style={[styles.inputIcon, isRTL && styles.inputIconRTL]}
           />
-          <View style={[styles.inputDivider, isRTL && styles.inputDividerRTL]} />
+          <View
+            style={[styles.inputDivider, isRTL && styles.inputDividerRTL]}
+          />
           <TextInput
             style={[styles.textInput, isRTL && styles.textInputRTL]}
-            placeholder={isRTL ? 'مثال: الطابق الأرضي، الثاني' : 'e.g. Ground, 2nd floor'}
+            placeholder={
+              isRTL ? 'مثال: الطابق الأرضي، الثاني' : 'e.g. Ground, 2nd floor'
+            }
             placeholderTextColor="#94A3B8"
             value={newAddress.floorNumber}
             onChangeText={text =>
@@ -424,7 +434,7 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.overlay}
       >
-        <View style={styles.container}>
+        <View style={[styles.container, showAddForm && { height: '85%' }]}>
           {showAddForm ? (
             renderAddAddressForm()
           ) : (
@@ -475,7 +485,12 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
                         ]}
                         onPress={() => setSelectedAddressId(address._id)}
                       >
-                        <View style={[styles.radioContainer, isRTL && styles.radioContainerRTL]}>
+                        <View
+                          style={[
+                            styles.radioContainer,
+                            isRTL && styles.radioContainerRTL,
+                          ]}
+                        >
                           <View
                             style={[
                               styles.radioOuter,
@@ -518,7 +533,9 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
                             ]}
                           >
                             {address.block &&
-                              `${isRTL ? 'القطعة' : 'Block'} ${address.block}, `}
+                              `${isRTL ? 'القطعة' : 'Block'} ${
+                                address.block
+                              }, `}
                             {address.street}
                             {address.houseNumber &&
                               `, ${isRTL ? 'منزل' : 'House'} ${
@@ -588,10 +605,9 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   container: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.textWhite,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    minHeight: '65%',
     maxHeight: '85%',
   },
   header: {
@@ -626,16 +642,16 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   addPrimaryButtonText: { color: '#fff', fontSize: 15, fontWeight: '600' },
-  listContainer: { flex: 1, minHeight: 0 },
+  listContainer: { flexShrink: 1, minHeight: 0 },
   addressList: { paddingHorizontal: 20, paddingTop: 5 },
   addressCard: {
     flexDirection: 'row',
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: '#F8FAFC',
     borderRadius: 10,
     padding: 12,
     marginBottom: 8,
     borderWidth: 2,
-    borderColor: 'transparent',
+    borderColor: '#E2E8F0',
   },
   addressCardRTL: {
     flexDirection: 'row-reverse',
@@ -684,7 +700,7 @@ const styles = StyleSheet.create({
   },
   defaultBadgeText: { fontSize: 9, fontWeight: '600', color: '#fff' },
   addButton: {
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: colors.textWhite,
     paddingVertical: 12,
     paddingHorizontal: 16,
     marginTop: 8,

@@ -511,13 +511,14 @@ export async function createBookingsFromCart(
       if (item.customInputs && Array.isArray(item.customInputs)) {
         item.customInputs.forEach(input => {
           const inputsList = Array.isArray(input) ? input : [input];
-          
+
           inputsList.forEach(option => {
             if (!option) return;
             const { label, value } = option;
-            
+
             // Check if value is formatted as "Option ×Qty" or "Option xQty"
-            const menuMatch = typeof value === 'string' && value.match(/(.+) [×xX](\d+)/);
+            const menuMatch =
+              typeof value === 'string' && value.match(/(.+) [×xX](\d+)/);
             if (menuMatch) {
               const itemName = menuMatch[1].trim();
               const qty = parseInt(menuMatch[2], 10) || 0;

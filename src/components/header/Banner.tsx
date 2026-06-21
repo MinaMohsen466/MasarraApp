@@ -1,10 +1,5 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Svg, {
   Path,
   Circle,
@@ -34,8 +29,10 @@ const Banner: React.FC<BannerProps> = ({
   }
 
   // Get banner text directly from site settings
-  const bannerText = isRTL ? siteSettings.bannerTextAr : siteSettings.bannerText;
-  
+  const bannerText = isRTL
+    ? siteSettings.bannerTextAr
+    : siteSettings.bannerText;
+
   if (!bannerText) {
     return null;
   }
@@ -60,7 +57,13 @@ const Banner: React.FC<BannerProps> = ({
   );
 
   const couponIcon = (
-    <Svg width={15} height={15} viewBox="0 0 24 24" fill="none" style={isRTL ? styles.iconRTL : styles.iconLTR}>
+    <Svg
+      width={15}
+      height={15}
+      viewBox="0 0 24 24"
+      fill="none"
+      style={isRTL ? styles.iconRTL : styles.iconLTR}
+    >
       <Path
         d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"
         stroke={colors.textWhite}
@@ -68,12 +71,7 @@ const Banner: React.FC<BannerProps> = ({
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <Circle
-        cx="7"
-        cy="7"
-        r="1.5"
-        fill={colors.textWhite}
-      />
+      <Circle cx="7" cy="7" r="1.5" fill={colors.textWhite} />
     </Svg>
   );
 
@@ -81,7 +79,12 @@ const Banner: React.FC<BannerProps> = ({
     <View style={styles.bannerWrap}>
       {/* Premium Background with Gradient and Topographic Wave Lines */}
       <View style={styles.backgroundContainer}>
-        <Svg width="100%" height="100%" viewBox="0 0 375 100" preserveAspectRatio="none">
+        <Svg
+          width="100%"
+          height="100%"
+          viewBox="0 0 375 100"
+          preserveAspectRatio="none"
+        >
           <Defs>
             <LinearGradient id="bannerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
               <Stop offset="0%" stopColor="#00a19c" />
@@ -90,9 +93,24 @@ const Banner: React.FC<BannerProps> = ({
           </Defs>
           <Rect x="0" y="0" width="375" height="100" fill="url(#bannerGrad)" />
           {/* Topographic Lines */}
-          <Path d="M-20 30 C80 70 180 -10 300 40 T400 30" stroke="rgba(255,255,255,0.06)" strokeWidth={1.5} fill="none" />
-          <Path d="M-20 45 C80 85 180 5 300 55 T400 45" stroke="rgba(255,255,255,0.09)" strokeWidth={1.5} fill="none" />
-          <Path d="M-20 60 C80 100 180 20 300 70 T400 60" stroke="rgba(255,255,255,0.13)" strokeWidth={2} fill="none" />
+          <Path
+            d="M-20 30 C80 70 180 -10 300 40 T400 30"
+            stroke="rgba(255,255,255,0.06)"
+            strokeWidth={1.5}
+            fill="none"
+          />
+          <Path
+            d="M-20 45 C80 85 180 5 300 55 T400 45"
+            stroke="rgba(255,255,255,0.09)"
+            strokeWidth={1.5}
+            fill="none"
+          />
+          <Path
+            d="M-20 60 C80 100 180 20 300 70 T400 60"
+            stroke="rgba(255,255,255,0.13)"
+            strokeWidth={2}
+            fill="none"
+          />
         </Svg>
       </View>
 
@@ -101,7 +119,9 @@ const Banner: React.FC<BannerProps> = ({
         <View style={styles.contentArea}>
           <View style={[styles.staticRow, isRTL && styles.staticRowRTL]}>
             {couponIcon}
-            <Text style={styles.bannerText} numberOfLines={2}>{bannerText}</Text>
+            <Text style={styles.bannerText} numberOfLines={2}>
+              {bannerText}
+            </Text>
           </View>
         </View>
         {!isRTL && closeButton}

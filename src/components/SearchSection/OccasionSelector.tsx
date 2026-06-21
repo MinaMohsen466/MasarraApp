@@ -78,7 +78,13 @@ const OccasionSelector: React.FC<OccasionSelectorProps> = ({
       onRequestClose={onClose}
     >
       <View style={styles.modalOverlay}>
-        <View style={[styles.modalContent, isRTL && styles.modalContentRTL, { paddingBottom: 16 + insets.bottom }]}>
+        <View
+          style={[
+            styles.modalContent,
+            isRTL && styles.modalContentRTL,
+            { paddingBottom: 16 + insets.bottom },
+          ]}
+        >
           {/* Header */}
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>

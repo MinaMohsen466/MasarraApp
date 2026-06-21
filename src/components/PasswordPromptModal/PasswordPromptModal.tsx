@@ -63,8 +63,12 @@ const PasswordPromptModal: React.FC<PasswordPromptModalProps> = ({
                 color={colors.error}
               />
             </View>
-            <Text style={[styles.title, isRTL && styles.titleRTL]}>{title}</Text>
-            <View style={[styles.titleUnderline, isRTL && styles.titleUnderlineRTL]} />
+            <Text style={[styles.title, isRTL && styles.titleRTL]}>
+              {title}
+            </Text>
+            <View
+              style={[styles.titleUnderline, isRTL && styles.titleUnderlineRTL]}
+            />
             <Text style={[styles.message, isRTL && styles.messageRTL]}>
               {message}
             </Text>
@@ -72,16 +76,33 @@ const PasswordPromptModal: React.FC<PasswordPromptModalProps> = ({
 
           {/* Form Area */}
           <View style={styles.form}>
-            <View style={[styles.sleekInputWrapper, isRTL && styles.sleekInputWrapperRTL, passwordActive && styles.sleekInputWrapperActive]}>
+            <View
+              style={[
+                styles.sleekInputWrapper,
+                isRTL && styles.sleekInputWrapperRTL,
+                passwordActive && styles.sleekInputWrapperActive,
+              ]}
+            >
               <Icon
                 name="lock-closed-outline"
                 size={18}
                 color={passwordActive ? colors.error : '#9CA3AF'}
-                style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
+                style={[
+                  styles.sleekInputIcon,
+                  isRTL && styles.sleekInputIconRTL,
+                ]}
               />
-              <View style={[styles.sleekInputDivider, isRTL && styles.sleekInputDividerRTL]} />
+              <View
+                style={[
+                  styles.sleekInputDivider,
+                  isRTL && styles.sleekInputDividerRTL,
+                ]}
+              />
               <TextInput
-                style={[styles.sleekTextInput, isRTL && styles.sleekTextInputRTL]}
+                style={[
+                  styles.sleekTextInput,
+                  isRTL && styles.sleekTextInputRTL,
+                ]}
                 value={password}
                 onChangeText={setPassword}
                 placeholder={isRTL ? 'أدخل كلمة المرور' : 'Enter password'}
@@ -105,13 +126,20 @@ const PasswordPromptModal: React.FC<PasswordPromptModalProps> = ({
           </View>
 
           {/* Action Buttons */}
-          <View style={[styles.buttonContainer, isRTL && styles.buttonContainerRTL]}>
+          <View
+            style={[styles.buttonContainer, isRTL && styles.buttonContainerRTL]}
+          >
             <TouchableOpacity
               style={[styles.button, styles.cancelButton]}
               onPress={handleCancel}
               activeOpacity={0.7}
             >
-              <Text style={[styles.cancelButtonText, isRTL && styles.cancelButtonTextRTL]}>
+              <Text
+                style={[
+                  styles.cancelButtonText,
+                  isRTL && styles.cancelButtonTextRTL,
+                ]}
+              >
                 {isRTL ? 'إلغاء' : 'Cancel'}
               </Text>
             </TouchableOpacity>
@@ -122,7 +150,12 @@ const PasswordPromptModal: React.FC<PasswordPromptModalProps> = ({
               activeOpacity={0.7}
               disabled={password.trim() === ''}
             >
-              <Text style={[styles.confirmButtonText, isRTL && styles.confirmButtonTextRTL]}>
+              <Text
+                style={[
+                  styles.confirmButtonText,
+                  isRTL && styles.confirmButtonTextRTL,
+                ]}
+              >
                 {isRTL ? 'حذف الحساب' : 'Delete Account'}
               </Text>
             </TouchableOpacity>

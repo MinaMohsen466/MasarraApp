@@ -10,7 +10,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.textWhite,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: height * 0.5,
@@ -49,12 +49,12 @@ export const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 8,
     marginVertical: 4,
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: '#E2E8F0',
   },
   occasionItemSelected: {
-    backgroundColor: colors.primary,
+    backgroundColor: '#E8F5F4',
     borderColor: colors.primary,
   },
   occasionItemContent: {

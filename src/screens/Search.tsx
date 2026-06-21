@@ -63,7 +63,9 @@ const Search: React.FC<SearchProps> = ({
   const { data: occasions, isLoading: occasionsLoading } = useOccasions();
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredResults, setFilteredResults] = useState<any[]>([]);
-  const [searchType, setSearchType] = useState<'all' | 'services' | 'occasions'>('all');
+  const [searchType, setSearchType] = useState<
+    'all' | 'services' | 'occasions'
+  >('all');
 
   // Animation refs
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -71,8 +73,16 @@ const Search: React.FC<SearchProps> = ({
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 350, useNativeDriver: true }),
-      Animated.timing(slideAnim, { toValue: 0, duration: 350, useNativeDriver: true }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 350,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 350,
+        useNativeDriver: true,
+      }),
     ]).start();
   }, []);
 
@@ -90,15 +100,24 @@ const Search: React.FC<SearchProps> = ({
         const nameMatch = service.name?.toLowerCase().includes(query);
         const nameArMatch = service.nameAr?.toLowerCase().includes(query);
         const descMatch = service.description?.toLowerCase().includes(query);
-        const descArMatch = service.descriptionAr?.toLowerCase().includes(query);
+        const descArMatch = service.descriptionAr
+          ?.toLowerCase()
+          .includes(query);
         const vendorMatch = service.vendor?.name?.toLowerCase().includes(query);
 
-        if (nameMatch || nameArMatch || descMatch || descArMatch || vendorMatch) {
+        if (
+          nameMatch ||
+          nameArMatch ||
+          descMatch ||
+          descArMatch ||
+          vendorMatch
+        ) {
           results.push({
             ...service,
             type: 'service',
             displayName: isRTL ? service.nameAr : service.name,
-            displaySubtitle: service.vendor?.name || (isRTL ? 'خدمة' : 'Service'),
+            displaySubtitle:
+              service.vendor?.name || (isRTL ? 'خدمة' : 'Service'),
             image: service.images?.[0],
           });
         }
@@ -129,13 +148,19 @@ const Search: React.FC<SearchProps> = ({
     if (item.type === 'service' && onSelectService) {
       onSelectService(item._id);
     } else if (item.type === 'occasion' && onSelectOccasion) {
-      onSelectOccasion({ ...item, name: item.name, nameAr: item.nameAr, _id: item._id });
+      onSelectOccasion({
+        ...item,
+        name: item.name,
+        nameAr: item.nameAr,
+        _id: item._id,
+      });
     }
   };
 
   const renderSearchResult = ({ item }: { item: any }) => {
     const isOccasion = item.type === 'occasion';
-    const { hasDiscount, finalPrice, discountPercent } = getServicePriceInfo(item);
+    const { hasDiscount, finalPrice, discountPercent } =
+      getServicePriceInfo(item);
     return (
       <Animated.View
         style={{
@@ -153,15 +178,21 @@ const Search: React.FC<SearchProps> = ({
             {item.image ? (
               <Image
                 source={{
-                  uri: item.type === 'service'
-                    ? getServiceImageUrl(item.image)
-                    : item.image,
+                  uri:
+                    item.type === 'service'
+                      ? getServiceImageUrl(item.image)
+                      : item.image,
                 }}
                 style={styles.resultImage}
                 resizeMode="cover"
               />
             ) : (
-              <View style={[styles.resultImagePlaceholder, isOccasion && styles.occasionPlaceholder]}>
+              <View
+                style={[
+                  styles.resultImagePlaceholder,
+                  isOccasion && styles.occasionPlaceholder,
+                ]}
+              >
                 <Svg width={30} height={30} viewBox="0 0 24 24" fill="none">
                   {isOccasion ? (
                     <Path
@@ -184,13 +215,21 @@ const Search: React.FC<SearchProps> = ({
           </View>
 
           {/* Content */}
-          <View style={[styles.resultContent, isRTL && styles.resultContentRTL]}>
+          <View
+            style={[styles.resultContent, isRTL && styles.resultContentRTL]}
+          >
             <View style={[styles.badgeRow, isRTL && styles.badgeRowRTL]}>
-              <View style={[styles.typeBadge, isOccasion && styles.occasionBadge]}>
+              <View
+                style={[styles.typeBadge, isOccasion && styles.occasionBadge]}
+              >
                 <Text style={styles.typeBadgeText}>
                   {isOccasion
-                    ? (isRTL ? 'مناسبة' : 'Occasion')
-                    : (isRTL ? 'خدمة' : 'Service')}
+                    ? isRTL
+                      ? 'مناسبة'
+                      : 'Occasion'
+                    : isRTL
+                    ? 'خدمة'
+                    : 'Service'}
                 </Text>
               </View>
             </View>
@@ -207,31 +246,43 @@ const Search: React.FC<SearchProps> = ({
               {item.displaySubtitle}
             </Text>
             {item.hidePrice ? (
-              <Text style={{ fontSize: isTablet ? 14 : 12, color: colors.textSecondary, fontStyle: 'italic' }}>
-                {isRTL ? 'السعر يختلف حسب الاختيار' : 'Price varies by selection'}
+              <Text
+                style={{
+                  fontSize: isTablet ? 14 : 12,
+                  color: colors.textSecondary,
+                  fontStyle: 'italic',
+                }}
+              >
+                {isRTL
+                  ? 'السعر يختلف حسب الاختيار'
+                  : 'Price varies by selection'}
               </Text>
-            ) : item.price && (
-              <View style={[styles.priceRow, isRTL && styles.priceRowRTL]}>
-                {hasDiscount ? (
-                  <>
+            ) : (
+              item.price && (
+                <View style={[styles.priceRow, isRTL && styles.priceRowRTL]}>
+                  {hasDiscount ? (
+                    <>
+                      <Text style={styles.resultPrice}>
+                        {finalPrice.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
+                      </Text>
+                      <Text style={styles.originalPriceCrossed}>
+                        {item.price.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
+                      </Text>
+                      {discountPercent > 0 && (
+                        <View style={styles.discountBadgeMini}>
+                          <Text style={styles.discountBadgeMiniText}>
+                            -{discountPercent}%
+                          </Text>
+                        </View>
+                      )}
+                    </>
+                  ) : (
                     <Text style={styles.resultPrice}>
-                      {finalPrice.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
-                    </Text>
-                    <Text style={styles.originalPriceCrossed}>
                       {item.price.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
                     </Text>
-                    {discountPercent > 0 && (
-                      <View style={styles.discountBadgeMini}>
-                        <Text style={styles.discountBadgeMiniText}>-{discountPercent}%</Text>
-                      </View>
-                    )}
-                  </>
-                ) : (
-                  <Text style={styles.resultPrice}>
-                    {item.price.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
-                  </Text>
-                )}
-              </View>
+                  )}
+                </View>
+              )
             )}
           </View>
 
@@ -312,10 +363,16 @@ const Search: React.FC<SearchProps> = ({
 
         {/* Info */}
         <View style={[styles.trendingInfo, isRTL && styles.trendingInfoRTL]}>
-          <Text style={[styles.trendingName, isRTL && styles.textRTL]} numberOfLines={1}>
+          <Text
+            style={[styles.trendingName, isRTL && styles.textRTL]}
+            numberOfLines={1}
+          >
             {isRTL ? item.nameAr : item.name}
           </Text>
-          <Text style={[styles.trendingVendor, isRTL && styles.textRTL]} numberOfLines={1}>
+          <Text
+            style={[styles.trendingVendor, isRTL && styles.textRTL]}
+            numberOfLines={1}
+          >
             {item.vendor?.name || ''}
           </Text>
           <View style={[styles.trendingMeta, isRTL && styles.trendingMetaRTL]}>
@@ -326,7 +383,13 @@ const Search: React.FC<SearchProps> = ({
               </View>
             )}
             {item.hidePrice ? (
-              <Text style={{ fontSize: 12, color: colors.textSecondary, fontStyle: 'italic' }}>
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: colors.textSecondary,
+                  fontStyle: 'italic',
+                }}
+              >
                 {isRTL ? 'السعر يختلف' : 'Price varies'}
               </Text>
             ) : hasDiscount ? (
@@ -366,25 +429,49 @@ const Search: React.FC<SearchProps> = ({
     <View style={styles.centerContent}>
       <View style={styles.emptyIconWrapper}>
         <Svg width={48} height={48} viewBox="0 0 24 24" fill="none">
-          <Circle cx="11" cy="11" r="7" stroke={colors.primary} strokeWidth={1.5} opacity={0.5} />
-          <Path d="M21 21L16.5 16.5" stroke={colors.primary} strokeWidth={1.5} strokeLinecap="round" opacity={0.5} />
-          <Path d="M8.5 11.5h5" stroke={colors.primary} strokeWidth={1.5} strokeLinecap="round" opacity={0.5} />
+          <Circle
+            cx="11"
+            cy="11"
+            r="7"
+            stroke={colors.primary}
+            strokeWidth={1.5}
+            opacity={0.5}
+          />
+          <Path
+            d="M21 21L16.5 16.5"
+            stroke={colors.primary}
+            strokeWidth={1.5}
+            strokeLinecap="round"
+            opacity={0.5}
+          />
+          <Path
+            d="M8.5 11.5h5"
+            stroke={colors.primary}
+            strokeWidth={1.5}
+            strokeLinecap="round"
+            opacity={0.5}
+          />
         </Svg>
       </View>
       <Text style={[styles.emptyTitle, isRTL && styles.textRTL]}>
         {isRTL ? 'لا توجد نتائج' : 'No Results Found'}
       </Text>
       <Text style={[styles.emptySubtitle, isRTL && styles.textRTL]}>
-        {isRTL ? `لم نجد نتائج لـ "${searchQuery}"` : `No results for "${searchQuery}"`}
+        {isRTL
+          ? `لم نجد نتائج لـ "${searchQuery}"`
+          : `No results for "${searchQuery}"`}
       </Text>
     </View>
   );
 
   return (
     <View style={styles.container}>
-      <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
+      <StatusBar
+        backgroundColor="#00a19c"
+        barStyle="light-content"
+        translucent={false}
+      />
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-
         {/* ── Header ── */}
         <Animated.View
           style={[
@@ -412,13 +499,34 @@ const Search: React.FC<SearchProps> = ({
           </TouchableOpacity>
 
           <View style={styles.searchContainer}>
-            <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" style={styles.searchIconSvg}>
-              <Circle cx="11" cy="11" r="7" stroke={colors.primary} strokeWidth={2} />
-              <Path d="M21 21L16.5 16.5" stroke={colors.primary} strokeWidth={2} strokeLinecap="round" />
+            <Svg
+              width={18}
+              height={18}
+              viewBox="0 0 24 24"
+              fill="none"
+              style={styles.searchIconSvg}
+            >
+              <Circle
+                cx="11"
+                cy="11"
+                r="7"
+                stroke={colors.primary}
+                strokeWidth={2}
+              />
+              <Path
+                d="M21 21L16.5 16.5"
+                stroke={colors.primary}
+                strokeWidth={2}
+                strokeLinecap="round"
+              />
             </Svg>
             <TextInput
               style={[styles.searchInput, isRTL && styles.searchInputRTL]}
-              placeholder={isRTL ? 'ابحث عن خدمات أو مناسبات...' : 'Search services, occasions...'}
+              placeholder={
+                isRTL
+                  ? 'ابحث عن خدمات أو مناسبات...'
+                  : 'Search services, occasions...'
+              }
               placeholderTextColor={colors.primary + '80'}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -457,7 +565,12 @@ const Search: React.FC<SearchProps> = ({
                 onPress={() => setSearchType(tab.key as any)}
                 activeOpacity={0.75}
               >
-                <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    isActive && styles.filterChipTextActive,
+                  ]}
+                >
                   {isRTL ? tab.labelAr : tab.labelEn}
                 </Text>
               </TouchableOpacity>
@@ -483,14 +596,25 @@ const Search: React.FC<SearchProps> = ({
               contentContainerStyle={styles.trendingList}
               showsVerticalScrollIndicator={false}
               ListHeaderComponent={
-                <View style={[styles.trendingHeader, isRTL && styles.trendingHeaderRTL]}>
+                <View
+                  style={[
+                    styles.trendingHeader,
+                    isRTL && styles.trendingHeaderRTL,
+                  ]}
+                >
                   <View style={styles.trendingTitleRow}>
-                    <Text style={[styles.trendingTitle, isRTL && styles.textRTL]}>
+                    <Text
+                      style={[styles.trendingTitle, isRTL && styles.textRTL]}
+                    >
                       {isRTL ? 'الأكثر طلباً' : 'Top Picks'}
                     </Text>
                   </View>
-                  <Text style={[styles.trendingSubtitle, isRTL && styles.textRTL]}>
-                    {isRTL ? 'خدمات مميزة بأعلى تقييم' : 'Featured & highest rated services'}
+                  <Text
+                    style={[styles.trendingSubtitle, isRTL && styles.textRTL]}
+                  >
+                    {isRTL
+                      ? 'خدمات مميزة بأعلى تقييم'
+                      : 'Featured & highest rated services'}
                   </Text>
                 </View>
               }
@@ -499,11 +623,15 @@ const Search: React.FC<SearchProps> = ({
           ) : filteredResults.length > 0 ? (
             /* ── Search Results ── */
             <>
-              <View style={[styles.resultsHeader, isRTL && styles.resultsHeaderRTL]}>
+              <View
+                style={[styles.resultsHeader, isRTL && styles.resultsHeaderRTL]}
+              >
                 <Text style={[styles.resultsCount, isRTL && styles.textRTL]}>
                   {isRTL
                     ? `${filteredResults.length} نتيجة`
-                    : `${filteredResults.length} result${filteredResults.length > 1 ? 's' : ''}`}
+                    : `${filteredResults.length} result${
+                        filteredResults.length > 1 ? 's' : ''
+                      }`}
                 </Text>
               </View>
               <FlatList
@@ -515,9 +643,10 @@ const Search: React.FC<SearchProps> = ({
                 ItemSeparatorComponent={() => <View style={styles.separator} />}
               />
             </>
-          ) : renderNoResults()}
+          ) : (
+            renderNoResults()
+          )}
         </View>
-
       </SafeAreaView>
     </View>
   );
@@ -831,7 +960,6 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: '500',
   },
-
 
   // RTL
   textRTL: {

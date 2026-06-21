@@ -354,31 +354,24 @@ function createEmbeddedPaymentHTML(
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background-color: #cedfd7; /* Match colors.background */
+      background-color: #ffffff; /* Match colors.background */
       min-height: 100vh;
       display: flex;
-      align-items: center;
       justify-content: center;
+      align-items: flex-start;
       padding: 16px;
     }
     .container {
       width: 100%;
       max-width: 450px;
       background: #ffffff;
-      border-radius: 16px;
-      padding: 28px 24px;
-      box-shadow: 0 10px 30px rgba(0, 161, 156, 0.06);
-      border: 1px solid rgba(44, 95, 93, 0.12);
+      border-radius: 0;
+      padding: 0;
+      box-shadow: none;
+      border: none;
     }
     .header {
-      text-align: center;
-      margin-bottom: 24px;
-      color: #00a19c; /* colors.primary */
-      font-size: 19px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      position: relative;
-      padding-bottom: 12px;
+      display: none;
     }
     .header::after {
       content: '';

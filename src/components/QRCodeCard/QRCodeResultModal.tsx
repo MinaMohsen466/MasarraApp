@@ -49,11 +49,14 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
     }>;
   }>({ visible: false, title: '', message: '', buttons: [] });
   // Calculate card dimensions dynamically to prevent overflow inside the modal and aspect ratio conflicts
-  const maxCardWidth = Math.min(380, Math.floor(winWidth * 0.80));
+  const maxCardWidth = Math.min(380, Math.floor(winWidth * 0.8));
   const maxCardHeight = Math.floor(winHeight * 0.65);
 
   const cardWidth = maxCardWidth;
-  const cardHeight = Math.min(maxCardHeight, Math.floor(cardWidth / (cardAspectRatio || 0.7)));
+  const cardHeight = Math.min(
+    maxCardHeight,
+    Math.floor(cardWidth / (cardAspectRatio || 0.7)),
+  );
 
   const handleDownloadCard = async () => {
     setDownloadingCard(true);
@@ -212,7 +215,9 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                         {
                           fontFamily:
                             backgroundImage?.font?.family || 'Georgia',
-                          color: backgroundImage?.font?.color || 'rgba(255, 255, 255, 0.85)',
+                          color:
+                            backgroundImage?.font?.color ||
+                            'rgba(255, 255, 255, 0.85)',
                           fontSize: backgroundImage?.font?.size
                             ? backgroundImage.font.size - 2
                             : 12,
@@ -247,7 +252,8 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                         styles.divider,
                         {
                           backgroundColor:
-                            backgroundImage?.font?.color || 'rgba(255, 255, 255, 0.5)',
+                            backgroundImage?.font?.color ||
+                            'rgba(255, 255, 255, 0.5)',
                           marginVertical: 8,
                         },
                       ]}
@@ -280,7 +286,9 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                           {
                             fontFamily:
                               backgroundImage?.font?.family || 'Georgia',
-                            color: backgroundImage?.font?.color || 'rgba(255, 255, 255, 0.9)',
+                            color:
+                              backgroundImage?.font?.color ||
+                              'rgba(255, 255, 255, 0.9)',
                             fontSize: backgroundImage?.font?.size
                               ? backgroundImage.font.size - 4
                               : 11,
@@ -299,7 +307,9 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                           {
                             fontFamily:
                               backgroundImage?.font?.family || 'Georgia',
-                            color: backgroundImage?.font?.color || 'rgba(255, 255, 255, 0.9)',
+                            color:
+                              backgroundImage?.font?.color ||
+                              'rgba(255, 255, 255, 0.9)',
                             fontSize: backgroundImage?.font?.size
                               ? backgroundImage.font.size - 4
                               : 11,
@@ -319,7 +329,9 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                           {
                             fontFamily:
                               backgroundImage?.font?.family || 'Georgia',
-                            color: backgroundImage?.font?.color || 'rgba(255, 255, 255, 0.9)',
+                            color:
+                              backgroundImage?.font?.color ||
+                              'rgba(255, 255, 255, 0.9)',
                             fontSize: backgroundImage?.font?.size
                               ? backgroundImage.font.size - 4
                               : 11,
@@ -338,12 +350,18 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                       <>
                         <View style={styles.qrCodeBox}>
                           <Image
-                             key={qrCode ? `qr_${qrCode.qrToken || ''}_${qrCode.updateTimestamp || 0}` : 'empty'}
-                             source={{ uri: getQRCodeImageUri() }}
-                             style={{ width: 110, height: 110 }}
-                             resizeMode="contain"
-                             onError={_error => {}}
-                             onLoad={() => {}}
+                            key={
+                              qrCode
+                                ? `qr_${qrCode.qrToken || ''}_${
+                                    qrCode.updateTimestamp || 0
+                                  }`
+                                : 'empty'
+                            }
+                            source={{ uri: getQRCodeImageUri() }}
+                            style={{ width: 110, height: 110 }}
+                            resizeMode="contain"
+                            onError={_error => {}}
+                            onLoad={() => {}}
                           />
                         </View>
                         <Text
@@ -352,7 +370,9 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                             {
                               fontFamily:
                                 backgroundImage?.font?.family || 'Georgia',
-                              color: backgroundImage?.font?.color || 'rgba(255, 255, 255, 0.85)',
+                              color:
+                                backgroundImage?.font?.color ||
+                                'rgba(255, 255, 255, 0.85)',
                             },
                           ]}
                         >

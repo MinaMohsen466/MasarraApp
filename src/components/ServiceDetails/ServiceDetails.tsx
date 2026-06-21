@@ -27,7 +27,11 @@ import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useGlobalDate } from '../../contexts/DateContext';
 import { getServiceImageUrl, fetchServices } from '../../services/servicesApi';
-import { getImageUrl, checkTimeSlotAvailability, getUserBookings } from '../../services/api';
+import {
+  getImageUrl,
+  checkTimeSlotAvailability,
+  getUserBookings,
+} from '../../services/api';
 import {
   toggleWishlist,
   isWishlisted,
@@ -102,7 +106,9 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
   }>({});
 
   // Video playback state
-  const [playingVideoIndex, setPlayingVideoIndex] = useState<number | null>(null);
+  const [playingVideoIndex, setPlayingVideoIndex] = useState<number | null>(
+    null,
+  );
 
   // Loading state for add to cart
   const [isAddingToCart, setIsAddingToCart] = useState(false);
@@ -201,7 +207,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
           // From App.tsx: there's a 20px View below the BottomNavigation
 
           const bottomViewHeight = 20; // View below BottomNav in App.tsx
-          const navPaddingBottom = isTabletDevice ? 24 : 18;  // paddingBottom overrides paddingVertical bottom
+          const navPaddingBottom = isTabletDevice ? 24 : 18; // paddingBottom overrides paddingVertical bottom
           const navItemPaddingVertical = isTabletDevice ? 12 : 8;
           const navIconSize = isTabletDevice ? 36 : 28;
           const navPaddingHorizontal = 16;
@@ -211,7 +217,11 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
 
           // The icon center Y from screen bottom:
           // bottomViewHeight + navPaddingBottom + navItemPaddingVertical + iconSize/2
-          const iconCenterFromBottom = bottomViewHeight + navPaddingBottom + navItemPaddingVertical + navIconSize / 2;
+          const iconCenterFromBottom =
+            bottomViewHeight +
+            navPaddingBottom +
+            navItemPaddingVertical +
+            navIconSize / 2;
           const targetY = screenHeight - iconCenterFromBottom;
 
           // ---- X position: space-around with paddingHorizontal ----
@@ -226,7 +236,8 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
 
           // In RTL, flexDirection is row-reverse, so cart (index 4) appears first
           const cartPosition = isRTL ? 0 : cartIconIndex;
-          const targetX = navPaddingHorizontal + slotWidth * cartPosition + slotWidth / 2;
+          const targetX =
+            navPaddingHorizontal + slotWidth * cartPosition + slotWidth / 2;
 
           // Calculate icon size (60x60 flying icon)
           const iconSize = 60;
@@ -306,12 +317,16 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
             setOriginalTime(item.selectedTime);
           }
           // Pre-fill custom inputs
-          if (item.customInputs && Array.isArray(item.customInputs) && service?.customInputs) {
+          if (
+            item.customInputs &&
+            Array.isArray(item.customInputs) &&
+            service?.customInputs
+          ) {
             const initialSelections: any = {};
             service.customInputs.forEach((input: any) => {
               const inputId = input._id || input.label;
               const matchingInputs = item.customInputs.filter(
-                (ci: any) => ci.label === input.label
+                (ci: any) => ci.label === input.label,
               );
 
               if (matchingInputs.length > 0) {
@@ -369,11 +384,12 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
         }
 
         const bookingsData = await getUserBookings(token);
-        
+
         // Find if there's any booking for this service that is confirmed/completed
         const purchaseBooking = bookingsData.find(booking => {
           return booking.services?.some(s => {
-            const sId = typeof s.service === 'string' ? s.service : s.service?._id;
+            const sId =
+              typeof s.service === 'string' ? s.service : s.service?._id;
             if (sId !== serviceId) return false;
 
             const status = s.status || booking.status;
@@ -417,8 +433,6 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
     fetchUserReview();
   }, [serviceId, userToken]);
 
-
-
   // Load reviews in parallel using React Query for better caching
   const { data: reviewsData, refetch: refetchReviews } = useQuery<any>({
     queryKey: ['service-reviews', serviceId],
@@ -436,18 +450,25 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
   // Update local state when reviews data changes
   useEffect(() => {
     if (reviewsData && service) {
-      const vendorId = typeof service.vendor === 'string' ? service.vendor : service.vendor?._id;
+      const vendorId =
+        typeof service.vendor === 'string'
+          ? service.vendor
+          : service.vendor?._id;
       const customerReviews = reviewsData.reviews.filter(
-        (review: any) => review.user?._id !== vendorId
+        (review: any) => review.user?._id !== vendorId,
       );
       setReviews(customerReviews);
 
       // Adjust stats to match filtered reviews
-      const vendorReviewsCount = reviewsData.reviews.length - customerReviews.length;
+      const vendorReviewsCount =
+        reviewsData.reviews.length - customerReviews.length;
       if (vendorReviewsCount > 0 && reviewsData.stats) {
         const adjustedStats = {
           ...reviewsData.stats,
-          totalRatings: Math.max(0, reviewsData.stats.totalRatings - vendorReviewsCount),
+          totalRatings: Math.max(
+            0,
+            reviewsData.stats.totalRatings - vendorReviewsCount,
+          ),
         };
         setReviewStats(adjustedStats);
       } else {
@@ -510,7 +531,10 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
     svc.customInputs.some((i: any) => i.type === 'restaurant-menu');
 
   const menuItemCount = (map: any): number =>
-    Object.values(map || {}).reduce((sum: number, q: any) => sum + (Number(q) || 0), 0) as number;
+    Object.values(map || {}).reduce(
+      (sum: number, q: any) => sum + (Number(q) || 0),
+      0,
+    ) as number;
 
   const menuSurcharge = (input: any, map: any) => {
     let total = 0;
@@ -529,7 +553,10 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
     const origPrice = Number(service.price) || 0;
     let basePrice = origPrice;
     if (service.isOnSale && (service.salePrice || service.discountPercentage)) {
-      if (service.discountPercentage && Number(service.discountPercentage) > 0) {
+      if (
+        service.discountPercentage &&
+        Number(service.discountPercentage) > 0
+      ) {
         const pct = Number(service.discountPercentage) || 0;
         basePrice = +(origPrice * (1 - Math.min(Math.max(pct, 0), 100) / 100));
       } else if (service.salePrice && Number(service.salePrice) > 0) {
@@ -549,14 +576,22 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
           const price = Number(input.optionPrices?.[idx] ?? 0);
           if (price > 0) total += price;
         });
-      } else if (input.type === 'restaurant-menu' && sel && typeof sel === 'object' && !Array.isArray(sel)) {
+      } else if (
+        input.type === 'restaurant-menu' &&
+        sel &&
+        typeof sel === 'object' &&
+        !Array.isArray(sel)
+      ) {
         total += menuSurcharge(input, sel);
       }
     });
     return Math.round((total + Number.EPSILON) * 100) / 100;
   };
 
-  const totalPrice = useMemo(() => calculateTotalPrice(), [service, customInputSelections]);
+  const totalPrice = useMemo(
+    () => calculateTotalPrice(),
+    [service, customInputSelections],
+  );
 
   // Check if a priced option has been selected (for hidePrice logic)
   const hasSelectedPricedOption = () => {
@@ -567,12 +602,21 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
       if (input.type === 'radio-single' && typeof sel === 'number') {
         return Number(input.optionPrices?.[sel]) > 0;
       }
-      if (input.type === 'radio-multiple' && Array.isArray(sel) && sel.length > 0) {
+      if (
+        input.type === 'radio-multiple' &&
+        Array.isArray(sel) &&
+        sel.length > 0
+      ) {
         return (sel as number[]).some(
           (idx: number) => Number(input.optionPrices?.[idx]) > 0,
         );
       }
-      if (input.type === 'restaurant-menu' && sel && typeof sel === 'object' && !Array.isArray(sel)) {
+      if (
+        input.type === 'restaurant-menu' &&
+        sel &&
+        typeof sel === 'object' &&
+        !Array.isArray(sel)
+      ) {
         return menuItemCount(sel) > 0;
       }
       return false;
@@ -742,7 +786,15 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
     };
 
     checkAvailability();
-  }, [selectedDate, selectedTime, service, userToken, editCartItemId, originalDate, originalTime]);
+  }, [
+    selectedDate,
+    selectedTime,
+    service,
+    userToken,
+    editCartItemId,
+    originalDate,
+    originalTime,
+  ]);
 
   // check wishlist state
   React.useEffect(() => {
@@ -853,10 +905,12 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
                   </head>
                   <body>
-                    <video src="${getServiceImageUrl(item.src)}" controls autoplay playsinline></video>
+                    <video src="${getServiceImageUrl(
+                      item.src,
+                    )}" controls autoplay playsinline></video>
                   </body>
                   </html>
-                `
+                `,
               }}
               style={styles.carouselImage}
               allowsInlineMediaPlayback={true}
@@ -929,12 +983,8 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
         service.salePrice < service.price
       ) {
         displayPrice = service.salePrice;
-      } else if (
-        service.discountPercentage &&
-        service.discountPercentage > 0
-      ) {
-        displayPrice =
-          service.price * (1 - service.discountPercentage / 100);
+      } else if (service.discountPercentage && service.discountPercentage > 0) {
+        displayPrice = service.price * (1 - service.discountPercentage / 100);
       }
     }
 
@@ -954,7 +1004,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
     try {
       // Create service URL
       const serviceUrl = `https://masarrakw.com/services/${service._id}`;
-      
+
       const result = await Share.share({
         message: serviceUrl,
       });
@@ -967,15 +1017,18 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
     } catch (error: any) {
       Alert.alert(
         isRTL ? 'خطأ' : 'Error',
-        error.message ||
-          (isRTL ? 'فشلت المشاركة' : 'Failed to share'),
+        error.message || (isRTL ? 'فشلت المشاركة' : 'Failed to share'),
       );
     }
   };
 
   return (
     <View style={styles.container}>
-      <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
+      <StatusBar
+        backgroundColor="#00a19c"
+        barStyle="light-content"
+        translucent={false}
+      />
       {/* Fixed actions bar under notch (not scrolling) */}
       <View
         style={[
@@ -997,7 +1050,12 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                 accessibilityLabel="Share"
                 onPress={handleShare}
               >
-                <Svg width={headerIconSize} height={headerIconSize} viewBox="0 0 24 24" fill="none">
+                <Svg
+                  width={headerIconSize}
+                  height={headerIconSize}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
                   <Path
                     d="M18 8a3 3 0 100-6 3 3 0 000 6z"
                     stroke={colors.primary}
@@ -1034,7 +1092,12 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                 accessibilityLabel="Wishlist"
                 onPress={handleToggleWishlist}
               >
-                <Svg width={headerIconSize} height={headerIconSize} viewBox="0 0 24 24" fill="none">
+                <Svg
+                  width={headerIconSize}
+                  height={headerIconSize}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
                   <Path
                     d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
                     fill={isSaved ? '#E8837A' : '#7FBFB6'}
@@ -1051,7 +1114,12 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
               style={styles.headerCircleButton}
               accessibilityLabel="Back"
             >
-              <Svg width={backIconSize} height={backIconSize} viewBox="0 0 24 24" fill="none">
+              <Svg
+                width={backIconSize}
+                height={backIconSize}
+                viewBox="0 0 24 24"
+                fill="none"
+              >
                 <Path
                   d="M15 18l-6-6 6-6"
                   stroke={colors.primary}
@@ -1073,7 +1141,12 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
               style={styles.headerCircleButton}
               accessibilityLabel="Back"
             >
-              <Svg width={backIconSize} height={backIconSize} viewBox="0 0 24 24" fill="none">
+              <Svg
+                width={backIconSize}
+                height={backIconSize}
+                viewBox="0 0 24 24"
+                fill="none"
+              >
                 <Path
                   d="M9 18l6-6-6-6"
                   stroke={colors.primary}
@@ -1091,7 +1164,12 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                 accessibilityLabel="Wishlist"
                 onPress={handleToggleWishlist}
               >
-                <Svg width={headerIconSize} height={headerIconSize} viewBox="0 0 24 24" fill="none">
+                <Svg
+                  width={headerIconSize}
+                  height={headerIconSize}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
                   <Path
                     d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
                     fill={isSaved ? '#E8837A' : '#7FBFB6'}
@@ -1106,7 +1184,12 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                 accessibilityLabel="Share"
                 onPress={handleShare}
               >
-                <Svg width={headerIconSize} height={headerIconSize} viewBox="0 0 24 24" fill="none">
+                <Svg
+                  width={headerIconSize}
+                  height={headerIconSize}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
                   <Path
                     d="M18 8a3 3 0 100-6 3 3 0 000 6z"
                     stroke={colors.primary}
@@ -1186,7 +1269,8 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
               <View style={styles.paginationContainer}>
                 {mediaItems.map((_, index) => {
                   const isActive = index === currentImageIndex;
-                  const animValue = dotAnimations[index] || new Animated.Value(0);
+                  const animValue =
+                    dotAnimations[index] || new Animated.Value(0);
 
                   const width = animValue.interpolate({
                     inputRange: [0, 1],
@@ -1235,8 +1319,17 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                 strokeLinejoin="round"
               />
             </Svg>
-            <Text style={{ marginTop: 12, color: colors.primary, fontSize: 14, fontWeight: '500' }}>
-              {isRTL ? 'لا توجد صور أو فيديوهات متاحة' : 'No images or videos available'}
+            <Text
+              style={{
+                marginTop: 12,
+                color: colors.primary,
+                fontSize: 14,
+                fontWeight: '500',
+              }}
+            >
+              {isRTL
+                ? 'لا توجد صور أو فيديوهات متاحة'
+                : 'No images or videos available'}
             </Text>
           </View>
         )}
@@ -1298,7 +1391,13 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                       </Text>
 
                       {/* Original Price (strikethrough) */}
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 6,
+                        }}
+                      >
                         <Text
                           style={[
                             styles.priceValue,
@@ -1312,8 +1411,21 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                           {service.price.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
                         </Text>
                         {discountPercent > 0 && (
-                          <View style={{ backgroundColor: colors.primary, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 }}>
-                            <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>
+                          <View
+                            style={{
+                              backgroundColor: colors.primary,
+                              paddingHorizontal: 8,
+                              paddingVertical: 2,
+                              borderRadius: 10,
+                            }}
+                          >
+                            <Text
+                              style={{
+                                color: '#fff',
+                                fontSize: 12,
+                                fontWeight: '600',
+                              }}
+                            >
                               {discountPercent}% {isRTL ? 'خصم' : 'OFF'}
                             </Text>
                           </View>
@@ -1398,14 +1510,18 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                 {service.policies.map((policyItem: any, index: number) => {
                   // Handle both old and new policy structure for backward compatibility
                   const policy = policyItem.policy || policyItem;
-                  const policyName = isRTL && policy.nameAr ? policy.nameAr : policy.name;
+                  const policyName =
+                    isRTL && policy.nameAr ? policy.nameAr : policy.name;
 
                   // Priority: customText > selectedDescription > first description
-                  const hasCustomText = policyItem.customText && policyItem.customText.trim();
-                  const hasCustomTextAr = policyItem.customTextAr && policyItem.customTextAr.trim();
+                  const hasCustomText =
+                    policyItem.customText && policyItem.customText.trim();
+                  const hasCustomTextAr =
+                    policyItem.customTextAr && policyItem.customTextAr.trim();
                   const selectedDescription = policyItem.selectedDescriptionId
                     ? policy.descriptions?.find(
-                        (desc: any) => desc._id === policyItem.selectedDescriptionId,
+                        (desc: any) =>
+                          desc._id === policyItem.selectedDescriptionId,
                       )
                     : null;
 
@@ -1478,10 +1594,20 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
           {/* Pending Confirmation Notice */}
           {service?.availabilityStatus === 'pending_confirmation' && (
             <View style={styles.pendingConfirmationContainer}>
-              <Text style={[styles.pendingConfirmationTitle, isRTL && styles.descriptionTextRTL]}>
+              <Text
+                style={[
+                  styles.pendingConfirmationTitle,
+                  isRTL && styles.descriptionTextRTL,
+                ]}
+              >
                 {isRTL ? 'في انتظار التأكيد' : 'Pending Confirmation'}
               </Text>
-              <Text style={[styles.pendingConfirmationText, isRTL && styles.descriptionTextRTL]}>
+              <Text
+                style={[
+                  styles.pendingConfirmationText,
+                  isRTL && styles.descriptionTextRTL,
+                ]}
+              >
                 {isRTL
                   ? 'هذه الخدمة تتطلب تأكيد من المورد — الأوقات المتاحة المعروضة قد تكون مبدئية حتى يتم التأكيد.'
                   : 'This service requires vendor confirmation — shown availability may be tentative until confirmed.'}
@@ -1677,11 +1803,32 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                         style={[
                           styles.addOptionText,
                           isRTL && styles.addOptionTextRTL,
-                          isRTL ? { marginLeft: 0, marginRight: 12 } : { marginLeft: 12, marginRight: 0 },
+                          isRTL
+                            ? { marginLeft: 0, marginRight: 12 }
+                            : { marginLeft: 12, marginRight: 0 },
                         ]}
                       >
                         {inputLabel}
                       </Text>
+
+                      {/* Group subtitle/description - shown when collapsed */}
+                      {!isExpanded &&
+                      (isRTL ? input.descriptionAr : input.description) ? (
+                        <Text
+                          style={[
+                            {
+                              fontSize: 11,
+                              color: colors.textSecondary,
+                              marginTop: 2,
+                              flex: 1,
+                            },
+                            isRTL && { textAlign: 'right' },
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {isRTL ? input.descriptionAr : input.description}
+                        </Text>
+                      ) : null}
                       <Svg
                         width={20}
                         height={20}
@@ -1689,7 +1836,13 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                         fill="none"
                         style={{
                           transform: [
-                            { rotate: isExpanded ? '90deg' : (isRTL ? '180deg' : '0deg') },
+                            {
+                              rotate: isExpanded
+                                ? '90deg'
+                                : isRTL
+                                ? '180deg'
+                                : '0deg',
+                            },
                           ],
                         }}
                       >
@@ -1847,14 +2000,43 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                         </Svg>
                                       )}
                                     </View>
-                                    <Text
-                                      style={[
-                                        styles.optionText,
-                                        isSelected && styles.optionTextSelected,
-                                      ]}
-                                    >
-                                      {option}
-                                    </Text>
+                                    <View style={{ flex: 1 }}>
+                                      <Text
+                                        style={[
+                                          styles.optionText,
+                                          isSelected &&
+                                            styles.optionTextSelected,
+                                        ]}
+                                      >
+                                        {option}
+                                      </Text>
+                                      {/* Per-option description */}
+                                      {(
+                                        isRTL
+                                          ? input.optionDescriptionsAr?.[
+                                              optIndex
+                                            ]
+                                          : input.optionDescriptions?.[optIndex]
+                                      ) ? (
+                                        <Text
+                                          style={{
+                                            fontSize: 11,
+                                            color: isSelected
+                                              ? colors.primary
+                                              : colors.textSecondary,
+                                            marginTop: 1,
+                                          }}
+                                        >
+                                          {isRTL
+                                            ? input.optionDescriptionsAr[
+                                                optIndex
+                                              ]
+                                            : input.optionDescriptions[
+                                                optIndex
+                                              ]}
+                                        </Text>
+                                      ) : null}
+                                    </View>
                                   </View>
                                   <Text
                                     style={[
@@ -1885,8 +2067,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                 [key: string]: number;
                               }) || {};
                             const qty = Number(menuMap[option]) || 0;
-                            const price =
-                              input.optionPrices?.[optIndex] || 0;
+                            const price = input.optionPrices?.[optIndex] || 0;
 
                             const setMenuQty = (
                               opt: string,
@@ -1913,10 +2094,30 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                   <Text style={styles.menuItemName}>
                                     {labelText}
                                   </Text>
+                                  {/* Per-option description */}
+                                  {(
+                                    isRTL
+                                      ? input.optionDescriptionsAr?.[optIndex]
+                                      : input.optionDescriptions?.[optIndex]
+                                  ) ? (
+                                    <Text
+                                      style={[
+                                        styles.menuItemPrice,
+                                        {
+                                          color: colors.textSecondary,
+                                          fontWeight: '400',
+                                          fontSize: 11,
+                                        },
+                                      ]}
+                                    >
+                                      {isRTL
+                                        ? input.optionDescriptionsAr[optIndex]
+                                        : input.optionDescriptions[optIndex]}
+                                    </Text>
+                                  ) : null}
                                   {price > 0 && (
                                     <Text style={styles.menuItemPrice}>
-                                      +{price.toFixed(3)}{' '}
-                                      {isRTL ? 'د.ك' : 'KD'}
+                                      +{price.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
                                     </Text>
                                   )}
                                 </View>
@@ -1928,18 +2129,13 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                         styles.menuItemStepperButtonDisabled,
                                     ]}
                                     onPress={() =>
-                                      setMenuQty(
-                                        option,
-                                        Math.max(0, qty - 1),
-                                      )
+                                      setMenuQty(option, Math.max(0, qty - 1))
                                     }
                                     disabled={qty <= 0}
                                     activeOpacity={0.7}
                                   >
                                     <Text
-                                      style={
-                                        styles.menuItemStepperButtonText
-                                      }
+                                      style={styles.menuItemStepperButtonText}
                                     >
                                       −
                                     </Text>
@@ -1949,15 +2145,11 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                   </Text>
                                   <TouchableOpacity
                                     style={styles.menuItemStepperButton}
-                                    onPress={() =>
-                                      setMenuQty(option, qty + 1)
-                                    }
+                                    onPress={() => setMenuQty(option, qty + 1)}
                                     activeOpacity={0.7}
                                   >
                                     <Text
-                                      style={
-                                        styles.menuItemStepperButtonText
-                                      }
+                                      style={styles.menuItemStepperButtonText}
                                     >
                                       +
                                     </Text>
@@ -1994,7 +2186,8 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                     isRTL && styles.reviewsTitleRTL,
                   ]}
                 >
-                  {isRTL ? 'التقييمات' : 'Reviews'} ({reviewStats?.totalRatings || 0})
+                  {isRTL ? 'التقييمات' : 'Reviews'} (
+                  {reviewStats?.totalRatings || 0})
                 </Text>
 
                 {/* Write/Edit Review Button (in header) */}
@@ -2022,7 +2215,9 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                         strokeLinejoin="round"
                       />
                     </Svg>
-                    <Text style={{ fontSize: 12, fontWeight: '600', color: '#FFF' }}>
+                    <Text
+                      style={{ fontSize: 12, fontWeight: '600', color: '#FFF' }}
+                    >
                       {isRTL ? 'تقييم' : 'Review'}
                     </Text>
                   </TouchableOpacity>
@@ -2068,7 +2263,9 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                 ]}
                               />
                             </View>
-                            <Text style={styles.distributionCount}>{count}</Text>
+                            <Text style={styles.distributionCount}>
+                              {count}
+                            </Text>
                           </View>
                         );
                       })}
@@ -2084,20 +2281,29 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                         contentContainerStyle={styles.reviewsListHorizontal}
                       >
                         {reviews.slice(0, 5).map(review => (
-                          <View key={review._id} style={styles.reviewCardHorizontal}>
+                          <View
+                            key={review._id}
+                            style={styles.reviewCardHorizontal}
+                          >
                             <View style={styles.reviewHeader}>
                               <View style={styles.reviewUserInfo}>
                                 {review.user?.profilePicture ? (
                                   <Image
                                     source={{
-                                      uri: getImageUrl(review.user.profilePicture),
+                                      uri: getImageUrl(
+                                        review.user.profilePicture,
+                                      ),
                                     }}
                                     style={styles.reviewUserAvatar}
                                   />
                                 ) : (
-                                  <View style={styles.reviewUserAvatarPlaceholder}>
+                                  <View
+                                    style={styles.reviewUserAvatarPlaceholder}
+                                  >
                                     <Text style={styles.reviewUserAvatarText}>
-                                      {(review.user?.name || 'M').charAt(0).toUpperCase()}
+                                      {(review.user?.name || 'M')
+                                        .charAt(0)
+                                        .toUpperCase()}
                                     </Text>
                                   </View>
                                 )}
@@ -2116,24 +2322,43 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                       ]}
                                       numberOfLines={1}
                                     >
-                                      {review.user?.name || (isRTL ? 'مستخدم محذوف' : 'Deleted User')}
+                                      {review.user?.name ||
+                                        (isRTL
+                                          ? 'مستخدم محذوف'
+                                          : 'Deleted User')}
                                     </Text>
                                   </View>
-                                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+                                  <View
+                                    style={{
+                                      flexDirection: 'row',
+                                      alignItems: 'center',
+                                      marginTop: 2,
+                                    }}
+                                  >
                                     <Text
                                       style={{
                                         fontSize: 11,
                                         color: colors.textSecondary,
                                       }}
                                     >
-                                      {new Date(review.createdAt).toLocaleDateString(
+                                      {new Date(
+                                        review.createdAt,
+                                      ).toLocaleDateString(
                                         isRTL ? 'ar-EG' : 'en-US',
                                         { month: 'short', day: 'numeric' },
                                       )}
                                     </Text>
                                     {review.isVerifiedPurchase && (
                                       <>
-                                        <Text style={{ fontSize: 11, color: colors.textSecondary, marginHorizontal: 4 }}>•</Text>
+                                        <Text
+                                          style={{
+                                            fontSize: 11,
+                                            color: colors.textSecondary,
+                                            marginHorizontal: 4,
+                                          }}
+                                        >
+                                          •
+                                        </Text>
                                         <Text style={styles.verifiedBadge}>
                                           {isRTL ? 'موثق' : 'Verified'}
                                         </Text>
@@ -2150,36 +2375,41 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                 }}
                               >
                                 {/* Delete Button - Only show for current user's reviews */}
-                                {currentUserId && review.user?._id === currentUserId && (
-                                  <TouchableOpacity
-                                    style={{
-                                      padding: 6,
-                                      backgroundColor: 'rgba(220, 53, 69, 0.08)',
-                                      borderRadius: 6,
-                                    }}
-                                    onPress={() => handleDeleteReview(review)}
-                                    disabled={isDeletingReview}
-                                  >
-                                    {isDeletingReview ? (
-                                      <ActivityIndicator size="small" color="#e57373" />
-                                    ) : (
-                                      <Svg
-                                        width={14}
-                                        height={14}
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                      >
-                                        <Path
-                                          d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"
-                                          stroke="#e57373"
-                                          strokeWidth={2}
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
+                                {currentUserId &&
+                                  review.user?._id === currentUserId && (
+                                    <TouchableOpacity
+                                      style={{
+                                        padding: 6,
+                                        backgroundColor:
+                                          'rgba(220, 53, 69, 0.08)',
+                                        borderRadius: 6,
+                                      }}
+                                      onPress={() => handleDeleteReview(review)}
+                                      disabled={isDeletingReview}
+                                    >
+                                      {isDeletingReview ? (
+                                        <ActivityIndicator
+                                          size="small"
+                                          color="#e57373"
                                         />
-                                      </Svg>
-                                    )}
-                                  </TouchableOpacity>
-                                )}
+                                      ) : (
+                                        <Svg
+                                          width={14}
+                                          height={14}
+                                          viewBox="0 0 24 24"
+                                          fill="none"
+                                        >
+                                          <Path
+                                            d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"
+                                            stroke="#e57373"
+                                            strokeWidth={2}
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                          />
+                                        </Svg>
+                                      )}
+                                    </TouchableOpacity>
+                                  )}
 
                                 <View style={styles.reviewRating}>
                                   <Text style={styles.reviewRatingText}>
@@ -2200,22 +2430,24 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                               {review.comment}
                             </Text>
 
-                            {review.vendorReply && review.vendorReply.text && review.vendorReply.text.trim() !== '' && (
-                              <View style={styles.vendorReply}>
-                                <Text style={styles.vendorReplyLabel}>
-                                  {isRTL ? 'رد البائع:' : 'Vendor Reply:'}
-                                </Text>
-                                <Text
-                                  style={[
-                                    styles.vendorReplyText,
-                                    isRTL && styles.vendorReplyTextRTL,
-                                  ]}
-                                  numberOfLines={1}
-                                >
-                                  {review.vendorReply.text}
-                                </Text>
-                              </View>
-                            )}
+                            {review.vendorReply &&
+                              review.vendorReply.text &&
+                              review.vendorReply.text.trim() !== '' && (
+                                <View style={styles.vendorReply}>
+                                  <Text style={styles.vendorReplyLabel}>
+                                    {isRTL ? 'رد البائع:' : 'Vendor Reply:'}
+                                  </Text>
+                                  <Text
+                                    style={[
+                                      styles.vendorReplyText,
+                                      isRTL && styles.vendorReplyTextRTL,
+                                    ]}
+                                    numberOfLines={1}
+                                  >
+                                    {review.vendorReply.text}
+                                  </Text>
+                                </View>
+                              )}
                           </View>
                         ))}
                       </ScrollView>
@@ -2273,10 +2505,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
       >
         <TouchableOpacity
           ref={addToCartButtonRef}
-          style={[
-            styles.addToCartButton,
-            !canProceed && { opacity: 0.5 },
-          ]}
+          style={[styles.addToCartButton, !canProceed && { opacity: 0.5 }]}
           activeOpacity={0.85}
           disabled={!canProceed}
           onPress={async () => {
@@ -2452,7 +2681,9 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                           );
                           return {
                             label: String(input.label), // Always use English label for backend matching
-                            labelAr: input.labelAr ? String(input.labelAr) : undefined,
+                            labelAr: input.labelAr
+                              ? String(input.labelAr)
+                              : undefined,
                             value: optionEn as string | number, // Save English value
                             valueAr: optionAr as string | number, // Save Arabic value
                             price: optionPrice,
@@ -2476,11 +2707,17 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                       .filter(([, qty]) => Number(qty) > 0)
                       .map(([opt, qty]) => {
                         const idx = input.options.indexOf(opt);
-                        const optionAr = idx >= 0 && input.optionsAr?.[idx] ? input.optionsAr[idx] : opt;
-                        const optionPrice = idx >= 0 ? Number(input.optionPrices?.[idx] ?? 0) : 0;
+                        const optionAr =
+                          idx >= 0 && input.optionsAr?.[idx]
+                            ? input.optionsAr[idx]
+                            : opt;
+                        const optionPrice =
+                          idx >= 0 ? Number(input.optionPrices?.[idx] ?? 0) : 0;
                         return {
                           label: String(input.label),
-                          labelAr: input.labelAr ? String(input.labelAr) : undefined,
+                          labelAr: input.labelAr
+                            ? String(input.labelAr)
+                            : undefined,
                           value: `${opt} ×${qty}` as string | number,
                           valueAr: `${optionAr} ×${qty}` as string | number,
                           price: optionPrice * Number(qty),
@@ -2496,7 +2733,9 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                   ) {
                     return {
                       label: String(input.label), // Always use English label for backend matching
-                      labelAr: input.labelAr ? String(input.labelAr) : undefined,
+                      labelAr: input.labelAr
+                        ? String(input.labelAr)
+                        : undefined,
                       value: selectedValue,
                       valueAr: selectedValue,
                       price: 0, // Text/number inputs don't have option prices
@@ -2505,15 +2744,17 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
 
                   return null;
                 }) ?? []
-              ).flat().filter(
-                (
-                  v,
-                ): v is {
-                  label: string;
-                  value: string | number;
-                  price?: number;
-                } => v !== null,
-              );
+              )
+                .flat()
+                .filter(
+                  (
+                    v,
+                  ): v is {
+                    label: string;
+                    value: string | number;
+                    price?: number;
+                  } => v !== null,
+                );
 
               const cartItem: CartItem = {
                 _id: `${service._id}_${Date.now()}`,

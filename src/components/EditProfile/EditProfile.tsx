@@ -40,9 +40,34 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
 
   // Form state
   const [name, setName] = useState(user?.name || '');
-  const [phone, setPhone] = useState(
-    user?.phone && user.phone.trim() !== '' ? user.phone : '',
-  );
+
+  // Parse phone number into country code and local phone number
+  const parsePhone = (fullPhone: string | undefined | null) => {
+    if (!fullPhone || fullPhone.trim() === '') {
+      return { countryCode: '+965', localNumber: '' };
+    }
+    const cleanPhone = fullPhone.trim();
+    if (cleanPhone.startsWith('+965')) {
+      const local = cleanPhone.slice(4).trim();
+      return { countryCode: '+965', localNumber: local };
+    }
+    if (cleanPhone.startsWith('965')) {
+      const local = cleanPhone.slice(3).trim();
+      return { countryCode: '+965', localNumber: local };
+    }
+    if (cleanPhone.includes(' ')) {
+      const parts = cleanPhone.split(' ');
+      if (parts[0].startsWith('+') || /^\d+$/.test(parts[0])) {
+        return { countryCode: parts[0], localNumber: parts.slice(1).join(' ') };
+      }
+    }
+    return { countryCode: '+965', localNumber: cleanPhone };
+  };
+
+  const initialPhone = parsePhone(user?.phone);
+  const [countryCode, setCountryCode] = useState(initialPhone.countryCode);
+  const [localPhone, setLocalPhone] = useState(initialPhone.localNumber);
+
   const [profileImage, setProfileImage] = useState<string | null>(
     user?.profilePicture || null,
   );
@@ -92,8 +117,11 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
 
           // Update state with fresh data
           if (userData.name) setName(userData.name);
-          if (userData.phone && userData.phone.trim() !== '')
-            setPhone(userData.phone);
+          if (userData.phone && userData.phone.trim() !== '') {
+            const parsed = parsePhone(userData.phone);
+            setCountryCode(parsed.countryCode);
+            setLocalPhone(parsed.localNumber);
+          }
           if (userData.profilePicture) {
             setProfileImage(userData.profilePicture);
           }
@@ -286,9 +314,13 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
         }
       }
 
+      const fullPhone = localPhone.trim()
+        ? `${countryCode.trim()} ${localPhone.trim()}`
+        : '';
+
       await updateUserProfile(
         name.trim(),
-        phone.trim(),
+        fullPhone,
         imageToSend,
         shouldRemoveImage,
       );
@@ -316,7 +348,9 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
   const handleCancel = () => {
     // Reset form to original values
     setName(user?.name || '');
-    setPhone(user?.phone && user.phone.trim() !== '' ? user.phone : '');
+    const parsed = parsePhone(user?.phone);
+    setCountryCode(parsed.countryCode);
+    setLocalPhone(parsed.localNumber);
     setProfileImage(user?.profilePicture || null);
     setIsEditing(false);
   };
@@ -778,44 +812,68 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
                       >
                         {isRTL ? 'رقم الهاتف' : 'Phone Number'}
                       </Text>
-                      <View
-                        style={[
-                          styles.sleekInputWrapper,
-                          isRTL && styles.sleekInputWrapperRTL,
-                          phoneActive && styles.sleekInputWrapperActive,
-                        ]}
-                      >
-                        <Icon
-                          name="call-outline"
-                          size={18}
-                          color={phoneActive ? colors.primary : '#9CA3AF'}
-                          style={[
-                            styles.sleekInputIcon,
-                            isRTL && styles.sleekInputIconRTL,
-                          ]}
-                        />
+                      <View style={styles.phoneInputRow}>
+                        {/* Country Code Input Wrapper */}
                         <View
                           style={[
-                            styles.sleekInputDivider,
-                            isRTL && styles.sleekInputDividerRTL,
+                            styles.countryCodeWrapper,
+                            phoneActive && styles.countryCodeWrapperActive,
                           ]}
-                        />
-                        <TextInput
+                        >
+                          <TextInput
+                            style={[
+                              styles.countryCodeInput,
+                              { textAlign: 'center', writingDirection: 'ltr' },
+                            ]}
+                            value={countryCode}
+                            onChangeText={setCountryCode}
+                            placeholder="+965"
+                            placeholderTextColor="#9CA3AF"
+                            keyboardType="phone-pad"
+                            onFocus={() => setPhoneActive(true)}
+                            onBlur={() => setPhoneActive(false)}
+                            editable={!isLoading}
+                          />
+                        </View>
+
+                        {/* Local Phone Number Input Wrapper */}
+                        <View
                           style={[
-                            styles.sleekTextInput,
-                            { textAlign: 'left', writingDirection: 'ltr' },
+                            styles.sleekInputWrapper,
+                            { flex: 1, marginBottom: 10 },
+                            phoneActive && styles.sleekInputWrapperActive,
                           ]}
-                          value={phone}
-                          onChangeText={setPhone}
-                          placeholder={
-                            isRTL ? 'أدخل رقم الهاتف' : 'Enter phone'
-                          }
-                          placeholderTextColor="#9CA3AF"
-                          keyboardType="phone-pad"
-                          onFocus={() => setPhoneActive(true)}
-                          onBlur={() => setPhoneActive(false)}
-                          editable={!isLoading}
-                        />
+                        >
+                          <Icon
+                            name="call-outline"
+                            size={18}
+                            color={phoneActive ? colors.primary : '#9CA3AF'}
+                            style={[
+                              styles.sleekInputIcon,
+                              isRTL && styles.sleekInputIconRTL,
+                            ]}
+                          />
+                          <View
+                            style={[
+                              styles.sleekInputDivider,
+                              isRTL && styles.sleekInputDividerRTL,
+                            ]}
+                          />
+                          <TextInput
+                            style={[
+                              styles.sleekTextInput,
+                              { textAlign: 'left', writingDirection: 'ltr' },
+                            ]}
+                            value={localPhone}
+                            onChangeText={setLocalPhone}
+                            placeholder={isRTL ? 'رقم الهاتف' : 'Phone number'}
+                            placeholderTextColor="#9CA3AF"
+                            keyboardType="phone-pad"
+                            onFocus={() => setPhoneActive(true)}
+                            onBlur={() => setPhoneActive(false)}
+                            editable={!isLoading}
+                          />
+                        </View>
                       </View>
                     </View>
                   </View>

@@ -438,7 +438,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
                 <TouchableOpacity
                   style={[
                     styles.headerBackButtonCircle,
-                    { position: 'relative' }
+                    { position: 'relative' },
                   ]}
                   onPress={handleOpenNotifications}
                   activeOpacity={0.8}
@@ -886,11 +886,16 @@ const UserProfile: React.FC<UserProfileProps> = ({
               <Text style={notifStyles.headerTitle}>
                 {isRTL ? 'الإشعارات' : 'Notifications'}
               </Text>
-              
-              <View style={[notifStyles.headerActions, isRTL && notifStyles.headerActionsRTL]}>
+
+              <View
+                style={[
+                  notifStyles.headerActions,
+                  isRTL && notifStyles.headerActionsRTL,
+                ]}
+              >
                 {notifications.length > 0 && (
-                  <TouchableOpacity 
-                    style={notifStyles.clearButton} 
+                  <TouchableOpacity
+                    style={notifStyles.clearButton}
                     onPress={clearNotifications}
                   >
                     <Text style={notifStyles.clearButtonText}>
@@ -898,8 +903,8 @@ const UserProfile: React.FC<UserProfileProps> = ({
                     </Text>
                   </TouchableOpacity>
                 )}
-                <TouchableOpacity 
-                  style={notifStyles.closeButton} 
+                <TouchableOpacity
+                  style={notifStyles.closeButton}
                   onPress={handleCloseNotifications}
                 >
                   <Icon name="close" size={24} color="#334155" />
@@ -908,12 +913,23 @@ const UserProfile: React.FC<UserProfileProps> = ({
             </View>
 
             {/* Enable/Disable Notifications Toggle Switch */}
-            <View style={[notifStyles.toggleRow, isRTL && notifStyles.toggleRowRTL]}>
-              <View style={[notifStyles.toggleLabelContainer, isRTL && notifStyles.toggleLabelContainerRTL]}>
-                <Icon 
-                  name={notificationsEnabled ? "notifications-outline" : "notifications-off-outline"} 
-                  size={20} 
-                  color={notificationsEnabled ? colors.primary : "#64748b"} 
+            <View
+              style={[notifStyles.toggleRow, isRTL && notifStyles.toggleRowRTL]}
+            >
+              <View
+                style={[
+                  notifStyles.toggleLabelContainer,
+                  isRTL && notifStyles.toggleLabelContainerRTL,
+                ]}
+              >
+                <Icon
+                  name={
+                    notificationsEnabled
+                      ? 'notifications-outline'
+                      : 'notifications-off-outline'
+                  }
+                  size={20}
+                  color={notificationsEnabled ? colors.primary : '#64748b'}
                   style={isRTL ? { marginLeft: 8 } : { marginRight: 8 }}
                 />
                 <Text style={notifStyles.toggleLabel}>
@@ -930,13 +946,17 @@ const UserProfile: React.FC<UserProfileProps> = ({
             </View>
 
             {/* Content */}
-            <ScrollView 
+            <ScrollView
               contentContainerStyle={notifStyles.scrollContent}
               showsVerticalScrollIndicator={false}
             >
               {notifications.length === 0 ? (
                 <View style={notifStyles.emptyState}>
-                  <Icon name="notifications-off-outline" size={64} color="#cbd5e1" />
+                  <Icon
+                    name="notifications-off-outline"
+                    size={64}
+                    color="#cbd5e1"
+                  />
                   <Text style={notifStyles.emptyText}>
                     {isRTL ? 'لا توجد إشعارات حالياً' : 'No notifications yet'}
                   </Text>
@@ -948,7 +968,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
                     style={[
                       notifStyles.card,
                       !notif.read && notifStyles.unreadCard,
-                      isRTL && notifStyles.cardRTL
+                      isRTL && notifStyles.cardRTL,
                     ]}
                     activeOpacity={0.8}
                     onPress={async () => {
@@ -957,13 +977,16 @@ const UserProfile: React.FC<UserProfileProps> = ({
                     }}
                   >
                     {/* Status Icon */}
-                    <View style={[
-                      notifStyles.cardIconContainer,
-                      isRTL ? { marginLeft: 12 } : { marginRight: 12 }
-                    ]}>
-                      <Icon 
+                    <View
+                      style={[
+                        notifStyles.cardIconContainer,
+                        isRTL ? { marginLeft: 12 } : { marginRight: 12 },
+                      ]}
+                    >
+                      <Icon
                         name={
-                          notif.type === 'booking_confirmed_by_vendor' || notif.type === 'booking_confirmed'
+                          notif.type === 'booking_confirmed_by_vendor' ||
+                          notif.type === 'booking_confirmed'
                             ? 'checkmark-circle'
                             : notif.type === 'booking_payment_confirmed'
                             ? 'ribbon'
@@ -972,10 +995,11 @@ const UserProfile: React.FC<UserProfileProps> = ({
                             : notif.type === 'vendor_uploaded'
                             ? 'cloud-done'
                             : 'notifications'
-                        } 
-                        size={24} 
+                        }
+                        size={24}
                         color={
-                          notif.type === 'booking_confirmed_by_vendor' || notif.type === 'booking_confirmed'
+                          notif.type === 'booking_confirmed_by_vendor' ||
+                          notif.type === 'booking_confirmed'
                             ? '#0284C7'
                             : notif.type === 'booking_payment_confirmed'
                             ? '#16A34A'
@@ -984,26 +1008,50 @@ const UserProfile: React.FC<UserProfileProps> = ({
                             : notif.type === 'vendor_uploaded'
                             ? '#CA8A04'
                             : colors.primary
-                        } 
+                        }
                       />
                     </View>
 
                     {/* Title & Message */}
                     <View style={notifStyles.cardTextContainer}>
-                      <View style={[notifStyles.cardHeaderRow, isRTL && notifStyles.cardHeaderRowRTL]}>
-                        <Text style={[notifStyles.cardTitle, !notif.read && notifStyles.unreadText, isRTL && notifStyles.textRight]}>
+                      <View
+                        style={[
+                          notifStyles.cardHeaderRow,
+                          isRTL && notifStyles.cardHeaderRowRTL,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            notifStyles.cardTitle,
+                            !notif.read && notifStyles.unreadText,
+                            isRTL && notifStyles.textRight,
+                          ]}
+                        >
                           {isRTL ? notif.title : notif.titleEn}
                         </Text>
                         {!notif.read && <View style={notifStyles.unreadDot} />}
                       </View>
-                      <Text style={[notifStyles.cardMessage, isRTL && notifStyles.textRight]}>
+                      <Text
+                        style={[
+                          notifStyles.cardMessage,
+                          isRTL && notifStyles.textRight,
+                        ]}
+                      >
                         {isRTL ? notif.message : notif.messageEn}
                       </Text>
-                      <Text style={[notifStyles.cardTime, isRTL && notifStyles.textRight]}>
-                        {new Date(notif.createdAt).toLocaleDateString(isRTL ? 'ar-KW' : 'en-KW', {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
+                      <Text
+                        style={[
+                          notifStyles.cardTime,
+                          isRTL && notifStyles.textRight,
+                        ]}
+                      >
+                        {new Date(notif.createdAt).toLocaleDateString(
+                          isRTL ? 'ar-KW' : 'en-KW',
+                          {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          },
+                        )}
                       </Text>
                     </View>
                   </TouchableOpacity>

@@ -79,14 +79,20 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
 
   const handleSubmit = async () => {
     if (!token) return;
-    
+
     // Validate required fields (name, city, block, street, houseNumber)
-    if (!form.name.trim() || !form.city.trim() || !form.block.trim() || !form.street.trim() || !form.houseNumber.trim()) {
+    if (
+      !form.name.trim() ||
+      !form.city.trim() ||
+      !form.block.trim() ||
+      !form.street.trim() ||
+      !form.houseNumber.trim()
+    ) {
       setAlertTitle(isRTL ? 'حقول مطلوبة' : 'Required Fields');
       setAlertMessage(
         isRTL
           ? 'يرجى ملء جميع الحقول المطلوبة: الاسم، المدينة، القطعة، الشارع، ورقم المنزل'
-          : 'Please fill in all required fields: Name, City, Block, Street, and House Number'
+          : 'Please fill in all required fields: Name, City, Block, Street, and House Number',
       );
       setAlertButtons([{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }]);
       setAlertVisible(true);
@@ -682,7 +688,9 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
                       ]}
                     />
                     <TextInput
-                      placeholder={isRTL ? 'المنطقة / المدينة *' : 'Area / City *'}
+                      placeholder={
+                        isRTL ? 'المنطقة / المدينة *' : 'Area / City *'
+                      }
                       value={form.city}
                       onChangeText={t => setForm(s => ({ ...s, city: t }))}
                       style={[
@@ -847,7 +855,11 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
                       ]}
                     />
                     <TextInput
-                      placeholder={isRTL ? 'رقم الطابق (اختياري)' : 'Floor Number (Optional)'}
+                      placeholder={
+                        isRTL
+                          ? 'رقم الطابق (اختياري)'
+                          : 'Floor Number (Optional)'
+                      }
                       value={form.floorNumber}
                       onChangeText={t =>
                         setForm(s => ({ ...s, floorNumber: t }))

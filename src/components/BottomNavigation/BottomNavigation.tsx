@@ -114,41 +114,13 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
     return (
       <Svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none">
         {/* Top Left - Dark */}
-        <Rect
-          x="3"
-          y="3"
-          width="8"
-          height="8"
-          rx="2.5"
-          fill={darkColor}
-        />
+        <Rect x="3" y="3" width="8" height="8" rx="2.5" fill={darkColor} />
         {/* Top Right - Light */}
-        <Rect
-          x="13"
-          y="3"
-          width="8"
-          height="8"
-          rx="2.5"
-          fill={lightColor}
-        />
+        <Rect x="13" y="3" width="8" height="8" rx="2.5" fill={lightColor} />
         {/* Bottom Left - Light */}
-        <Rect
-          x="3"
-          y="13"
-          width="8"
-          height="8"
-          rx="2.5"
-          fill={lightColor}
-        />
+        <Rect x="3" y="13" width="8" height="8" rx="2.5" fill={lightColor} />
         {/* Bottom Right - Dark */}
-        <Rect
-          x="13"
-          y="13"
-          width="8"
-          height="8"
-          rx="2.5"
-          fill={darkColor}
-        />
+        <Rect x="13" y="13" width="8" height="8" rx="2.5" fill={darkColor} />
       </Svg>
     );
   };
@@ -229,12 +201,18 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
 
   const renderIcon = (route: string, active: boolean) => {
     switch (route) {
-      case 'home':       return <HomeIcon active={active} />;
-      case 'search':     return <SearchIcon active={active} />;
-      case 'categories': return <CategoriesIcon />;
-      case 'vendors':    return <VendorsIcon active={active} />;
-      case 'cart':       return <CartIcon active={active} />;
-      default:           return null;
+      case 'home':
+        return <HomeIcon active={active} />;
+      case 'search':
+        return <SearchIcon active={active} />;
+      case 'categories':
+        return <CategoriesIcon />;
+      case 'vendors':
+        return <VendorsIcon active={active} />;
+      case 'cart':
+        return <CartIcon active={active} />;
+      default:
+        return null;
     }
   };
 
@@ -244,7 +222,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
 
   return (
     <View style={styles.container}>
-      {navOrder.map((route) => {
+      {navOrder.map(route => {
         const active = isActive(route);
         const isCart = route === 'cart';
         return (
@@ -254,7 +232,9 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
             onPress={() => handlePress(route)}
             activeOpacity={0.7}
           >
-            <View style={[styles.iconWrapper, active && styles.iconWrapperActive]}>
+            <View
+              style={[styles.iconWrapper, active && styles.iconWrapperActive]}
+            >
               {renderIcon(route, active)}
               {isCart && cartCount > 0 && (
                 <View style={styles.cartBadge}>

@@ -623,8 +623,7 @@ export const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 8,
   },
-  infoDropdownRTL: {
-  },
+  infoDropdownRTL: {},
   infoDropdownTitle: {
     fontSize: 12,
     fontWeight: '700',

@@ -60,7 +60,9 @@ const NotificationContext = createContext<NotificationContextType | null>(null);
 export const useNotification = () => {
   const context = useContext(NotificationContext);
   if (!context) {
-    throw new Error('useNotification must be used within a NotificationProvider');
+    throw new Error(
+      'useNotification must be used within a NotificationProvider',
+    );
   }
   return context;
 };
@@ -75,11 +77,14 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
   const { isRTL } = useLanguage();
   const insets = useSafeAreaInsets();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(true);
-  const [activeBanner, setActiveBanner] = useState<NotificationItem | null>(null);
-  const [navHandler, setNavHandler] = useState<((route: string) => void) | null>(
+  const [notificationsEnabled, setNotificationsEnabled] =
+    useState<boolean>(true);
+  const [activeBanner, setActiveBanner] = useState<NotificationItem | null>(
     null,
   );
+  const [navHandler, setNavHandler] = useState<
+    ((route: string) => void) | null
+  >(null);
 
   const slideAnim = useRef(new Animated.Value(-150)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -110,7 +115,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     try {
       const newValue = !notificationsEnabled;
       setNotificationsEnabled(newValue);
-      await AsyncStorage.setItem('@notifications_enabled', JSON.stringify(newValue));
+      await AsyncStorage.setItem(
+        '@notifications_enabled',
+        JSON.stringify(newValue),
+      );
     } catch (err) {
       console.error('Failed to toggle notificationsEnabled:', err);
     }
@@ -191,19 +199,18 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
   }, [slideAnim, opacityAnim]);
 
   const addNotification = useCallback(
-    async (
-      newNotif: Omit<NotificationItem, 'id' | 'createdAt' | 'read'>,
-    ) => {
+    async (newNotif: Omit<NotificationItem, 'id' | 'createdAt' | 'read'>) => {
       if (!notificationsEnabled) {
-        console.log('[NotificationService] Notifications are disabled, ignoring.');
+        console.log(
+          '[NotificationService] Notifications are disabled, ignoring.',
+        );
         return;
       }
 
       const item: NotificationItem = {
         ...newNotif,
         id:
-          Math.random().toString(36).substring(2, 9) +
-          Date.now().toString(36),
+          Math.random().toString(36).substring(2, 9) + Date.now().toString(36),
         createdAt: new Date().toISOString(),
         read: false,
       };
@@ -220,7 +227,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
       });
 
       if (isDuplicate) {
-        console.log('[NotificationService] Ignored duplicate notification:', item.titleEn);
+        console.log(
+          '[NotificationService] Ignored duplicate notification:',
+          item.titleEn,
+        );
         return;
       }
 
@@ -250,8 +260,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
         return updated;
       });
 
-      // Trigger top banner
-      showTopBanner(item);
+      // Trigger top banner (Disabled as requested: only save in notification list, do not pop up)
+      // showTopBanner(item);
     },
     [showTopBanner, notificationsEnabled, notifications],
   );

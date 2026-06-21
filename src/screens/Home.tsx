@@ -112,9 +112,10 @@ const Home: React.FC<HomeProps> = ({
   const renderOccasionCard = useCallback(
     ({ item }: { item: Occasion }) => {
       const displayName = isRTL ? item.nameAr : item.name;
-      const truncatedName = displayName && displayName.length > 13
-        ? `${displayName.substring(0, 13)}...`
-        : displayName;
+      const truncatedName =
+        displayName && displayName.length > 13
+          ? `${displayName.substring(0, 13)}...`
+          : displayName;
       return (
         <TouchableOpacity
           style={styles.occasionCard}
@@ -185,9 +186,7 @@ const Home: React.FC<HomeProps> = ({
   }
 
   if (showAuth) {
-    return (
-      <Auth onBack={() => onNavigate && onNavigate('home')} />
-    );
+    return <Auth onBack={() => onNavigate && onNavigate('home')} />;
   }
 
   // ── Main render ──────────────────────────────────────────────────

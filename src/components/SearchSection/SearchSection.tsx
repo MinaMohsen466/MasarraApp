@@ -123,23 +123,9 @@ const SearchSection: React.FC<SearchSectionProps> = ({
               fill={colors.primary}
             />
             {/* Top Right - Light Teal */}
-            <Rect
-              x="13"
-              y="3"
-              width="8"
-              height="8"
-              rx="2.2"
-              fill="#b5e7e4"
-            />
+            <Rect x="13" y="3" width="8" height="8" rx="2.2" fill="#b5e7e4" />
             {/* Bottom Left - Light Teal */}
-            <Rect
-              x="3"
-              y="13"
-              width="8"
-              height="8"
-              rx="2.2"
-              fill="#b5e7e4"
-            />
+            <Rect x="3" y="13" width="8" height="8" rx="2.2" fill="#b5e7e4" />
             {/* Bottom Right - Dark Teal */}
             <Rect
               x="13"

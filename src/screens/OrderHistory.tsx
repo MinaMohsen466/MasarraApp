@@ -85,8 +85,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
   const [selectedReceiptBooking, setSelectedReceiptBooking] =
     useState<any>(null);
 
-  // Payment timeout in milliseconds (10 minutes)
-  const PAYMENT_TIMEOUT = 10 * 60 * 1000;
+  // Payment timeout in milliseconds (24 hours)
+  const PAYMENT_TIMEOUT = 24 * 60 * 60 * 1000;
 
   const filterBookingsByStatus = useCallback(
     (items: Booking[], filter: string) => {
@@ -248,11 +248,14 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
     };
   }, [bookings, calculateTimeLeft, getConfirmedPendingServices]);
 
-  // Format time left as MM:SS
+  // Format time left as HH:MM:SS
   const formatTimeLeft = (ms: number): string => {
-    const minutes = Math.floor(ms / 60000);
+    const hours = Math.floor(ms / 3600000);
+    const minutes = Math.floor((ms % 3600000) / 60000);
     const seconds = Math.floor((ms % 60000) / 1000);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    return `${hours.toString().padStart(2, '0')}:${minutes
+      .toString()
+      .padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
   const isFreeBooking = (booking: Booking) => booking.totalPrice === 0;
@@ -1209,14 +1212,22 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
                                                 ? opt.valueAr
                                                 : opt.value;
                                             const displayValue =
-                                              rawValue && typeof rawValue === 'object'
+                                              rawValue &&
+                                              typeof rawValue === 'object'
                                                 ? Array.isArray(rawValue)
                                                   ? rawValue.join(', ')
                                                   : Object.entries(rawValue)
-                                                      .filter(([, q]) => Number(q) > 0)
-                                                      .map(([optName, q]) => `${optName} ×${q}`)
+                                                      .filter(
+                                                        ([, q]) =>
+                                                          Number(q) > 0,
+                                                      )
+                                                      .map(
+                                                        ([optName, q]) =>
+                                                          `${optName} ×${q}`,
+                                                      )
                                                       .join(', ')
-                                                : rawValue !== undefined && rawValue !== null
+                                                : rawValue !== undefined &&
+                                                  rawValue !== null
                                                 ? String(rawValue)
                                                 : '';
                                             const hasPrice =
@@ -1597,7 +1608,11 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
                         booking.totalPrice > 0 &&
                         pendingTotal > 0;
 
-                      const showCancelButton = false;
+                      const showCancelButton =
+                        (booking.status === 'pending' &&
+                          !hasExpired &&
+                          !eventDateHasPassed) ||
+                        showPayButton;
 
                       const showReceiptButton =
                         booking.paymentStatus === 'paid';
@@ -1928,7 +1943,6 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
               setSelectedReceiptBooking(null);
             }}
           />
-
         </View>
       </View>
     </>

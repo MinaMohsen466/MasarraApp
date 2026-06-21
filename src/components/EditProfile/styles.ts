@@ -493,6 +493,33 @@ export const styles = StyleSheet.create({
   sleekTextInputRTL: {
     textAlign: 'right',
   },
+  phoneInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    width: '100%',
+  },
+  countryCodeWrapper: {
+    width: 75,
+    height: 42,
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#E5E7EB',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 2,
+    marginBottom: 10,
+  },
+  countryCodeWrapperActive: {
+    borderBottomColor: colors.primary,
+  },
+  countryCodeInput: {
+    fontSize: 14.5,
+    color: colors.textDark,
+    fontWeight: '600',
+    textAlign: 'center',
+    padding: 0,
+    width: '100%',
+  },
   profileHeaderBlock: {
     height: 50,
     backgroundColor: colors.primary,

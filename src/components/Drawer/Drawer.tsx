@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -39,7 +39,15 @@ const getMenuItemIcon = (id: string, color: string) => {
     case 'occasions':
       return (
         <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-          <Rect x="3" y="9" width="18" height="12" rx="2" stroke={color} strokeWidth={2} />
+          <Rect
+            x="3"
+            y="9"
+            width="18"
+            height="12"
+            rx="2"
+            stroke={color}
+            strokeWidth={2}
+          />
           <Path
             d="M2 9h20M12 9v12M12 9c0-2.5 1-4.5 3.5-4.5s2.5 2 0 4.5M12 9c0-2.5-1-4.5-3.5-4.5S6 6.5 8.5 9"
             stroke={color}
@@ -136,7 +144,15 @@ const getMenuItemIcon = (id: string, color: string) => {
     case 'contact':
       return (
         <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-          <Rect x="3" y="4" width="18" height="16" rx="2" stroke={color} strokeWidth={2} />
+          <Rect
+            x="3"
+            y="4"
+            width="18"
+            height="16"
+            rx="2"
+            stroke={color}
+            strokeWidth={2}
+          />
           <Path
             d="M22 6l-10 7L2 6"
             stroke={color}
@@ -205,10 +221,19 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
   const { isLoggedIn, logout } = useAuth();
   const { data: siteSettings, isLoading } = useSiteSettings();
 
+  const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
+
   // Animation value for sliding drawer
   const slideAnim = useRef(
     new Animated.Value(isRTL ? SCREEN_WIDTH : -SCREEN_WIDTH),
   ).current;
+
+  // Reset dropdown when drawer closes
+  useEffect(() => {
+    if (!isVisible) {
+      setShowLanguageDropdown(false);
+    }
+  }, [isVisible]);
 
   // Animate drawer in/out based on visibility
   useEffect(() => {
@@ -250,11 +275,9 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
       titleKey: language === 'en' ? 'switchToArabic' : 'switchToEnglish',
       route: 'Language',
     },
-    {
-      id: isLoggedIn ? 'logout' : 'login',
-      titleKey: isLoggedIn ? 'logOut' : 'logIn',
-      route: isLoggedIn ? 'Logout' : 'Login',
-    },
+    ...(!isLoggedIn
+      ? [{ id: 'login', titleKey: 'logIn', route: 'Login' }]
+      : []),
   ];
 
   // Handle menu item press
@@ -368,7 +391,10 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
               </TouchableOpacity>
 
               {/* Scrollable Menu Items */}
-              <ScrollView style={styles.flexContainer} showsVerticalScrollIndicator={false}>
+              <ScrollView
+                style={styles.flexContainer}
+                showsVerticalScrollIndicator={false}
+              >
                 {/* Menu Items List */}
                 <View
                   style={[
@@ -377,6 +403,168 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
                   ]}
                 >
                   {menuItems.map(item => {
+                    if (item.id === 'language') {
+                      const languageLabel = isRTL ? 'اللغة' : 'Language';
+                      const activeLanguageName =
+                        language === 'en'
+                          ? 'English'
+                          : isRTL
+                          ? 'العربية'
+                          : 'Arabic';
+                      const languageItemText = `${languageLabel} (${activeLanguageName})`;
+
+                      return (
+                        <View key="language-group" style={{ width: '100%' }}>
+                          {/* Main Language Toggle Item */}
+                          <TouchableOpacity
+                            style={[
+                              styles.menuItem,
+                              isRTL && styles.menuItemRTL,
+                            ]}
+                            onPress={() =>
+                              setShowLanguageDropdown(!showLanguageDropdown)
+                            }
+                            activeOpacity={0.6}
+                          >
+                            <View
+                              style={[
+                                styles.menuIconContainer,
+                                isRTL && styles.menuIconContainerRTL,
+                              ]}
+                            >
+                              {getMenuItemIcon('language', colors.primary)}
+                            </View>
+
+                            <Text
+                              style={[
+                                styles.menuItemText,
+                                isRTL && styles.menuItemTextRTL,
+                              ]}
+                            >
+                              {languageItemText}
+                            </Text>
+
+                            <View style={styles.menuChevronContainer}>
+                              <Svg
+                                width={14}
+                                height={14}
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                style={{
+                                  transform: [
+                                    {
+                                      rotate: showLanguageDropdown
+                                        ? '180deg'
+                                        : '0deg',
+                                    },
+                                  ],
+                                }}
+                              >
+                                <Path
+                                  d="M6 9l6 6 6-6"
+                                  stroke={colors.textLight}
+                                  strokeWidth={2}
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </Svg>
+                            </View>
+                          </TouchableOpacity>
+
+                          {/* Language Options Dropdown */}
+                          {showLanguageDropdown && (
+                            <View style={styles.dropdownContainer}>
+                              {/* English Option */}
+                              <TouchableOpacity
+                                style={[
+                                  styles.subMenuItem,
+                                  isRTL && styles.subMenuItemRTL,
+                                  language === 'en' && styles.subMenuItemActive,
+                                ]}
+                                onPress={() => {
+                                  if (language !== 'en') {
+                                    setLanguage('en');
+                                  }
+                                  setTimeout(() => onClose(), 300);
+                                }}
+                                activeOpacity={0.6}
+                              >
+                                <Text
+                                  style={[
+                                    styles.subMenuItemText,
+                                    isRTL && styles.subMenuItemTextRTL,
+                                    language === 'en' &&
+                                      styles.subMenuItemTextActive,
+                                  ]}
+                                >
+                                  English
+                                </Text>
+                                {language === 'en' && (
+                                  <Svg
+                                    width={16}
+                                    height={16}
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                  >
+                                    <Path
+                                      d="M20 6L9 17L4 12"
+                                      stroke={colors.primary}
+                                      strokeWidth={2.5}
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                  </Svg>
+                                )}
+                              </TouchableOpacity>
+
+                              {/* Arabic Option */}
+                              <TouchableOpacity
+                                style={[
+                                  styles.subMenuItem,
+                                  isRTL && styles.subMenuItemRTL,
+                                  language === 'ar' && styles.subMenuItemActive,
+                                ]}
+                                onPress={() => {
+                                  if (language !== 'ar') {
+                                    setLanguage('ar');
+                                  }
+                                  setTimeout(() => onClose(), 300);
+                                }}
+                                activeOpacity={0.6}
+                              >
+                                <Text
+                                  style={[
+                                    styles.subMenuItemText,
+                                    isRTL && styles.subMenuItemTextRTL,
+                                    language === 'ar' &&
+                                      styles.subMenuItemTextActive,
+                                  ]}
+                                >
+                                  العربية
+                                </Text>
+                                {language === 'ar' && (
+                                  <Svg
+                                    width={16}
+                                    height={16}
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                  >
+                                    <Path
+                                      d="M20 6L9 17L4 12"
+                                      stroke={colors.primary}
+                                      strokeWidth={2.5}
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                  </Svg>
+                                )}
+                              </TouchableOpacity>
+                            </View>
+                          )}
+                        </View>
+                      );
+                    }
+
                     const isLogout = item.id === 'logout';
                     const iconColor = isLogout ? colors.error : colors.primary;
                     return (
@@ -384,12 +572,21 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
                         key={item.id}
                         style={[styles.menuItem, isRTL && styles.menuItemRTL]}
                         onPress={() =>
-                          handleMenuItemPress(item.route, item.titleKey, item.id)
+                          handleMenuItemPress(
+                            item.route,
+                            item.titleKey,
+                            item.id,
+                          )
                         }
                         activeOpacity={0.6}
                       >
                         {/* Menu Item Icon */}
-                        <View style={[styles.menuIconContainer, isRTL && styles.menuIconContainerRTL]}>
+                        <View
+                          style={[
+                            styles.menuIconContainer,
+                            isRTL && styles.menuIconContainerRTL,
+                          ]}
+                        >
                           {getMenuItemIcon(item.id, iconColor)}
                         </View>
 
@@ -406,7 +603,12 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
 
                         {/* Dropdown/Navigation Chevron Arrow */}
                         <View style={styles.menuChevronContainer}>
-                          <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+                          <Svg
+                            width={14}
+                            height={14}
+                            viewBox="0 0 24 24"
+                            fill="none"
+                          >
                             <Path
                               d={isRTL ? 'M15 6l-6 6 6 6' : 'M9 6l6 6-6 6'}
                               stroke={colors.textLight}

@@ -74,7 +74,11 @@ const Vendors: React.FC<VendorsProps> = ({ onSelectVendor, onBack }) => {
 
   return (
     <View style={[styles.container]}>
-      <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
+      <StatusBar
+        backgroundColor="#00a19c"
+        barStyle="light-content"
+        translucent={false}
+      />
       {/* Header */}
       <View style={[styles.header, isRTL && styles.headerRTL]}>
         <TouchableOpacity

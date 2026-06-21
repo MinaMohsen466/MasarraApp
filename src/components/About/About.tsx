@@ -18,8 +18,6 @@ interface AboutProps {
   onBack?: () => void;
 }
 
-
-
 const About: React.FC<AboutProps> = ({ onBack }) => {
   const { isRTL, language } = useLanguage();
   const insets = useSafeAreaInsets();
@@ -29,7 +27,11 @@ const About: React.FC<AboutProps> = ({ onBack }) => {
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
-        <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
+        <StatusBar
+          backgroundColor="#00a19c"
+          barStyle="light-content"
+          translucent={false}
+        />
         <ActivityIndicator size="large" color={colors.primary} />
         <Text style={[styles.loadingText, isRTL && styles.textRTL]}>
           {isRTL ? 'جاري التحميل...' : 'Loading...'}
@@ -42,7 +44,11 @@ const About: React.FC<AboutProps> = ({ onBack }) => {
   if (error) {
     return (
       <View style={styles.centerContainer}>
-        <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
+        <StatusBar
+          backgroundColor="#00a19c"
+          barStyle="light-content"
+          translucent={false}
+        />
         <Text style={[styles.errorText, isRTL && styles.textRTL]}>
           {isRTL ? 'فشل في تحميل البيانات' : 'Failed to load data'}
         </Text>
@@ -59,7 +65,11 @@ const About: React.FC<AboutProps> = ({ onBack }) => {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.backgroundLight }}>
-      <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
+      <StatusBar
+        backgroundColor="#00a19c"
+        barStyle="light-content"
+        translucent={false}
+      />
       <View style={{ height: insets.top, backgroundColor: colors.primary }} />
       <View style={styles.container}>
         <ScrollView

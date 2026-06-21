@@ -218,7 +218,8 @@ const AllReviews: React.FC<AllReviewsProps> = ({
                         style={[styles.userName, isRTL && styles.userNameRTL]}
                         numberOfLines={1}
                       >
-                        {review.user?.name || (isRTL ? 'مستخدم محذوف' : 'Deleted User')}
+                        {review.user?.name ||
+                          (isRTL ? 'مستخدم محذوف' : 'Deleted User')}
                       </Text>
                       <Text style={styles.separator}>•</Text>
                       <Text style={styles.reviewDate}>

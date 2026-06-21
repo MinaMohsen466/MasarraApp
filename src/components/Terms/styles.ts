@@ -1,8 +1,6 @@
 import { StyleSheet } from 'react-native';
 import { colors } from '../../constants/colors';
 
-// width not used; removed
-
 export const styles = StyleSheet.create({
   safeArea: {
     flex: 1,

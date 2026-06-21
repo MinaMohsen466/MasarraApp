@@ -1,9 +1,4 @@
-import React, {
-  useEffect,
-  useState,
-  useCallback,
-  useMemo,
-} from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -427,9 +422,7 @@ const Packages: React.FC<PackagesProps> = ({ onSelectPackage, onBack }) => {
         showsVerticalScrollIndicator={false}
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5}
-        ListHeaderComponent={
-          <View style={{ width: '100%' }} />
-        }
+        ListHeaderComponent={<View style={{ width: '100%' }} />}
         ListFooterComponent={renderFooter}
       />
 

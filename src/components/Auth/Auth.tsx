@@ -47,10 +47,14 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
   React.useEffect(() => {
     const loadCredentials = async () => {
       try {
-        const savedRememberMe = await AsyncStorage.getItem('rememberMe_checked');
+        const savedRememberMe = await AsyncStorage.getItem(
+          'rememberMe_checked',
+        );
         if (savedRememberMe === 'true') {
           const savedEmail = await AsyncStorage.getItem('remembered_email');
-          const savedPassword = await AsyncStorage.getItem('remembered_password');
+          const savedPassword = await AsyncStorage.getItem(
+            'remembered_password',
+          );
           setRememberMe(true);
           if (savedEmail) setEmail(savedEmail);
           if (savedPassword) setPassword(savedPassword);
@@ -252,7 +256,11 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
 
   return (
     <>
-      <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
+      <StatusBar
+        backgroundColor="#00a19c"
+        barStyle="light-content"
+        translucent={false}
+      />
       <CustomAlert
         visible={alertVisible}
         title={alertTitle}
@@ -271,192 +279,327 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
           contentContainerStyle={{ flexGrow: 1 }}
           showsVerticalScrollIndicator={false}
         >
-        {/* Top Header Block with topographic wave lines */}
-        <View style={styles.headerBlock}>
-          <Svg width="100%" height="100%" viewBox="0 0 375 130" preserveAspectRatio="none" style={styles.topographicSvg}>
-            <Path d="M-20 60 C80 120 180 20 300 80 T400 60" stroke="rgba(255,255,255,0.08)" strokeWidth={1.5} fill="none" />
-            <Path d="M-20 80 C80 140 180 40 300 100 T400 80" stroke="rgba(255,255,255,0.12)" strokeWidth={1.5} fill="none" />
-            <Path d="M-20 100 C80 160 180 60 300 120 T400 100" stroke="rgba(255,255,255,0.15)" strokeWidth={2} fill="none" />
-            <Path d="M-20 120 C80 180 180 80 300 140 T400 120" stroke="rgba(255,255,255,0.08)" strokeWidth={1} fill="none" />
-            <Path d="M-20 140 C80 200 180 100 300 160 T400 140" stroke="rgba(255,255,255,0.05)" strokeWidth={1} fill="none" />
-          </Svg>
+          {/* Top Header Block with topographic wave lines */}
+          <View style={styles.headerBlock}>
+            <Svg
+              width="100%"
+              height="100%"
+              viewBox="0 0 375 130"
+              preserveAspectRatio="none"
+              style={styles.topographicSvg}
+            >
+              <Path
+                d="M-20 60 C80 120 180 20 300 80 T400 60"
+                stroke="rgba(255,255,255,0.08)"
+                strokeWidth={1.5}
+                fill="none"
+              />
+              <Path
+                d="M-20 80 C80 140 180 40 300 100 T400 80"
+                stroke="rgba(255,255,255,0.12)"
+                strokeWidth={1.5}
+                fill="none"
+              />
+              <Path
+                d="M-20 100 C80 160 180 60 300 120 T400 100"
+                stroke="rgba(255,255,255,0.15)"
+                strokeWidth={2}
+                fill="none"
+              />
+              <Path
+                d="M-20 120 C80 180 180 80 300 140 T400 120"
+                stroke="rgba(255,255,255,0.08)"
+                strokeWidth={1}
+                fill="none"
+              />
+              <Path
+                d="M-20 140 C80 200 180 100 300 160 T400 140"
+                stroke="rgba(255,255,255,0.05)"
+                strokeWidth={1}
+                fill="none"
+              />
+            </Svg>
 
-          {/* Top Overlay Navigation/Back Button */}
-          {onBack && (
-            <View style={[styles.headerOverlayBar, isRTL && styles.headerOverlayBarRTL]}>
+            {/* Top Overlay Navigation/Back Button */}
+            {onBack && (
+              <View
+                style={[
+                  styles.headerOverlayBar,
+                  isRTL && styles.headerOverlayBarRTL,
+                ]}
+              >
+                <TouchableOpacity
+                  style={styles.headerBackButtonCircle}
+                  onPress={onBack}
+                  activeOpacity={0.8}
+                >
+                  <Icon
+                    name={isRTL ? 'chevron-forward' : 'chevron-back'}
+                    size={20}
+                    color={colors.textWhite}
+                  />
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+
+          {/* Curved Wave Divider (Concave curve matching the sign-in mockup) */}
+          <View style={styles.curveDivider}>
+            <Svg
+              height="60"
+              width="100%"
+              viewBox="0 0 375 60"
+              preserveAspectRatio="none"
+            >
+              <Path
+                d="M0,40 C100,80 250,0 375,40 L375,60 L0,60 Z"
+                fill={colors.background}
+              />
+            </Svg>
+          </View>
+
+          {/* Form Container */}
+          <View style={styles.formWrapper}>
+            {/* Header Title with Custom Accent Line */}
+            <View
+              style={[
+                styles.formHeadingContainer,
+                isRTL && styles.formHeadingContainerRTL,
+              ]}
+            >
+              <Text
+                style={[styles.formHeading, isRTL && styles.formHeadingRTL]}
+              >
+                {isRTL ? 'تسجيل الدخول' : 'Sign in'}
+              </Text>
+              <View
+                style={[
+                  styles.formHeadingUnderline,
+                  isRTL && styles.formHeadingUnderlineRTL,
+                ]}
+              />
+            </View>
+
+            {/* Email input field */}
+            <Text
+              style={[
+                styles.label,
+                isRTL && styles.labelRTL,
+                { marginBottom: 6, fontSize: 13, color: '#6B7280' },
+              ]}
+            >
+              {isRTL ? 'البريد الإلكتروني' : 'Email'}
+            </Text>
+            <View
+              style={[
+                styles.sleekInputWrapper,
+                isRTL && styles.sleekInputWrapperRTL,
+                emailActive && styles.sleekInputWrapperActive,
+              ]}
+            >
+              <Icon
+                name="mail-outline"
+                size={18}
+                color={emailActive ? colors.primary : '#9CA3AF'}
+                style={[
+                  styles.sleekInputIcon,
+                  isRTL && styles.sleekInputIconRTL,
+                ]}
+              />
+              <View
+                style={[
+                  styles.sleekInputDivider,
+                  isRTL && styles.sleekInputDividerRTL,
+                ]}
+              />
+              <TextInput
+                style={[
+                  styles.sleekTextInput,
+                  isRTL && styles.sleekTextInputRTL,
+                ]}
+                value={email}
+                onChangeText={setEmail}
+                placeholder={
+                  isRTL ? 'أدخل بريدك الإلكتروني' : 'Enter your email'
+                }
+                placeholderTextColor="#9CA3AF"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                onFocus={() => setEmailActive(true)}
+                onBlur={() => setEmailActive(false)}
+              />
+            </View>
+
+            {/* Password input field */}
+            <Text
+              style={[
+                styles.label,
+                isRTL && styles.labelRTL,
+                { marginBottom: 6, fontSize: 13, color: '#6B7280' },
+              ]}
+            >
+              {isRTL ? 'كلمة المرور' : 'Password'}
+            </Text>
+            <View
+              style={[
+                styles.sleekInputWrapper,
+                isRTL && styles.sleekInputWrapperRTL,
+                passwordActive && styles.sleekInputWrapperActive,
+              ]}
+            >
+              <Icon
+                name="lock-closed-outline"
+                size={18}
+                color={passwordActive ? colors.primary : '#9CA3AF'}
+                style={[
+                  styles.sleekInputIcon,
+                  isRTL && styles.sleekInputIconRTL,
+                ]}
+              />
+              <View
+                style={[
+                  styles.sleekInputDivider,
+                  isRTL && styles.sleekInputDividerRTL,
+                ]}
+              />
+              <TextInput
+                style={[
+                  styles.sleekTextInput,
+                  isRTL && styles.sleekTextInputRTL,
+                ]}
+                value={password}
+                onChangeText={setPassword}
+                placeholder={isRTL ? 'أدخل كلمة المرور' : 'Enter your password'}
+                placeholderTextColor="#9CA3AF"
+                secureTextEntry={!showPassword}
+                onFocus={() => setPasswordActive(true)}
+                onBlur={() => setPasswordActive(false)}
+              />
               <TouchableOpacity
-                style={styles.headerBackButtonCircle}
-                onPress={onBack}
-                activeOpacity={0.8}
+                onPress={() => setShowPassword(!showPassword)}
+                activeOpacity={0.7}
+                style={{ paddingHorizontal: 6 }}
               >
                 <Icon
-                  name={isRTL ? 'chevron-forward' : 'chevron-back'}
-                  size={20}
-                  color={colors.textWhite}
+                  name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                  size={18}
+                  color="#6B7280"
                 />
               </TouchableOpacity>
             </View>
-          )}
-        </View>
 
-        {/* Curved Wave Divider (Concave curve matching the sign-in mockup) */}
-        <View style={styles.curveDivider}>
-          <Svg height="60" width="100%" viewBox="0 0 375 60" preserveAspectRatio="none">
-            <Path d="M0,40 C100,80 250,0 375,40 L375,60 L0,60 Z" fill={colors.background} />
-          </Svg>
-        </View>
-
-        {/* Form Container */}
-        <View style={styles.formWrapper}>
-          {/* Header Title with Custom Accent Line */}
-          <View style={[styles.formHeadingContainer, isRTL && styles.formHeadingContainerRTL]}>
-            <Text style={[styles.formHeading, isRTL && styles.formHeadingRTL]}>
-              {isRTL ? 'تسجيل الدخول' : 'Sign in'}
-            </Text>
-            <View style={[styles.formHeadingUnderline, isRTL && styles.formHeadingUnderlineRTL]} />
-          </View>
-
-          {/* Email input field */}
-          <Text style={[styles.label, isRTL && styles.labelRTL, { marginBottom: 6, fontSize: 13, color: '#6B7280' }]}>
-            {isRTL ? 'البريد الإلكتروني' : 'Email'}
-          </Text>
-          <View style={[styles.sleekInputWrapper, isRTL && styles.sleekInputWrapperRTL, emailActive && styles.sleekInputWrapperActive]}>
-            <Icon
-              name="mail-outline"
-              size={18}
-              color={emailActive ? colors.primary : '#9CA3AF'}
-              style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
-            />
-            <View style={[styles.sleekInputDivider, isRTL && styles.sleekInputDividerRTL]} />
-            <TextInput
-              style={[styles.sleekTextInput, isRTL && styles.sleekTextInputRTL]}
-              value={email}
-              onChangeText={setEmail}
-              placeholder={isRTL ? 'أدخل بريدك الإلكتروني' : 'Enter your email'}
-              placeholderTextColor="#9CA3AF"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              onFocus={() => setEmailActive(true)}
-              onBlur={() => setEmailActive(false)}
-            />
-          </View>
-
-          {/* Password input field */}
-          <Text style={[styles.label, isRTL && styles.labelRTL, { marginBottom: 6, fontSize: 13, color: '#6B7280' }]}>
-            {isRTL ? 'كلمة المرور' : 'Password'}
-          </Text>
-          <View style={[styles.sleekInputWrapper, isRTL && styles.sleekInputWrapperRTL, passwordActive && styles.sleekInputWrapperActive]}>
-            <Icon
-              name="lock-closed-outline"
-              size={18}
-              color={passwordActive ? colors.primary : '#9CA3AF'}
-              style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
-            />
-            <View style={[styles.sleekInputDivider, isRTL && styles.sleekInputDividerRTL]} />
-            <TextInput
-              style={[styles.sleekTextInput, isRTL && styles.sleekTextInputRTL]}
-              value={password}
-              onChangeText={setPassword}
-              placeholder={isRTL ? 'أدخل كلمة المرور' : 'Enter your password'}
-              placeholderTextColor="#9CA3AF"
-              secureTextEntry={!showPassword}
-              onFocus={() => setPasswordActive(true)}
-              onBlur={() => setPasswordActive(false)}
-            />
-            <TouchableOpacity
-              onPress={() => setShowPassword(!showPassword)}
-              activeOpacity={0.7}
-              style={{ paddingHorizontal: 6 }}
+            {/* Remember me & Forgot Password */}
+            <View
+              style={[
+                styles.rememberContainer,
+                isRTL && styles.rememberContainerRTL,
+              ]}
             >
-              <Icon
-                name={showPassword ? 'eye-outline' : 'eye-off-outline'}
-                size={18}
-                color="#6B7280"
-              />
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity
+                style={[
+                  styles.rememberCheckboxRow,
+                  isRTL && styles.rememberCheckboxRowRTL,
+                ]}
+                onPress={() => setRememberMe(!rememberMe)}
+                activeOpacity={0.7}
+              >
+                <Icon
+                  name={rememberMe ? 'checkbox' : 'square-outline'}
+                  size={18}
+                  color={rememberMe ? colors.primary : '#9CA3AF'}
+                />
+                <Text
+                  style={[
+                    styles.rememberText,
+                    isRTL && styles.rememberTextRTL,
+                    { marginLeft: isRTL ? 0 : 4, marginRight: isRTL ? 4 : 0 },
+                  ]}
+                >
+                  {isRTL ? 'تذكرني' : 'Remember Me'}
+                </Text>
+              </TouchableOpacity>
 
-          {/* Remember me & Forgot Password */}
-          <View style={[styles.rememberContainer, isRTL && styles.rememberContainerRTL]}>
+              <TouchableOpacity
+                onPress={() => setShowForgotPasswordModal(true)}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[styles.forgotText, isRTL && styles.forgotTextRTL]}
+                >
+                  {isRTL ? 'نسيت كلمة المرور؟' : 'Forgot Password?'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Submit Button */}
             <TouchableOpacity
-              style={[styles.rememberCheckboxRow, isRTL && styles.rememberCheckboxRowRTL]}
-              onPress={() => setRememberMe(!rememberMe)}
-              activeOpacity={0.7}
-            >
-              <Icon
-                name={rememberMe ? 'checkbox' : 'square-outline'}
-                size={18}
-                color={rememberMe ? colors.primary : '#9CA3AF'}
-              />
-              <Text style={[styles.rememberText, isRTL && styles.rememberTextRTL, { marginLeft: isRTL ? 0 : 4, marginRight: isRTL ? 4 : 0 }]}>
-                {isRTL ? 'تذكرني' : 'Remember Me'}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => setShowForgotPasswordModal(true)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.forgotText, isRTL && styles.forgotTextRTL]}>
-                {isRTL ? 'نسيت كلمة المرور؟' : 'Forgot Password?'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Submit Button */}
-          <TouchableOpacity
-            style={[
-              styles.submitButton,
-              { borderRadius: 10, paddingVertical: 14, marginTop: 10 },
-              isLoading && styles.submitButtonDisabled,
-            ]}
-            onPress={handleSubmit}
-            disabled={isLoading}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.submitButtonTextNew}>
-              {isLoading
-                ? isRTL
-                  ? 'جاري التحميل...'
-                  : 'Loading...'
-                : isRTL
-                ? 'تسجيل الدخول'
-                : 'Login'}
-            </Text>
-          </TouchableOpacity>
-
-          {/* Footer toggle to Sign Up */}
-          <View style={[styles.footerToggleContainer, isRTL && styles.footerToggleContainerRTL]}>
-            <Text style={[styles.footerToggleText, isRTL && styles.footerToggleTextRTL]}>
-              {isRTL ? 'ليس لديك حساب؟' : "Don't have an Account?"}
-            </Text>
-            <TouchableOpacity onPress={() => setShowMultiStepSignup(true)}>
-              <Text style={[styles.footerToggleLink, isRTL && styles.footerToggleLinkRTL]}>
-                {isRTL ? 'سجل الآن' : 'Sign up'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Back to Browse */}
-          {onBack && (
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={onBack}
+              style={[
+                styles.submitButton,
+                { borderRadius: 10, paddingVertical: 14, marginTop: 10 },
+                isLoading && styles.submitButtonDisabled,
+              ]}
+              onPress={handleSubmit}
+              disabled={isLoading}
               activeOpacity={0.8}
+            >
+              <Text style={styles.submitButtonTextNew}>
+                {isLoading
+                  ? isRTL
+                    ? 'جاري التحميل...'
+                    : 'Loading...'
+                  : isRTL
+                  ? 'تسجيل الدخول'
+                  : 'Login'}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Footer toggle to Sign Up */}
+            <View
+              style={[
+                styles.footerToggleContainer,
+                isRTL && styles.footerToggleContainerRTL,
+              ]}
             >
               <Text
                 style={[
-                  styles.backButtonText,
-                  isRTL && styles.backButtonTextRTL,
-                  { color: colors.primary, fontWeight: '600' },
+                  styles.footerToggleText,
+                  isRTL && styles.footerToggleTextRTL,
                 ]}
               >
-                {isRTL ? 'العودة إلى التصفح' : 'Back to Browse'}
+                {isRTL ? 'ليس لديك حساب؟' : "Don't have an Account?"}
               </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </ScrollView>
+              <TouchableOpacity onPress={() => setShowMultiStepSignup(true)}>
+                <Text
+                  style={[
+                    styles.footerToggleLink,
+                    isRTL && styles.footerToggleLinkRTL,
+                  ]}
+                >
+                  {isRTL ? 'سجل الآن' : 'Sign up'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Back to Browse */}
+            {onBack && (
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={onBack}
+                activeOpacity={0.8}
+              >
+                <Text
+                  style={[
+                    styles.backButtonText,
+                    isRTL && styles.backButtonTextRTL,
+                    { color: colors.primary, fontWeight: '600' },
+                  ]}
+                >
+                  {isRTL ? 'العودة إلى التصفح' : 'Back to Browse'}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </ScrollView>
       </View>
     </>
   );

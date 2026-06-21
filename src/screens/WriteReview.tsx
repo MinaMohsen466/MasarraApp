@@ -10,7 +10,10 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -114,8 +117,12 @@ const WriteReview: React.FC<WriteReviewProps> = ({
         visible: true,
         title: isRTL ? 'نجح!' : 'Success!',
         message: isRTL
-          ? (oldReviewId ? 'تم تعديل التقييم بنجاح' : 'تم إرسال التقييم بنجاح')
-          : (oldReviewId ? 'Review updated successfully' : 'Review submitted successfully'),
+          ? oldReviewId
+            ? 'تم تعديل التقييم بنجاح'
+            : 'تم إرسال التقييم بنجاح'
+          : oldReviewId
+          ? 'Review updated successfully'
+          : 'Review submitted successfully',
         buttons: [
           {
             text: isRTL ? 'حسناً' : 'OK',
@@ -178,7 +185,12 @@ const WriteReview: React.FC<WriteReviewProps> = ({
         activeOpacity={1}
         onPress={onBack}
       />
-      <View style={[styles.sheetContainer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+      <View
+        style={[
+          styles.sheetContainer,
+          { paddingBottom: Math.max(insets.bottom, 16) },
+        ]}
+      >
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onBack} style={styles.backButton}>
@@ -202,7 +214,10 @@ const WriteReview: React.FC<WriteReviewProps> = ({
             <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
               {isRTL ? 'تقييم الخدمة' : 'Rate Service'}
             </Text>
-            <Text style={[styles.headerSubtitle, isRTL && styles.headerSubtitleRTL]} numberOfLines={1}>
+            <Text
+              style={[styles.headerSubtitle, isRTL && styles.headerSubtitleRTL]}
+              numberOfLines={1}
+            >
               {serviceName}
             </Text>
           </View>

@@ -11,11 +11,9 @@ import {
   Platform,
   Animated,
   PanResponder,
+  Modal,
 } from 'react-native';
-import Svg, {
-  Path,
-  Circle,
-} from 'react-native-svg';
+import Svg, { Path, Circle } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../constants/colors';
@@ -39,6 +37,7 @@ import { CustomAlert } from '../components/CustomAlert';
 import { validateCoupon, Coupon } from '../services/couponApi';
 import { API_URL } from '../config/api.config';
 import PaymentWebView from '../components/PaymentWebView';
+import Terms from '../components/Terms';
 import {
   sendPayment,
   getActiveSuppliers,
@@ -55,7 +54,11 @@ interface CartProps {
   onEditPackage?: (packageId: string, cartItemId: string) => void;
 }
 
-const Cart: React.FC<CartProps> = ({ onNavigate, onEditService, onEditPackage }) => {
+const Cart: React.FC<CartProps> = ({
+  onNavigate,
+  onEditService,
+  onEditPackage,
+}) => {
   const { isRTL, t } = useLanguage();
   const { user, isLoggedIn, token } = useAuth();
   const { addNotification } = useNotification();
@@ -68,6 +71,8 @@ const Cart: React.FC<CartProps> = ({ onNavigate, onEditService, onEditPackage })
   const [showInfo, setShowInfo] = useState<{ [key: string]: boolean }>({});
   const [showSuccessScreen, setShowSuccessScreen] = useState(false);
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const [showAddressSelection, setShowAddressSelection] = useState(false);
   const [userToken, setUserToken] = useState<string>('');
   // Custom Alert state
@@ -441,11 +446,11 @@ const Cart: React.FC<CartProps> = ({ onNavigate, onEditService, onEditPackage })
       const couponData =
         appliedCoupon && couponDiscount > 0
           ? {
-            code: appliedCoupon.code,
-            discountAmount: couponDiscount,
-            originalPrice: calculateTotalBeforeDiscount(),
-            deductFrom: appliedCoupon.deductFrom || 'vendor',
-          }
+              code: appliedCoupon.code,
+              discountAmount: couponDiscount,
+              originalPrice: calculateTotalBeforeDiscount(),
+              deductFrom: appliedCoupon.deductFrom || 'vendor',
+            }
           : undefined;
 
       // Step 1: Create ONE booking for all items (payment status will be 'pending')
@@ -519,10 +524,13 @@ const Cart: React.FC<CartProps> = ({ onNavigate, onEditService, onEditPackage })
           title: 'تم إنشاء الحجز بنجاح',
           titleEn: 'Booking Created Successfully',
           message: 'تم إنشاء حجزك بنجاح وهو بانتظار موافقة مقدم الخدمة.',
-          messageEn: 'Your booking has been created successfully and is awaiting vendor confirmation.',
+          messageEn:
+            'Your booking has been created successfully and is awaiting vendor confirmation.',
           type: 'booking_created',
-          bookingId: bookingId
-        }).catch(err => console.error('Failed to add booking created notification:', err));
+          bookingId: bookingId,
+        }).catch(err =>
+          console.error('Failed to add booking created notification:', err),
+        );
 
         setAlertTitle(isRTL ? 'تم إنشاء الحجز' : 'Booking Created');
         setAlertMessage(
@@ -618,14 +626,14 @@ const Cart: React.FC<CartProps> = ({ onNavigate, onEditService, onEditPackage })
       const supplierShares =
         suppliers.length > 0
           ? calculateSupplierShares(
-            successfullyBookedItems.map(item => ({
-              vendorId: item.vendorId,
-              totalPrice: item.totalPrice || item.price,
-              price: item.price,
-              quantity: item.quantity,
-            })),
-            suppliers,
-          )
+              successfullyBookedItems.map(item => ({
+                vendorId: item.vendorId,
+                totalPrice: item.totalPrice || item.price,
+                price: item.price,
+                quantity: item.quantity,
+              })),
+              suppliers,
+            )
           : undefined;
 
       // Step 6: Prepare customer info for payment
@@ -638,7 +646,7 @@ const Cart: React.FC<CartProps> = ({ onNavigate, onEditService, onEditPackage })
       if (!customerEmail && !customerMobile) {
         throw new Error(
           t('emailOrPhoneRequired') ||
-          'Email or phone number is required for payment',
+            'Email or phone number is required for payment',
         );
       }
 
@@ -728,17 +736,17 @@ const Cart: React.FC<CartProps> = ({ onNavigate, onEditService, onEditPackage })
       services:
         successfullyBookedItems.length > 0
           ? successfullyBookedItems.map(item => ({
-            name: isRTL ? item.nameAr || item.name : item.name,
-            quantity: item.quantity,
-            total: item.totalPrice ?? item.price * item.quantity,
-          }))
+              name: isRTL ? item.nameAr || item.name : item.name,
+              quantity: item.quantity,
+              total: item.totalPrice ?? item.price * item.quantity,
+            }))
           : [
-            {
-              name: isRTL ? 'الطلب الخاص بك' : 'Your Order',
-              quantity: 1,
-              total: 0,
-            },
-          ],
+              {
+                name: isRTL ? 'الطلب الخاص بك' : 'Your Order',
+                quantity: 1,
+                total: 0,
+              },
+            ],
       paidAt: new Date(),
     });
 
@@ -765,23 +773,32 @@ const Cart: React.FC<CartProps> = ({ onNavigate, onEditService, onEditPackage })
       title: 'تم دفع الحجز بنجاح',
       titleEn: 'Booking Paid Successfully',
       message: 'تم تأكيد دفع حجزك بنجاح! حجزك مؤكد الآن.',
-      messageEn: 'Your booking payment was confirmed successfully! Your booking is now confirmed.',
+      messageEn:
+        'Your booking payment was confirmed successfully! Your booking is now confirmed.',
       type: 'booking_payment_confirmed',
-      bookingId: createdBookingIds[0] || ''
-    }).catch(err => console.error('Failed to add booking paid notification:', err));
+      bookingId: createdBookingIds[0] || '',
+    }).catch(err =>
+      console.error('Failed to add booking paid notification:', err),
+    );
 
     setShowSuccessScreen(true);
   };
 
   // Helper to delete unpaid bookings created during this checkout session
   const deleteCreatedBookings = async () => {
-    console.log('deleteCreatedBookings - createdBookingIds:', createdBookingIds);
+    console.log(
+      'deleteCreatedBookings - createdBookingIds:',
+      createdBookingIds,
+    );
     console.log('deleteCreatedBookings - userToken exists:', !!userToken);
 
     if (createdBookingIds && createdBookingIds.length > 0 && userToken) {
       try {
         for (const bookingId of createdBookingIds) {
-          console.log('Checking status before deletion for booking:', bookingId);
+          console.log(
+            'Checking status before deletion for booking:',
+            bookingId,
+          );
 
           // 1. Fetch current booking status from server to prevent race conditions
           const checkResponse = await fetch(
@@ -810,7 +827,9 @@ const Cart: React.FC<CartProps> = ({ onNavigate, onEditService, onEditPackage })
               (bookingData.paymentStatus === 'paid' ||
                 bookingData.status === 'completed')
             ) {
-              console.log('Booking already paid/confirmed on server. Redirecting to success screen.');
+              console.log(
+                'Booking already paid/confirmed on server. Redirecting to success screen.',
+              );
 
               // Transition to success screen
               const successfullyBookedItems = cartItems.filter(item =>
@@ -833,17 +852,17 @@ const Cart: React.FC<CartProps> = ({ onNavigate, onEditService, onEditPackage })
                 services:
                   successfullyBookedItems.length > 0
                     ? successfullyBookedItems.map(item => ({
-                      name: isRTL ? item.nameAr || item.name : item.name,
-                      quantity: item.quantity,
-                      total: item.totalPrice ?? item.price * item.quantity,
-                    }))
+                        name: isRTL ? item.nameAr || item.name : item.name,
+                        quantity: item.quantity,
+                        total: item.totalPrice ?? item.price * item.quantity,
+                      }))
                     : [
-                      {
-                        name: isRTL ? 'الطلب الخاص بك' : 'Your Order',
-                        quantity: 1,
-                        total: 0,
-                      },
-                    ],
+                        {
+                          name: isRTL ? 'الطلب الخاص بك' : 'Your Order',
+                          quantity: 1,
+                          total: 0,
+                        },
+                      ],
                 paidAt: new Date(),
               });
 
@@ -853,7 +872,11 @@ const Cart: React.FC<CartProps> = ({ onNavigate, onEditService, onEditPackage })
                   try {
                     await removeFromCart(itemId);
                   } catch (error) {
-                    console.error('Error removing item from cart:', itemId, error);
+                    console.error(
+                      'Error removing item from cart:',
+                      itemId,
+                      error,
+                    );
                   }
                 }
                 const remainingItems = await getCart();
@@ -885,11 +908,7 @@ const Cart: React.FC<CartProps> = ({ onNavigate, onEditService, onEditPackage })
 
           if (deleteResponse.ok) {
             const deleteData = await deleteResponse.json();
-            console.log(
-              'Booking deleted successfully:',
-              bookingId,
-              deleteData,
-            );
+            console.log('Booking deleted successfully:', bookingId, deleteData);
           } else {
             console.log('Delete booking failed:', deleteResponse.status);
           }
@@ -933,7 +952,7 @@ const Cart: React.FC<CartProps> = ({ onNavigate, onEditService, onEditPackage })
     setAlertTitle(t('paymentCancelled') || 'Payment Cancelled');
     setAlertMessage(
       t('paymentCancelledMessage') ||
-      'Payment was cancelled. Your cart items are still saved.',
+        'Payment was cancelled. Your cart items are still saved.',
     );
     setAlertButtons([{ text: t('ok'), style: 'default' }]);
     setAlertVisible(true);
@@ -1029,14 +1048,16 @@ const Cart: React.FC<CartProps> = ({ onNavigate, onEditService, onEditPackage })
         setCouponDiscount(result.discountAmount);
         setCouponMessage(
           isRTL
-            ? `تم تطبيق الخصم بنجاح! توفير ${result.coupon.discountType === 'percentage'
-              ? result.coupon.discountValue + '%'
-              : result.coupon.discountValue + ' د.ك'
-            }`
-            : `Coupon applied successfully! Discount ${result.coupon.discountType === 'percentage'
-              ? result.coupon.discountValue + '%'
-              : 'KD ' + result.coupon.discountValue
-            }`,
+            ? `تم تطبيق الخصم بنجاح! توفير ${
+                result.coupon.discountType === 'percentage'
+                  ? result.coupon.discountValue + '%'
+                  : result.coupon.discountValue + ' د.ك'
+              }`
+            : `Coupon applied successfully! Discount ${
+                result.coupon.discountType === 'percentage'
+                  ? result.coupon.discountValue + '%'
+                  : 'KD ' + result.coupon.discountValue
+              }`,
         );
       } else {
         setCouponError(
@@ -1538,8 +1559,8 @@ const Cart: React.FC<CartProps> = ({ onNavigate, onEditService, onEditPackage })
               const isItemOld = item.timeSlot?.start
                 ? new Date(item.timeSlot.start) < now
                 : item.selectedDate &&
-                new Date(item.selectedDate).toDateString() <
-                now.toDateString();
+                  new Date(item.selectedDate).toDateString() <
+                    now.toDateString();
 
               const panHandler = getPanResponder(item._id);
               const translateX = getSwipeAnim(item._id);
@@ -1606,9 +1627,11 @@ const Cart: React.FC<CartProps> = ({ onNavigate, onEditService, onEditPackage })
                           activeOpacity={0.7}
                           onPress={() => {
                             if (item.isPackage) {
-                              onEditPackage && onEditPackage(item.serviceId, item._id);
+                              onEditPackage &&
+                                onEditPackage(item.serviceId, item._id);
                             } else {
-                              onEditService && onEditService(item.serviceId, item._id);
+                              onEditService &&
+                                onEditService(item.serviceId, item._id);
                             }
                           }}
                         >
@@ -1630,9 +1653,11 @@ const Cart: React.FC<CartProps> = ({ onNavigate, onEditService, onEditPackage })
                         activeOpacity={0.7}
                         onPress={() => {
                           if (item.isPackage) {
-                            onEditPackage && onEditPackage(item.serviceId, item._id);
+                            onEditPackage &&
+                              onEditPackage(item.serviceId, item._id);
                           } else {
-                            onEditService && onEditService(item.serviceId, item._id);
+                            onEditService &&
+                              onEditService(item.serviceId, item._id);
                           }
                         }}
                       >
@@ -1852,9 +1877,9 @@ const Cart: React.FC<CartProps> = ({ onNavigate, onEditService, onEditPackage })
                           isRTL && styles.optionsContainerRTL,
                           {
                             marginBottom: 8,
-                            paddingLeft: isRTL ? 4 : (item.image ? 57 : 4),
+                            paddingLeft: isRTL ? 4 : item.image ? 57 : 4,
                             paddingRight: isRTL ? (item.image ? 57 : 4) : 4,
-                          }
+                          },
                         ]}
                       >
                         {item.customInputs.map((input, index) => {
@@ -1869,8 +1894,7 @@ const Cart: React.FC<CartProps> = ({ onNavigate, onEditService, onEditPackage })
                             optKey: string | number,
                           ) => {
                             const hasPrice =
-                              typeof opt.price === 'number' &&
-                              opt.price > 0;
+                              typeof opt.price === 'number' && opt.price > 0;
                             return (
                               <View
                                 key={optKey}
@@ -1906,8 +1930,9 @@ const Cart: React.FC<CartProps> = ({ onNavigate, onEditService, onEditPackage })
                                   </Text>
                                   {hasPrice && (
                                     <Text style={styles.optionPrice}>
-                                      {` (+${opt.price?.toFixed(3)} ${isRTL ? 'د.ك' : 'KD'
-                                        })`}
+                                      {` (+${opt.price?.toFixed(3)} ${
+                                        isRTL ? 'د.ك' : 'KD'
+                                      })`}
                                     </Text>
                                   )}
                                 </Text>
@@ -1917,10 +1942,7 @@ const Cart: React.FC<CartProps> = ({ onNavigate, onEditService, onEditPackage })
 
                           if (Array.isArray(input)) {
                             return input.map((opt, subIndex) =>
-                              renderOptionDetail(
-                                opt,
-                                `${index}-${subIndex}`,
-                              ),
+                              renderOptionDetail(opt, `${index}-${subIndex}`),
                             );
                           } else if (input && input.label) {
                             return renderOptionDetail(input, index);
@@ -1947,21 +1969,76 @@ const Cart: React.FC<CartProps> = ({ onNavigate, onEditService, onEditPackage })
                           {isRTL ? 'بيانات الخدمة' : 'Service Details'}
                         </Text>
 
-                        <View style={[styles.infoDropdownRow, isRTL && styles.infoDropdownRowRTL]}>
-                          <Text style={[styles.infoDropdownLabel, isRTL && styles.infoDropdownLabelRTL]}>{isRTL ? 'الاسم:' : 'Name:'}</Text>
-                          <Text style={[styles.infoDropdownValue, isRTL && styles.infoDropdownValueRTL]}>{isRTL && item.nameAr ? item.nameAr : item.name}</Text>
+                        <View
+                          style={[
+                            styles.infoDropdownRow,
+                            isRTL && styles.infoDropdownRowRTL,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.infoDropdownLabel,
+                              isRTL && styles.infoDropdownLabelRTL,
+                            ]}
+                          >
+                            {isRTL ? 'الاسم:' : 'Name:'}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.infoDropdownValue,
+                              isRTL && styles.infoDropdownValueRTL,
+                            ]}
+                          >
+                            {isRTL && item.nameAr ? item.nameAr : item.name}
+                          </Text>
                         </View>
 
                         {item.vendorName ? (
-                          <View style={[styles.infoDropdownRow, isRTL && styles.infoDropdownRowRTL]}>
-                            <Text style={[styles.infoDropdownLabel, isRTL && styles.infoDropdownLabelRTL]}>{isRTL ? 'المورد:' : 'Vendor:'}</Text>
-                            <Text style={[styles.infoDropdownValue, isRTL && styles.infoDropdownValueRTL]}>{item.vendorName}</Text>
+                          <View
+                            style={[
+                              styles.infoDropdownRow,
+                              isRTL && styles.infoDropdownRowRTL,
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.infoDropdownLabel,
+                                isRTL && styles.infoDropdownLabelRTL,
+                              ]}
+                            >
+                              {isRTL ? 'المورد:' : 'Vendor:'}
+                            </Text>
+                            <Text
+                              style={[
+                                styles.infoDropdownValue,
+                                isRTL && styles.infoDropdownValueRTL,
+                              ]}
+                            >
+                              {item.vendorName}
+                            </Text>
                           </View>
                         ) : null}
 
-                        <View style={[styles.infoDropdownRow, isRTL && styles.infoDropdownRowRTL]}>
-                          <Text style={[styles.infoDropdownLabel, isRTL && styles.infoDropdownLabelRTL]}>{isRTL ? 'التاريخ:' : 'Date:'}</Text>
-                          <Text style={[styles.infoDropdownValue, isRTL && styles.infoDropdownValueRTL]}>
+                        <View
+                          style={[
+                            styles.infoDropdownRow,
+                            isRTL && styles.infoDropdownRowRTL,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.infoDropdownLabel,
+                              isRTL && styles.infoDropdownLabelRTL,
+                            ]}
+                          >
+                            {isRTL ? 'التاريخ:' : 'Date:'}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.infoDropdownValue,
+                              isRTL && styles.infoDropdownValueRTL,
+                            ]}
+                          >
                             {item.selectedDate
                               ? new Date(item.selectedDate).toLocaleDateString(
                                   isRTL ? 'ar-KW' : 'en-US',
@@ -1975,35 +2052,107 @@ const Cart: React.FC<CartProps> = ({ onNavigate, onEditService, onEditPackage })
                           </Text>
                         </View>
 
-                        <View style={[styles.infoDropdownRow, isRTL && styles.infoDropdownRowRTL]}>
-                          <Text style={[styles.infoDropdownLabel, isRTL && styles.infoDropdownLabelRTL]}>{isRTL ? 'الوقت:' : 'Time:'}</Text>
-                          <Text style={[styles.infoDropdownValue, isRTL && styles.infoDropdownValueRTL]}>{item.selectedTime || '-'}</Text>
+                        <View
+                          style={[
+                            styles.infoDropdownRow,
+                            isRTL && styles.infoDropdownRowRTL,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.infoDropdownLabel,
+                              isRTL && styles.infoDropdownLabelRTL,
+                            ]}
+                          >
+                            {isRTL ? 'الوقت:' : 'Time:'}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.infoDropdownValue,
+                              isRTL && styles.infoDropdownValueRTL,
+                            ]}
+                          >
+                            {item.selectedTime || '-'}
+                          </Text>
                         </View>
 
-                        <View style={[styles.infoDropdownRow, isRTL && styles.infoDropdownRowRTL]}>
-                          <Text style={[styles.infoDropdownLabel, isRTL && styles.infoDropdownLabelRTL]}>{isRTL ? 'آلية الحجز:' : 'Booking Type:'}</Text>
-                          <Text style={[styles.infoDropdownValue, isRTL && styles.infoDropdownValueRTL]}>
+                        <View
+                          style={[
+                            styles.infoDropdownRow,
+                            isRTL && styles.infoDropdownRowRTL,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.infoDropdownLabel,
+                              isRTL && styles.infoDropdownLabelRTL,
+                            ]}
+                          >
+                            {isRTL ? 'آلية الحجز:' : 'Booking Type:'}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.infoDropdownValue,
+                              isRTL && styles.infoDropdownValueRTL,
+                            ]}
+                          >
                             {item.availabilityStatus === 'pending_confirmation'
                               ? isRTL
                                 ? 'يتطلب موافقة المورد'
                                 : 'Requires vendor confirmation'
                               : isRTL
-                                ? 'تأكيد تلقائي فوري'
-                                : 'Instant automatic booking'}
+                              ? 'تأكيد تلقائي فوري'
+                              : 'Instant automatic booking'}
                           </Text>
                         </View>
 
-                        <View style={[styles.infoDropdownRow, isRTL && styles.infoDropdownRowRTL]}>
-                          <Text style={[styles.infoDropdownLabel, isRTL && styles.infoDropdownLabelRTL]}>{isRTL ? 'السعر الأساسي:' : 'Base Price:'}</Text>
-                          <Text style={[styles.infoDropdownValue, isRTL && styles.infoDropdownValueRTL]}>
+                        <View
+                          style={[
+                            styles.infoDropdownRow,
+                            isRTL && styles.infoDropdownRowRTL,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.infoDropdownLabel,
+                              isRTL && styles.infoDropdownLabelRTL,
+                            ]}
+                          >
+                            {isRTL ? 'السعر الأساسي:' : 'Base Price:'}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.infoDropdownValue,
+                              isRTL && styles.infoDropdownValueRTL,
+                            ]}
+                          >
                             {item.price.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
                           </Text>
                         </View>
 
                         {item.moreInfo ? (
-                          <View style={[styles.infoDropdownRow, isRTL && styles.infoDropdownRowRTL]}>
-                            <Text style={[styles.infoDropdownLabel, isRTL && styles.infoDropdownLabelRTL]}>{isRTL ? 'ملاحظات الحجز:' : 'Booking Notes:'}</Text>
-                            <Text style={[styles.infoDropdownValue, isRTL && styles.infoDropdownValueRTL]}>{item.moreInfo}</Text>
+                          <View
+                            style={[
+                              styles.infoDropdownRow,
+                              isRTL && styles.infoDropdownRowRTL,
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.infoDropdownLabel,
+                                isRTL && styles.infoDropdownLabelRTL,
+                              ]}
+                            >
+                              {isRTL ? 'ملاحظات الحجز:' : 'Booking Notes:'}
+                            </Text>
+                            <Text
+                              style={[
+                                styles.infoDropdownValue,
+                                isRTL && styles.infoDropdownValueRTL,
+                              ]}
+                            >
+                              {item.moreInfo}
+                            </Text>
                           </View>
                         ) : null}
 
@@ -2053,7 +2202,9 @@ const Cart: React.FC<CartProps> = ({ onNavigate, onEditService, onEditPackage })
                                     : opt.value;
                                 const priceText =
                                   opt.price && opt.price > 0
-                                    ? ` (+${opt.price.toFixed(3)} ${isRTL ? 'د.ك' : 'KD'})`
+                                    ? ` (+${opt.price.toFixed(3)} ${
+                                        isRTL ? 'د.ك' : 'KD'
+                                      })`
                                     : '';
                                 return (
                                   <View
@@ -2064,11 +2215,26 @@ const Cart: React.FC<CartProps> = ({ onNavigate, onEditService, onEditPackage })
                                       { marginBottom: 4 },
                                     ]}
                                   >
-                                    <Text style={[styles.infoDropdownLabel, isRTL && styles.infoDropdownLabelRTL]}>{label}:</Text>
-                                    <Text style={[styles.infoDropdownValue, isRTL && styles.infoDropdownValueRTL]}>
+                                    <Text
+                                      style={[
+                                        styles.infoDropdownLabel,
+                                        isRTL && styles.infoDropdownLabelRTL,
+                                      ]}
+                                    >
+                                      {label}:
+                                    </Text>
+                                    <Text
+                                      style={[
+                                        styles.infoDropdownValue,
+                                        isRTL && styles.infoDropdownValueRTL,
+                                      ]}
+                                    >
                                       {value}
                                       {priceText !== '' && (
-                                        <Text style={styles.optionPrice}> {priceText}</Text>
+                                        <Text style={styles.optionPrice}>
+                                          {' '}
+                                          {priceText}
+                                        </Text>
                                       )}
                                     </Text>
                                   </View>
@@ -2111,13 +2277,13 @@ const Cart: React.FC<CartProps> = ({ onNavigate, onEditService, onEditPackage })
                           <Text style={styles.dateTimeText}>
                             {item.selectedDate
                               ? new Date(item.selectedDate).toLocaleDateString(
-                                isRTL ? 'ar-KW' : 'en-US',
-                                {
-                                  day: '2-digit',
-                                  month: '2-digit',
-                                  year: 'numeric',
-                                },
-                              )
+                                  isRTL ? 'ar-KW' : 'en-US',
+                                  {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    year: 'numeric',
+                                  },
+                                )
                               : '-'}
                           </Text>
                         )}
@@ -2139,13 +2305,13 @@ const Cart: React.FC<CartProps> = ({ onNavigate, onEditService, onEditPackage })
                           <Text style={styles.dateTimeText}>
                             {item.selectedDate
                               ? new Date(item.selectedDate).toLocaleDateString(
-                                isRTL ? 'ar-KW' : 'en-US',
-                                {
-                                  day: '2-digit',
-                                  month: '2-digit',
-                                  year: 'numeric',
-                                },
-                              )
+                                  isRTL ? 'ar-KW' : 'en-US',
+                                  {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    year: 'numeric',
+                                  },
+                                )
                               : '-'}
                           </Text>
                         )}
@@ -2229,17 +2395,17 @@ const Cart: React.FC<CartProps> = ({ onNavigate, onEditService, onEditPackage })
                           </Text>
                           {item.availabilityStatus ===
                             'pending_confirmation' && (
-                              <Text
-                                style={{
-                                  fontSize: 10,
-                                  color: '#FF9800',
-                                  marginLeft: isRTL ? 0 : 6,
-                                  marginRight: isRTL ? 6 : 0,
-                                }}
-                              >
-                                ({t('afterConfirmation')})
-                              </Text>
-                            )}
+                            <Text
+                              style={{
+                                fontSize: 10,
+                                color: '#FF9800',
+                                marginLeft: isRTL ? 0 : 6,
+                                marginRight: isRTL ? 6 : 0,
+                              }}
+                            >
+                              ({t('afterConfirmation')})
+                            </Text>
+                          )}
                         </View>
                       </View>
 
@@ -2335,7 +2501,7 @@ const Cart: React.FC<CartProps> = ({ onNavigate, onEditService, onEditPackage })
                     style={[
                       styles.applyButton,
                       (isApplyingCoupon || !couponCode.trim()) &&
-                      styles.applyButtonDisabled,
+                        styles.applyButtonDisabled,
                     ]}
                     onPress={handleApplyCoupon}
                     disabled={isApplyingCoupon || !couponCode.trim()}
@@ -2392,14 +2558,94 @@ const Cart: React.FC<CartProps> = ({ onNavigate, onEditService, onEditPackage })
               </Text>
             </View>
 
+            {/* Terms & Conditions Checkbox */}
+            <View
+              style={{
+                flexDirection: isRTL ? 'row-reverse' : 'row',
+                alignItems: 'center',
+                marginBottom: 14,
+                paddingHorizontal: 4,
+                gap: 10,
+              }}
+            >
+              {/* Checkbox square — toggles acceptance */}
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setTermsAccepted(prev => !prev)}
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 5,
+                  borderWidth: 2,
+                  borderColor: termsAccepted ? colors.primary : '#aaa',
+                  backgroundColor: termsAccepted
+                    ? colors.primary
+                    : 'transparent',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                {termsAccepted && (
+                  <Text
+                    style={{
+                      color: '#fff',
+                      fontSize: 13,
+                      fontWeight: '700',
+                      lineHeight: 15,
+                    }}
+                  >
+                    ✓
+                  </Text>
+                )}
+              </TouchableOpacity>
+
+              {/* Text with clickable link */}
+              <View
+                style={{
+                  flex: 1,
+                  flexDirection: isRTL ? 'row-reverse' : 'row',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: '#666',
+                    lineHeight: 19,
+                  }}
+                >
+                  {isRTL ? 'أوافق على ' : 'I agree to the '}
+                </Text>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => setShowTermsModal(true)}
+                >
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      color: colors.primary,
+                      fontWeight: '700',
+                      lineHeight: 19,
+                      textDecorationLine: 'underline',
+                    }}
+                  >
+                    {isRTL ? 'الشروط والأحكام' : 'Terms & Conditions'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
             {/* Action Buttons */}
             <TouchableOpacity
               style={[
                 styles.checkoutButton,
-                isProcessingCheckout && styles.checkoutButtonDisabled,
+                (isProcessingCheckout || !termsAccepted) &&
+                  styles.checkoutButtonDisabled,
               ]}
               onPress={handleCheckout}
-              disabled={isProcessingCheckout}
+              disabled={isProcessingCheckout || !termsAccepted}
             >
               {isProcessingCheckout ? (
                 <ActivityIndicator color={colors.textWhite} />
@@ -2447,6 +2693,17 @@ const Cart: React.FC<CartProps> = ({ onNavigate, onEditService, onEditPackage })
         buttons={alertButtons}
         onClose={() => setAlertVisible(false)}
       />
+
+      {/* Terms & Conditions Modal */}
+      <Modal
+        visible={showTermsModal}
+        animationType="slide"
+        transparent={false}
+        statusBarTranslucent={true}
+        onRequestClose={() => setShowTermsModal(false)}
+      >
+        <Terms onBack={() => setShowTermsModal(false)} />
+      </Modal>
     </View>
   );
 };

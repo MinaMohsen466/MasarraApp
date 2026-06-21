@@ -78,7 +78,9 @@ const VendorHeader: React.FC<VendorHeaderProps> = ({
         {/* Top Row: Image and Info */}
         <View style={[styles.topRow, isRTL && styles.topRowRTL]}>
           {/* Vendor Image */}
-          <View style={[styles.imageContainer, isRTL && styles.imageContainerRTL]}>
+          <View
+            style={[styles.imageContainer, isRTL && styles.imageContainerRTL]}
+          >
             {imageUrl && !imageError ? (
               <Image
                 source={{ uri: imageUrl }}
@@ -134,7 +136,13 @@ const VendorHeader: React.FC<VendorHeaderProps> = ({
                 isRTL && styles.ratingContainerRTL,
               ]}
             >
-              <Text style={[styles.ratingText, isRTL && styles.ratingTextRTL, isRTL && styles.textRTL]}>
+              <Text
+                style={[
+                  styles.ratingText,
+                  isRTL && styles.ratingTextRTL,
+                  isRTL && styles.textRTL,
+                ]}
+              >
                 {renderStars()}
               </Text>
               <Text style={[styles.reviewsText, isRTL && styles.textRTL]}>

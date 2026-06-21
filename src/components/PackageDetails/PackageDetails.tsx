@@ -32,10 +32,7 @@ import { createStyles } from './styles';
 import DatePickerModal from '../DatePickerModal/DatePickerModal';
 import TimePickerModal from '../TimePickerModal/TimePickerModal';
 import { addToCart, updateCartItem } from '../../services/cart';
-import {
-  checkTimeSlotAvailability,
-  getUserBookings,
-} from '../../services/api';
+import { checkTimeSlotAvailability, getUserBookings } from '../../services/api';
 import AllReviews from '../../screens/AllReviews';
 import WriteReview from '../../screens/WriteReview';
 import {
@@ -185,7 +182,10 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
           }
         }
       } catch (err) {
-        console.error('Error loading cart item for edit in PackageDetails:', err);
+        console.error(
+          'Error loading cart item for edit in PackageDetails:',
+          err,
+        );
       }
     };
 
@@ -195,18 +195,19 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
   }, [editCartItemId, packageData]);
 
   // Load reviews using React Query for better caching
-  const { data: reviewsData, refetch: refetchReviews } = useQuery<ReviewsResponse | null>({
-    queryKey: ['service-reviews', packageData?.service?._id],
-    queryFn: async () => {
-      if (!packageData?.service?._id) return null;
-      return await getServiceReviews(packageData.service._id, 1, 10);
-    },
-    enabled: !!packageData?.service?._id,
-    staleTime: 10 * 60 * 1000,
-    gcTime: 20 * 60 * 1000,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
-  });
+  const { data: reviewsData, refetch: refetchReviews } =
+    useQuery<ReviewsResponse | null>({
+      queryKey: ['service-reviews', packageData?.service?._id],
+      queryFn: async () => {
+        if (!packageData?.service?._id) return null;
+        return await getServiceReviews(packageData.service._id, 1, 10);
+      },
+      enabled: !!packageData?.service?._id,
+      staleTime: 10 * 60 * 1000,
+      gcTime: 20 * 60 * 1000,
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+    });
 
   // Check if the user has purchased the package
   useEffect(() => {
@@ -224,18 +225,22 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
         // Find if there's any booking for this package that is confirmed/completed
         const purchaseBooking = bookingsData.find(booking => {
           const hasPkg = booking.packages?.some(pkgItem => {
-            const pkgIdFromBooking = typeof pkgItem.package === 'string'
-              ? pkgItem.package
-              : pkgItem.package?._id;
+            const pkgIdFromBooking =
+              typeof pkgItem.package === 'string'
+                ? pkgItem.package
+                : pkgItem.package?._id;
             return pkgIdFromBooking === packageId;
           });
 
           if (!hasPkg) return false;
 
           // Check if the booking status itself is confirmed or completed, or any of the services are confirmed/completed
-          const isConfirmedOrCompleted = booking.status === 'confirmed' ||
-                                         booking.status === 'completed' ||
-                                         booking.services?.some(s => s.status === 'confirmed' || s.status === 'completed');
+          const isConfirmedOrCompleted =
+            booking.status === 'confirmed' ||
+            booking.status === 'completed' ||
+            booking.services?.some(
+              s => s.status === 'confirmed' || s.status === 'completed',
+            );
 
           return isConfirmedOrCompleted;
         });
@@ -693,7 +698,11 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 
   return (
     <View style={styles.container}>
-      <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
+      <StatusBar
+        backgroundColor="#00a19c"
+        barStyle="light-content"
+        translucent={false}
+      />
       {/* Header */}
       <View
         style={[
@@ -1443,7 +1452,8 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                     isRTL && styles.reviewsTitleRTL,
                   ]}
                 >
-                  {isRTL ? 'التقييمات' : 'Reviews'} ({reviewStats?.totalRatings || 0})
+                  {isRTL ? 'التقييمات' : 'Reviews'} (
+                  {reviewStats?.totalRatings || 0})
                 </Text>
 
                 {/* Write/Edit Review Button (in header) */}
@@ -1471,7 +1481,9 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                         strokeLinejoin="round"
                       />
                     </Svg>
-                    <Text style={{ fontSize: 12, fontWeight: '600', color: '#FFF' }}>
+                    <Text
+                      style={{ fontSize: 12, fontWeight: '600', color: '#FFF' }}
+                    >
                       {isRTL ? 'تقييم' : 'Review'}
                     </Text>
                   </TouchableOpacity>
@@ -1565,208 +1577,226 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
               )}
 
               {/* Individual Reviews */}
-              {reviewStats && reviewStats.totalRatings > 0 && reviews.length > 0 && (
-                <View>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.reviewsListHorizontal}
-                  >
-                    {reviews.slice(0, 5).map(review => (
-                      <View
-                        key={review._id}
-                        style={styles.reviewCardHorizontal}
-                      >
-                        <View style={styles.reviewHeader}>
-                          <View
-                            style={[
-                              styles.reviewUserInfo,
-                              isRTL && { flexDirection: 'row-reverse' },
-                            ]}
-                          >
-                            {review.user?.profilePicture ? (
-                              <Image
-                                source={{
-                                  uri: getImageUrl(review.user.profilePicture),
-                                }}
-                                style={styles.reviewUserAvatar}
-                              />
-                            ) : (
-                              <View style={styles.reviewUserAvatarPlaceholder}>
-                                <Text style={styles.reviewUserAvatarText}>
-                                  {(review.user?.name || 'M').charAt(0).toUpperCase()}
+              {reviewStats &&
+                reviewStats.totalRatings > 0 &&
+                reviews.length > 0 && (
+                  <View>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.reviewsListHorizontal}
+                    >
+                      {reviews.slice(0, 5).map(review => (
+                        <View
+                          key={review._id}
+                          style={styles.reviewCardHorizontal}
+                        >
+                          <View style={styles.reviewHeader}>
+                            <View
+                              style={[
+                                styles.reviewUserInfo,
+                                isRTL && { flexDirection: 'row-reverse' },
+                              ]}
+                            >
+                              {review.user?.profilePicture ? (
+                                <Image
+                                  source={{
+                                    uri: getImageUrl(
+                                      review.user.profilePicture,
+                                    ),
+                                  }}
+                                  style={styles.reviewUserAvatar}
+                                />
+                              ) : (
+                                <View
+                                  style={styles.reviewUserAvatarPlaceholder}
+                                >
+                                  <Text style={styles.reviewUserAvatarText}>
+                                    {(review.user?.name || 'M')
+                                      .charAt(0)
+                                      .toUpperCase()}
+                                  </Text>
+                                </View>
+                              )}
+                              <View style={{ flex: 1 }}>
+                                <View
+                                  style={{
+                                    flexDirection: isRTL
+                                      ? 'row-reverse'
+                                      : 'row',
+                                    alignItems: 'center',
+                                    flexWrap: 'wrap',
+                                  }}
+                                >
+                                  <Text
+                                    style={[
+                                      styles.reviewUserName,
+                                      { textAlign: isRTL ? 'right' : 'left' },
+                                    ]}
+                                    numberOfLines={1}
+                                  >
+                                    {review.user?.name ||
+                                      (isRTL ? 'مستخدم محذوف' : 'Deleted User')}
+                                  </Text>
+                                </View>
+                                <View
+                                  style={{
+                                    flexDirection: isRTL
+                                      ? 'row-reverse'
+                                      : 'row',
+                                    alignItems: 'center',
+                                    marginTop: 2,
+                                  }}
+                                >
+                                  <Text style={styles.reviewDate}>
+                                    {new Date(
+                                      review.createdAt,
+                                    ).toLocaleDateString(
+                                      isRTL ? 'ar-EG' : 'en-US',
+                                      { month: 'short', day: 'numeric' },
+                                    )}
+                                  </Text>
+                                  {review.isVerifiedPurchase && (
+                                    <>
+                                      <Text
+                                        style={{
+                                          fontSize: 11,
+                                          color: colors.textSecondary,
+                                          marginHorizontal: 4,
+                                        }}
+                                      >
+                                        •
+                                      </Text>
+                                      <Text style={styles.verifiedBadge}>
+                                        {isRTL ? 'موثق' : 'Verified'}
+                                      </Text>
+                                    </>
+                                  )}
+                                </View>
+                              </View>
+                            </View>
+                            <View
+                              style={{
+                                flexDirection: isRTL ? 'row-reverse' : 'row',
+                                alignItems: 'center',
+                                gap: 6,
+                              }}
+                            >
+                              {/* Delete Button - Only show for current user's reviews */}
+                              {currentUserId &&
+                                review.user?._id === currentUserId && (
+                                  <TouchableOpacity
+                                    style={{
+                                      padding: 6,
+                                      backgroundColor:
+                                        'rgba(220, 53, 69, 0.08)',
+                                      borderRadius: 6,
+                                    }}
+                                    onPress={() => handleDeleteReview(review)}
+                                    disabled={isDeletingReview}
+                                  >
+                                    {isDeletingReview ? (
+                                      <ActivityIndicator
+                                        size="small"
+                                        color="#e57373"
+                                      />
+                                    ) : (
+                                      <Svg
+                                        width={14}
+                                        height={14}
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                      >
+                                        <Path
+                                          d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"
+                                          stroke="#e57373"
+                                          strokeWidth={2}
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                        />
+                                      </Svg>
+                                    )}
+                                  </TouchableOpacity>
+                                )}
+
+                              <View style={styles.reviewRating}>
+                                <Text style={styles.reviewRatingText}>
+                                  {review.rating.toFixed(1)} ★
                                 </Text>
                               </View>
-                            )}
-                            <View style={{ flex: 1 }}>
-                              <View
-                                style={{
-                                  flexDirection: isRTL ? 'row-reverse' : 'row',
-                                  alignItems: 'center',
-                                  flexWrap: 'wrap',
-                                }}
-                              >
+                            </View>
+                          </View>
+                          <Text
+                            style={[
+                              styles.reviewComment,
+                              isRTL && styles.reviewCommentRTL,
+                            ]}
+                            numberOfLines={2}
+                          >
+                            {review.comment}
+                          </Text>
+                          {review.vendorReply &&
+                            review.vendorReply.text &&
+                            review.vendorReply.text.trim() !== '' && (
+                              <View style={styles.vendorReply}>
                                 <Text
                                   style={[
-                                    styles.reviewUserName,
+                                    styles.vendorReplyLabel,
                                     { textAlign: isRTL ? 'right' : 'left' },
+                                  ]}
+                                >
+                                  {isRTL ? 'رد البائع:' : 'Vendor Reply:'}
+                                </Text>
+                                <Text
+                                  style={[
+                                    styles.vendorReplyText,
+                                    isRTL && styles.vendorReplyTextRTL,
                                   ]}
                                   numberOfLines={1}
                                 >
-                                  {review.user?.name || (isRTL ? 'مستخدم محذوف' : 'Deleted User')}
+                                  {review.vendorReply.text}
                                 </Text>
                               </View>
-                              <View
-                                style={{
-                                  flexDirection: isRTL ? 'row-reverse' : 'row',
-                                  alignItems: 'center',
-                                  marginTop: 2,
-                                }}
-                              >
-                                <Text style={styles.reviewDate}>
-                                  {new Date(
-                                    review.createdAt,
-                                  ).toLocaleDateString(
-                                    isRTL ? 'ar-EG' : 'en-US',
-                                    { month: 'short', day: 'numeric' },
-                                  )}
-                                </Text>
-                                {review.isVerifiedPurchase && (
-                                  <>
-                                    <Text
-                                      style={{
-                                        fontSize: 11,
-                                        color: colors.textSecondary,
-                                        marginHorizontal: 4,
-                                      }}
-                                    >
-                                      •
-                                    </Text>
-                                    <Text style={styles.verifiedBadge}>
-                                      {isRTL ? 'موثق' : 'Verified'}
-                                    </Text>
-                                  </>
-                                )}
-                              </View>
-                            </View>
-                          </View>
-                          <View
-                            style={{
-                              flexDirection: isRTL ? 'row-reverse' : 'row',
-                              alignItems: 'center',
-                              gap: 6,
-                            }}
-                          >
-                            {/* Delete Button - Only show for current user's reviews */}
-                            {currentUserId && review.user?._id === currentUserId && (
-                              <TouchableOpacity
-                                style={{
-                                  padding: 6,
-                                  backgroundColor: 'rgba(220, 53, 69, 0.08)',
-                                  borderRadius: 6,
-                                }}
-                                onPress={() => handleDeleteReview(review)}
-                                disabled={isDeletingReview}
-                              >
-                                {isDeletingReview ? (
-                                  <ActivityIndicator size="small" color="#e57373" />
-                                ) : (
-                                  <Svg
-                                    width={14}
-                                    height={14}
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                  >
-                                    <Path
-                                      d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"
-                                      stroke="#e57373"
-                                      strokeWidth={2}
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    />
-                                  </Svg>
-                                )}
-                              </TouchableOpacity>
                             )}
-
-                            <View style={styles.reviewRating}>
-                              <Text style={styles.reviewRatingText}>
-                                {review.rating.toFixed(1)} ★
-                              </Text>
-                            </View>
-                          </View>
                         </View>
-                        <Text
-                          style={[
-                            styles.reviewComment,
-                            isRTL && styles.reviewCommentRTL,
-                          ]}
-                          numberOfLines={2}
-                        >
-                          {review.comment}
-                        </Text>
-                        {review.vendorReply &&
-                          review.vendorReply.text &&
-                          review.vendorReply.text.trim() !== '' && (
-                            <View style={styles.vendorReply}>
-                              <Text
-                                style={[
-                                  styles.vendorReplyLabel,
-                                  { textAlign: isRTL ? 'right' : 'left' },
-                                ]}
-                              >
-                                {isRTL ? 'رد البائع:' : 'Vendor Reply:'}
-                              </Text>
-                              <Text
-                                style={[
-                                  styles.vendorReplyText,
-                                  isRTL && styles.vendorReplyTextRTL,
-                                ]}
-                                numberOfLines={1}
-                              >
-                                {review.vendorReply.text}
-                              </Text>
-                            </View>
-                          )}
-                      </View>
-                    ))}
-                  </ScrollView>
+                      ))}
+                    </ScrollView>
 
-                  {/* Show More Reviews Button */}
-                  {reviews.length > 2 && (
-                    <TouchableOpacity
-                      style={styles.showMoreReviewsButton}
-                      activeOpacity={0.7}
-                      onPress={() => setShowAllReviewsModal(true)}
-                    >
-                      <Text style={styles.showMoreReviewsText}>
-                        {isRTL
-                          ? `عرض جميع التقييمات (${reviews.length})`
-                          : `Show All Reviews (${reviews.length})`}
-                      </Text>
-                      <Svg
-                        width={20}
-                        height={20}
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        style={{
-                          marginLeft: isRTL ? 0 : 8,
-                          marginRight: isRTL ? 8 : 0,
-                          transform: isRTL ? [{ rotate: '180deg' }] : [],
-                        }}
+                    {/* Show More Reviews Button */}
+                    {reviews.length > 2 && (
+                      <TouchableOpacity
+                        style={styles.showMoreReviewsButton}
+                        activeOpacity={0.7}
+                        onPress={() => setShowAllReviewsModal(true)}
                       >
-                        <Path
-                          d="M9 18l6-6-6-6"
-                          stroke={colors.primary}
-                          strokeWidth={2}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </Svg>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              )}
+                        <Text style={styles.showMoreReviewsText}>
+                          {isRTL
+                            ? `عرض جميع التقييمات (${reviews.length})`
+                            : `Show All Reviews (${reviews.length})`}
+                        </Text>
+                        <Svg
+                          width={20}
+                          height={20}
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          style={{
+                            marginLeft: isRTL ? 0 : 8,
+                            marginRight: isRTL ? 8 : 0,
+                            transform: isRTL ? [{ rotate: '180deg' }] : [],
+                          }}
+                        >
+                          <Path
+                            d="M9 18l6-6-6-6"
+                            stroke={colors.primary}
+                            strokeWidth={2}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </Svg>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
             </View>
           )}
         </View>
