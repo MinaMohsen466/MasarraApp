@@ -18,7 +18,140 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useLanguage } from './LanguageContext';
 import { colors } from '../constants/colors';
-import { getUserDashboardBookings } from '../services/api';
+import {
+  fetchServerNotifications,
+  markServerNotificationRead,
+  markAllServerNotificationsRead,
+  deleteServerNotification,
+} from '../services/api';
+
+const NOTIFICATION_TRANSLATIONS: Record<string, any> = {
+  en: {
+    fallback: {
+      title: 'Notification',
+      message: 'You have a new notification',
+    },
+    types: {
+      new_booking: {
+        title: 'New booking',
+        message: '{{customerName}} booked {{serviceName}}',
+      },
+      booking_confirmed: {
+        title: 'Booking confirmed',
+        message: 'Your booking for {{serviceName}} has been confirmed',
+      },
+      refund_requested: {
+        title: 'Refund request',
+        message: 'A refund was requested for a booking',
+      },
+      refund_approved: {
+        title: 'Refund approved',
+        message: 'A refund of {{refundAmount}} KWD has been approved',
+      },
+      refund_rejected: {
+        title: 'Refund declined',
+        message: 'Your refund request was declined',
+      },
+      event_reminder: {
+        title: 'Upcoming event',
+        message: 'Your event for {{serviceName}} is coming up soon',
+      },
+      vendor_application: {
+        title: 'New vendor application',
+        message: '{{applicantName}} applied to become a vendor',
+      },
+      backup_stale: {
+        title: 'Backup overdue',
+        message: 'The last database backup is over a month old',
+      },
+      new_chat: {
+        title: 'New conversation',
+        message: '{{senderName}} started a conversation',
+      },
+      new_message: {
+        title: 'New message',
+        message: '{{senderName}}: {{preview}}',
+      },
+    },
+  },
+  ar: {
+    fallback: {
+      title: 'إشعار',
+      message: 'لديك إشعار جديد',
+    },
+    types: {
+      new_booking: {
+        title: 'حجز جديد',
+        message: 'قام {{customerName}} بحجز {{serviceName}}',
+      },
+      booking_confirmed: {
+        title: 'تم تأكيد الحجز',
+        message: 'تم تأكيد حجزك لـ {{serviceName}}',
+      },
+      refund_requested: {
+        title: 'طلب استرداد',
+        message: 'تم طلب استرداد لأحد الحجوزات',
+      },
+      refund_approved: {
+        title: 'تمت الموافقة على الاسترداد',
+        message: 'تمت الموافقة على استرداد بقيمة {{refundAmount}} د.ك',
+      },
+      refund_rejected: {
+        title: 'تم رفض الاسترداد',
+        message: 'تم رفض طلب الاسترداد الخاص بك',
+      },
+      event_reminder: {
+        title: 'مناسبة قادمة',
+        message: 'تقترب مناسبتك لـ {{serviceName}} قريبًا',
+      },
+      vendor_application: {
+        title: 'طلب تاجر جديد',
+        message: 'تقدّم {{applicantName}} ليصبح تاجرًا',
+      },
+      backup_stale: {
+        title: 'النسخ الاحتياطي متأخر',
+        message: 'آخر نسخة احتياطية لقاعدة البيانات أقدم من شهر',
+      },
+      new_chat: {
+        title: 'محادثة جديدة',
+        message: 'بدأ {{senderName}} محادثة',
+      },
+      new_message: {
+        title: 'رسالة جديدة',
+        message: '{{senderName}}: {{preview}}',
+      },
+    },
+  },
+};
+
+export function renderNotificationText(notification: any, isRTL: boolean) {
+  const lang = isRTL ? 'ar' : 'en';
+  const type = notification.type;
+  const meta = notification.meta || {};
+
+  const langTranslations = NOTIFICATION_TRANSLATIONS[lang];
+  const typeTranslations = langTranslations?.types?.[type];
+
+  let title = '';
+  let message = '';
+
+  if (typeTranslations) {
+    title = typeTranslations.title;
+    message = typeTranslations.message;
+  } else {
+    title = langTranslations?.fallback?.title || 'Notification';
+    message = langTranslations?.fallback?.message || 'You have a new notification';
+  }
+
+  // Simple interpolation helper
+  Object.keys(meta).forEach(key => {
+    const value = meta[key];
+    const regex = new RegExp(`{{\\s*${key}\\s*}}`, 'g');
+    message = message.replace(regex, String(value ?? ''));
+  });
+
+  return { title, message };
+}
 
 export interface NotificationItem {
   id: string;
@@ -266,7 +399,49 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     [showTopBanner, notificationsEnabled, notifications],
   );
 
+  const fetchNotificationsFromServer = useCallback(async () => {
+    try {
+      const userToken = await AsyncStorage.getItem('userToken');
+      if (!userToken) return;
+
+      console.log('[NotificationService] Fetching notifications from server...');
+      const response = await fetchServerNotifications(userToken, 1, 50);
+      if (response && Array.isArray(response.notifications)) {
+        const mapped = response.notifications.map((n: any) => {
+          const { title, message } = renderNotificationText(n, true); // Arabic
+          const { title: titleEn, message: messageEn } = renderNotificationText(n, false); // English
+          return {
+            id: n._id,
+            title,
+            titleEn,
+            message,
+            messageEn,
+            type: n.type,
+            bookingId: n.booking,
+            createdAt: n.createdAt,
+            read: n.isRead,
+            link: n.link,
+            chat: n.chat,
+          };
+        });
+
+        setNotifications(mapped);
+        await AsyncStorage.setItem('@notifications_history', JSON.stringify(mapped));
+      }
+    } catch (err) {
+      console.error('[NotificationService] Failed to fetch server notifications:', err);
+    }
+  }, []);
+
   const markAsRead = useCallback(async (id: string) => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (token) {
+        await markServerNotificationRead(token, id);
+      }
+    } catch (err) {
+      console.error('[NotificationContext] Failed to mark read on server:', err);
+    }
     setNotifications(prev => {
       const updated = prev.map(n => (n.id === id ? { ...n, read: true } : n));
       AsyncStorage.setItem(
@@ -280,6 +455,14 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
   }, []);
 
   const markAllAsRead = useCallback(async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (token) {
+        await markAllServerNotificationsRead(token);
+      }
+    } catch (err) {
+      console.error('[NotificationContext] Failed to mark all read on server:', err);
+    }
     setNotifications(prev => {
       const updated = prev.map(n => ({ ...n, read: true }));
       AsyncStorage.setItem(
@@ -293,142 +476,35 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
   }, []);
 
   const clearNotifications = useCallback(async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (token && notifications.length > 0) {
+        await Promise.all(
+          notifications.map(n => deleteServerNotification(token, n.id).catch(() => {}))
+        );
+      }
+    } catch (err) {
+      console.error('[NotificationContext] Failed to delete notifications on server:', err);
+    }
     setNotifications([]);
     try {
       await AsyncStorage.removeItem('@notifications_history');
     } catch (err) {
       console.error('Failed to clear notifications in storage:', err);
     }
-  }, []);
+  }, [notifications]);
 
   const checkBookingsStatusChanges = useCallback(
     async (userToken: string) => {
       if (!userToken) return;
       try {
-        console.log('[NotificationService] Checking booking changes...');
-        // 1. Fetch latest bookings
-        const latestBookings = await getUserDashboardBookings(userToken);
-        if (!latestBookings || !Array.isArray(latestBookings)) return;
-
-        // 2. Load cached bookings from AsyncStorage
-        const cachedBookingsStr = await AsyncStorage.getItem(
-          '@cached_bookings_status',
-        );
-        const cachedBookings: {
-          [key: string]: {
-            status: string;
-            services: {
-              [key: string]: { status: string; paymentStatus: string };
-            };
-          };
-        } = cachedBookingsStr ? JSON.parse(cachedBookingsStr) : {};
-
-        // Prepare updated cache object
-        const newCache: typeof cachedBookings = {};
-        const newNotifications: Omit<
-          NotificationItem,
-          'id' | 'createdAt' | 'read'
-        >[] = [];
-
-        latestBookings.forEach(booking => {
-          const bId = booking._id;
-          const currentServices: {
-            [key: string]: { status: string; paymentStatus: string };
-          } = {};
-
-          booking.services?.forEach((s: any) => {
-            const sId = s._id || s.service?._id || s.service;
-            currentServices[sId] = {
-              status: s.status || 'pending',
-              paymentStatus: s.paymentStatus || 'pending',
-            };
-          });
-
-          newCache[bId] = {
-            status: booking.status || 'pending',
-            services: currentServices,
-          };
-
-          // If we had this booking cached before, compare services
-          const cachedB = cachedBookings[bId];
-          if (cachedB) {
-            booking.services?.forEach((s: any) => {
-              const sId = s._id || s.service?._id || s.service;
-              const cachedS = cachedB.services[sId];
-              const serviceName =
-                s.service?.name || s.service?.nameAr || 'Service';
-              const serviceNameAr =
-                s.service?.nameAr || s.service?.name || 'خدمة';
-
-              if (cachedS) {
-                // Check status change
-                if (s.status !== cachedS.status) {
-                  if (s.status === 'confirmed') {
-                    newNotifications.push({
-                      title: 'موافقة مقدم الخدمة',
-                      titleEn: 'Vendor Approved',
-                      message: `تمت موافقة مقدم الخدمة على خدمة "${serviceNameAr}". يرجى إتمام الدفع.`,
-                      messageEn: `Vendor approved the service "${serviceName}". Please complete the payment.`,
-                      type: 'booking_confirmed_by_vendor',
-                      bookingId: bId,
-                    });
-                  } else if (s.status === 'cancelled') {
-                    newNotifications.push({
-                      title: 'إلغاء الخدمة',
-                      titleEn: 'Service Cancelled',
-                      message: `تم إلغاء خدمة "${serviceNameAr}" من قبل مقدم الخدمة.`,
-                      messageEn: `Service "${serviceName}" has been cancelled by the vendor.`,
-                      type: 'booking_rejected_by_vendor',
-                      bookingId: bId,
-                    });
-                  } else if (s.status === 'completed') {
-                    newNotifications.push({
-                      title: 'اكتملت الخدمة',
-                      titleEn: 'Service Completed',
-                      message: `تم إكمال خدمة "${serviceNameAr}" بنجاح!`,
-                      messageEn: `Service "${serviceName}" has been completed successfully!`,
-                      type: 'vendor_uploaded',
-                      bookingId: bId,
-                    });
-                  }
-                }
-
-                // Check payment status change
-                if (
-                  s.paymentStatus !== cachedS.paymentStatus &&
-                  s.paymentStatus === 'paid'
-                ) {
-                  newNotifications.push({
-                    title: 'تم تأكيد الدفع',
-                    titleEn: 'Payment Confirmed',
-                    message: `تم تأكيد دفع خدمة "${serviceNameAr}" بنجاح!`,
-                    messageEn: `Payment confirmed for service "${serviceName}"!`,
-                    type: 'booking_payment_confirmed',
-                    bookingId: bId,
-                  });
-                }
-              }
-            });
-          }
-        });
-
-        // Save updated bookings statuses to cache
-        await AsyncStorage.setItem(
-          '@cached_bookings_status',
-          JSON.stringify(newCache),
-        );
-
-        // If there are new notifications, add them to history
-        if (newNotifications.length > 0) {
-          for (const n of newNotifications) {
-            await addNotification(n);
-          }
-        }
+        console.log('[NotificationService] Refreshing notifications from server...');
+        await fetchNotificationsFromServer();
       } catch (error) {
         console.error('Error checking booking status changes:', error);
       }
     },
-    [addNotification],
+    [fetchNotificationsFromServer],
   );
 
   // Helper for notification colors and icons in the top banner

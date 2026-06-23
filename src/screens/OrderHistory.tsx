@@ -8,6 +8,8 @@ import {
   StatusBar,
   Dimensions,
   RefreshControl,
+  FlatList,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -108,7 +110,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await loadBookings();
+      await loadBookings(true);
     } finally {
       setRefreshing(false);
     }
@@ -119,7 +121,9 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
     return filterBookingsByStatus(bookings, selectedFilter);
   }, [bookings, selectedFilter, filterBookingsByStatus]);
 
-  const loadBookings = async (): Promise<Booking[] | undefined> => {
+  const loadBookings = async (
+    forceRefresh: boolean = false,
+  ): Promise<Booking[] | undefined> => {
     try {
       setLoading(true);
       const token = await AsyncStorage.getItem('userToken');
@@ -145,7 +149,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
 
       const [data, settings] = await Promise.all([
         getUserDashboardBookings(token),
-        getQRCodeSettings(token),
+        getQRCodeSettings(token, forceRefresh),
       ]);
 
       // Sort by creation date, newest first
@@ -947,34 +951,11 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
             </ScrollView>
           </View>
 
-          <ScrollView
-            style={styles.scrollView}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                tintColor={colors.primary}
-                colors={[colors.primary]}
-              />
-            }
-          >
-            {filteredBookings.length === 0 ? (
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>
-                  {selectedFilter === 'all'
-                    ? isRTL
-                      ? 'لا توجد حجوزات بعد'
-                      : 'No bookings yet'
-                    : isRTL
-                    ? 'لا توجد حجوزات في هذه الفئة'
-                    : 'No bookings in this category'}
-                </Text>
-              </View>
-            ) : (
-              filteredBookings.map(booking => (
-                <View key={booking._id} style={styles.bookingCard}>
+          <FlatList
+            data={filteredBookings}
+            keyExtractor={item => item._id}
+            renderItem={({ item: booking }) => (
+                <View style={styles.bookingCard}>
                   {/* Solid Full-Width Card Header */}
                   <View
                     style={[
@@ -1863,9 +1844,39 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
                     {/* Action Buttons removed - each service now has its own buttons */}
                   </View>
                 </View>
-              ))
             )}
-          </ScrollView>
+            style={styles.scrollView}
+            contentContainerStyle={[
+              styles.scrollContent,
+              filteredBookings.length === 0 && { flex: 1, justifyContent: 'center' },
+            ]}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={colors.primary}
+                colors={[colors.primary]}
+              />
+            }
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>
+                  {selectedFilter === 'all'
+                    ? isRTL
+                      ? 'لا توجد حجوزات بعد'
+                      : 'No bookings yet'
+                    : isRTL
+                    ? 'لا توجد حجوزات في هذه الفئة'
+                    : 'No bookings in this category'}
+                </Text>
+              </View>
+            }
+            initialNumToRender={5}
+            maxToRenderPerBatch={5}
+            windowSize={5}
+            removeClippedSubviews={Platform.OS === 'android'}
+          />
 
           {selectedBooking && (
             <QRFormModal

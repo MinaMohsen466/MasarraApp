@@ -777,7 +777,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
           // If slot not found, consider it unavailable
           setIsTimeSlotAvailable(false);
         }
-      } catch (error) {
+      } catch {
         // On error, default to available to not block user
         setIsTimeSlotAvailable(true);
       } finally {

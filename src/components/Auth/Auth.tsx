@@ -25,9 +25,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface AuthProps {
   onBack?: () => void;
+  onNavigate?: (route: string) => void;
 }
 
-const Auth: React.FC<AuthProps> = ({ onBack }) => {
+const Auth: React.FC<AuthProps> = ({ onBack, onNavigate }) => {
   const { isRTL } = useLanguage();
   const insets = useSafeAreaInsets();
   const { login: saveLogin } = useAuth();
@@ -233,6 +234,7 @@ const Auth: React.FC<AuthProps> = ({ onBack }) => {
           setShowMultiStepSignup(false);
         }}
         onSignupSuccess={handleSignupSuccess}
+        onNavigate={onNavigate}
       />
     );
   }

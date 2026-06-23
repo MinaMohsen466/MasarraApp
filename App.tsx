@@ -7,7 +7,7 @@ import { LanguageProvider, useLanguage } from "./src/contexts/LanguageContext";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
 import { SocketProvider, useSocket } from "./src/contexts/SocketContext";
 import { DateProvider } from "./src/contexts/DateContext";
-import { NotificationProvider, useNotification } from "./src/contexts/NotificationContext";
+import { NotificationProvider, useNotification, renderNotificationText } from "./src/contexts/NotificationContext";
 import { CustomAlert } from "./src/components/CustomAlert/CustomAlert";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import colors from './src/constants/colors';
@@ -41,6 +41,7 @@ import Privacy from "./src/components/Privacy";
 import Addresses from "./src/components/Addresses";
 import Search from "./src/screens/Search";
 import Contact from "./src/screens/Contact";
+import BecomeSeller from "./src/components/BecomeSeller";
 
 // Helper component with auth
 const AddressesWithAuth: React.FC<{ onBack: () => void }> = ({ onBack }) => {
@@ -239,14 +240,68 @@ const SocketNotificationListener: React.FC<{
       showAlert(title, message, buttons);
     };
 
+    // Unified notification handler for new server-generated notifications
+    const handleNewServerNotification = (data: any) => {
+      console.log('Received unified notification via socket:', data);
+      if (!data) return;
+
+      const { title, message } = renderNotificationText(data, isRTL);
+      const { title: titleEn, message: messageEn } = renderNotificationText(data, false);
+
+      addNotification({
+        title,
+        titleEn,
+        message,
+        messageEn,
+        type: data.type || 'notification',
+        bookingId: data.booking,
+      }).catch(err => console.error('Failed to add socket notification:', err));
+
+      const buttons: Array<{
+        text: string;
+        onPress?: () => void;
+        style?: 'default' | 'cancel' | 'destructive';
+      }> = [
+        {
+          text: isRTL ? 'إغلاق' : 'Close',
+          style: 'cancel',
+          onPress: () => {},
+        }
+      ];
+
+      // If it's related to bookings, allow direct navigation to bookings screen
+      if (
+        data.type === 'booking_confirmed' ||
+        data.type === 'new_booking' ||
+        data.type === 'booking_payment_confirmed'
+      ) {
+        buttons.unshift({
+          text: isRTL ? 'عرض حجوزاتي' : 'View My Bookings',
+          style: 'default',
+          onPress: async () => {
+            try {
+              await AsyncStorage.setItem('openOrderHistory', '1');
+              setCurrentRoute('profile');
+            } catch (err) {
+              console.error('Error redirecting to order history:', err);
+            }
+          }
+        });
+      }
+
+      showAlert(title, message, buttons);
+    };
+
     socket.on('booking_notification', handleBookingNotification);
     socket.on('booking_payment_confirmed', handlePaymentConfirmed);
     socket.on('booking_confirmed_by_vendor', handleVendorConfirmed);
+    socket.on('notification:new', handleNewServerNotification);
 
     return () => {
       socket.off('booking_notification', handleBookingNotification);
       socket.off('booking_payment_confirmed', handlePaymentConfirmed);
       socket.off('booking_confirmed_by_vendor', handleVendorConfirmed);
+      socket.off('notification:new', handleNewServerNotification);
     };
   }, [socket, isRTL, setCurrentRoute, showAlert, addNotification]);
 
@@ -278,6 +333,7 @@ function AppContent() {
   const [selectedOccasionOrigin, setSelectedOccasionOrigin] = useState<'home' | 'occasions' | undefined>(undefined);
   const [selectedSearchDate, setSelectedSearchDate] = useState<Date | undefined>(undefined);
   const [editCartItemId, setEditCartItemId] = useState<string | undefined>(undefined);
+  const [becomeSellerOrigin, setBecomeSellerOrigin] = useState<string | undefined>(undefined);
 
   const { checkBookingsStatusChanges, registerNavigationHandler } = useNotification();
   const { token, user } = useAuth();
@@ -286,6 +342,15 @@ function AppContent() {
   useEffect(() => {
     if (prevUserRef.current && !user) {
       setCurrentRoute('home');
+    }
+    // Check if the user just logged in (transitioned from null to object)
+    if (!prevUserRef.current && user) {
+      AsyncStorage.getItem('redirectToRoute').then((route) => {
+        if (route) {
+          AsyncStorage.removeItem('redirectToRoute');
+          setCurrentRoute(route);
+        }
+      }).catch(err => console.error('Failed to get redirect route', err));
     }
     prevUserRef.current = user;
   }, [user]);
@@ -315,6 +380,9 @@ function AppContent() {
   }, [token, checkBookingsStatusChanges]);
 
   const handleNavigation = (route: string) => {
+    if (route === 'become-seller') {
+      setBecomeSellerOrigin(currentRoute);
+    }
     setCurrentRoute(route);
   };
 
@@ -373,10 +441,13 @@ function AppContent() {
       setSelectedVendorName(undefined);
     } else if (currentRoute === 'addresses') {
       setCurrentRoute('profile');
+    } else if (currentRoute === 'become-seller') {
+      setCurrentRoute(becomeSellerOrigin || 'home');
+      setBecomeSellerOrigin(undefined);
     } else {
       setCurrentRoute('home');
     }
-  }, [currentRoute, selectedServiceOrigin, selectedPackageOrigin, selectedOccasionOrigin]);
+  }, [currentRoute, selectedServiceOrigin, selectedPackageOrigin, selectedOccasionOrigin, becomeSellerOrigin]);
 
   // Keep references to latest route and back handler for PanResponder to prevent stale state issues
   const currentRouteRef = useRef(currentRoute);
@@ -592,15 +663,17 @@ function AppContent() {
         return <Terms onBack={handleBack} />;
       case 'privacy':
         return <Privacy onBack={handleBack} />;
+      case 'become-seller':
+        return <BecomeSeller onBack={handleBack} />;
       default:
         return <Home onNavigate={handleNavigation} currentRoute={currentRoute} onSelectService={() => { }} onSelectOccasion={() => { }} />;
     }
   };
 
-  const routesWithoutHeader = ['home', 'occasions', 'packages', 'categories', 'services', 'vendors', 'vendor-services', 'occasion-services', 'service-details', 'package-details', 'cart', 'about', 'terms', 'privacy', 'contact', 'profile', 'addresses', 'search', 'auth'];
+  const routesWithoutHeader = ['home', 'occasions', 'packages', 'categories', 'services', 'vendors', 'vendor-services', 'occasion-services', 'service-details', 'package-details', 'cart', 'about', 'terms', 'privacy', 'contact', 'profile', 'addresses', 'search', 'auth', 'become-seller'];
   const shouldShowHeader = !routesWithoutHeader.includes(currentRoute);
 
-  const routesWithoutSafeArea = ['about', 'terms', 'privacy', 'contact', 'service-details', 'package-details', 'cart', 'profile', 'search', 'addresses', 'auth'];
+  const routesWithoutSafeArea = ['about', 'terms', 'privacy', 'contact', 'service-details', 'package-details', 'cart', 'profile', 'search', 'addresses', 'auth', 'become-seller'];
   const shouldRenderWithoutSafeArea = routesWithoutSafeArea.includes(currentRoute);
 
   const isBannerVisible = siteSettings?.bannerEnabled && !isBannerDismissed;

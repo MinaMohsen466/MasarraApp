@@ -815,6 +815,55 @@ const UserProfile: React.FC<UserProfileProps> = ({
                     <Path d={isRTL ? 'M15 18l-6-6 6-6' : 'M9 18l6-6-6-6'} />
                   </Svg>
                 </TouchableOpacity>
+
+                <View style={styles.menuDivider} />
+
+                {/* Become a Seller */}
+                <TouchableOpacity
+                  style={[styles.menuItemRow, isRTL && styles.menuItemRowRTL]}
+                  onPress={() => onNavigate && onNavigate('become-seller')}
+                  activeOpacity={0.7}
+                >
+                  <View
+                    style={[
+                      styles.menuItemLeft,
+                      isRTL && styles.menuItemLeftRTL,
+                    ]}
+                  >
+                    <Svg
+                      width={20}
+                      height={20}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#4B5563"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <Path d="M3 21h18M3 10h18M5 10V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v5M10 21V14h4v7" />
+                    </Svg>
+                    <Text
+                      style={[
+                        styles.menuItemText,
+                        isRTL && styles.menuItemTextRTL,
+                      ]}
+                    >
+                      {isRTL ? 'سجل كبائع' : 'Become a Seller'}
+                    </Text>
+                  </View>
+                  <Svg
+                    width={14}
+                    height={14}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#A0AEC0"
+                    strokeWidth={2.5}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <Path d={isRTL ? 'M15 18l-6-6 6-6' : 'M9 18l6-6-6-6'} />
+                  </Svg>
+                </TouchableOpacity>
               </View>
 
               {/* Logout Separate Card Container */}

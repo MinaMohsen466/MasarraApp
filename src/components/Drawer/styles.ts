@@ -4,14 +4,22 @@ import { colors } from '../../constants/colors';
 export const createStyles = (screenWidth: number, screenHeight: number) => {
   const isSmallScreen = screenHeight < 700;
   const isMediumScreen = screenHeight >= 700 && screenHeight <= 800;
-  const drawerWidth = screenWidth * 0.75;
 
-  // حساب حجم اللوجو حسب حجم الشاشة
+  // Responsive drawer width limit (keeps it visually balanced on tablets)
+  const drawerWidth = Math.min(Math.max(screenWidth * 0.75, 270), 320);
+
+  // Scaled logo size according to screen height
   const logoSize = isSmallScreen
-    ? Math.min(drawerWidth * 0.25, 50)
+    ? Math.min(drawerWidth * 0.3, 75)
     : isMediumScreen
-    ? Math.min(drawerWidth * 0.32, 70)
-    : Math.min(drawerWidth * 0.4, 90);
+    ? Math.min(drawerWidth * 0.36, 95)
+    : Math.min(drawerWidth * 0.42, 110);
+
+  // Responsive padding/margins
+  const itemPaddingHorizontal = isSmallScreen ? 18 : 24;
+  const iconContainerSize = isSmallScreen ? 20 : isMediumScreen ? 22 : 24;
+  const iconMargin = isSmallScreen ? 10 : 12;
+  const subMenuIndent = itemPaddingHorizontal + iconContainerSize + iconMargin;
 
   return StyleSheet.create({
     // Overlay covering the entire screen
@@ -52,7 +60,7 @@ export const createStyles = (screenWidth: number, screenHeight: number) => {
     // Close button container
     closeButtonContainer: {
       alignSelf: 'flex-end',
-      padding: isSmallScreen ? 10 : 15,
+      padding: isSmallScreen ? 10 : isMediumScreen ? 12 : 14,
       marginLeft: 10,
     },
 
@@ -68,8 +76,8 @@ export const createStyles = (screenWidth: number, screenHeight: number) => {
     menuItem: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: isSmallScreen ? 6 : isMediumScreen ? 8 : 9,
-      paddingHorizontal: 25,
+      paddingVertical: isSmallScreen ? 8 : isMediumScreen ? 10 : 12,
+      paddingHorizontal: itemPaddingHorizontal,
       borderBottomWidth: 0.5,
       borderBottomColor: colors.border,
     },
@@ -77,7 +85,7 @@ export const createStyles = (screenWidth: number, screenHeight: number) => {
     // Menu item text
     menuItemText: {
       flex: 1,
-      fontSize: isSmallScreen ? 13 : isMediumScreen ? 14 : 15,
+      fontSize: isSmallScreen ? 14 : isMediumScreen ? 15 : 16,
       color: colors.textPrimary,
       fontWeight: '500',
       letterSpacing: 0.3,
@@ -92,28 +100,31 @@ export const createStyles = (screenWidth: number, screenHeight: number) => {
     // Arabic text styling
     arabicText: {
       fontFamily: 'System',
-      fontSize: isSmallScreen ? 13 : isMediumScreen ? 14 : 15,
+      fontSize: isSmallScreen ? 14 : isMediumScreen ? 15 : 16,
       textAlign: 'right',
       fontWeight: '600',
     },
 
     // Dropdown language selection styles
+    languageGroupContainer: {
+      width: '100%',
+    },
     dropdownContainer: {
       backgroundColor: 'rgba(0, 161, 156, 0.03)',
     },
     subMenuItem: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: isSmallScreen ? 5 : isMediumScreen ? 7 : 8,
-      paddingLeft: 56,
-      paddingRight: 25,
+      paddingVertical: isSmallScreen ? 6 : isMediumScreen ? 8 : 10,
+      paddingLeft: subMenuIndent,
+      paddingRight: itemPaddingHorizontal,
       borderBottomWidth: 0.5,
       borderBottomColor: colors.border,
     },
     subMenuItemRTL: {
       flexDirection: 'row-reverse',
-      paddingLeft: 25,
-      paddingRight: 56,
+      paddingLeft: itemPaddingHorizontal,
+      paddingRight: subMenuIndent,
     },
     subMenuItemActive: {
       backgroundColor: 'rgba(0, 161, 156, 0.06)',
@@ -136,8 +147,8 @@ export const createStyles = (screenWidth: number, screenHeight: number) => {
     // Logo section at bottom - ثابت في الأسفل
     logoSection: {
       alignItems: 'center',
-      paddingBottom: isSmallScreen ? 8 : isMediumScreen ? 12 : 16,
-      paddingTop: isSmallScreen ? 6 : isMediumScreen ? 10 : 12,
+      paddingBottom: isSmallScreen ? 10 : isMediumScreen ? 14 : 18,
+      paddingTop: isSmallScreen ? 8 : isMediumScreen ? 10 : 12,
       paddingHorizontal: 10,
       borderTopWidth: 0.5,
       borderTopColor: colors.border,
@@ -158,7 +169,7 @@ export const createStyles = (screenWidth: number, screenHeight: number) => {
       height: logoSize,
       tintColor: colors.primary,
       maxWidth: drawerWidth * 0.55,
-      maxHeight: isSmallScreen ? 65 : 110,
+      maxHeight: isSmallScreen ? 70 : 100,
     },
 
     // Logo text (MASARRA)
@@ -209,16 +220,16 @@ export const createStyles = (screenWidth: number, screenHeight: number) => {
     },
 
     menuIconContainer: {
-      marginRight: 12,
-      width: 24,
-      height: 24,
+      marginRight: iconMargin,
+      width: iconContainerSize,
+      height: iconContainerSize,
       justifyContent: 'center',
       alignItems: 'center',
     },
 
     menuIconContainerRTL: {
       marginRight: 0,
-      marginLeft: 12,
+      marginLeft: iconMargin,
     },
 
     menuChevronContainer: {

@@ -66,9 +66,23 @@ export interface QRCodeSettings {
   }>;
 }
 
+let cachedQRSettings: QRCodeSettings | null = null;
+let qrSettingsCacheTime = 0;
+const QR_SETTINGS_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
+
 export const getQRCodeSettings = async (
   token: string,
+  forceRefresh: boolean = false,
 ): Promise<QRCodeSettings | null> => {
+  const now = Date.now();
+  if (
+    cachedQRSettings &&
+    !forceRefresh &&
+    now - qrSettingsCacheTime < QR_SETTINGS_CACHE_DURATION
+  ) {
+    return cachedQRSettings;
+  }
+
   // First, try to get the full settings with token (same as client web)
   // This gives us displaySettings and allowedOccasions
   try {
@@ -84,7 +98,7 @@ export const getQRCodeSettings = async (
       const fullSettings = await settingsResponse.json();
       // Return full settings - even if no background images, we need allowedOccasions!
       if (fullSettings) {
-        return {
+        const settingsObj: QRCodeSettings = {
           displaySettings: fullSettings.displaySettings || {
             showCustomerInfo: false,
             showContactInfo: true,
@@ -104,6 +118,9 @@ export const getQRCodeSettings = async (
           allowedOccasions: fullSettings.allowedOccasions || [],
           isEnabled: fullSettings.isEnabled,
         };
+        cachedQRSettings = settingsObj;
+        qrSettingsCacheTime = now;
+        return settingsObj;
       }
     }
   } catch (settingsError) {
@@ -121,7 +138,7 @@ export const getQRCodeSettings = async (
       if (backgroundImages?.length > 0) {
         // Return settings with background images
         // Note: allowedOccasions will be empty - QR buttons won't show without proper settings
-        return {
+        const settingsObj: QRCodeSettings = {
           displaySettings: {
             showCustomerInfo: false,
             showContactInfo: true,
@@ -143,6 +160,9 @@ export const getQRCodeSettings = async (
           allowedOccasions: [],
           isEnabled: false,
         };
+        cachedQRSettings = settingsObj;
+        qrSettingsCacheTime = now;
+        return settingsObj;
       }
     }
   } catch (publicError) {}

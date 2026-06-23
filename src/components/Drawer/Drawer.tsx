@@ -21,8 +21,7 @@ import { useSiteSettings } from '../../hooks/useSiteSettings';
 import { getImageUrl } from '../../services/api';
 
 // Helper function to return outline SVG icons for menu items
-const getMenuItemIcon = (id: string, color: string) => {
-  const size = 20;
+const getMenuItemIcon = (id: string, color: string, size: number) => {
   switch (id) {
     case 'home':
       return (
@@ -221,11 +220,29 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
   const { isLoggedIn, logout } = useAuth();
   const { data: siteSettings, isLoading } = useSiteSettings();
 
-  const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
+  const isSmallScreen = SCREEN_HEIGHT < 700;
+  const isMediumScreen = SCREEN_HEIGHT >= 700 && SCREEN_HEIGHT <= 800;
 
-  // Animation value for sliding drawer
+  // Calculate drawer width using the exact same formula to keep animations in sync
+  const drawerWidth = Math.min(Math.max(SCREEN_WIDTH * 0.75, 270), 320);
+  const iconSize = isSmallScreen ? 18 : isMediumScreen ? 20 : 22;
+  const closeButtonSize = isSmallScreen ? 22 : isMediumScreen ? 24 : 26;
+
+  const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  // Auto scroll to the end of the menu when language dropdown is opened to prevent vertical clipping
+  useEffect(() => {
+    if (showLanguageDropdown) {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 120);
+    }
+  }, [showLanguageDropdown]);
+
+  // Animation value for sliding drawer using actual drawerWidth
   const slideAnim = useRef(
-    new Animated.Value(isRTL ? SCREEN_WIDTH : -SCREEN_WIDTH),
+    new Animated.Value(isRTL ? drawerWidth : -drawerWidth),
   ).current;
 
   // Reset dropdown when drawer closes
@@ -247,17 +264,17 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
     } else {
       // Slide out to left (LTR) or right (RTL)
       Animated.timing(slideAnim, {
-        toValue: isRTL ? SCREEN_WIDTH : -SCREEN_WIDTH,
+        toValue: isRTL ? drawerWidth : -drawerWidth,
         duration: 250,
         useNativeDriver: true,
       }).start();
     }
-  }, [isVisible, isRTL, slideAnim, SCREEN_WIDTH]);
+  }, [isVisible, isRTL, slideAnim, drawerWidth]);
 
-  // Reset animation when RTL changes
+  // Reset animation when RTL or drawerWidth changes
   useEffect(() => {
-    slideAnim.setValue(isRTL ? SCREEN_WIDTH : -SCREEN_WIDTH);
-  }, [isRTL, slideAnim, SCREEN_WIDTH]);
+    slideAnim.setValue(isRTL ? drawerWidth : -drawerWidth);
+  }, [isRTL, slideAnim, drawerWidth]);
 
   // Menu Items Configuration with translations
   const menuItems = [
@@ -379,7 +396,7 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
                 onPress={onClose}
                 activeOpacity={0.7}
               >
-                <Svg width={26} height={26} viewBox="0 0 24 24" fill="none">
+                <Svg width={closeButtonSize} height={closeButtonSize} viewBox="0 0 24 24" fill="none">
                   <Path
                     d="M18 6L6 18M6 6L18 18"
                     stroke={colors.primary}
@@ -392,6 +409,7 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
 
               {/* Scrollable Menu Items */}
               <ScrollView
+                ref={scrollViewRef}
                 style={styles.flexContainer}
                 showsVerticalScrollIndicator={false}
               >
@@ -414,7 +432,7 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
                       const languageItemText = `${languageLabel} (${activeLanguageName})`;
 
                       return (
-                        <View key="language-group" style={{ width: '100%' }}>
+                        <View key="language-group" style={styles.languageGroupContainer}>
                           {/* Main Language Toggle Item */}
                           <TouchableOpacity
                             style={[
@@ -432,7 +450,7 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
                                 isRTL && styles.menuIconContainerRTL,
                               ]}
                             >
-                              {getMenuItemIcon('language', colors.primary)}
+                              {getMenuItemIcon('language', colors.primary, iconSize)}
                             </View>
 
                             <Text
@@ -587,7 +605,7 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
                             isRTL && styles.menuIconContainerRTL,
                           ]}
                         >
-                          {getMenuItemIcon(item.id, iconColor)}
+                          {getMenuItemIcon(item.id, iconColor, iconSize)}
                         </View>
 
                         {/* Menu Item Text */}

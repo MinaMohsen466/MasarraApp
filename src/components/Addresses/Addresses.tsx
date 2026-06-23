@@ -42,8 +42,10 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
     city: '',
     block: '',
     street: '',
+    lane: '',
     houseNumber: '',
     floorNumber: '',
+    apartmentNumber: '',
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
@@ -120,8 +122,10 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
         city: '',
         block: '',
         street: '',
+        lane: '',
         houseNumber: '',
         floorNumber: '',
+        apartmentNumber: '',
       });
       setEditingId(null);
     } catch {
@@ -138,8 +142,10 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
       city: addr.city || '',
       block: addr.block || '',
       street: addr.street || '',
+      lane: addr.lane || '',
       houseNumber: addr.houseNumber || '',
       floorNumber: addr.floorNumber || '',
+      apartmentNumber: addr.apartmentNumber || '',
     });
     setShowForm(true);
   };
@@ -344,9 +350,38 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
           </Svg>
         </View>
 
-        <Text style={[styles.pageBodyTitle, isRTL && styles.pageBodyTitleRTL]}>
-          {isRTL ? 'العناوين' : 'Addresses'}
-        </Text>
+        <View style={[styles.pageHeaderRow, isRTL && styles.pageHeaderRowRTL]}>
+          <Text style={[styles.pageBodyTitleInline, isRTL && styles.pageBodyTitleInlineRTL]}>
+            {isRTL ? 'العناوين' : 'Addresses'}
+          </Text>
+          <TouchableOpacity
+            style={styles.topAddButton}
+            onPress={() => {
+              setForm({
+                name: '',
+                block: '',
+                street: '',
+                lane: '',
+                houseNumber: '',
+                floorNumber: '',
+                apartmentNumber: '',
+                city: '',
+              });
+              setEditingId(null);
+              setShowForm(true);
+            }}
+            activeOpacity={0.8}
+          >
+            <Icon
+              name="add-outline"
+              size={18}
+              color={colors.primary}
+            />
+            <Text style={styles.topAddButtonText}>
+              {isRTL ? 'إضافة عنوان' : 'Add Address'}
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         <KeyboardAvoidingView
           style={{ flex: 1 }}
@@ -380,8 +415,10 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
                         name: '',
                         block: '',
                         street: '',
+                        lane: '',
                         houseNumber: '',
                         floorNumber: '',
+                        apartmentNumber: '',
                         city: '',
                       });
                       setEditingId(null);
@@ -439,12 +476,22 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
                               >
                                 {addr.name}
                               </Text>
-                              {addr.isDefault && (
+                              {addr.isDefault ? (
                                 <View style={styles.defaultBadge}>
                                   <Text style={styles.defaultBadgeText}>
                                     {isRTL ? 'الافتراضي' : 'Default'}
                                   </Text>
                                 </View>
+                              ) : (
+                                <TouchableOpacity
+                                  onPress={() => handleSetDefault(addr._id)}
+                                  style={styles.setDefaultBadgeInline}
+                                  activeOpacity={0.7}
+                                >
+                                  <Text style={styles.setDefaultBadgeInlineText}>
+                                    {isRTL ? 'جعله افتراضي' : 'Set Default'}
+                                  </Text>
+                                </TouchableOpacity>
                               )}
                             </View>
                           </View>
@@ -512,10 +559,12 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
                                 isRTL && styles.addressLineTextRTL,
                               ]}
                             >
-                              {addr.street} {addr.houseNumber}{' '}
-                              {addr.floorNumber
-                                ? `(طابق ${addr.floorNumber})`
-                                : ''}
+                              {addr.block && `${isRTL ? 'القطعة' : 'Block'} ${addr.block}, `}
+                              {addr.street}
+                              {addr.lane && `, ${isRTL ? 'جادة' : 'Lane'} ${addr.lane}`}
+                              {addr.houseNumber && `, ${isRTL ? 'منزل' : 'House'} ${addr.houseNumber}`}
+                              {addr.floorNumber && `, ${isRTL ? 'طابق' : 'Floor'} ${addr.floorNumber}`}
+                              {addr.apartmentNumber && `, ${isRTL ? 'شقة' : 'Apt'} ${addr.apartmentNumber}`}
                             </Text>
                           </View>
                           <View
@@ -540,56 +589,13 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
                             </Text>
                           </View>
 
-                          {/* Set Default Action */}
-                          {!addr.isDefault && (
-                            <View
-                              style={[
-                                styles.setDefaultContainer,
-                                isRTL && styles.setDefaultContainerRTL,
-                              ]}
-                            >
-                              <TouchableOpacity
-                                onPress={() => handleSetDefault(addr._id)}
-                                style={styles.setDefaultLink}
-                                activeOpacity={0.7}
-                              >
-                                <Text style={styles.setDefaultLinkText}>
-                                  {isRTL ? 'جعله افتراضي' : 'Set Default'}
-                                </Text>
-                              </TouchableOpacity>
-                            </View>
-                          )}
+
                         </View>
                       </View>
                     </View>
                   ))}
 
-                  {/* Add button below the address list */}
-                  <TouchableOpacity
-                    style={styles.bottomAddButton}
-                    onPress={() => {
-                      setForm({
-                        name: '',
-                        block: '',
-                        street: '',
-                        houseNumber: '',
-                        floorNumber: '',
-                        city: '',
-                      });
-                      setEditingId(null);
-                      setShowForm(true);
-                    }}
-                    activeOpacity={0.8}
-                  >
-                    <Icon
-                      name="add-circle-outline"
-                      size={20}
-                      color={colors.textWhite}
-                    />
-                    <Text style={styles.bottomAddButtonText}>
-                      {isRTL ? 'إضافة عنوان جديد' : 'Add New Address'}
-                    </Text>
-                  </TouchableOpacity>
+
                 </>
               )}
             </ScrollView>
@@ -599,15 +605,18 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
           <Modal
             visible={showForm}
             transparent={true}
-            animationType="fade"
+            animationType="slide"
             onRequestClose={() => {
               setShowForm(false);
               setEditingId(null);
             }}
           >
-            <View style={styles.modalOverlay}>
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+              style={styles.modalOverlay}
+            >
               <View style={styles.modalContainer}>
-                <View style={styles.modalHeader}>
+                <View style={[styles.modalHeader, isRTL && styles.modalHeaderRTL]}>
                   <Text style={styles.modalTitle}>
                     {isRTL
                       ? editingId
@@ -617,8 +626,22 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
                       ? 'Edit Address'
                       : 'Add New Address'}
                   </Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setShowForm(false);
+                      setEditingId(null);
+                    }}
+                    style={styles.modalCloseButton}
+                  >
+                    <Icon name="close-outline" size={24} color={colors.textSecondary} />
+                  </TouchableOpacity>
                 </View>
-                <View style={styles.modalBody}>
+                <ScrollView
+                  style={styles.modalBody}
+                  contentContainerStyle={{ paddingBottom: 24 }}
+                  showsVerticalScrollIndicator={false}
+                  keyboardShouldPersistTaps="handled"
+                >
                   {/* Name Input */}
                   <View
                     style={[
@@ -782,6 +805,46 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
                     />
                   </View>
 
+                  {/* Lane Input */}
+                  <View
+                    style={[
+                      styles.modalInputWrapper,
+                      isRTL && styles.modalInputWrapperRTL,
+                      activeField === 'lane' &&
+                        styles.modalInputWrapperActive,
+                    ]}
+                  >
+                    <Icon
+                      name="trail-sign-outline"
+                      size={18}
+                      color={
+                        activeField === 'lane' ? colors.primary : '#94A3B8'
+                      }
+                      style={[
+                        styles.modalInputIcon,
+                        isRTL && styles.modalInputIconRTL,
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.modalInputDivider,
+                        isRTL && styles.modalInputDividerRTL,
+                      ]}
+                    />
+                    <TextInput
+                      placeholder={isRTL ? 'الجادة (اختياري)' : 'Lane (Optional)'}
+                      value={form.lane}
+                      onChangeText={t => setForm(s => ({ ...s, lane: t }))}
+                      style={[
+                        styles.modalTextInput,
+                        isRTL && styles.modalTextInputRTL,
+                      ]}
+                      placeholderTextColor="#94A3B8"
+                      onFocus={() => setActiveField('lane')}
+                      onBlur={() => setActiveField(null)}
+                    />
+                  </View>
+
                   {/* House Number Input */}
                   <View
                     style={[
@@ -873,8 +936,56 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
                       onBlur={() => setActiveField(null)}
                     />
                   </View>
-                </View>
-                <View style={styles.modalButtonsRow}>
+
+                  {/* Apartment Number Input */}
+                  <View
+                    style={[
+                      styles.modalInputWrapper,
+                      isRTL && styles.modalInputWrapperRTL,
+                      activeField === 'apartmentNumber' &&
+                        styles.modalInputWrapperActive,
+                    ]}
+                  >
+                    <Icon
+                      name="home-outline"
+                      size={18}
+                      color={
+                        activeField === 'apartmentNumber'
+                          ? colors.primary
+                          : '#94A3B8'
+                      }
+                      style={[
+                        styles.modalInputIcon,
+                        isRTL && styles.modalInputIconRTL,
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.modalInputDivider,
+                        isRTL && styles.modalInputDividerRTL,
+                      ]}
+                    />
+                    <TextInput
+                      placeholder={
+                        isRTL
+                          ? 'رقم الشقة (اختياري)'
+                          : 'Apartment Number (Optional)'
+                      }
+                      value={form.apartmentNumber}
+                      onChangeText={t =>
+                        setForm(s => ({ ...s, apartmentNumber: t }))
+                      }
+                      style={[
+                        styles.modalTextInput,
+                        isRTL && styles.modalTextInputRTL,
+                      ]}
+                      placeholderTextColor="#94A3B8"
+                      onFocus={() => setActiveField('apartmentNumber')}
+                      onBlur={() => setActiveField(null)}
+                    />
+                  </View>
+                </ScrollView>
+                <View style={[styles.modalButtonsRow, isRTL && styles.modalButtonsRowRTL]}>
                   <TouchableOpacity
                     style={styles.modalSecondaryButton}
                     onPress={() => {
@@ -902,7 +1013,7 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
                   </TouchableOpacity>
                 </View>
               </View>
-            </View>
+            </KeyboardAvoidingView>
           </Modal>
         </KeyboardAvoidingView>
 

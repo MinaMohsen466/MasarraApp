@@ -7,8 +7,8 @@ import {
   ActivityIndicator,
   FlatList,
   Clipboard,
-  Linking,
   StatusBar,
+  Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -21,8 +21,10 @@ import OccasionSelector from '../components/SearchSection/OccasionSelector';
 import DateSelector from '../components/SearchSection/DateSelector';
 import { API_URL } from '../config/api.config';
 import { myEventsStyles as styles } from './myEventsStyles';
-import { fetchOccasions, Occasion } from '../services/api';
-import { getQRCodeByBooking, getUserQRCodes } from '../services/qrCodeApi';
+import { fetchOccasions, Occasion, getUserDashboardBookings } from '../services/api';
+import { getQRCodeByBooking, getQRCodeSettings } from '../services/qrCodeApi';
+import { useAuth } from '../contexts/AuthContext';
+import { QRFormModal } from '../components/QRCodeCard/QRFormModal';
 
 interface MyEventsProps {
   onBack?: () => void;
@@ -37,30 +39,18 @@ interface EventGuest {
   user?: any;
 }
 
-interface EventService {
-  _id: string;
+interface EventServiceRow {
+  bookingId: string;
+  serviceId: string;
   service: any;
   vendor: any;
-  price: number;
-  status: string;
-}
-
-interface MyEvent {
-  _id: string;
-  eventDate: string;
-  eventTime: {
-    start: string;
-    end: string;
-  };
-  services: EventService[];
-  packages: any[];
-  status: string;
-  guests: EventGuest[];
-  guestLimit: number;
+  booking: any;
+  uniqueKey: string;
 }
 
 const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
   const { isRTL } = useLanguage();
+  const { user } = useAuth();
   const getStatusBadgeStyle = (status: string) => {
     const lower = status ? status.toLowerCase() : '';
     if (lower === 'confirmed') return { bg: '#EAF8F1', text: '#2E7D32' };
@@ -69,7 +59,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
     return { bg: '#F1F5F9', text: '#475569' };
   };
   const insets = useSafeAreaInsets();
-  const [events, setEvents] = useState<MyEvent[]>([]);
+  const [events, setEvents] = useState<EventServiceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
@@ -84,16 +74,20 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
   const [occasions, setOccasions] = useState<Occasion[]>([]);
   const [showOccasionPicker, setShowOccasionPicker] = useState(false);
 
-  // Guest list - inline display (not modal)
-  const [expandedGuestListId, setExpandedGuestListId] = useState<string | null>(
-    null,
-  );
+  // Guest list Modal display
+  const [guestListModalVisible, setGuestListModalVisible] = useState(false);
+  const [selectedBookingForGuests, setSelectedBookingForGuests] = useState<any>(null);
   const [guestsData, setGuestsData] = useState<{ [key: string]: EventGuest[] }>(
     {},
   );
   const [loadingGuests, setLoadingGuests] = useState<{
     [key: string]: boolean;
   }>({});
+
+  // QR Modal States
+  const [selectedBooking, setSelectedBooking] = useState<any>(null);
+  const [selectedQRCode, setSelectedQRCode] = useState<any>(null);
+  const [qrModalVisible, setQrModalVisible] = useState(false);
 
   useEffect(() => {
     loadEvents();
@@ -106,27 +100,26 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
 
     // Filter by status
     if (selectedFilter !== 'all') {
-      filtered = filtered.filter(event => event.status === selectedFilter);
+      filtered = filtered.filter(item => item.booking.status === selectedFilter);
     }
 
     // Filter by date
     if (selectedDate) {
-      filtered = filtered.filter(event => {
-        const eventDate = new Date(event.eventDate);
+      filtered = filtered.filter(item => {
+        const eventDate = new Date(item.booking.eventDate);
         return eventDate.toDateString() === selectedDate.toDateString();
       });
     }
 
     // Filter by occasion (service name)
     if (selectedOccasion) {
-      filtered = filtered.filter(event => {
-        if (event.services && event.services.length > 0) {
-          const serviceName = event.services[0].service?.name || '';
-          return serviceName
-            .toLowerCase()
-            .includes(selectedOccasion.toLowerCase());
-        }
-        return false;
+      filtered = filtered.filter(item => {
+        const serviceName = item.service?.name || '';
+        const serviceNameAr = item.service?.nameAr || '';
+        return (
+          serviceName.toLowerCase().includes(selectedOccasion.toLowerCase()) ||
+          serviceNameAr.toLowerCase().includes(selectedOccasion.toLowerCase())
+        );
       });
     }
 
@@ -154,63 +147,74 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
         return;
       }
 
-      // Fetch user's own bookings and their QR codes in parallel
-      const [bookingsResponse, qrCodesResponse] = await Promise.all([
-        fetch(`${API_URL}/bookings`, {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        }),
-        getUserQRCodes(token),
+      // Fetch user's own dashboard bookings and QR settings in parallel
+      const [bookings, settings] = await Promise.all([
+        getUserDashboardBookings(token),
+        getQRCodeSettings(token),
       ]);
 
-      if (!bookingsResponse.ok) {
-        throw new Error(`HTTP ${bookingsResponse.status}`);
-      }
+      const servicesList: EventServiceRow[] = [];
+      const matchesId = (id1: any, id2: any) => {
+        const str1 = typeof id1 === 'object' ? id1?._id?.toString() || id1?.toString() : id1?.toString();
+        const str2 = typeof id2 === 'object' ? id2?._id?.toString() || id2?.toString() : id2?.toString();
+        return str1 === str2;
+      };
 
-      const bookings = await bookingsResponse.json();
+      const isOccasionCategoryAllowed = (occasionId: any, categoryId: any) => {
+        if (!settings || !settings.isEnabled) {
+          return false;
+        }
+
+        const allowedOccasion = settings.allowedOccasions?.find(
+          (ao: any) => matchesId(ao.occasion?._id || ao.occasion, occasionId) && ao.isEnabled
+        );
+
+        if (!allowedOccasion) return false;
+
+        const occasionObj = typeof allowedOccasion.occasion === 'object' ? allowedOccasion.occasion : null;
+        const availableCategories = (occasionObj as any)?.categories || [];
+        const allowedCategoryIds = allowedOccasion.allowedCategories || [];
+
+        if (occasionObj && availableCategories.length === 0) return true;
+        if (allowedCategoryIds.length === 0) return false;
+        if (!categoryId) return false;
+
+        return allowedCategoryIds.some((id: any) => matchesId(id, categoryId));
+      };
+
       const allBookings = Array.isArray(bookings) ? bookings : [];
 
-      let bookingsWithQR: MyEvent[] = [];
-
-      if (qrCodesResponse?.success) {
-        // Create a set of booking IDs that have QR codes for O(1) lookup
-        const qrCodesList = qrCodesResponse.qrCodes || [];
-        const bookingsWithQRSet = new Set(
-          qrCodesList.filter(qr => qr.qrUrl).map(qr => qr.booking),
-        );
-
-        // Only keep bookings that have QR codes
-        bookingsWithQR = allBookings.filter(booking =>
-          bookingsWithQRSet.has(booking._id),
-        );
-      } else {
-        // Fallback: Check each booking individually since bulk API is not available on production server yet
-        const qrChecks = await Promise.all(
-          allBookings.map(async booking => {
-            try {
-              const qr = await getQRCodeByBooking(token, booking._id);
-              if (qr && qr.qrUrl) {
-                return booking;
+      allBookings.forEach((booking: any) => {
+        (booking.services || []).forEach((s: any) => {
+          const serviceId = s.service && s.service._id ? String(s.service._id) : String(s.service || '');
+          
+          let isServiceAllowed = false;
+          if (s.service && Array.isArray(s.service.occasions)) {
+            for (const occ of s.service.occasions) {
+              if (isOccasionCategoryAllowed(occ.occasion, occ.categoryId)) {
+                isServiceAllowed = true;
+                break;
               }
-            } catch (e) {
-              // Ignore
             }
-            return null;
-          }),
-        );
-        bookingsWithQR = qrChecks.filter((b): b is MyEvent => b !== null);
-      }
+          }
 
-      // Sort by event date (newest first)
-      bookingsWithQR.sort(
-        (a, b) =>
-          new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime(),
-      );
+          if (isServiceAllowed) {
+            servicesList.push({
+              bookingId: booking._id,
+              serviceId,
+              service: s.service,
+              vendor: s.vendor,
+              booking,
+              uniqueKey: `${booking._id}-${serviceId}`
+            });
+          }
+        });
+      });
 
-      setEvents(bookingsWithQR);
+      // Sort servicesList by eventDate descending
+      servicesList.sort((a, b) => new Date(b.booking.eventDate).getTime() - new Date(a.booking.eventDate).getTime());
+
+      setEvents(servicesList);
     } catch (error: any) {
       showAlert(
         isRTL ? 'خطأ' : 'Error',
@@ -277,7 +281,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
     setExpandedEventId(null);
   };
 
-  const handleViewQR = async (bookingId: string) => {
+  const handleViewQR = async (booking: any) => {
     try {
       const token = await AsyncStorage.getItem('userToken');
       if (!token) {
@@ -288,37 +292,30 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
         return;
       }
 
+      setLoading(true);
       // Check if QR exists
-      const qrData = await getQRCodeByBooking(token, bookingId);
-
-      if (qrData && qrData.qrUrl) {
-        // Open QR URL in browser
-        await Linking.openURL(qrData.qrUrl);
-      } else {
-        showAlert(
-          isRTL ? 'تنبيه' : 'Info',
-          isRTL
-            ? 'لا يوجد رمز QR متاح لهذا الحجز'
-            : 'No QR code available for this booking',
-        );
+      let qrData = null;
+      try {
+        qrData = await getQRCodeByBooking(token, booking._id);
+      } catch (err: any) {
+        console.log('No QR code found or failed to fetch. Opening QR modal in creation mode.', err);
       }
+      
+      setSelectedBooking(booking);
+      setSelectedQRCode(qrData);
+      setQrModalVisible(true);
     } catch (error) {
       showAlert(
         isRTL ? 'خطأ' : 'Error',
         isRTL ? 'فشل عرض QR' : 'Failed to view QR',
       );
+    } finally {
+      setLoading(false);
     }
     setExpandedEventId(null);
   };
 
-  const handleGuestList = async (bookingId: string) => {
-    // Toggle guest list display
-    if (expandedGuestListId === bookingId) {
-      setExpandedGuestListId(null);
-      setExpandedEventId(null);
-      return;
-    }
-
+  const handleGuestList = async (booking: any) => {
     try {
       const token = await AsyncStorage.getItem('userToken');
       if (!token) {
@@ -329,12 +326,12 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
         return;
       }
 
-      // Set loading state for this booking
-      setLoadingGuests(prev => ({ ...prev, [bookingId]: true }));
-      setExpandedGuestListId(bookingId);
+      setSelectedBookingForGuests(booking);
+      setGuestListModalVisible(true);
+      setLoadingGuests(prev => ({ ...prev, [booking._id]: true }));
 
       // Fetch guests for this booking
-      const response = await fetch(`${API_URL}/bookings/${bookingId}/guests`, {
+      const response = await fetch(`${API_URL}/bookings/${booking._id}/guests`, {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -344,7 +341,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
 
       if (response.ok) {
         const guests = await response.json();
-        setGuestsData(prev => ({ ...prev, [bookingId]: guests || [] }));
+        setGuestsData(prev => ({ ...prev, [booking._id]: guests || [] }));
       } else {
         throw new Error('Failed to fetch guests');
       }
@@ -353,9 +350,8 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
         isRTL ? 'خطأ' : 'Error',
         isRTL ? 'فشل تحميل قائمة الضيوف' : 'Failed to load guest list',
       );
-      setExpandedGuestListId(null);
     } finally {
-      setLoadingGuests(prev => ({ ...prev, [bookingId]: false }));
+      setLoadingGuests(prev => ({ ...prev, [booking._id]: false }));
     }
     setExpandedEventId(null);
   };
@@ -407,6 +403,57 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
     }
   };
 
+  const handleLeaveGuest = async (bookingId: string) => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) {
+        showAlert(
+          isRTL ? 'خطأ' : 'Error',
+          isRTL ? 'يرجى تسجيل الدخول' : 'Please login',
+        );
+        return;
+      }
+
+      const response = await fetch(
+        `${API_URL}/bookings/${bookingId}/guests`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      if (response.ok) {
+        // Clear or refresh local guest list
+        setGuestsData(prev => ({
+          ...prev,
+          [bookingId]: (prev[bookingId] || []).filter(g => {
+            const guestUserId = g.user?._id || g.user;
+            return guestUserId !== user?._id;
+          }),
+        }));
+
+        // Reload events to get updated data
+        await loadEvents();
+
+        showAlert(
+          isRTL ? 'نجح' : 'Success',
+          isRTL ? 'غادرت قائمة الضيوف' : 'Left the guest list',
+        );
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData?.message || 'Failed to leave guest list');
+      }
+    } catch (error: any) {
+      showAlert(
+        isRTL ? 'خطأ' : 'Error',
+        error.message || (isRTL ? 'فشل مغادرة قائمة الضيوف' : 'Failed to leave guest list'),
+      );
+    }
+  };
+
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
     setShowDatePicker(false);
@@ -429,22 +476,6 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
     });
   };
 
-  const getOccasionName = (event: MyEvent) => {
-    // Get the first service's name as occasion
-    if (event.services && event.services.length > 0) {
-      return event.services[0].service?.name || (isRTL ? 'مناسبة' : 'Event');
-    }
-    return isRTL ? 'مناسبة' : 'Event';
-  };
-
-  const getVendorName = (event: MyEvent) => {
-    // Get the first service's vendor name
-    if (event.services && event.services.length > 0) {
-      return event.services[0].vendor?.businessName || '';
-    }
-    return '';
-  };
-
   const renderFilterButton = (label: string, value: string) => (
     <TouchableOpacity
       style={[
@@ -464,27 +495,29 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
     </TouchableOpacity>
   );
 
-  const renderEventItem = ({ item }: { item: MyEvent }) => {
-    const isExpanded = expandedEventId === item._id;
-    const statusStyle = getStatusBadgeStyle(item.status);
+  const renderEventItem = ({ item }: { item: EventServiceRow }) => {
+    const isExpanded = expandedEventId === item.uniqueKey;
+    const statusStyle = getStatusBadgeStyle(item.booking?.status || '');
+    const serviceName = isRTL ? (item.service?.nameAr || item.service?.name) : item.service?.name;
+    const vendorName = item.vendor?.businessName || item.vendor?.name || '';
 
     return (
-      <View style={styles.eventCard}>
+      <View style={[styles.eventCard, isExpanded && { zIndex: 999, elevation: 10 }]}>
         <View style={styles.eventHeader}>
           <View style={styles.eventMainInfo}>
-            <Text style={styles.eventTitle}>{getOccasionName(item)}</Text>
-            {getVendorName(item) ? (
+            <Text style={styles.eventTitle}>{serviceName || (isRTL ? 'خدمة' : 'Service')}</Text>
+            {vendorName ? (
               <Text style={styles.eventVendor}>
                 {isRTL ? 'مقدم الخدمة: ' : 'Vendor: '}
                 <Text style={styles.eventVendorName}>
-                  {getVendorName(item)}
+                  {vendorName}
                 </Text>
               </Text>
             ) : null}
           </View>
           <TouchableOpacity
             style={styles.menuButton}
-            onPress={() => setExpandedEventId(isExpanded ? null : item._id)}
+            onPress={() => setExpandedEventId(isExpanded ? null : item.uniqueKey)}
             activeOpacity={0.7}
           >
             <Icon
@@ -499,7 +532,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
           <View style={styles.eventDateBadge}>
             <Icon name="calendar-outline" size={14} color={colors.primary} />
             <Text style={styles.eventDateText}>
-              {formatDate(item.eventDate)}
+              {item.booking?.eventDate ? formatDate(item.booking.eventDate) : ''}
             </Text>
           </View>
 
@@ -507,8 +540,8 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
             <Icon name="people-outline" size={14} color="#475569" />
             <Text style={styles.guestCountText}>
               {isRTL
-                ? `الضيوف: ${item.guests?.length || 0}/${item.guestLimit || 0}`
-                : `Guests: ${item.guests?.length || 0}/${item.guestLimit || 0}`}
+                ? `الضيوف: ${item.booking?.guests?.length || 0}/${item.booking?.guestLimit || 0}`
+                : `Guests: ${item.booking?.guests?.length || 0}/${item.booking?.guestLimit || 0}`}
             </Text>
           </View>
 
@@ -517,82 +550,84 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
           >
             <Text style={[styles.statusText, { color: statusStyle.text }]}>
               {isRTL
-                ? item.status === 'confirmed'
+                ? item.booking?.status === 'confirmed'
                   ? 'مؤكد'
-                  : item.status === 'pending'
+                  : item.booking?.status === 'pending'
                   ? 'قيد الانتظار'
                   : 'ملغي'
-                : item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                : (item.booking?.status ? item.booking.status.charAt(0).toUpperCase() + item.booking.status.slice(1) : '')}
             </Text>
           </View>
         </View>
 
         {isExpanded && (
-          <View style={styles.actionButtonsRow}>
+          <View style={[styles.menuDropdown, { top: 50 }, isRTL ? { left: 16 } : { right: 16 }]}>
             <TouchableOpacity
-              style={styles.simpleActionButton}
-              onPress={() => handleCopyQR(item._id)}
-              activeOpacity={0.8}
+              style={styles.menuItem}
+              onPress={() => {
+                setExpandedEventId(null);
+                handleCopyQR(item.bookingId);
+              }}
+              activeOpacity={0.7}
             >
-              <Text style={styles.simpleActionButtonText}>
-                {isRTL ? 'نسخ QR' : 'Copy QR'}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.simpleActionButton}
-              onPress={() => handleViewQR(item._id)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.simpleActionButtonText}>
-                {isRTL ? 'عرض QR' : 'View QR'}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.simpleActionButton}
-              onPress={() => handleGuestList(item._id)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.simpleActionButtonText}>
-                {isRTL ? 'الضيوف' : 'Guests'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {expandedGuestListId === item._id && (
-          <View style={styles.guestListContainer}>
-            {loadingGuests[item._id] ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="small" color={colors.primary} />
-                <Text style={styles.loadingText}>
-                  {isRTL ? 'جاري التحميل...' : 'Loading...'}
+              <View style={[styles.menuItemContent, isRTL && styles.menuItemContentRTL]}>
+                <Icon
+                  name="copy-outline"
+                  size={16}
+                  color={colors.primary}
+                  style={isRTL ? { marginLeft: 8 } : { marginRight: 8 }}
+                />
+                <Text style={[styles.menuItemText, isRTL && styles.menuItemTextRTL]}>
+                  {isRTL ? 'نسخ QR' : 'Copy QR'}
                 </Text>
               </View>
-            ) : (guestsData[item._id] || []).length === 0 ? (
-              <View style={styles.emptyGuestList}>
-                <Text style={styles.emptyGuestText}>
-                  {isRTL ? 'لا يوجد ضيوف' : 'No guests'}
+            </TouchableOpacity>
+            
+            <View style={styles.menuDivider} />
+            
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setExpandedEventId(null);
+                handleViewQR(item.booking);
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuItemContent, isRTL && styles.menuItemContentRTL]}>
+                <Icon
+                  name="qr-code-outline"
+                  size={16}
+                  color={colors.primary}
+                  style={isRTL ? { marginLeft: 8 } : { marginRight: 8 }}
+                />
+                <Text style={[styles.menuItemText, isRTL && styles.menuItemTextRTL]}>
+                  {isRTL ? 'عرض/تعديل QR' : 'View/Edit QR'}
                 </Text>
               </View>
-            ) : (
-              guestsData[item._id]?.map(guest => (
-                <View key={guest._id} style={styles.guestListItem}>
-                  <View style={styles.guestInfo}>
-                    <Text style={styles.guestName}>{guest.name}</Text>
-                    <Text style={styles.guestPhone}>{guest.phone}</Text>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.deleteGuestButton}
-                    onPress={() => handleRemoveGuest(guest._id, item._id)}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.deleteGuestButtonText}>✕</Text>
-                  </TouchableOpacity>
-                </View>
-              ))
-            )}
+            </TouchableOpacity>
+            
+            <View style={styles.menuDivider} />
+            
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setExpandedEventId(null);
+                handleGuestList(item.booking);
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuItemContent, isRTL && styles.menuItemContentRTL]}>
+                <Icon
+                  name="people-outline"
+                  size={16}
+                  color={colors.primary}
+                  style={isRTL ? { marginLeft: 8 } : { marginRight: 8 }}
+                />
+                <Text style={[styles.menuItemText, isRTL && styles.menuItemTextRTL]}>
+                  {isRTL ? 'الضيوف' : 'Guests'}
+                </Text>
+              </View>
+            </TouchableOpacity>
           </View>
         )}
       </View>
@@ -881,7 +916,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
             <FlatList
               data={filteredEvents}
               renderItem={renderEventItem}
-              keyExtractor={item => item._id}
+              keyExtractor={item => item.uniqueKey}
               contentContainerStyle={styles.listContent}
               showsVerticalScrollIndicator={false}
             />
@@ -921,6 +956,138 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
               o => (isRTL ? o.nameAr : o.name) === selectedOccasion,
             )}
           />
+
+          {/* QR Form Modal */}
+          {selectedBooking && (
+            <QRFormModal
+              visible={qrModalVisible}
+              booking={selectedBooking}
+              existingQRCode={selectedQRCode}
+              onClose={() => {
+                setQrModalVisible(false);
+                setSelectedBooking(null);
+                setSelectedQRCode(null);
+              }}
+              onSuccess={() => {
+                loadEvents();
+              }}
+            />
+          )}
+
+          {/* Guest List Modal */}
+          <Modal
+            visible={guestListModalVisible}
+            transparent={true}
+            animationType="slide"
+            onRequestClose={() => {
+              setGuestListModalVisible(false);
+              setSelectedBookingForGuests(null);
+            }}
+          >
+            <View style={styles.guestPageContainer}>
+              <TouchableOpacity
+                style={{ flex: 1 }}
+                activeOpacity={1}
+                onPress={() => {
+                  setGuestListModalVisible(false);
+                  setSelectedBookingForGuests(null);
+                }}
+              />
+              <View style={styles.guestPageContent}>
+                <View style={styles.guestPageHeader}>
+                  <TouchableOpacity
+                    style={styles.guestPageBackButton}
+                    onPress={() => {
+                      setGuestListModalVisible(false);
+                      setSelectedBookingForGuests(null);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Icon
+                      name={isRTL ? 'chevron-forward' : 'chevron-back'}
+                      size={24}
+                      color={colors.primaryDark}
+                    />
+                  </TouchableOpacity>
+                  <Text style={styles.guestPageTitle}>
+                    {isRTL ? 'قائمة الضيوف' : 'Guest List'}
+                  </Text>
+                  <View style={{ width: 40 }} />
+                </View>
+
+                <ScrollView style={styles.guestPageScroll} showsVerticalScrollIndicator={false}>
+                  {selectedBookingForGuests && (
+                    <>
+                      {loadingGuests[selectedBookingForGuests._id] ? (
+                        <View style={styles.loadingContainer}>
+                          <ActivityIndicator size="large" color={colors.primary} />
+                          <Text style={styles.loadingText}>
+                            {isRTL ? 'جاري التحميل...' : 'Loading...'}
+                          </Text>
+                        </View>
+                      ) : !guestsData[selectedBookingForGuests._id] || guestsData[selectedBookingForGuests._id].length === 0 ? (
+                        <View style={styles.emptyGuestList}>
+                          <Text style={styles.emptyGuestText}>
+                            {isRTL ? 'لا يوجد ضيوف' : 'No guests'}
+                          </Text>
+                        </View>
+                      ) : (
+                        <View style={{ backgroundColor: '#ffffff', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 4 }}>
+                          {guestsData[selectedBookingForGuests._id].map((guest: any) => {
+                            const isCurrentUser = guest.user?._id
+                              ? guest.user._id === user?.id || guest.user._id === user?._id
+                              : guest.user === user?.id || guest.user === user?._id;
+
+                            const bookingCustomerId = selectedBookingForGuests.customer?._id || selectedBookingForGuests.customer;
+                            const canRemove =
+                              user?.role === 'admin' ||
+                              (bookingCustomerId && (bookingCustomerId === user?.id || bookingCustomerId === user?._id));
+
+                            return (
+                              <View key={guest._id} style={[styles.guestListItem, isRTL && { flexDirection: 'row-reverse' }]}>
+                                <View style={[{ flex: 1, alignItems: 'flex-start' }, isRTL && { alignItems: 'flex-end' }]}>
+                                  <Text style={[styles.guestListName, isRTL && { textAlign: 'right' }]}>
+                                    {guest.name || guest.user?.name || (isRTL ? 'ضيف' : 'Guest')}
+                                    <Text style={styles.guestListSubText}>
+                                      {guest.phone ? ` (${guest.phone})` : guest.email || guest.user?.email ? ` (${guest.email || guest.user?.email})` : ''}
+                                    </Text>
+                                  </Text>
+                                  <Text style={[styles.guestListMetaText, isRTL && { textAlign: 'right' }]}>
+                                    {`#${String(guest._id).slice(-6)} • `}
+                                    {guest.joinedAt ? new Date(guest.joinedAt).toLocaleString(isRTL ? 'ar-EG' : 'en-US', { dateStyle: 'short', timeStyle: 'short' }) : ''}
+                                  </Text>
+                                </View>
+                                <View style={[{ flexDirection: 'row', gap: 12, alignItems: 'center' }, isRTL && { flexDirection: 'row-reverse' }]}>
+                                  {canRemove && (
+                                    <TouchableOpacity
+                                      style={styles.guestActionIconButton}
+                                      onPress={() => handleRemoveGuest(guest._id, selectedBookingForGuests._id)}
+                                      activeOpacity={0.7}
+                                    >
+                                      <Icon name="trash-outline" size={18} color="#ef4444" />
+                                    </TouchableOpacity>
+                                  )}
+                                  {isCurrentUser && (
+                                    <TouchableOpacity
+                                      style={styles.guestActionIconButton}
+                                      onPress={() => handleLeaveGuest(selectedBookingForGuests._id)}
+                                      activeOpacity={0.7}
+                                    >
+                                      <Icon name="log-out-outline" size={18} color="#f97316" />
+                                    </TouchableOpacity>
+                                  )}
+                                </View>
+                              </View>
+                            );
+                          })}
+                        </View>
+                      )}
+                    </>
+                  )}
+                </ScrollView>
+              </View>
+            </View>
+          </Modal>
         </View>
       </View>
     </>

@@ -186,7 +186,12 @@ const Home: React.FC<HomeProps> = ({
   }
 
   if (showAuth) {
-    return <Auth onBack={() => onNavigate && onNavigate('home')} />;
+    return (
+      <Auth
+        onBack={() => onNavigate && onNavigate('home')}
+        onNavigate={onNavigate}
+      />
+    );
   }
 
   // ── Main render ──────────────────────────────────────────────────

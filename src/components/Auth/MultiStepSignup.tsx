@@ -23,11 +23,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 interface MultiStepSignupProps {
   onBack: () => void;
   onSignupSuccess: (token: string, user?: any) => void;
+  onNavigate?: (route: string) => void;
 }
 
 const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
   onBack,
   onSignupSuccess,
+  onNavigate,
 }) => {
   const { isRTL } = useLanguage();
   const insets = useSafeAreaInsets();
@@ -850,6 +852,25 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
             {isRTL ? 'العودة لتسجيل الدخول' : 'Back to Login'}
           </Text>
         </TouchableOpacity>
+
+        {/* Become a Seller Button */}
+        {onNavigate && (
+          <TouchableOpacity
+            style={[styles.backButton, { marginTop: 8 }]}
+            onPress={() => onNavigate('become-seller')}
+            disabled={isLoading}
+          >
+            <Text
+              style={[
+                styles.backButtonText,
+                isRTL && styles.backButtonTextRTL,
+                { color: colors.primary, fontWeight: '600' },
+              ]}
+            >
+              {isRTL ? 'سجل كبائع' : 'Register as a Seller'}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     </ScrollView>
   );

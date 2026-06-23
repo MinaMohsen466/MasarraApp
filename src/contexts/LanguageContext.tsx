@@ -36,6 +36,15 @@ const translations = {
     switchToEnglish: 'English',
     logIn: 'Log In',
     logOut: 'Log Out',
+    becomeSeller: 'Become a Seller',
+    pleaseLoginToApplyAsSeller: 'Please login first to apply as a seller.',
+    businessLicenseImageRequired: 'Business license image is required.',
+    applySuccessTitle: 'Success!',
+    applySuccessMessage: 'Your seller application has been submitted successfully.',
+    businessLicense: 'Business License Image *',
+    businessName: 'Business / Shop Name *',
+    selectLicenseImage: 'Select Business License Image',
+    submitApplication: 'Submit Application',
 
     // Tagline
     tagline: 'Your occasion on us',
@@ -130,6 +139,15 @@ const translations = {
     switchToEnglish: 'English',
     logIn: 'تسجيل الدخول',
     logOut: 'تسجيل الخروج',
+    becomeSeller: 'سجل كبائع',
+    pleaseLoginToApplyAsSeller: 'يرجى تسجيل الدخول أولاً لتتمكن من تقديم طلب الانضمام كبائع.',
+    businessLicenseImageRequired: 'صورة رخصة العمل مطلوبة.',
+    applySuccessTitle: 'نجح!',
+    applySuccessMessage: 'تم تقديم طلب الانضمام كبائع بنجاح.',
+    businessLicense: 'صورة رخصة العمل *',
+    businessName: 'اسم المتجر / العمل *',
+    selectLicenseImage: 'اختر صورة رخصة العمل',
+    submitApplication: 'تقديم الطلب',
 
     // Tagline
     tagline: 'مناسبتك علينا',

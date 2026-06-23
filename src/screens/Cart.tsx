@@ -116,7 +116,7 @@ const Cart: React.FC<CartProps> = ({
         try {
           const bookingInstant = new Date(item.timeSlot.start);
           return bookingInstant < now;
-        } catch (e) {
+        } catch {
           // fall through to older logic
         }
       }
@@ -408,7 +408,7 @@ const Cart: React.FC<CartProps> = ({
 
       setIsProcessingCheckout(false);
       setShowAddressSelection(true);
-    } catch (error) {
+    } catch {
       setIsProcessingCheckout(false);
       setAlertTitle(t('error'));
       setAlertMessage(t('errorProcessingOrder'));
@@ -509,8 +509,8 @@ const Cart: React.FC<CartProps> = ({
       setCreatedBookingIds([bookingId]);
 
       // Get the cart items that were successfully booked
-      const successfullyBookedItemIds: string[] = booking._cartItemIds || [];
-      setSuccessfullyBookedItemIds(successfullyBookedItemIds);
+      const bookedItemIds: string[] = booking._cartItemIds || [];
+      setSuccessfullyBookedItemIds(bookedItemIds);
 
       // Step 2: Check if payment is required
       // Payment is required ONLY if NO items need vendor confirmation
@@ -558,7 +558,7 @@ const Cart: React.FC<CartProps> = ({
 
       // Step 3: Calculate total amount for payment
       const successfullyBookedItems = cartItems.filter(item =>
-        successfullyBookedItemIds.includes(item._id),
+        bookedItemIds.includes(item._id),
       );
 
       // Calculate total for items
@@ -1009,8 +1009,8 @@ const Cart: React.FC<CartProps> = ({
     setCouponMessage('');
 
     try {
-      const token = await AsyncStorage.getItem('userToken');
-      if (!token || !user?._id) {
+      const storedToken = await AsyncStorage.getItem('userToken');
+      if (!storedToken || !user?._id) {
         setCouponError(
           isRTL ? 'الرجاء تسجيل الدخول أولاً' : 'Please login first',
         );
@@ -1036,7 +1036,7 @@ const Cart: React.FC<CartProps> = ({
         total,
         user._id,
         cartItemsData,
-        token,
+        storedToken,
       );
 
       if (
@@ -1064,7 +1064,7 @@ const Cart: React.FC<CartProps> = ({
           result.message || (isRTL ? 'كوبون غير صحيح' : 'Invalid coupon'),
         );
       }
-    } catch (error) {
+    } catch {
       setCouponError(isRTL ? 'خطأ في تطبيق الكوبون' : 'Error applying coupon');
     } finally {
       setIsApplyingCoupon(false);
