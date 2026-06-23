@@ -1,81 +1,115 @@
-import { StyleSheet, Dimensions } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { colors } from '../../constants/colors';
-
-const { height } = Dimensions.get('window');
 
 export const styles = StyleSheet.create({
   modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    // Handled by common BottomSheet wrapper
   },
   modalContent: {
-    backgroundColor: colors.textWhite,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: height * 0.5,
-    paddingTop: 16,
-    paddingBottom: 16,
+    paddingHorizontal: 16,
+    paddingTop: 8,
   },
   modalContentRTL: {
-    // No specific RTL adjustments needed for this modal
+    // Handled dynamically
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: '#F1F5F9',
+    marginBottom: 16,
+  },
+  modalHeaderRTL: {
+    flexDirection: 'row-reverse',
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: colors.textDark,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  modalTitleRTL: {
+    textAlign: 'right',
   },
   closeButton: {
-    width: 40,
-    height: 40,
+    width: 32,
+    height: 32,
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 16,
+    backgroundColor: '#F1F5F9',
+  },
+  flatListStyle: {
+    maxHeight: 380, // Cap vertical height so it fits beautifully inside bottom sheet
   },
   occasionsList: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingBottom: 16,
+    gap: 8,
   },
   occasionItem: {
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 8,
-    marginVertical: 4,
+    paddingVertical: 12,
+    borderRadius: 14,
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#F1F5F9',
   },
   occasionItemSelected: {
-    backgroundColor: '#E8F5F4',
+    backgroundColor: 'rgba(0, 161, 156, 0.08)',
     borderColor: colors.primary,
   },
   occasionItemContent: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 12,
+  },
+  occasionItemContentRTL: {
+    flexDirection: 'row-reverse',
+  },
+  iconWrapper: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  iconWrapperSelected: {
+    borderColor: colors.primary,
+  },
+  occasionImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 18,
+  },
+  placeholderIcon: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#E2E8F0',
   },
   occasionItemText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.textDark,
+    fontSize: 14.5,
+    fontWeight: '700',
+    color: '#475569',
     flex: 1,
+    textAlign: 'left',
+  },
+  occasionItemTextActive: {
+    color: colors.primary,
   },
   occasionItemTextRTL: {
     textAlign: 'right',
-    writingDirection: 'rtl',
   },
   loadingContainer: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    minHeight: 200,
+    minHeight: 150,
   },
 });

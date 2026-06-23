@@ -6,9 +6,6 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
-  Modal,
-  KeyboardAvoidingView,
-  Platform,
   TextInput,
 } from 'react-native';
 import { fetchAddresses, createAddress } from '../../services/api';
@@ -16,6 +13,7 @@ import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { CustomAlert } from '../CustomAlert/CustomAlert';
+import { BottomSheet } from '../common/BottomSheet';
 
 interface Address {
   _id: string;
@@ -720,46 +718,30 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
   };
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={() => {
-        if (showForm && addresses.length > 0) {
-          setShowForm(false);
-        } else {
-          onClose();
-        }
-      }}
-    >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.overlay}
-      >
-        <View style={styles.container}>
-          <View style={[styles.header, isRTL && styles.headerRTL]}>
-            <Text style={[styles.title, isRTL && styles.titleRTL]}>
-              {showForm
-                ? isRTL ? 'إضافة عنوان جديد' : 'Add New Address'
-                : isRTL ? 'اختر عنوان التسليم' : 'Select Delivery Address'}
-            </Text>
-            <TouchableOpacity
-              onPress={() => {
-                if (showForm && addresses.length > 0) {
-                  setShowForm(false);
-                } else {
-                  onClose();
-                }
-              }}
-              style={styles.closeButton}
-            >
-              <Text style={styles.closeButtonText}>✕</Text>
-            </TouchableOpacity>
-          </View>
-
-          {renderContent()}
+    <BottomSheet visible={visible} onClose={onClose}>
+      <View style={styles.container}>
+        <View style={[styles.header, isRTL && styles.headerRTL]}>
+          <Text style={[styles.title, isRTL && styles.titleRTL]}>
+            {showForm
+              ? isRTL ? 'إضافة عنوان جديد' : 'Add New Address'
+              : isRTL ? 'اختر عنوان التسليم' : 'Select Delivery Address'}
+          </Text>
+          <TouchableOpacity
+            onPress={() => {
+              if (showForm && addresses.length > 0) {
+                setShowForm(false);
+              } else {
+                onClose();
+              }
+            }}
+            style={styles.closeButton}
+          >
+            <Text style={styles.closeButtonText}>✕</Text>
+          </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+
+        {renderContent()}
+      </View>
 
       <CustomAlert
         visible={alertVisible}
@@ -768,21 +750,16 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
         buttons={[{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }]}
         onClose={() => setAlertVisible(false)}
       />
-    </Modal>
+    </BottomSheet>
   );
 };
 
 const styles = StyleSheet.create({
   overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
+    // Handled by BottomSheet
   },
   container: {
-    backgroundColor: colors.textWhite,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '85%',
+    width: '100%',
   },
   header: {
     flexDirection: 'row',

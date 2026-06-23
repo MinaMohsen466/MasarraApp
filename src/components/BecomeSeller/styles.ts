@@ -199,4 +199,55 @@ export const styles = StyleSheet.create({
   flexRowRTL: {
     flexDirection: 'row-reverse',
   },
+  termsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 4,
+    gap: 10,
+  },
+  termsContainerRTL: {
+    flexDirection: 'row-reverse',
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: '#aaa',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  checkboxActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary,
+  },
+  checkboxCheckmark: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 15,
+  },
+  termsTextContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+  },
+  termsTextContainerRTL: {
+    flexDirection: 'row-reverse',
+  },
+  termsText: {
+    fontSize: 13,
+    color: '#666',
+    lineHeight: 19,
+  },
+  termsLink: {
+    fontSize: 13,
+    color: colors.primary,
+    fontWeight: '700',
+    lineHeight: 19,
+    textDecorationLine: 'underline',
+  },
 });

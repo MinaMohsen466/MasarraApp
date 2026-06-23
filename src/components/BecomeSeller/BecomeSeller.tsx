@@ -11,6 +11,7 @@ import {
   Linking,
   StatusBar,
   Image,
+  Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -20,6 +21,7 @@ import { submitVendorApplication } from '../../services/api';
 import { colors } from '../../constants/colors';
 import { styles } from './styles';
 import { CustomAlert } from '../CustomAlert';
+import Terms from '../Terms';
 
 interface BecomeSellerProps {
   onBack?: () => void;
@@ -38,6 +40,10 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack }) => {
   const [nameActive, setNameActive] = useState(false);
   const [emailActive, setEmailActive] = useState(false);
   const [phoneActive, setPhoneActive] = useState(false);
+
+  // Terms agreement state
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   // CustomAlert state
   const [alertVisible, setAlertVisible] = useState(false);
@@ -199,6 +205,16 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack }) => {
       showAlert(
         isRTL ? 'خطأ' : 'Error',
         t('businessLicenseImageRequired'),
+      );
+      return;
+    }
+
+    if (!termsAccepted) {
+      showAlert(
+        isRTL ? 'خطأ' : 'Error',
+        isRTL
+          ? 'يجب الموافقة على الشروط والأحكام للمتابعة'
+          : 'You must agree to the Terms & Conditions to proceed',
       );
       return;
     }
@@ -460,6 +476,48 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack }) => {
               )}
             </View>
 
+            {/* Terms & Conditions Checkbox */}
+            <View
+              style={[
+                styles.termsContainer,
+                isRTL && styles.termsContainerRTL,
+              ]}
+            >
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setTermsAccepted(prev => !prev)}
+                style={[
+                  styles.checkbox,
+                  termsAccepted && styles.checkboxActive,
+                ]}
+                disabled={isSubmitting}
+              >
+                {termsAccepted && (
+                  <Text style={styles.checkboxCheckmark}>✓</Text>
+                )}
+              </TouchableOpacity>
+
+              <View
+                style={[
+                  styles.termsTextContainer,
+                  isRTL && styles.termsTextContainerRTL,
+                ]}
+              >
+                <Text style={styles.termsText}>
+                  {isRTL ? 'أوافق على ' : 'I agree to the '}
+                </Text>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => setShowTermsModal(true)}
+                  disabled={isSubmitting}
+                >
+                  <Text style={styles.termsLink}>
+                    {isRTL ? 'الشروط والأحكام' : 'Terms & Conditions'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
             {/* Submit Button */}
             <TouchableOpacity
               style={[
@@ -468,7 +526,8 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack }) => {
                   !licenseImageUri ||
                   !businessName.trim() ||
                   !email.trim() ||
-                  !phone.trim()) &&
+                  !phone.trim() ||
+                  !termsAccepted) &&
                   styles.submitButtonDisabled,
               ]}
               onPress={handleSubmit}
@@ -477,7 +536,8 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack }) => {
                 !licenseImageUri ||
                 !businessName.trim() ||
                 !email.trim() ||
-                !phone.trim()
+                !phone.trim() ||
+                !termsAccepted
               }
               activeOpacity={0.8}
             >
@@ -492,6 +552,17 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack }) => {
           </View>
         </ScrollView>
       </View>
+
+      {/* Terms & Conditions Modal */}
+      <Modal
+        visible={showTermsModal}
+        animationType="slide"
+        transparent={false}
+        statusBarTranslucent={true}
+        onRequestClose={() => setShowTermsModal(false)}
+      >
+        <Terms onBack={() => setShowTermsModal(false)} />
+      </Modal>
     </>
   );
 };

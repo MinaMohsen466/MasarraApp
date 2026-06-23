@@ -3,20 +3,15 @@ import { colors } from '../../constants/colors';
 
 export const styles = StyleSheet.create({
   overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    // Handled by common BottomSheet wrapper
   },
   container: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
     paddingHorizontal: 16,
-    paddingVertical: 20,
-    maxHeight: '80%',
+    paddingTop: 8,
+    paddingBottom: 16,
   },
   containerRTL: {
-    // RTL adjustments handled by flexDirection
+    // RTL adjustments handled dynamically
   },
   header: {
     flexDirection: 'row',
@@ -29,49 +24,60 @@ export const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: '700',
-    color: colors.primary,
+    fontWeight: '800',
+    color: '#0F172A',
   },
   textRTL: {
     textAlign: 'right',
   },
   closeButton: {
-    width: 40,
-    height: 40,
+    width: 32,
+    height: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 20,
-    backgroundColor: '#f0f0f0',
+    borderRadius: 16,
+    backgroundColor: '#F1F5F9',
   },
   closeButtonText: {
-    fontSize: 24,
-    color: '#666',
+    fontSize: 16,
+    color: '#475569',
+    fontWeight: 'bold',
   },
   optionsContainer: {
-    gap: 12,
+    gap: 10,
   },
   optionItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: '#f9f9f9',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+  optionItemActive: {
+    backgroundColor: 'rgba(0, 161, 156, 0.08)',
+    borderColor: colors.primary,
   },
   optionLabel: {
-    fontSize: 14,
+    fontSize: 14.5,
+    color: '#475569',
+    fontWeight: '700',
+  },
+  optionLabelActive: {
     color: colors.primary,
-    fontWeight: '500',
   },
   radio: {
     width: 20,
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: colors.primary,
+    borderColor: '#CBD5E1',
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#FFFFFF',
   },
   radioSelected: {
     borderColor: colors.primary,
@@ -81,6 +87,6 @@ export const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
   },
 });

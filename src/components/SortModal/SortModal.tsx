@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { styles } from './styles';
-import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { BottomSheet } from '../common/BottomSheet';
 
 interface SortOption {
   id: string;
@@ -47,51 +47,57 @@ const SortModal: React.FC<SortModalProps> = ({
   };
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <View style={styles.overlay}>
-        <View style={[styles.container, isRTL && styles.containerRTL]}>
-          {/* Header */}
-          <View style={[styles.header, isRTL && styles.headerRTL]}>
-            <Text style={[styles.title, isRTL && styles.textRTL]}>
-              {isRTL ? 'ترتيب حسب' : 'Sort by'}
-            </Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Text style={styles.closeButtonText}>✕</Text>
-            </TouchableOpacity>
-          </View>
+    <BottomSheet visible={visible} onClose={onClose}>
+      <View style={[styles.container, isRTL && styles.containerRTL]}>
+        {/* Header */}
+        <View style={[styles.header, isRTL && styles.headerRTL]}>
+          <Text style={[styles.title, isRTL && styles.textRTL]}>
+            {isRTL ? 'ترتيب حسب' : 'Sort by'}
+          </Text>
+          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <Text style={styles.closeButtonText}>✕</Text>
+          </TouchableOpacity>
+        </View>
 
-          {/* Sort Options */}
-          <View style={styles.optionsContainer}>
-            {sortOptions.map(option => (
+        {/* Sort Options */}
+        <View style={styles.optionsContainer}>
+          {sortOptions.map(option => {
+            const isSelected = selectedSort === option.id;
+            return (
               <TouchableOpacity
                 key={option.id}
-                style={styles.optionItem}
+                style={[
+                  styles.optionItem,
+                  isSelected && styles.optionItemActive,
+                ]}
                 onPress={() => handleSortSelect(option.id)}
+                activeOpacity={0.7}
               >
-                <Text style={[styles.optionLabel, isRTL && styles.textRTL]}>
+                <Text
+                  style={[
+                    styles.optionLabel,
+                    isSelected && styles.optionLabelActive,
+                    isRTL && styles.textRTL,
+                  ]}
+                >
                   {isRTL ? option.labelAr : option.label}
                 </Text>
                 <View
                   style={[
                     styles.radio,
-                    selectedSort === option.id && styles.radioSelected,
+                    isSelected && styles.radioSelected,
                   ]}
                 >
-                  {selectedSort === option.id && (
+                  {isSelected && (
                     <View style={styles.radioDot} />
                   )}
                 </View>
               </TouchableOpacity>
-            ))}
-          </View>
+            );
+          })}
         </View>
       </View>
-    </Modal>
+    </BottomSheet>
   );
 };
 
