@@ -211,8 +211,12 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
         });
       });
 
-      // Sort servicesList by eventDate descending
-      servicesList.sort((a, b) => new Date(b.booking.eventDate).getTime() - new Date(a.booking.eventDate).getTime());
+      // Sort servicesList by booking createdAt descending (newest bookings first)
+      servicesList.sort((a, b) => {
+        const timeB = b.booking.createdAt ? new Date(b.booking.createdAt).getTime() : 0;
+        const timeA = a.booking.createdAt ? new Date(a.booking.createdAt).getTime() : 0;
+        return timeB - timeA;
+      });
 
       setEvents(servicesList);
     } catch (error: any) {
@@ -233,7 +237,15 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
     setAlertVisible(true);
   };
 
-  const handleCopyQR = async (bookingId: string) => {
+  const handleCopyQR = async (bookingId: string, bookingStatus?: string) => {
+    if (bookingStatus === 'cancelled') {
+      showAlert(
+        isRTL ? 'تنبيه' : 'Info',
+        isRTL ? 'لا يمكن نسخ رمز QR لحجز ملغي.' : 'Cannot copy QR code for a cancelled booking.',
+      );
+      setExpandedEventId(null);
+      return;
+    }
     try {
       const token = await AsyncStorage.getItem('userToken');
       if (!token) {
@@ -282,6 +294,14 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
   };
 
   const handleViewQR = async (booking: any) => {
+    if (booking?.status === 'cancelled') {
+      showAlert(
+        isRTL ? 'تنبيه' : 'Info',
+        isRTL ? 'لا يمكن عرض أو تعديل رمز QR لحجز ملغي.' : 'Cannot view or edit QR code for a cancelled booking.',
+      );
+      setExpandedEventId(null);
+      return;
+    }
     try {
       const token = await AsyncStorage.getItem('userToken');
       if (!token) {
@@ -562,51 +582,55 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
 
         {isExpanded && (
           <View style={[styles.menuDropdown, { top: 50 }, isRTL ? { left: 16 } : { right: 16 }]}>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => {
-                setExpandedEventId(null);
-                handleCopyQR(item.bookingId);
-              }}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.menuItemContent, isRTL && styles.menuItemContentRTL]}>
-                <Icon
-                  name="copy-outline"
-                  size={16}
-                  color={colors.primary}
-                  style={isRTL ? { marginLeft: 8 } : { marginRight: 8 }}
-                />
-                <Text style={[styles.menuItemText, isRTL && styles.menuItemTextRTL]}>
-                  {isRTL ? 'نسخ QR' : 'Copy QR'}
-                </Text>
-              </View>
-            </TouchableOpacity>
-            
-            <View style={styles.menuDivider} />
-            
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => {
-                setExpandedEventId(null);
-                handleViewQR(item.booking);
-              }}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.menuItemContent, isRTL && styles.menuItemContentRTL]}>
-                <Icon
-                  name="qr-code-outline"
-                  size={16}
-                  color={colors.primary}
-                  style={isRTL ? { marginLeft: 8 } : { marginRight: 8 }}
-                />
-                <Text style={[styles.menuItemText, isRTL && styles.menuItemTextRTL]}>
-                  {isRTL ? 'عرض/تعديل QR' : 'View/Edit QR'}
-                </Text>
-              </View>
-            </TouchableOpacity>
-            
-            <View style={styles.menuDivider} />
+            {item.booking?.status !== 'cancelled' && (
+              <>
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => {
+                    setExpandedEventId(null);
+                    handleCopyQR(item.bookingId, item.booking?.status);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.menuItemContent, isRTL && styles.menuItemContentRTL]}>
+                    <Icon
+                      name="copy-outline"
+                      size={16}
+                      color={colors.primary}
+                      style={isRTL ? { marginLeft: 8 } : { marginRight: 8 }}
+                    />
+                    <Text style={[styles.menuItemText, isRTL && styles.menuItemTextRTL]}>
+                      {isRTL ? 'نسخ QR' : 'Copy QR'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+                
+                <View style={styles.menuDivider} />
+                
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => {
+                    setExpandedEventId(null);
+                    handleViewQR(item.booking);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.menuItemContent, isRTL && styles.menuItemContentRTL]}>
+                    <Icon
+                      name="qr-code-outline"
+                      size={16}
+                      color={colors.primary}
+                      style={isRTL ? { marginLeft: 8 } : { marginRight: 8 }}
+                    />
+                    <Text style={[styles.menuItemText, isRTL && styles.menuItemTextRTL]}>
+                      {isRTL ? 'عرض/تعديل QR' : 'View/Edit QR'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+                
+                <View style={styles.menuDivider} />
+              </>
+            )}
             
             <TouchableOpacity
               style={styles.menuItem}

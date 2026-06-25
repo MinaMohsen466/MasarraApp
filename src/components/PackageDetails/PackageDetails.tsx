@@ -16,6 +16,7 @@ import {
   StatusBar,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery } from '@tanstack/react-query';
@@ -492,6 +493,13 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
           onBack();
         }
       } else {
+        const hasPendingService =
+          packageData!.service?.availabilityStatus === 'pending_confirmation' ||
+          (packageData!.additionalServices &&
+            packageData!.additionalServices.some(
+              (as: any) => as.service?.availabilityStatus === 'pending_confirmation',
+            ));
+
         await addToCart({
           _id: `cart_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           serviceId: packageData!._id,
@@ -512,6 +520,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
           mainServiceId: packageData!.service._id, // Main limited service for availability checking
           packageName: packageData!.name, // Store package name
           packageNameAr: packageData!.nameAr, // Store package name in Arabic
+          availabilityStatus: hasPendingService ? 'pending_confirmation' : 'available_now',
         });
 
         // Show success animation
@@ -984,6 +993,67 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
             >
               {isRTL ? packageData.descriptionAr : packageData.description}
             </Text>
+          )}
+
+          {/* Vendor Policy Section */}
+          {packageData.vendor?.vendorProfile?.refundPeriodHours != null && (
+            <View
+              style={{
+                marginTop: 12,
+                marginBottom: 12,
+                paddingVertical: 16,
+                paddingHorizontal: 16,
+                backgroundColor: colors.backgroundCard || '#F8FAFC',
+                borderRadius: 12,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: '700',
+                  color: colors.primary,
+                  letterSpacing: 1.5,
+                  marginBottom: 12,
+                  textAlign: isRTL ? 'right' : 'left',
+                }}
+              >
+                {isRTL ? 'سياسة المورد' : 'VENDOR POLICY'}
+              </Text>
+              <View
+                style={{
+                  flexDirection: isRTL ? 'row-reverse' : 'row',
+                  alignItems: 'center',
+                  gap: 12,
+                }}
+              >
+                <Icon name="time-outline" size={24} color={colors.primary} />
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: '600',
+                    color: '#0F172A',
+                    flex: 1,
+                    textAlign: isRTL ? 'right' : 'left',
+                  }}
+                >
+                  {isRTL
+                    ? `استرداد كامل حتى ${(() => {
+                        const h = packageData.vendor.vendorProfile.refundPeriodHours;
+                        if (h === 0) return 'أي وقت';
+                        if (h < 24) return `${h} ساعة`;
+                        const d = Number((h / 24).toFixed(1).replace(/\.0$/, ''));
+                        return `${d} يوم`;
+                      })()} قبل المناسبة`
+                    : `Full refund up to ${(() => {
+                        const h = packageData.vendor.vendorProfile.refundPeriodHours;
+                        if (h === 0) return 'any time';
+                        if (h < 24) return `${h} hours`;
+                        const d = Number((h / 24).toFixed(1).replace(/\.0$/, ''));
+                        return `${d} days`;
+                      })()} before the event`}
+                </Text>
+              </View>
+            </View>
           )}
 
           {/* Vendor Name */}
@@ -1822,26 +1892,20 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 
       {/* Write Review Modal */}
       {packageData?.service && (
-        <Modal
+        <WriteReview
           visible={showWriteReviewModal}
-          animationType="slide"
-          transparent={true}
-          onRequestClose={() => setShowWriteReviewModal(false)}
-        >
-          <WriteReview
-            bookingId={userBookingId || ''}
-            serviceId={packageData.service._id}
-            serviceName={displayName}
-            initialRating={userReview?.rating || 0}
-            initialComment={userReview?.comment || ''}
-            oldReviewId={userReview?._id}
-            onBack={() => setShowWriteReviewModal(false)}
-            onSuccess={() => {
-              setShowWriteReviewModal(false);
-              refetchReviews();
-            }}
-          />
-        </Modal>
+          bookingId={userBookingId || ''}
+          serviceId={packageData.service._id}
+          serviceName={displayName}
+          initialRating={userReview?.rating || 0}
+          initialComment={userReview?.comment || ''}
+          oldReviewId={userReview?._id}
+          onBack={() => setShowWriteReviewModal(false)}
+          onSuccess={() => {
+            setShowWriteReviewModal(false);
+            refetchReviews();
+          }}
+        />
       )}
 
       {/* Bottom Action Buttons */}

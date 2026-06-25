@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, Modal, ScrollView, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, Modal } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { styles } from './DateSelectorStyles';
+import { colors } from '../../constants/colors';
 
 interface DateSelectorProps {
   visible: boolean;
@@ -11,8 +13,6 @@ interface DateSelectorProps {
   allowPastDates?: boolean;
 }
 
-const ITEM_HEIGHT = 44; // Height of each row in the wheel picker
-
 const DateSelector: React.FC<DateSelectorProps> = ({
   visible,
   onClose,
@@ -21,116 +21,101 @@ const DateSelector: React.FC<DateSelectorProps> = ({
   allowPastDates = false,
 }) => {
   const { isRTL } = useLanguage();
-  const [date, setDate] = useState<Date>(selectedDate || new Date());
-  
-  const [selectedMonth, setSelectedMonth] = useState(date.getMonth());
-  const [selectedDay, setSelectedDay] = useState(date.getDate());
-  const [selectedYear, setSelectedYear] = useState(date.getFullYear());
 
-  const monthRef = useRef<ScrollView>(null);
-  const dayRef = useRef<ScrollView>(null);
+  // Local state for viewed month/year in the calendar view
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
-  const monthNames = isRTL
-    ? [
-        'يناير',
-        'فبراير',
-        'مارس',
-        'أبريل',
-        'مايو',
-        'يونيو',
-        'يوليو',
-        'أغسطس',
-        'سبتمبر',
-        'أكتوبر',
-        'نوفمبر',
-        'ديسمبر',
-      ]
-    : [
-        'Jan',
-        'Feb',
-        'Mar',
-        'Apr',
-        'May',
-        'Jun',
-        'Jul',
-        'Aug',
-        'Sep',
-        'Oct',
-        'Nov',
-        'Dec',
-      ];
+  // Local state for selected date inside the modal
+  const [tempSelectedDate, setTempSelectedDate] = useState<Date>(new Date());
 
-  const getDaysInMonth = (year: number, month: number) => {
-    return new Date(year, month + 1, 0).getDate();
-  };
-
-  const daysCount = getDaysInMonth(selectedYear, selectedMonth);
-  const days = Array.from({ length: daysCount }, (_, i) => i + 1);
-
-  // Sync state and scroll position when visible changes
+  // Sync state when modal becomes visible
   useEffect(() => {
     if (visible) {
       const initialDate = selectedDate || new Date();
-      setDate(initialDate);
-      setSelectedMonth(initialDate.getMonth());
-      setSelectedDay(initialDate.getDate());
-      setSelectedYear(initialDate.getFullYear());
-
-      // Scroll to initial values with a small delay for layout
-      setTimeout(() => {
-        const monthIdx = initialDate.getMonth();
-        const dayIdx = initialDate.getDate() - 1;
-
-        monthRef.current?.scrollTo({ y: monthIdx * ITEM_HEIGHT, animated: false });
-        dayRef.current?.scrollTo({ y: dayIdx * ITEM_HEIGHT, animated: false });
-      }, 120);
+      setTempSelectedDate(initialDate);
+      setCurrentMonth(initialDate.getMonth());
+      setCurrentYear(initialDate.getFullYear());
     }
   }, [visible, selectedDate]);
 
-  // Adjust selected day if it exceeds the maximum days in the new month
-  const handleMonthSelect = (monthIdx: number) => {
-    setSelectedMonth(monthIdx);
-    const maxDays = getDaysInMonth(selectedYear, monthIdx);
-    if (selectedDay > maxDays) {
-      setSelectedDay(maxDays);
-      dayRef.current?.scrollTo({ y: (maxDays - 1) * ITEM_HEIGHT, animated: true });
+  const handlePrevMonth = () => {
+    if (currentMonth === 0) {
+      setCurrentMonth(11);
+      setCurrentYear(prev => prev - 1);
+    } else {
+      setCurrentMonth(prev => prev - 1);
     }
   };
 
-  const handleScroll = (type: 'month' | 'day', offsetY: number) => {
-    const index = Math.round(offsetY / ITEM_HEIGHT);
-    if (type === 'month') {
-      const val = Math.max(0, Math.min(11, index));
-      handleMonthSelect(val);
-    } else if (type === 'day') {
-      const maxDays = getDaysInMonth(selectedYear, selectedMonth);
-      const val = Math.max(1, Math.min(maxDays, index + 1));
-      setSelectedDay(val);
+  const handleNextMonth = () => {
+    if (currentMonth === 11) {
+      setCurrentMonth(0);
+      setCurrentYear(prev => prev + 1);
+    } else {
+      setCurrentMonth(prev => prev + 1);
     }
   };
 
-  const handleScrollEnd = (type: 'month' | 'day', e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    handleScroll(type, e.nativeEvent.contentOffset.y);
+  const monthNamesEn = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  const monthNamesAr = [
+    'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+    'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+  ];
+  const monthNames = isRTL ? monthNamesAr : monthNamesEn;
+
+  const weekdaysEn = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  const weekdaysAr = ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'];
+  const weekdays = isRTL ? weekdaysAr : weekdaysEn;
+
+  // Calculate days in the current viewed month
+  const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
+  const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+  const handleDaySelect = (dayNum: number) => {
+    const newDate = new Date(currentYear, currentMonth, dayNum);
+    setTempSelectedDate(newDate);
+  };
+
+  const isSelected = (dayNum: number) => {
+    return (
+      tempSelectedDate.getDate() === dayNum &&
+      tempSelectedDate.getMonth() === currentMonth &&
+      tempSelectedDate.getFullYear() === currentYear
+    );
+  };
+
+  const isToday = (dayNum: number) => {
+    const today = new Date();
+    return (
+      today.getDate() === dayNum &&
+      today.getMonth() === currentMonth &&
+      today.getFullYear() === currentYear
+    );
+  };
+
+  const isPast = (dayNum: number) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dateToCheck = new Date(currentYear, currentMonth, dayNum);
+    dateToCheck.setHours(0, 0, 0, 0);
+    return dateToCheck < today;
+  };
+
+  const isPrevDisabled = () => {
+    if (allowPastDates) return false;
+    const today = new Date();
+    return (
+      currentYear <= today.getFullYear() &&
+      currentMonth <= today.getMonth()
+    );
   };
 
   const handleOK = () => {
-    // Generate final selected date
-    const finalDate = new Date(selectedYear, selectedMonth, selectedDay);
-    
-    // If past dates are not allowed and selected date is before today, default to today
-    if (!allowPastDates) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const testDate = new Date(finalDate);
-      testDate.setHours(0, 0, 0, 0);
-      if (testDate < today) {
-        onSelect(new Date());
-        onClose();
-        return;
-      }
-    }
-
-    onSelect(finalDate);
+    onSelect(tempSelectedDate);
     onClose();
   };
 
@@ -138,29 +123,25 @@ const DateSelector: React.FC<DateSelectorProps> = ({
     onClose();
   };
 
-  if (!visible) {
-    return null;
+  const getHeaderDateString = () => {
+    const daysWeekAr = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    const daysWeekEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const weekDay = isRTL ? daysWeekAr[tempSelectedDate.getDay()] : daysWeekEn[tempSelectedDate.getDay()];
+    const month = monthNames[tempSelectedDate.getMonth()];
+    const day = tempSelectedDate.getDate();
+    return isRTL ? `${weekDay}، ${day} ${month}` : `${weekDay}, ${month} ${day}`;
+  };
+
+  // Build grid items (offset empty cells + active day cells)
+  const gridCells = [];
+  // Empty space offset
+  for (let i = 0; i < firstDayIndex; i++) {
+    gridCells.push({ type: 'empty', val: i });
   }
-
-  // Header display name
-  const weekDayName = isRTL
-    ? ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'][
-        new Date(selectedYear, selectedMonth, selectedDay).getDay()
-      ]
-    : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][
-        new Date(selectedYear, selectedMonth, selectedDay).getDay()
-      ];
-
-  const monthName = monthNames[selectedMonth];
-
-  // Formatted date string for header
-  const headerDateStr = isRTL
-    ? `${weekDayName}، ${selectedDay} ${monthName}`
-    : `${weekDayName}, ${monthName} ${selectedDay}`;
-
-  // Pad arrays with empty values at start/end so middle item snaps in the selection bar
-  const paddedMonths = ['', '', ...monthNames.map((_, i) => i), '', ''];
-  const paddedDays = ['', '', ...days, '', ''];
+  // Days of month
+  for (let i = 1; i <= totalDays; i++) {
+    gridCells.push({ type: 'day', val: i });
+  }
 
   return (
     <Modal
@@ -171,103 +152,103 @@ const DateSelector: React.FC<DateSelectorProps> = ({
     >
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
-          {/* Header with Title and Selected Date */}
+          {/* Header */}
           <View style={styles.dateHeader}>
             <Text style={styles.titleText}>{isRTL ? 'اختر التاريخ' : 'Select Date'}</Text>
-            <Text style={styles.selectedDateText}>{headerDateStr}</Text>
+            <Text style={styles.selectedDateText}>{getHeaderDateString()}</Text>
           </View>
 
-          {/* Wheel Picker Container */}
-          <View style={styles.pickerContainer}>
-            {/* The Selection highlight bar */}
-            <View style={styles.selectionBar} pointerEvents="none" />
+          {/* Month Navigator */}
+          <View style={[styles.monthHeader, isRTL && { flexDirection: 'row-reverse' }]}>
+            <TouchableOpacity
+              onPress={handlePrevMonth}
+              disabled={isPrevDisabled()}
+              style={[styles.arrowButton, isPrevDisabled() && styles.disabledArrowButton]}
+              activeOpacity={0.7}
+            >
+              <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d={isRTL ? "M9 5l7 7-7 7" : "M15 19l-7-7 7-7"}
+                  stroke={isPrevDisabled() ? "#CBD5E1" : colors.primary || "#00a19c"}
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
+            </TouchableOpacity>
 
-            {/* Months Scroll Column */}
-            <View style={styles.columnWrapper}>
-              <ScrollView
-                ref={monthRef}
-                showsVerticalScrollIndicator={false}
-                snapToInterval={ITEM_HEIGHT}
-                snapToAlignment="center"
-                decelerationRate="fast"
-                scrollEventThrottle={16}
-                onMomentumScrollEnd={(e) => handleScrollEnd('month', e)}
-                onScrollEndDrag={(e) => handleScrollEnd('month', e)}
-              >
-                {paddedMonths.map((item, index) => {
-                  const isMonth = typeof item === 'number';
-                  const isSelected = isMonth && item === selectedMonth;
-                  return (
-                    <TouchableOpacity
-                      key={index}
-                      style={styles.itemWrapper}
-                      activeOpacity={0.7}
-                      disabled={!isMonth}
-                      onPress={() => {
-                        if (isMonth) {
-                          handleMonthSelect(item);
-                          monthRef.current?.scrollTo({ y: item * ITEM_HEIGHT, animated: true });
-                        }
-                      }}
+            <Text style={styles.monthHeaderText}>
+              {`${monthNames[currentMonth]} ${currentYear}`}
+            </Text>
+
+            <TouchableOpacity
+              onPress={handleNextMonth}
+              style={styles.arrowButton}
+              activeOpacity={0.7}
+            >
+              <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d={isRTL ? "M15 19l-7-7 7-7" : "M9 5l7 7-7 7"}
+                  stroke={colors.primary || "#00a19c"}
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
+            </TouchableOpacity>
+          </View>
+
+          {/* Weekday Labels */}
+          <View style={[styles.weekdaysRow, isRTL && { flexDirection: 'row-reverse' }]}>
+            {weekdays.map((wd, i) => (
+              <View key={i} style={styles.weekdayCol}>
+                <Text style={styles.weekdayText}>{wd}</Text>
+              </View>
+            ))}
+          </View>
+
+          {/* Days Grid */}
+          <View style={[styles.daysGrid, isRTL && { flexDirection: 'row-reverse' }]}>
+            {gridCells.map((cell, idx) => {
+              if (cell.type === 'empty') {
+                return <View key={`empty-${idx}`} style={styles.dayCell} />;
+              }
+
+              const dayVal = cell.val;
+              const selected = isSelected(dayVal);
+              const today = isToday(dayVal);
+              const past = isPast(dayVal);
+              const disabled = !allowPastDates && past;
+
+              return (
+                <TouchableOpacity
+                  key={`day-${dayVal}`}
+                  onPress={() => handleDaySelect(dayVal)}
+                  disabled={disabled}
+                  style={styles.dayCell}
+                  activeOpacity={0.8}
+                >
+                  <View
+                    style={[
+                      styles.dayCellBg,
+                      selected && styles.selectedDayCellBg,
+                      today && !selected && styles.todayDayCellBg,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.dayText,
+                        selected && styles.selectedDayText,
+                        disabled && styles.disabledDayText,
+                        today && !selected && styles.todayDayText,
+                      ]}
                     >
-                      <Text
-                        style={[
-                          styles.itemText,
-                          isSelected && styles.selectedItemText,
-                        ]}
-                      >
-                        {isMonth ? monthNames[item] : ''}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
-
-            {/* Divider line */}
-            <View style={styles.columnDivider} />
-
-            {/* Days Scroll Column */}
-            <View style={styles.columnWrapper}>
-              <ScrollView
-                ref={dayRef}
-                showsVerticalScrollIndicator={false}
-                snapToInterval={ITEM_HEIGHT}
-                snapToAlignment="center"
-                decelerationRate="fast"
-                scrollEventThrottle={16}
-                onMomentumScrollEnd={(e) => handleScrollEnd('day', e)}
-                onScrollEndDrag={(e) => handleScrollEnd('day', e)}
-              >
-                {paddedDays.map((item, index) => {
-                  const isDay = typeof item === 'number';
-                  const isSelected = isDay && item === selectedDay;
-                  return (
-                    <TouchableOpacity
-                      key={index}
-                      style={styles.itemWrapper}
-                      activeOpacity={0.7}
-                      disabled={!isDay}
-                      onPress={() => {
-                        if (isDay) {
-                          setSelectedDay(item);
-                          dayRef.current?.scrollTo({ y: (item - 1) * ITEM_HEIGHT, animated: true });
-                        }
-                      }}
-                    >
-                      <Text
-                        style={[
-                          styles.itemText,
-                          isSelected && styles.selectedItemText,
-                        ]}
-                      >
-                        {isDay ? String(item) : ''}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
+                      {dayVal}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
           </View>
 
           {/* Action Buttons */}

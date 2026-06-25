@@ -560,6 +560,7 @@ export interface VendorInfo {
   vendorProfile?: {
     businessName?: string;
     businessName_ar?: string;
+    refundPeriodHours?: number;
   };
 }
 
@@ -611,6 +612,15 @@ export interface Booking {
     referenceId?: string;
   };
   review?: any;
+  cancellationRequest?: {
+    status: 'requested' | 'approved' | 'rejected';
+    reason: string;
+    customerRefundAmount?: number;
+    vendorDeductionPercent?: number;
+    adminNote?: string;
+    createdAt?: string;
+    updatedAt?: string;
+  };
   createdAt: string;
   updatedAt?: string;
   __v: number;
@@ -1264,4 +1274,39 @@ export const submitVendorApplication = async (
     throw error;
   }
 };
+
+
+/**
+ * Request cancellation for a paid booking
+ */
+export const requestBookingCancellation = async (
+  token: string,
+  bookingId: string,
+  reason: string,
+): Promise<{ success: boolean; eligibility?: any; error?: string }> => {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/bookings/${bookingId}/cancellation-request`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reason }),
+      },
+    );
+
+    const responseData = await parseJsonResponse(response);
+
+    if (!response.ok) {
+      throw new Error(responseData?.error || 'Failed to submit cancellation request');
+    }
+
+    return responseData;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
 

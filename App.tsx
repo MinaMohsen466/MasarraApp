@@ -38,6 +38,7 @@ import SplashScreen from "./src/components/SplashScreen";
 import About from "./src/components/About";
 import Terms from "./src/components/Terms";
 import Privacy from "./src/components/Privacy";
+import RefundPolicy from "./src/components/RefundPolicy";
 import Addresses from "./src/components/Addresses";
 import Search from "./src/screens/Search";
 import Contact from "./src/screens/Contact";
@@ -663,6 +664,8 @@ function AppContent() {
         return <Terms onBack={handleBack} />;
       case 'privacy':
         return <Privacy onBack={handleBack} />;
+      case 'refund':
+        return <RefundPolicy onBack={handleBack} />;
       case 'become-seller':
         return <BecomeSeller onBack={handleBack} />;
       default:
@@ -670,10 +673,10 @@ function AppContent() {
     }
   };
 
-  const routesWithoutHeader = ['home', 'occasions', 'packages', 'categories', 'services', 'vendors', 'vendor-services', 'occasion-services', 'service-details', 'package-details', 'cart', 'about', 'terms', 'privacy', 'contact', 'profile', 'addresses', 'search', 'auth', 'become-seller'];
+  const routesWithoutHeader = ['home', 'occasions', 'packages', 'categories', 'services', 'vendors', 'vendor-services', 'occasion-services', 'service-details', 'package-details', 'cart', 'about', 'terms', 'privacy', 'refund', 'contact', 'profile', 'addresses', 'search', 'auth', 'become-seller'];
   const shouldShowHeader = !routesWithoutHeader.includes(currentRoute);
 
-  const routesWithoutSafeArea = ['about', 'terms', 'privacy', 'contact', 'service-details', 'package-details', 'cart', 'profile', 'search', 'addresses', 'auth', 'become-seller'];
+  const routesWithoutSafeArea = ['about', 'terms', 'privacy', 'refund', 'contact', 'service-details', 'package-details', 'cart', 'profile', 'search', 'addresses', 'auth', 'become-seller'];
   const shouldRenderWithoutSafeArea = routesWithoutSafeArea.includes(currentRoute);
 
   const isBannerVisible = siteSettings?.bannerEnabled && !isBannerDismissed;

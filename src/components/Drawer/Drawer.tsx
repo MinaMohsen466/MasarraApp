@@ -109,6 +109,8 @@ const getMenuItemIcon = (id: string, color: string, size: number) => {
           />
         </Svg>
       );
+    case 'policies':
+    case 'refund':
     case 'terms':
       return (
         <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -229,16 +231,17 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
   const closeButtonSize = isSmallScreen ? 22 : isMediumScreen ? 24 : 26;
 
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
+  const [showPoliciesDropdown, setShowPoliciesDropdown] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // Auto scroll to the end of the menu when language dropdown is opened to prevent vertical clipping
+  // Auto scroll to the end of the menu when dropdown is opened to prevent vertical clipping
   useEffect(() => {
-    if (showLanguageDropdown) {
+    if (showLanguageDropdown || showPoliciesDropdown) {
       setTimeout(() => {
         scrollViewRef.current?.scrollToEnd({ animated: true });
       }, 120);
     }
-  }, [showLanguageDropdown]);
+  }, [showLanguageDropdown, showPoliciesDropdown]);
 
   // Animation value for sliding drawer using actual drawerWidth
   const slideAnim = useRef(
@@ -249,6 +252,7 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
   useEffect(() => {
     if (!isVisible) {
       setShowLanguageDropdown(false);
+      setShowPoliciesDropdown(false);
     }
   }, [isVisible]);
 
@@ -281,12 +285,11 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
     { id: 'home', titleKey: 'home', route: 'Home' },
     { id: 'occasions', titleKey: 'occasions', route: 'Occasions' },
     { id: 'packages', titleKey: 'packages', route: 'Packages' },
-    { id: 'about', titleKey: 'aboutUs', route: 'About' },
     { id: 'account', titleKey: 'myAccount', route: 'Account' },
-    { id: 'terms', titleKey: 'termsConditions', route: 'Terms' },
-    { id: 'privacy', titleKey: 'privacyPolicy', route: 'Privacy' },
-    { id: 'contact', titleKey: 'contact', route: 'contact' },
     { id: 'settings', titleKey: 'settings', route: 'Settings' },
+    { id: 'contact', titleKey: 'contact', route: 'contact' },
+    { id: 'about', titleKey: 'aboutUs', route: 'About' },
+    { id: 'policies', titleKey: 'policiesTerms', route: 'Policies' },
     {
       id: 'language',
       titleKey: language === 'en' ? 'switchToArabic' : 'switchToEnglish',
@@ -421,6 +424,140 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
                   ]}
                 >
                   {menuItems.map(item => {
+                    if (item.id === 'policies') {
+                      return (
+                        <View key="policies-group" style={styles.languageGroupContainer}>
+                          {/* Main Policies Toggle Item */}
+                          <TouchableOpacity
+                            style={[
+                              styles.menuItem,
+                              isRTL && styles.menuItemRTL,
+                            ]}
+                            onPress={() => {
+                              const nextState = !showPoliciesDropdown;
+                              setShowPoliciesDropdown(nextState);
+                              if (nextState) {
+                                setShowLanguageDropdown(false);
+                              }
+                            }}
+                            activeOpacity={0.6}
+                          >
+                            <View
+                              style={[
+                                styles.menuIconContainer,
+                                isRTL && styles.menuIconContainerRTL,
+                              ]}
+                            >
+                              {getMenuItemIcon('policies', colors.primary, iconSize)}
+                            </View>
+
+                            <Text
+                              style={[
+                                styles.menuItemText,
+                                isRTL && styles.menuItemTextRTL,
+                              ]}
+                            >
+                              {t('policiesTerms')}
+                            </Text>
+
+                            <View style={styles.menuChevronContainer}>
+                              <Svg
+                                width={14}
+                                height={14}
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                style={{
+                                  transform: [
+                                    {
+                                      rotate: showPoliciesDropdown
+                                        ? '180deg'
+                                        : '0deg',
+                                    },
+                                  ],
+                                }}
+                              >
+                                <Path
+                                  d="M6 9l6 6 6-6"
+                                  stroke={colors.textLight}
+                                  strokeWidth={2}
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </Svg>
+                            </View>
+                          </TouchableOpacity>
+
+                          {/* Policies Options Dropdown */}
+                          {showPoliciesDropdown && (
+                            <View style={styles.dropdownContainer}>
+                              {/* Terms & Conditions */}
+                              <TouchableOpacity
+                                style={[
+                                  styles.subMenuItem,
+                                  isRTL && styles.subMenuItemRTL,
+                                ]}
+                                onPress={() =>
+                                  handleMenuItemPress('Terms', 'termsConditions', 'terms')
+                                }
+                                activeOpacity={0.6}
+                              >
+                                <Text
+                                  style={[
+                                    styles.subMenuItemText,
+                                    isRTL && styles.subMenuItemTextRTL,
+                                  ]}
+                                >
+                                  {t('termsConditions')}
+                                </Text>
+                              </TouchableOpacity>
+
+                              {/* Privacy Policy */}
+                              <TouchableOpacity
+                                style={[
+                                  styles.subMenuItem,
+                                  isRTL && styles.subMenuItemRTL,
+                                ]}
+                                onPress={() =>
+                                  handleMenuItemPress('Privacy', 'privacyPolicy', 'privacy')
+                                }
+                                activeOpacity={0.6}
+                              >
+                                <Text
+                                  style={[
+                                    styles.subMenuItemText,
+                                    isRTL && styles.subMenuItemTextRTL,
+                                  ]}
+                                >
+                                  {t('privacyPolicy')}
+                                </Text>
+                              </TouchableOpacity>
+
+                              {/* Refund Policy */}
+                              <TouchableOpacity
+                                style={[
+                                  styles.subMenuItem,
+                                  isRTL && styles.subMenuItemRTL,
+                                ]}
+                                onPress={() =>
+                                  handleMenuItemPress('Refund', 'refundPolicy', 'refund')
+                                }
+                                activeOpacity={0.6}
+                              >
+                                <Text
+                                  style={[
+                                    styles.subMenuItemText,
+                                    isRTL && styles.subMenuItemTextRTL,
+                                  ]}
+                                >
+                                  {t('refundPolicy')}
+                                </Text>
+                              </TouchableOpacity>
+                            </View>
+                          )}
+                        </View>
+                      );
+                    }
+
                     if (item.id === 'language') {
                       const languageLabel = isRTL ? 'اللغة' : 'Language';
                       const activeLanguageName =
@@ -439,9 +576,13 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
                               styles.menuItem,
                               isRTL && styles.menuItemRTL,
                             ]}
-                            onPress={() =>
-                              setShowLanguageDropdown(!showLanguageDropdown)
-                            }
+                            onPress={() => {
+                              const nextState = !showLanguageDropdown;
+                              setShowLanguageDropdown(nextState);
+                              if (nextState) {
+                                setShowPoliciesDropdown(false);
+                              }
+                            }}
                             activeOpacity={0.6}
                           >
                             <View

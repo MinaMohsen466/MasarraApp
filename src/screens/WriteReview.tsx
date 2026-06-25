@@ -7,21 +7,17 @@ import {
   ScrollView,
   ActivityIndicator,
   StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '../contexts/LanguageContext';
 import { createReview, deleteReview } from '../services/reviewsApi';
 import { colors } from '../constants/colors';
 import { CustomAlert } from '../components/CustomAlert/CustomAlert';
+import { BottomSheet } from '../components/common/BottomSheet';
 
 interface WriteReviewProps {
+  visible: boolean;
   bookingId: string;
   serviceId: string;
   serviceName: string;
@@ -33,6 +29,7 @@ interface WriteReviewProps {
 }
 
 const WriteReview: React.FC<WriteReviewProps> = ({
+  visible,
   bookingId,
   serviceId,
   serviceName,
@@ -43,7 +40,6 @@ const WriteReview: React.FC<WriteReviewProps> = ({
   onSuccess,
 }) => {
   const { isRTL } = useLanguage();
-  const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const [rating, setRating] = useState(initialRating || 0);
   const [comment, setComment] = useState(initialComment || '');
@@ -176,41 +172,11 @@ const WriteReview: React.FC<WriteReviewProps> = ({
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={styles.overlay}
-    >
-      <TouchableOpacity
-        style={styles.backdrop}
-        activeOpacity={1}
-        onPress={onBack}
-      />
-      <View
-        style={[
-          styles.sheetContainer,
-          { paddingBottom: Math.max(insets.bottom, 16) },
-        ]}
-      >
+    <BottomSheet visible={visible} onClose={onBack || (() => {})}>
+      <View style={styles.container}>
         {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Svg
-              width={24}
-              height={24}
-              viewBox="0 0 24 24"
-              fill="none"
-              style={!isRTL && { transform: [{ rotate: '180deg' }] }}
-            >
-              <Path
-                d={isRTL ? 'M15 18l-6-6 6-6' : 'M9 18l6-6-6-6'}
-                stroke={colors.primary}
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </Svg>
-          </TouchableOpacity>
-          <View style={styles.headerTitleContainer}>
+        <View style={[styles.header, isRTL && styles.headerRTL]}>
+          <View style={[styles.headerTitleContainer, isRTL && styles.headerTitleContainerRTL]}>
             <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
               {isRTL ? 'تقييم الخدمة' : 'Rate Service'}
             </Text>
@@ -221,7 +187,9 @@ const WriteReview: React.FC<WriteReviewProps> = ({
               {serviceName}
             </Text>
           </View>
-          <View style={styles.placeholder} />
+          <TouchableOpacity onPress={onBack} style={styles.closeButton}>
+            <Text style={styles.closeButtonText}>✕</Text>
+          </TouchableOpacity>
         </View>
 
         <ScrollView
@@ -300,62 +268,61 @@ const WriteReview: React.FC<WriteReviewProps> = ({
         buttons={alertConfig.buttons}
         onClose={() => setAlertConfig({ ...alertConfig, visible: false })}
       />
-    </KeyboardAvoidingView>
+    </BottomSheet>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  sheetContainer: {
-    backgroundColor: '#FFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    height: 480,
+  container: {
     width: '100%',
-    paddingTop: 8,
+    height: 480,
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: '#E2E8F0',
   },
-  backButton: {
-    padding: 8,
+  headerRTL: {
+    flexDirection: 'row-reverse',
   },
   headerTitleContainer: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
+  headerTitleContainerRTL: {
+    alignItems: 'flex-end',
   },
   headerTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: colors.textPrimary,
+    fontWeight: '700',
+    color: colors.textDark,
   },
   headerTitleRTL: {
     fontFamily: 'Arial',
+    textAlign: 'right',
   },
   headerSubtitle: {
     fontSize: 12,
-    color: '#888',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   headerSubtitleRTL: {
     fontFamily: 'Arial',
+    textAlign: 'right',
   },
-  placeholder: {
-    width: 40,
+  closeButton: {
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    fontSize: 24,
+    color: colors.textSecondary,
   },
   content: {
     flex: 1,

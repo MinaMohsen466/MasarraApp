@@ -34,6 +34,12 @@ const fetchPrivacySettings = async () => {
   return response.json();
 };
 
+const fetchRefundSettings = async () => {
+  const response = await fetch(`${API_URL}/settings/refund`);
+  if (!response.ok) throw new Error('Failed to fetch refund settings');
+  return response.json();
+};
+
 export const useAboutSettings = () => {
   return useQuery({
     queryKey: ['aboutSettings'],
@@ -60,3 +66,13 @@ export const usePrivacySettings = () => {
     gcTime: 15 * 60 * 1000,
   });
 };
+
+export const useRefundSettings = () => {
+  return useQuery({
+    queryKey: ['refundSettings'],
+    queryFn: fetchRefundSettings,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+  });
+};
+

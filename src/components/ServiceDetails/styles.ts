@@ -819,26 +819,6 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       letterSpacing: 0.3,
     },
 
-    /* Pending Confirmation Notice */
-    pendingConfirmationContainer: {
-      backgroundColor: colors.backgroundCard,
-      borderRadius: 8,
-      padding: 16,
-      marginBottom: 12,
-      borderLeftWidth: 3,
-      borderLeftColor: colors.primary,
-    },
-    pendingConfirmationTitle: {
-      fontSize: 15,
-      fontWeight: '700',
-      color: colors.primary,
-      marginBottom: 4,
-    },
-    pendingConfirmationText: {
-      fontSize: 13,
-      color: colors.textSecondary,
-      lineHeight: 18,
-    },
 
     /* Delivery Fee */
     deliveryFeeText: {

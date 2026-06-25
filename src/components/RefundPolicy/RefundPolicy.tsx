@@ -3,8 +3,8 @@ import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   ActivityIndicator,
+  TouchableOpacity,
   StatusBar,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,16 +12,16 @@ import Svg, { Path } from 'react-native-svg';
 import { styles } from './styles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { useAboutSettings } from '../../hooks/useSiteSettings';
+import { useRefundSettings } from '../../hooks/useSiteSettings';
 
-interface AboutProps {
+interface RefundPolicyProps {
   onBack?: () => void;
 }
 
-const About: React.FC<AboutProps> = ({ onBack }) => {
+const RefundPolicy: React.FC<RefundPolicyProps> = ({ onBack }) => {
   const { isRTL, language } = useLanguage();
   const insets = useSafeAreaInsets();
-  const { data: aboutData, isLoading, error } = useAboutSettings();
+  const { data: refundData, isLoading, error } = useRefundSettings();
 
   // Show loading state
   if (isLoading) {
@@ -61,7 +61,7 @@ const About: React.FC<AboutProps> = ({ onBack }) => {
 
   // Get content based on language
   const content =
-    language === 'ar' ? aboutData?.contentAr : aboutData?.contentEn;
+    language === 'ar' ? refundData?.contentAr : refundData?.contentEn;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.backgroundLight }}>
@@ -105,12 +105,14 @@ const About: React.FC<AboutProps> = ({ onBack }) => {
 
             {/* Title */}
             <Text style={[styles.heroTitle, isRTL && styles.heroTitleRTL]}>
-              {isRTL ? 'عن التطبيق' : 'ABOUT'}
+              {isRTL ? 'سياسة الاسترجاع' : 'RETURN POLICY'}
             </Text>
 
             {/* Subtitle */}
             <Text style={styles.heroSubtitle}>
-              {isRTL ? 'تعرف على المزيد عنا' : 'LEARN MORE ABOUT US'}
+              {isRTL
+                ? 'اقرأ سياسة الاسترجاع الخاصة بنا'
+                : 'READ OUR RETURN POLICY'}
             </Text>
           </View>
 
@@ -127,4 +129,4 @@ const About: React.FC<AboutProps> = ({ onBack }) => {
   );
 };
 
-export default About;
+export default RefundPolicy;

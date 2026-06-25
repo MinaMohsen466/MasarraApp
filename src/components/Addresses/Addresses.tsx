@@ -10,7 +10,6 @@ import {
   Platform,
   Keyboard,
   TouchableWithoutFeedback,
-  Modal,
   StatusBar,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -27,6 +26,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { CustomAlert } from '../CustomAlert/CustomAlert';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../constants/colors';
+import { BottomSheet } from '../common/BottomSheet';
 
 const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
   onBack,
@@ -602,20 +602,14 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
           </TouchableWithoutFeedback>
 
           {/* Form Modal */}
-          <Modal
+          <BottomSheet
             visible={showForm}
-            transparent={true}
-            animationType="slide"
-            onRequestClose={() => {
+            onClose={() => {
               setShowForm(false);
               setEditingId(null);
             }}
           >
-            <KeyboardAvoidingView
-              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-              style={styles.modalOverlay}
-            >
-              <View style={styles.modalContainer}>
+            <View style={{ width: '100%' }}>
                 <View style={[styles.modalHeader, isRTL && styles.modalHeaderRTL]}>
                   <Text style={styles.modalTitle}>
                     {isRTL
@@ -1013,8 +1007,7 @@ const Addresses: React.FC<{ onBack?: () => void; token?: string | null }> = ({
                   </TouchableOpacity>
                 </View>
               </View>
-            </KeyboardAvoidingView>
-          </Modal>
+            </BottomSheet>
         </KeyboardAvoidingView>
 
         <CustomAlert

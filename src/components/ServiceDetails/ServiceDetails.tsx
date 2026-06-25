@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import Svg, { Path } from 'react-native-svg';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -1498,7 +1499,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
           </Text>
 
           {/* Vendor Policy Section */}
-          {service.policies && service.policies.length > 0 && (
+          {((service.policies && service.policies.length > 0) || (service.vendor?.vendorProfile?.refundPeriodHours != null)) && (
             <View style={styles.policiesSection}>
               <Text
                 style={[styles.policiesTitle, isRTL && styles.policiesTitleRTL]}
@@ -1506,114 +1507,133 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                 {isRTL ? 'سياسة المورد' : 'VENDOR POLICY'}
               </Text>
 
-              <View style={styles.policiesGrid}>
-                {service.policies.map((policyItem: any, index: number) => {
-                  // Handle both old and new policy structure for backward compatibility
-                  const policy = policyItem.policy || policyItem;
-                  const policyName =
-                    isRTL && policy.nameAr ? policy.nameAr : policy.name;
+              {service.policies && service.policies.length > 0 && (
+                <View style={styles.policiesGrid}>
+                  {service.policies.map((policyItem: any, index: number) => {
+                    // Handle both old and new policy structure for backward compatibility
+                    const policy = policyItem.policy || policyItem;
+                    const policyName =
+                      isRTL && policy.nameAr ? policy.nameAr : policy.name;
 
-                  // Priority: customText > selectedDescription > first description
-                  const hasCustomText =
-                    policyItem.customText && policyItem.customText.trim();
-                  const hasCustomTextAr =
-                    policyItem.customTextAr && policyItem.customTextAr.trim();
-                  const selectedDescription = policyItem.selectedDescriptionId
-                    ? policy.descriptions?.find(
-                        (desc: any) =>
-                          desc._id === policyItem.selectedDescriptionId,
-                      )
-                    : null;
+                    // Priority: customText > selectedDescription > first description
+                    const hasCustomText =
+                      policyItem.customText && policyItem.customText.trim();
+                    const hasCustomTextAr =
+                      policyItem.customTextAr && policyItem.customTextAr.trim();
+                    const selectedDescription = policyItem.selectedDescriptionId
+                      ? policy.descriptions?.find(
+                          (desc: any) =>
+                            desc._id === policyItem.selectedDescriptionId,
+                        )
+                      : null;
 
-                  const description = hasCustomText
-                    ? isRTL && hasCustomTextAr
-                      ? policyItem.customTextAr
-                      : policyItem.customText
-                    : selectedDescription
-                    ? isRTL && selectedDescription.textAr
-                      ? selectedDescription.textAr
-                      : selectedDescription.text
-                    : policy.descriptions && policy.descriptions.length > 0
-                    ? isRTL
-                      ? policy.descriptions[0].textAr
-                      : policy.descriptions[0].text
-                    : isRTL && policy.descriptionAr
-                    ? policy.descriptionAr
-                    : policy.description || '';
+                    const description = hasCustomText
+                      ? isRTL && hasCustomTextAr
+                        ? policyItem.customTextAr
+                        : policyItem.customText
+                      : selectedDescription
+                      ? isRTL && selectedDescription.textAr
+                        ? selectedDescription.textAr
+                        : selectedDescription.text
+                      : policy.descriptions && policy.descriptions.length > 0
+                      ? isRTL
+                        ? policy.descriptions[0].textAr
+                        : policy.descriptions[0].text
+                      : isRTL && policy.descriptionAr
+                      ? policy.descriptionAr
+                      : policy.description || '';
 
-                  return (
-                    <View
-                      key={policy._id || index}
-                      style={[styles.policyCard, isRTL && styles.policyCardRTL]}
-                    >
+                    return (
                       <View
-                        style={[
-                          styles.policyIconContainer,
-                          isRTL && styles.policyIconContainerRTL,
-                        ]}
+                        key={policy._id || index}
+                        style={[styles.policyCard, isRTL && styles.policyCardRTL]}
                       >
-                        {policy.image ? (
-                          <Image
-                            source={{ uri: getImageUrl(policy.image) }}
-                            style={styles.policyIcon}
-                            resizeMode="contain"
-                          />
-                        ) : (
-                          <View style={styles.policyIconPlaceholder} />
-                        )}
-                      </View>
-                      <View style={styles.policyContent}>
-                        <Text
+                        <View
                           style={[
-                            styles.policyName,
-                            isRTL && styles.policyNameRTL,
+                            styles.policyIconContainer,
+                            isRTL && styles.policyIconContainerRTL,
                           ]}
                         >
-                          {policyName}
-                        </Text>
-                        {description ? (
+                          {policy.image ? (
+                            <Image
+                              source={{ uri: getImageUrl(policy.image) }}
+                              style={styles.policyIcon}
+                              resizeMode="contain"
+                            />
+                          ) : (
+                            <View style={styles.policyIconPlaceholder} />
+                          )}
+                        </View>
+                        <View style={styles.policyContent}>
                           <Text
                             style={[
-                              styles.policyDescription,
-                              isRTL && styles.policyDescriptionRTL,
+                              styles.policyName,
+                              isRTL && styles.policyNameRTL,
                             ]}
-                            numberOfLines={2}
-                            ellipsizeMode="tail"
                           >
-                            {description}
+                            {policyName}
                           </Text>
-                        ) : null}
+                          {description ? (
+                            <Text
+                              style={[
+                                styles.policyDescription,
+                                isRTL && styles.policyDescriptionRTL,
+                              ]}
+                              numberOfLines={2}
+                              ellipsizeMode="tail"
+                            >
+                              {description}
+                            </Text>
+                          ) : null}
+                        </View>
                       </View>
-                    </View>
-                  );
-                })}
-              </View>
+                    );
+                  })}
+                </View>
+              )}
+
+              {/* Vendor refund window policy */}
+              {service.vendor?.vendorProfile?.refundPeriodHours != null && (
+                <View
+                  style={{
+                    flexDirection: isRTL ? 'row-reverse' : 'row',
+                    alignItems: 'center',
+                    marginTop: service.policies && service.policies.length > 0 ? 16 : 0,
+                    paddingHorizontal: 20,
+                    gap: 12,
+                  }}
+                >
+                  <Icon name="time-outline" size={24} color={colors.primary} />
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: '600',
+                      color: '#0F172A',
+                      flex: 1,
+                      textAlign: isRTL ? 'right' : 'left',
+                    }}
+                  >
+                    {isRTL
+                      ? `استرداد كامل حتى ${(() => {
+                          const h = service.vendor.vendorProfile.refundPeriodHours;
+                          if (h === 0) return 'أي وقت';
+                          if (h < 24) return `${h} ساعة`;
+                          const d = Number((h / 24).toFixed(1).replace(/\.0$/, ''));
+                          return `${d} يوم`;
+                        })()} قبل المناسبة`
+                      : `Full refund up to ${(() => {
+                          const h = service.vendor.vendorProfile.refundPeriodHours;
+                          if (h === 0) return 'any time';
+                          if (h < 24) return `${h} hours`;
+                          const d = Number((h / 24).toFixed(1).replace(/\.0$/, ''));
+                          return `${d} days`;
+                        })()} before the event`}
+                  </Text>
+                </View>
+              )}
             </View>
           )}
 
-          {/* Pending Confirmation Notice */}
-          {service?.availabilityStatus === 'pending_confirmation' && (
-            <View style={styles.pendingConfirmationContainer}>
-              <Text
-                style={[
-                  styles.pendingConfirmationTitle,
-                  isRTL && styles.descriptionTextRTL,
-                ]}
-              >
-                {isRTL ? 'في انتظار التأكيد' : 'Pending Confirmation'}
-              </Text>
-              <Text
-                style={[
-                  styles.pendingConfirmationText,
-                  isRTL && styles.descriptionTextRTL,
-                ]}
-              >
-                {isRTL
-                  ? 'هذه الخدمة تتطلب تأكيد من المورد — الأوقات المتاحة المعروضة قد تكون مبدئية حتى يتم التأكيد.'
-                  : 'This service requires vendor confirmation — shown availability may be tentative until confirmed.'}
-              </Text>
-            </View>
-          )}
 
           {/* Booking / Availability preview under Vendor Policy */}
           <View style={styles.bookingContainer}>
@@ -2967,26 +2987,20 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
 
       {/* Write Review Modal */}
       {service && (
-        <Modal
+        <WriteReview
           visible={showWriteReviewModal}
-          animationType="slide"
-          transparent={true}
-          onRequestClose={() => setShowWriteReviewModal(false)}
-        >
-          <WriteReview
-            bookingId={userBookingId || ''}
-            serviceId={service._id}
-            serviceName={displayName}
-            initialRating={userReview?.rating || 0}
-            initialComment={userReview?.comment || ''}
-            oldReviewId={userReview?._id}
-            onBack={() => setShowWriteReviewModal(false)}
-            onSuccess={() => {
-              setShowWriteReviewModal(false);
-              refetchReviews();
-            }}
-          />
-        </Modal>
+          bookingId={userBookingId || ''}
+          serviceId={service._id}
+          serviceName={displayName}
+          initialRating={userReview?.rating || 0}
+          initialComment={userReview?.comment || ''}
+          oldReviewId={userReview?._id}
+          onBack={() => setShowWriteReviewModal(false)}
+          onSuccess={() => {
+            setShowWriteReviewModal(false);
+            refetchReviews();
+          }}
+        />
       )}
 
       {/* Flying Cart Icon Animation */}

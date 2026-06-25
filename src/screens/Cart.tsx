@@ -38,6 +38,7 @@ import { validateCoupon, Coupon } from '../services/couponApi';
 import { API_URL } from '../config/api.config';
 import PaymentWebView from '../components/PaymentWebView';
 import Terms from '../components/Terms';
+import RefundPolicy from '../components/RefundPolicy';
 import {
   sendPayment,
   getActiveSuppliers,
@@ -73,6 +74,7 @@ const Cart: React.FC<CartProps> = ({
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showRefundModal, setShowRefundModal] = useState(false);
   const [showAddressSelection, setShowAddressSelection] = useState(false);
   const [userToken, setUserToken] = useState<string>('');
   // Custom Alert state
@@ -2634,6 +2636,40 @@ const Cart: React.FC<CartProps> = ({
                     {isRTL ? 'الشروط والأحكام' : 'Terms & Conditions'}
                   </Text>
                 </TouchableOpacity>
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: '#666',
+                    lineHeight: 19,
+                  }}
+                >
+                  {isRTL ? ' و ' : ' and the '}
+                </Text>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => setShowRefundModal(true)}
+                >
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      color: colors.primary,
+                      fontWeight: '700',
+                      lineHeight: 19,
+                      textDecorationLine: 'underline',
+                    }}
+                  >
+                    {isRTL ? 'سياسة الاسترجاع' : 'Refund Policy'}
+                  </Text>
+                </TouchableOpacity>
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: '#666',
+                    lineHeight: 19,
+                  }}
+                >
+                  {isRTL ? ' الخاصة بـ مسرة' : ' of Masarra'}
+                </Text>
               </View>
             </View>
 
@@ -2703,6 +2739,17 @@ const Cart: React.FC<CartProps> = ({
         onRequestClose={() => setShowTermsModal(false)}
       >
         <Terms onBack={() => setShowTermsModal(false)} />
+      </Modal>
+
+      {/* Refund Policy Modal */}
+      <Modal
+        visible={showRefundModal}
+        animationType="slide"
+        transparent={false}
+        statusBarTranslucent={true}
+        onRequestClose={() => setShowRefundModal(false)}
+      >
+        <RefundPolicy onBack={() => setShowRefundModal(false)} />
       </Modal>
     </View>
   );

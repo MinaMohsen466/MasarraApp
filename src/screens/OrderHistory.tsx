@@ -10,6 +10,8 @@ import {
   RefreshControl,
   FlatList,
   Platform,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -18,7 +20,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const isTablet = SCREEN_WIDTH >= 600;
 import Svg, { Path, Polyline, Line, Rect, Circle } from 'react-native-svg';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { getUserDashboardBookings, Booking } from '../services/api';
+import { getUserDashboardBookings, Booking, requestBookingCancellation } from '../services/api';
 import { API_URL } from '../config/api.config';
 import { colors } from '../constants/colors';
 import {
@@ -57,11 +59,19 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
   );
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
   const [timeLeftMap, setTimeLeftMap] = useState<{ [key: string]: number }>({});
+  const [activeAlertBookingId, setActiveAlertBookingId] = useState<string | null>(null);
   const [cancellingBookings, setCancellingBookings] = useState<Set<string>>(
     new Set(),
   );
   const [payingBookings, setPayingBookings] = useState<Set<string>>(new Set());
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Cancellation Request State
+  const [cancellationModalVisible, setCancellationModalVisible] = useState(false);
+  const [selectedCancellationBooking, setSelectedCancellationBooking] = useState<Booking | null>(null);
+  const [cancellationReason, setCancellationReason] = useState('');
+  const [submittingCancellation, setSubmittingCancellation] = useState(false);
+  const [cancellationResult, setCancellationResult] = useState<any>(null);
 
   // CustomAlert state
   const [alertVisible, setAlertVisible] = useState(false);
@@ -239,6 +249,30 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
       });
 
       setTimeLeftMap(newTimeLeftMap);
+
+      // If active alert booking timer is ticking, update the alert message
+      if (activeAlertBookingId) {
+        const booking = bookings.find(b => b._id === activeAlertBookingId);
+        if (booking) {
+          const timeLeft = newTimeLeftMap[activeAlertBookingId];
+          if (timeLeft !== undefined && timeLeft > 0) {
+            const timeStr = formatTimeLeft(timeLeft);
+            setAlertMessage(
+              isRTL
+                ? `الطلب بانتظار سداد المبلغ. الوقت المتبقي للدفع: ${timeStr}`
+                : `Payment is pending. Time left to complete payment: ${timeStr}`
+            );
+          } else {
+            // Expired
+            setAlertTitle(isRTL ? 'انتهت مهلة الدفع' : 'Payment Expired');
+            setAlertMessage(
+              isRTL
+                ? 'لقد انتهت مهلة الدفع المحددة بـ 24 ساعة لهذا الطلب.'
+                : 'The 24-hour payment window for this booking has expired.'
+            );
+          }
+        }
+      }
     };
 
     updateTimers();
@@ -250,7 +284,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
         clearInterval(timerRef.current);
       }
     };
-  }, [bookings, calculateTimeLeft, getConfirmedPendingServices]);
+  }, [bookings, calculateTimeLeft, getConfirmedPendingServices, activeAlertBookingId, isRTL]);
 
   // Format time left as HH:MM:SS
   const formatTimeLeft = (ms: number): string => {
@@ -402,6 +436,46 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
       },
     ]);
     setAlertVisible(true);
+  };
+
+  // Submit cancellation request (paid bookings)
+  const handleSubmitCancellationRequest = async () => {
+    if (!selectedCancellationBooking || !cancellationReason.trim()) return;
+
+    try {
+      setSubmittingCancellation(true);
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) {
+        setAlertTitle(isRTL ? 'خطأ' : 'Error');
+        setAlertMessage(isRTL ? 'يرجى تسجيل الدخول' : 'Please login');
+        setAlertButtons([{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }]);
+        setAlertVisible(true);
+        return;
+      }
+
+      const res = await requestBookingCancellation(
+        token,
+        selectedCancellationBooking._id,
+        cancellationReason.trim(),
+      );
+
+      setCancellationResult(res);
+      // Reload bookings to update status in the background
+      loadBookings();
+    } catch (error: any) {
+      setCancellationResult({
+        error: error.message || (isRTL ? 'فشل إرسال طلب الإلغاء' : 'Failed to submit cancellation request'),
+      });
+    } finally {
+      setSubmittingCancellation(false);
+    }
+  };
+
+  const closeCancellationModal = () => {
+    setCancellationModalVisible(false);
+    setSelectedCancellationBooking(null);
+    setCancellationReason('');
+    setCancellationResult(null);
   };
 
   // Pay now - open payment link
@@ -672,6 +746,61 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
       setAlertTitle(isRTL ? 'خطأ' : 'Error');
       setAlertMessage(isRTL ? 'حدث خطأ' : 'An error occurred');
       setAlertButtons([{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }]);
+      setAlertVisible(true);
+    }
+  };
+
+  const handleShowStatusAlert = (booking: Booking) => {
+    const hasExpired = hasPaymentWindowExpired(booking);
+    const isPaymentPending = booking.paymentStatus === 'pending' && booking.totalPrice > 0;
+    const hasPendingPayment = getConfirmedPendingServices(booking).length > 0;
+    const bookingTimeLeft = timeLeftMap[booking._id];
+
+    let title = '';
+    let message = '';
+
+    if (booking.status === 'cancelled') {
+      return;
+    }
+
+    if (booking.cancellationRequest?.status === 'rejected') {
+      title = isRTL ? 'تم رفض طلب الإلغاء' : 'Cancellation Request Declined';
+      message = isRTL 
+        ? 'تم رفض طلب الإلغاء الخاص بك من قبل الإدارة.' 
+        : 'Your cancellation request was declined by the admin.';
+      if (booking.cancellationRequest.adminNote) {
+        message += `\n\n${isRTL ? 'ملاحظة الإدارة' : 'Admin note'}: ${booking.cancellationRequest.adminNote}`;
+      }
+    } else if (booking.cancellationRequest?.status === 'requested') {
+      title = isRTL ? 'طلب الإلغاء قيد المراجعة' : 'Cancellation Request Pending';
+      message = isRTL 
+        ? 'تم تقديم طلب الإلغاء بنجاح وهو قيد المراجعة حالياً من قبل الإدارة.' 
+        : 'Your cancellation request has been submitted and is currently under review by the administration.';
+    } else if (isPaymentPending && hasPendingPayment && bookingTimeLeft !== undefined && !hasExpired) {
+      title = isRTL ? 'الدفع معلق' : 'Payment Pending';
+      const timeStr = formatTimeLeft(bookingTimeLeft);
+      message = isRTL 
+        ? `الطلب بانتظار سداد المبلغ. الوقت المتبقي للدفع: ${timeStr}`
+        : `Payment is pending. Time left to complete payment: ${timeStr}`;
+    } else if (isPaymentPending && hasPendingPayment && hasExpired) {
+      title = isRTL ? 'انتهت مهلة الدفع' : 'Payment Expired';
+      message = isRTL 
+        ? 'لقد انتهت مهلة الدفع المحددة بـ 24 ساعة لهذا الطلب.'
+        : 'The 24-hour payment window for this booking has expired.';
+    } else if (booking.status === 'pending' && !hasExpired) {
+      title = isRTL ? 'في انتظار موافقة مقدم الخدمة' : 'Awaiting Vendor Confirmation';
+      message = isRTL 
+        ? 'الطلب بانتظار موافقة مقدم الخدمة لتأكيد حجزك.'
+        : 'Your booking request has been submitted and is awaiting confirmation from the vendor.';
+    }
+
+    if (title && message) {
+      setAlertTitle(title);
+      setAlertMessage(message);
+      setAlertButtons([{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }]);
+      if (isPaymentPending && hasPendingPayment && bookingTimeLeft !== undefined && !hasExpired) {
+        setActiveAlertBookingId(booking._id);
+      }
       setAlertVisible(true);
     }
   };
@@ -994,24 +1123,88 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
                         style={[
                           styles.itemsHeader,
                           isRTL && { flexDirection: 'row-reverse' },
-                          { gap: 6 },
+                          { justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: 10 },
                         ]}
                       >
-                        <Svg
-                          width={16}
-                          height={16}
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="#374151"
-                          strokeWidth={2}
-                        >
-                          <Path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                          <Polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-                          <Line x1="12" y1="22.08" x2="12" y2="12" />
-                        </Svg>
-                        <Text style={styles.itemsTitle}>
-                          {isRTL ? 'العناصر' : 'Items'}
-                        </Text>
+                        <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}>
+                          <Svg
+                            width={16}
+                            height={16}
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#374151"
+                            strokeWidth={2}
+                          >
+                            <Path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                            <Polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                            <Line x1="12" y1="22.08" x2="12" y2="12" />
+                          </Svg>
+                          <Text style={styles.itemsTitle}>
+                            {isRTL ? 'العناصر' : 'Items'}
+                          </Text>
+                        </View>
+
+                        {/* Alert Badge next to Items header */}
+                        {(() => {
+                          const hasExpired = hasPaymentWindowExpired(booking);
+                          const isPaymentPending = booking.paymentStatus === 'pending' && booking.totalPrice > 0;
+                          const hasPendingPayment = getConfirmedPendingServices(booking).length > 0;
+                          const bookingTimeLeft = timeLeftMap[booking._id];
+
+                          let iconName = '';
+                          let iconColor = '';
+                          let badgeBg = '';
+
+                          if (booking.status === 'cancelled') return null;
+
+                          if (booking.cancellationRequest?.status === 'rejected') {
+                            iconName = 'alert-circle';
+                            iconColor = '#EF4444';
+                            badgeBg = '#FEF2F2';
+                          } else if (booking.cancellationRequest?.status === 'requested') {
+                            iconName = 'hourglass';
+                            iconColor = '#F59E0B';
+                            badgeBg = '#FFFBEB';
+                          } else if (isPaymentPending && hasPendingPayment && bookingTimeLeft !== undefined && !hasExpired) {
+                            iconName = 'card';
+                            iconColor = '#F59E0B';
+                            badgeBg = '#FFFBEB';
+                          } else if (isPaymentPending && hasPendingPayment && hasExpired) {
+                            iconName = 'alert-circle';
+                            iconColor = '#EF4444';
+                            badgeBg = '#FEF2F2';
+                          } else if (booking.status === 'pending' && !hasExpired) {
+                            iconName = 'time';
+                            iconColor = '#2563EB';
+                            badgeBg = '#EFF6FF';
+                          }
+
+                          if (!iconName) return null;
+
+                          return (
+                            <TouchableOpacity
+                              onPress={() => handleShowStatusAlert(booking)}
+                              style={{
+                                flexDirection: isRTL ? 'row-reverse' : 'row',
+                                alignItems: 'center',
+                                backgroundColor: badgeBg,
+                                paddingHorizontal: 8,
+                                paddingVertical: 4,
+                                borderRadius: 6,
+                                borderWidth: 0.8,
+                                borderColor: iconColor + '30',
+                                gap: 4,
+                              }}
+                            >
+                              <Icon name={iconName} size={14} color={iconColor} />
+                              <Text style={{ fontSize: 11, fontWeight: '700', color: iconColor }}>
+                                {isPaymentPending && hasPendingPayment && bookingTimeLeft !== undefined && !hasExpired
+                                  ? formatTimeLeft(bookingTimeLeft)
+                                  : (isRTL ? 'تنبيه' : 'Alert')}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })()}
                       </View>
                     )}
 
@@ -1432,138 +1625,6 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
                       )}
                     </View>
 
-                    {/* Payment Pending Banner with Timer - Only for confirmed services that need payment */}
-                    {(() => {
-                      const isPaymentPending =
-                        booking.paymentStatus === 'pending' &&
-                        booking.totalPrice > 0;
-                      const hasPendingPayment =
-                        getConfirmedPendingServices(booking).length > 0;
-                      const hasExpired = hasPaymentWindowExpired(booking);
-                      const bookingTimeLeft = timeLeftMap[booking._id];
-
-                      return booking.status !== 'cancelled' &&
-                        !hasExpired &&
-                        isPaymentPending &&
-                        !isFreeBooking(booking) &&
-                        booking.status !== 'pending' &&
-                        booking.paymentStatus !== 'paid' &&
-                        hasPendingPayment &&
-                        bookingTimeLeft !== undefined ? (
-                        <View
-                          style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            backgroundColor:
-                              bookingTimeLeft > 0 ? '#FFF3E0' : '#FFEBEE',
-                            borderWidth: 1,
-                            borderColor:
-                              bookingTimeLeft > 0 ? '#FFCC80' : '#EF9A9A',
-                            borderRadius: 8,
-                            padding: 12,
-                            marginTop: 12,
-                          }}
-                        >
-                          <View
-                            style={{
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              flex: 1,
-                            }}
-                          >
-                            <Text style={{ fontSize: 16, marginRight: 8 }}>
-                              💳
-                            </Text>
-                            <Text
-                              style={{
-                                color:
-                                  bookingTimeLeft > 0 ? '#E65100' : '#C62828',
-                                fontSize: 13,
-                                flex: 1,
-                              }}
-                            >
-                              {isRTL ? 'الدفع معلق' : 'Payment Pending'}
-                            </Text>
-                          </View>
-                          {bookingTimeLeft > 0 ? (
-                            <View
-                              style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                backgroundColor: '#FFCC80',
-                                paddingHorizontal: 10,
-                                paddingVertical: 4,
-                                borderRadius: 12,
-                              }}
-                            >
-                              <Text style={{ fontSize: 12, marginRight: 4 }}>
-                                ⏱
-                              </Text>
-                              <Text
-                                style={{
-                                  color: '#E65100',
-                                  fontSize: 12,
-                                  fontWeight: '600',
-                                }}
-                              >
-                                {formatTimeLeft(bookingTimeLeft)}
-                              </Text>
-                            </View>
-                          ) : (
-                            <View
-                              style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                backgroundColor: '#EF9A9A',
-                                paddingHorizontal: 10,
-                                paddingVertical: 4,
-                                borderRadius: 12,
-                              }}
-                            >
-                              <Text
-                                style={{
-                                  fontSize: 12,
-                                  color: '#C62828',
-                                  fontWeight: '600',
-                                }}
-                              >
-                                {isRTL ? 'انتهى الوقت' : 'Expired'}
-                              </Text>
-                            </View>
-                          )}
-                        </View>
-                      ) : null;
-                    })()}
-
-                    {/* Awaiting Vendor Confirmation Banner */}
-                    {booking.status !== 'cancelled' &&
-                      !hasPaymentWindowExpired(booking) &&
-                      booking.status === 'pending' && (
-                        <View
-                          style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            backgroundColor: '#E3F2FD',
-                            borderWidth: 1,
-                            borderColor: '#90CAF9',
-                            borderRadius: 8,
-                            padding: 12,
-                            marginTop: 12,
-                          }}
-                        >
-                          <Text style={{ fontSize: 16, marginRight: 8 }}>
-                            ⏳
-                          </Text>
-                          <Text
-                            style={{ color: '#1565C0', fontSize: 13, flex: 1 }}
-                          >
-                            {isRTL
-                              ? 'في انتظار موافقة مقدم الخدمة'
-                              : 'Awaiting vendor confirmation'}
-                          </Text>
-                        </View>
-                      )}
 
                     {/* Pay Now, Cancel, and Receipt Buttons */}
                     {(() => {
@@ -1603,93 +1664,54 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
                         (booking.paymentStatus === 'paid' || isFree) &&
                         qrAllowedBookings.has(booking._id);
 
-                      if (
-                        !showPayButton &&
-                        !showCancelButton &&
-                        !showReceiptButton &&
-                        !hasQR
-                      )
+                      const isPaid =
+                        booking.paymentStatus === 'paid' ||
+                        booking.paymentStatus === 'partial';
+                      const cancelRequestStatus = booking.cancellationRequest?.status;
+                      const hasPendingCancelRequest = cancelRequestStatus === 'requested';
+                      const canRequestCancellation =
+                        booking.status !== 'cancelled' &&
+                        isPaid &&
+                        !isFree &&
+                        !eventDateHasPassed &&
+                        !hasPendingCancelRequest;
+
+                      const hasMainActions = showReceiptButton || hasQR || showPayButton;
+                      const hasCancelActions = showCancelButton || canRequestCancellation;
+
+                      if (!hasMainActions && !hasCancelActions) {
                         return null;
+                      }
 
                       return (
                         <View
                           style={{
                             flexDirection: isRTL ? 'row-reverse' : 'row',
+                            alignItems: 'center',
                             justifyContent: 'space-between',
+                            gap: 8,
                             marginTop: 14,
-                            gap: 12,
                           }}
                         >
-                          {/* View Receipt Button */}
+                          {/* View Receipt Button (Icon Only) */}
                           {showReceiptButton && (
                             <TouchableOpacity
                               style={{
-                                flex: 1,
-                                flexDirection: isRTL ? 'row-reverse' : 'row',
+                                width: 44,
+                                height: 44,
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                backgroundColor: '#fff',
-                                borderWidth: 1.5,
+                                backgroundColor: 'rgba(0, 161, 156, 0.03)',
+                                borderWidth: 1.2,
                                 borderColor: colors.primary,
-                                paddingVertical: 10,
-                                paddingHorizontal: 12,
-                                borderRadius: 8,
-                                gap: 8,
+                                borderRadius: 10,
                               }}
                               onPress={() => {
                                 setSelectedReceiptBooking(booking);
                                 setShowReceiptModal(true);
                               }}
                             >
-                              <Text
-                                style={{
-                                  color: colors.primary,
-                                  fontSize: 13,
-                                  fontWeight: '600',
-                                }}
-                              >
-                                {isRTL ? 'الفاتورة' : 'Receipt'}
-                              </Text>
-                              <Svg
-                                width={14}
-                                height={14}
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke={colors.primary}
-                                strokeWidth={2.5}
-                              >
-                                <Path
-                                  d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                                <Polyline
-                                  points="14 2 14 8 20 8"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                                <Line
-                                  x1="16"
-                                  y1="13"
-                                  x2="8"
-                                  y2="13"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                                <Line
-                                  x1="16"
-                                  y1="17"
-                                  x2="8"
-                                  y2="17"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                                <Polyline
-                                  points="10 9 9 9 8 9"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </Svg>
+                              <Icon name="receipt-outline" size={20} color={colors.primary} />
                             </TouchableOpacity>
                           )}
 
@@ -1697,57 +1719,35 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
                           {hasQR && (
                             <TouchableOpacity
                               style={{
-                                flex: 1,
+                                flex: 1.2,
                                 flexDirection: isRTL ? 'row-reverse' : 'row',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 backgroundColor: colors.primary,
-                                paddingVertical: 10,
-                                paddingHorizontal: 12,
-                                borderRadius: 8,
-                                gap: 8,
-                              }}
+                                borderWidth: 1.2,
+                                borderColor: colors.primary,
+                                height: 44,
+                                borderRadius: 10,
+                                gap: 6,
+                                shadowColor: colors.primary,
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: 0.15,
+                                shadowRadius: 4,
+                                elevation: 2,
+                               }}
                               onPress={() => handleQRCode(booking)}
                             >
+                              <Icon name="qr-code-outline" size={15} color="#fff" />
                               <Text
                                 style={{
                                   color: '#fff',
                                   fontSize: 13,
-                                  fontWeight: '600',
+                                  fontWeight: '700',
                                 }}
+                                numberOfLines={1}
                               >
                                 {isRTL ? 'رمز QR' : 'QR Code'}
                               </Text>
-                              <Svg
-                                width={14}
-                                height={14}
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="#fff"
-                                strokeWidth={2.5}
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              >
-                                <Rect x="3" y="3" width="6" height="6" rx="1" />
-                                <Rect
-                                  x="15"
-                                  y="3"
-                                  width="6"
-                                  height="6"
-                                  rx="1"
-                                />
-                                <Rect
-                                  x="3"
-                                  y="15"
-                                  width="6"
-                                  height="6"
-                                  rx="1"
-                                />
-                                <Path
-                                  d="M16 16h1v1h-1zm3 0h2v1h-2zm-3 3h2v2h-2zm6 1h1v1h-1zm-2-4h2v2h-2zm-3 0h1v2h-1z"
-                                  fill="#fff"
-                                />
-                              </Svg>
                             </TouchableOpacity>
                           )}
 
@@ -1755,15 +1755,21 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
                           {showPayButton && (
                             <TouchableOpacity
                               style={{
-                                flex: 1,
-                                flexDirection: 'row',
+                                flex: 1.2,
+                                flexDirection: isRTL ? 'row-reverse' : 'row',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 backgroundColor: colors.primary,
-                                paddingVertical: 10,
-                                paddingHorizontal: 12,
-                                borderRadius: 8,
-                                gap: 8,
+                                borderWidth: 1.2,
+                                borderColor: colors.primary,
+                                height: 44,
+                                borderRadius: 10,
+                                gap: 6,
+                                shadowColor: colors.primary,
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: 0.15,
+                                shadowRadius: 4,
+                                elevation: 2,
                               }}
                               onPress={() => handlePayNow(booking)}
                               disabled={payingBookings.has(booking._id)}
@@ -1772,12 +1778,14 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
                                 <ActivityIndicator size="small" color="#fff" />
                               ) : (
                                 <>
+                                  <Icon name="card-outline" size={16} color="#fff" />
                                   <Text
                                     style={{
                                       color: '#fff',
                                       fontSize: 13,
-                                      fontWeight: '600',
+                                      fontWeight: '700',
                                     }}
+                                    numberOfLines={1}
                                   >
                                     {isRTL ? 'ادفع الآن' : 'Pay Now'}
                                   </Text>
@@ -1786,58 +1794,84 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
                             </TouchableOpacity>
                           )}
 
-                          {/* Cancel Order Button */}
+                          {/* Cancellation Actions */}
                           {showCancelButton && (
                             <TouchableOpacity
                               style={{
-                                flex:
-                                  showPayButton || showReceiptButton || hasQR
-                                    ? 0.5
-                                    : 1,
-                                flexDirection: 'row',
+                                flex: 1,
+                                flexDirection: isRTL ? 'row-reverse' : 'row',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                backgroundColor: '#fff',
-                                borderWidth: 1.5,
-                                borderColor: '#dc3545',
-                                paddingVertical: 10,
-                                paddingHorizontal: 12,
-                                borderRadius: 8,
+                                backgroundColor: 'rgba(239, 68, 68, 0.03)',
+                                borderWidth: 1.2,
+                                borderColor: '#FCA5A5',
+                                height: 44,
+                                borderRadius: 10,
                                 gap: 6,
                               }}
-                              onPress={() => handleCancelBooking(booking._id)}
-                              disabled={cancellingBookings.has(booking._id)}
-                            >
-                              {cancellingBookings.has(booking._id) ? (
-                                <ActivityIndicator
-                                  size="small"
-                                  color="#dc3545"
-                                />
-                              ) : (
-                                <>
-                                  <Text
-                                    style={{
-                                      fontSize: 14,
-                                      color: '#dc3545',
-                                      fontWeight: 'bold',
-                                    }}
-                                  >
-                                    ✕
-                                  </Text>
-                                  <Text
-                                    style={{
-                                      color: '#dc3545',
-                                      fontSize: 13,
-                                      fontWeight: '600',
-                                    }}
-                                  >
-                                    {isRTL ? 'إلغاء' : 'Cancel'}
-                                  </Text>
-                                </>
-                              )}
-                            </TouchableOpacity>
-                          )}
-                        </View>
+                               onPress={() => handleCancelBooking(booking._id)}
+                               disabled={cancellingBookings.has(booking._id)}
+                             >
+                               {cancellingBookings.has(booking._id) ? (
+                                 <ActivityIndicator
+                                   size="small"
+                                   color="#EF4444"
+                                 />
+                               ) : (
+                                 <>
+                                   <Icon name="close-circle-outline" size={16} color="#EF4444" />
+                                   <Text
+                                     style={{
+                                       color: '#EF4444',
+                                       fontSize: 13,
+                                       fontWeight: '700',
+                                       textAlign: 'center',
+                                     }}
+                                     numberOfLines={1}
+                                   >
+                                     {isRTL ? 'إلغاء الطلب' : 'Cancel Order'}
+                                   </Text>
+                                 </>
+                               )}
+                             </TouchableOpacity>
+                           )}
+
+                           {canRequestCancellation && (
+                             <TouchableOpacity
+                               style={{
+                                 flex: 1.2,
+                                 flexDirection: isRTL ? 'row-reverse' : 'row',
+                                 alignItems: 'center',
+                                 justifyContent: 'center',
+                                 backgroundColor: 'rgba(239, 68, 68, 0.03)',
+                                 borderWidth: 1.2,
+                                 borderColor: '#FCA5A5',
+                                 height: 44,
+                                 borderRadius: 10,
+                                 gap: 6,
+                               }}
+                               onPress={() => {
+                                 setSelectedCancellationBooking(booking);
+                                 setCancellationReason('');
+                                 setCancellationResult(null);
+                                 setCancellationModalVisible(true);
+                               }}
+                             >
+                               <Icon name="close-circle-outline" size={16} color="#EF4444" />
+                               <Text
+                                 style={{
+                                   color: '#EF4444',
+                                   fontSize: 13,
+                                   fontWeight: '700',
+                                   textAlign: 'center',
+                                 }}
+                                 numberOfLines={1}
+                               >
+                                 {isRTL ? 'طلب إلغاء' : 'Cancel Request'}
+                               </Text>
+                             </TouchableOpacity>
+                           )}
+                         </View>
                       );
                     })()}
 
@@ -1909,8 +1943,546 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
             title={alertTitle}
             message={alertMessage}
             buttons={alertButtons}
-            onClose={() => setAlertVisible(false)}
+            onClose={() => {
+              setAlertVisible(false);
+              setActiveAlertBookingId(null);
+            }}
           />
+
+          {/* Request Cancellation Modal (paid bookings) */}
+          <Modal
+            animationType="fade"
+            transparent={true}
+            visible={cancellationModalVisible}
+            onRequestClose={closeCancellationModal}
+          >
+            <View
+              style={{
+                flex: 1,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                justifyContent: 'center',
+                alignItems: 'center',
+                padding: 20,
+              }}
+            >
+              <View
+                style={{
+                  backgroundColor: '#fff',
+                  borderRadius: 16,
+                  width: '100%',
+                  maxWidth: 450,
+                  maxHeight: '90%',
+                  overflow: 'hidden',
+                  elevation: 5,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.25,
+                  shadowRadius: 4,
+                }}
+              >
+                {/* Modal Header */}
+                <View
+                  style={{
+                    padding: 16,
+                    borderBottomWidth: 1,
+                    borderBottomColor: '#E2E8F0',
+                    flexDirection: isRTL ? 'row-reverse' : 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 18,
+                      fontWeight: '700',
+                      color: colors.primary,
+                    }}
+                  >
+                    {isRTL ? 'تقديم طلب إلغاء' : 'Request Cancellation'}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={closeCancellationModal}
+                    style={{ padding: 4 }}
+                  >
+                    <Icon name="close" size={22} color="#64748B" />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Modal Body */}
+                <ScrollView contentContainerStyle={{ padding: 20 }}>
+                  {!cancellationResult ? (
+                    <>
+                      {/* Policy Banner */}
+                      <View
+                        style={{
+                          flexDirection: isRTL ? 'row-reverse' : 'row',
+                          alignItems: 'flex-start',
+                          backgroundColor: '#FFFBEB',
+                          borderWidth: 1,
+                          borderColor: '#FEF3C7',
+                          borderLeftWidth: isRTL ? 1 : 4,
+                          borderRightWidth: isRTL ? 4 : 1,
+                          borderLeftColor: isRTL ? '#FEF3C7' : '#F59E0B',
+                          borderRightColor: isRTL ? '#F59E0B' : '#FEF3C7',
+                          borderRadius: 10,
+                          padding: 12,
+                          marginBottom: 16,
+                          gap: 8,
+                        }}
+                      >
+                        <Icon
+                          name="information-circle-outline"
+                          size={16}
+                          color="#F59E0B"
+                          style={{ marginTop: 1, marginRight: isRTL ? 0 : 2, marginLeft: isRTL ? 2 : 0 }}
+                        />
+                        <Text
+                          style={{
+                            color: '#92400E',
+                            fontSize: 13,
+                            lineHeight: 18,
+                            flex: 1,
+                            fontWeight: '500',
+                            textAlign: isRTL ? 'right' : 'left',
+                          }}
+                        >
+                          {isRTL
+                            ? 'تخضع استرداد المبالغ لموافقة الإدارة وسياسة الإلغاء الخاصة بكل مقدم خدمة. سيتم خصم عمولة منصة مسرة من المبالغ المستردة المؤهلة.'
+                            : "Refunds depend on each vendor's cancellation window and are subject to admin approval. Masarra's commission is deducted from eligible refunds."}
+                        </Text>
+                      </View>
+
+                      {/* Vendor Cancellation Policies & Time Left */}
+                      {selectedCancellationBooking?.services && (
+                        <View style={{ marginBottom: 16 }}>
+                          <Text
+                            style={{
+                              fontSize: 14,
+                              fontWeight: '700',
+                              color: '#1E293B',
+                              marginBottom: 8,
+                              textAlign: isRTL ? 'right' : 'left',
+                            }}
+                          >
+                            {isRTL ? 'تفاصيل سياسة إلغاء الخدمات:' : 'Service cancellation details:'}
+                          </Text>
+                          {selectedCancellationBooking.services.map((svc: any, idx: number) => {
+                            const serviceName = isRTL
+                              ? svc.service?.nameAr || svc.service?.name || svc.service
+                              : svc.service?.name || svc.service;
+                            const vendorName = isRTL
+                              ? svc.vendor?.vendorProfile?.businessName_ar || svc.vendor?.vendorProfile?.businessName || svc.vendor?.name
+                              : svc.vendor?.vendorProfile?.businessName || svc.vendor?.name;
+                            
+                            const refundPeriodHours = svc.vendor?.vendorProfile?.refundPeriodHours !== undefined
+                              ? Number(svc.vendor.vendorProfile.refundPeriodHours)
+                              : 48;
+
+                            const formatRefundWindow = (h: number) => {
+                              if (h === 0) return isRTL ? 'أي وقت' : 'any time';
+                              if (h < 24) return isRTL ? `${h} ساعة` : `${h} hours`;
+                              const d = Math.round(h / 24);
+                              return isRTL ? `${d} يوم` : `${d} days`;
+                            };
+
+                            // Calculate cutoff date & time left
+                            const eventTimeStr = svc.timeSlot?.start || svc.eventDate || selectedCancellationBooking.eventTime?.start || selectedCancellationBooking.eventDate;
+                            let cutoffDate: Date | null = null;
+                            let isWithinWindow = false;
+                            let timeLeftString = '';
+
+                            if (eventTimeStr) {
+                              const d = new Date(eventTimeStr);
+                              if (
+                                d.getUTCHours() === 0 &&
+                                d.getUTCMinutes() === 0 &&
+                                d.getUTCSeconds() === 0 &&
+                                d.getUTCMilliseconds() === 0
+                              ) {
+                                d.setUTCHours(20, 59, 59, 999); // 23:59:59 Kuwait time
+                              }
+                              cutoffDate = new Date(d.getTime() - refundPeriodHours * 60 * 60 * 1000);
+                              const now = new Date();
+                              isWithinWindow = now.getTime() <= cutoffDate.getTime();
+                              
+                              if (isWithinWindow) {
+                                const diffMs = cutoffDate.getTime() - now.getTime();
+                                const totalHours = Math.floor(diffMs / (1000 * 60 * 60));
+                                if (totalHours < 24) {
+                                  timeLeftString = isRTL 
+                                    ? `متبقي ${totalHours} ساعة للإلغاء المجاني`
+                                    : `${totalHours} hours left for free cancellation`;
+                                } else {
+                                  const days = Math.floor(totalHours / 24);
+                                  const remainingHours = totalHours % 24;
+                                  timeLeftString = isRTL
+                                    ? `متبقي ${days} يوم و ${remainingHours} ساعة للإلغاء المجاني`
+                                    : `${days}d ${remainingHours}h left for free cancellation`;
+                                }
+                              } else {
+                                timeLeftString = isRTL ? 'انتهت فترة الإلغاء المجاني' : 'Free cancellation period expired';
+                              }
+                            }
+
+                            return (
+                              <View
+                                key={svc._id || idx}
+                                style={{
+                                  backgroundColor: '#F8FAFC',
+                                  borderWidth: 1,
+                                  borderColor: '#E2E8F0',
+                                  borderRadius: 10,
+                                  padding: 12,
+                                  marginBottom: 10,
+                                  alignItems: 'stretch',
+                                }}
+                              >
+                                <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#334155', flex: 1, textAlign: isRTL ? 'right' : 'left' }}>
+                                    {serviceName}
+                                  </Text>
+                                  {vendorName && (
+                                    <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '500', marginRight: isRTL ? 0 : 4, marginLeft: isRTL ? 4 : 0 }}>
+                                      ({vendorName})
+                                    </Text>
+                                  )}
+                                </View>
+                                
+                                <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                                  <Icon name="time-outline" size={14} color="#64748B" />
+                                  <Text style={{ fontSize: 11, color: '#475569', textAlign: isRTL ? 'right' : 'left', flex: 1 }}>
+                                    {isRTL
+                                      ? `سياسة الإلغاء: استرداد كامل حتى ${formatRefundWindow(refundPeriodHours)} قبل الفعالية`
+                                      : `Cancellation Policy: Full refund up to ${formatRefundWindow(refundPeriodHours)} before event`}
+                                  </Text>
+                                </View>
+
+                                {timeLeftString ? (
+                                  <View
+                                    style={{
+                                      flexDirection: isRTL ? 'row-reverse' : 'row',
+                                      alignItems: 'center',
+                                      backgroundColor: isWithinWindow ? '#ECFDF5' : '#FEF2F2',
+                                      paddingVertical: 6,
+                                      paddingHorizontal: 8,
+                                      borderRadius: 6,
+                                      gap: 6,
+                                    }}
+                                  >
+                                    <Icon
+                                      name={isWithinWindow ? 'checkmark-circle' : 'alert-circle'}
+                                      size={14}
+                                      color={isWithinWindow ? '#059669' : '#DC2626'}
+                                    />
+                                    <Text
+                                      style={{
+                                        fontSize: 11,
+                                        fontWeight: '600',
+                                        color: isWithinWindow ? '#047857' : '#B91C1C',
+                                        flex: 1,
+                                        textAlign: isRTL ? 'right' : 'left',
+                                      }}
+                                    >
+                                      {timeLeftString}
+                                    </Text>
+                                  </View>
+                                ) : null}
+                              </View>
+                            );
+                          })}
+                        </View>
+                      )}
+
+                      {/* Input Label */}
+                      <View
+                        style={{
+                          flexDirection: isRTL ? 'row-reverse' : 'row',
+                          marginBottom: 8,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            fontWeight: '600',
+                            color: '#374151',
+                          }}
+                        >
+                          {isRTL ? 'سبب الإلغاء' : 'Reason for cancellation'}
+                        </Text>
+                        <Text style={{ color: '#dc3545', marginLeft: 4 }}> *</Text>
+                      </View>
+
+                      {/* Text Input */}
+                      <TextInput
+                        multiline={true}
+                        numberOfLines={4}
+                        value={cancellationReason}
+                        onChangeText={setCancellationReason}
+                        placeholder={
+                          isRTL
+                            ? 'أخبرنا عن سبب إلغاء الحجز...'
+                            : "Tell us why you're cancelling…"
+                        }
+                        placeholderTextColor="#94A3B8"
+                        style={{
+                          borderWidth: 1,
+                          borderColor: '#E2E8F0',
+                          borderRadius: 8,
+                          padding: 12,
+                          fontSize: 14,
+                          color: '#0F172A',
+                          height: 100,
+                          textAlignVertical: 'top',
+                          textAlign: isRTL ? 'right' : 'left',
+                          marginBottom: 20,
+                        }}
+                      />
+
+                      {/* Modal Footer Buttons */}
+                      <View
+                        style={{
+                          flexDirection: isRTL ? 'row-reverse' : 'row',
+                          justifyContent: 'flex-end',
+                          gap: 12,
+                        }}
+                      >
+                        <TouchableOpacity
+                          onPress={closeCancellationModal}
+                          style={{
+                            paddingVertical: 10,
+                            paddingHorizontal: 16,
+                            borderRadius: 10,
+                            borderWidth: 1,
+                            borderColor: '#CBD5E1',
+                            backgroundColor: '#fff',
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 14,
+                              fontWeight: '600',
+                              color: '#475569',
+                            }}
+                          >
+                            {isRTL ? 'إغلاق' : 'Close'}
+                          </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          onPress={handleSubmitCancellationRequest}
+                          disabled={!cancellationReason.trim() || submittingCancellation}
+                          style={{
+                            paddingVertical: 10,
+                            paddingHorizontal: 16,
+                            borderRadius: 10,
+                            backgroundColor: '#EF4444',
+                            opacity: !cancellationReason.trim() || submittingCancellation ? 0.6 : 1,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            minWidth: 120,
+                          }}
+                        >
+                          {submittingCancellation ? (
+                            <ActivityIndicator size="small" color="#fff" />
+                          ) : (
+                            <Text
+                              style={{
+                                fontSize: 14,
+                                fontWeight: '600',
+                                color: '#fff',
+                              }}
+                            >
+                              {isRTL ? 'إرسال الطلب' : 'Submit request'}
+                            </Text>
+                          )}
+                        </TouchableOpacity>
+                      </View>
+                    </>
+                  ) : cancellationResult.error ? (
+                    <View style={{ alignItems: 'center', width: '100%' }}>
+                      {/* Error Alert */}
+                      <View
+                        style={{
+                          flexDirection: isRTL ? 'row-reverse' : 'row',
+                          alignItems: 'center',
+                          backgroundColor: '#FEF2F2',
+                          borderWidth: 1,
+                          borderColor: '#FEE2E2',
+                          borderLeftWidth: isRTL ? 1 : 4,
+                          borderRightWidth: isRTL ? 4 : 1,
+                          borderLeftColor: isRTL ? '#FEE2E2' : '#EF4444',
+                          borderRightColor: isRTL ? '#EF4444' : '#FEE2E2',
+                          borderRadius: 10,
+                          padding: 16,
+                          width: '100%',
+                          marginBottom: 20,
+                          gap: 8,
+                        }}
+                      >
+                        <Icon name="alert-circle-outline" size={18} color="#EF4444" />
+                        <Text
+                          style={{
+                            color: '#991B1B',
+                            fontSize: 14,
+                            fontWeight: '600',
+                            flex: 1,
+                            textAlign: isRTL ? 'right' : 'left',
+                          }}
+                        >
+                          {cancellationResult.error}
+                        </Text>
+                      </View>
+
+                      <TouchableOpacity
+                        onPress={closeCancellationModal}
+                        style={{
+                          paddingVertical: 10,
+                          paddingHorizontal: 24,
+                          borderRadius: 10,
+                          backgroundColor: colors.primary,
+                          shadowColor: colors.primary,
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.15,
+                          shadowRadius: 4,
+                          elevation: 2,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            fontWeight: '600',
+                            color: '#fff',
+                          }}
+                        >
+                          {isRTL ? 'إغلاق' : 'Close'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <View style={{ alignItems: 'center', width: '100%' }}>
+                      {/* Success Alert */}
+                      <View
+                        style={{
+                          flexDirection: isRTL ? 'row-reverse' : 'row',
+                          alignItems: 'center',
+                          backgroundColor: '#F0FDF4',
+                          borderWidth: 1,
+                          borderColor: '#DCFCE7',
+                          borderLeftWidth: isRTL ? 1 : 4,
+                          borderRightWidth: isRTL ? 4 : 1,
+                          borderLeftColor: isRTL ? '#DCFCE7' : '#22C55E',
+                          borderRightColor: isRTL ? '#22C55E' : '#DCFCE7',
+                          borderRadius: 10,
+                          padding: 16,
+                          width: '100%',
+                          marginBottom: 16,
+                          gap: 8,
+                        }}
+                      >
+                        <Icon name="checkmark-circle-outline" size={18} color="#22C55E" />
+                        <Text
+                          style={{
+                            color: '#166534',
+                            fontSize: 14,
+                            fontWeight: '600',
+                            flex: 1,
+                            textAlign: isRTL ? 'right' : 'left',
+                            lineHeight: 20,
+                          }}
+                        >
+                          {isRTL
+                            ? 'تم تقديم طلب الإلغاء بنجاح وجاري مراجعته من قبل الإدارة.'
+                            : 'Your cancellation request has been submitted for review.'}
+                        </Text>
+                      </View>
+
+                      {/* Refund Eligibility Notice */}
+                      {cancellationResult.eligibility && !cancellationResult.eligibility.anyEligible ? (
+                        <View
+                          style={{
+                            backgroundColor: '#FEF2F2',
+                            borderWidth: 1,
+                            borderColor: '#FEE2E2',
+                            borderLeftWidth: isRTL ? 1 : 4,
+                            borderRightWidth: isRTL ? 4 : 1,
+                            borderLeftColor: isRTL ? '#FEE2E2' : '#EF4444',
+                            borderRightColor: isRTL ? '#EF4444' : '#FEE2E2',
+                            borderRadius: 10,
+                            padding: 12,
+                            width: '100%',
+                            marginBottom: 20,
+                            flexDirection: isRTL ? 'row-reverse' : 'row',
+                            alignItems: 'flex-start',
+                            gap: 8,
+                          }}
+                        >
+                          <Icon
+                            name="warning-outline"
+                            size={16}
+                            color="#EF4444"
+                            style={{ marginTop: 2, marginRight: isRTL ? 0 : 2, marginLeft: isRTL ? 2 : 0 }}
+                          />
+                          <Text
+                            style={{
+                              color: '#991B1B',
+                              fontSize: 12,
+                              lineHeight: 18,
+                              flex: 1,
+                              fontWeight: '500',
+                              textAlign: isRTL ? 'right' : 'left',
+                            }}
+                          >
+                            {isRTL
+                              ? 'هذا الطلب خارج نافذة الإلغاء المسموح بها لمزود الخدمة، لذا قد لا يكون مؤهلاً للاسترداد. ومع ذلك، يمكن للمسؤول الموافقة على الإلغاء وفقًا لتقديره.'
+                              : "This request is past the vendor's refund window, so it is not eligible for a refund. The admin may still approve the cancellation at their discretion."}
+                          </Text>
+                        </View>
+                      ) : (
+                        <Text
+                          style={{
+                            color: '#64748B',
+                            fontSize: 12,
+                            textAlign: 'center',
+                            marginBottom: 20,
+                            lineHeight: 16,
+                          }}
+                        >
+                          {isRTL
+                            ? 'في حال الاستحقاق، سيتم تأكيد مبلغ الاسترداد عند موافقة الإدارة على طلبك.'
+                            : 'If eligible, your refund amount will be confirmed when an admin approves your request.'}
+                        </Text>
+                      )}
+
+                      <TouchableOpacity
+                        onPress={closeCancellationModal}
+                        style={{
+                          paddingVertical: 10,
+                          paddingHorizontal: 24,
+                          borderRadius: 10,
+                          backgroundColor: colors.primary,
+                          shadowColor: colors.primary,
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.15,
+                          shadowRadius: 4,
+                          elevation: 2,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            fontWeight: '600',
+                            color: '#fff',
+                          }}
+                        >
+                          {isRTL ? 'تم' : 'Done'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </ScrollView>
+              </View>
+            </View>
+          </Modal>
 
           {/* Payment WebView Modal */}
           <PaymentWebView
