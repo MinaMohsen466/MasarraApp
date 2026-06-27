@@ -106,12 +106,12 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: colors.primary,
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 100,
+    minWidth: 90,
   },
   cancelButton: {
     backgroundColor: '#f5f5f5',
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: 'white',
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
   },
   cancelButtonText: {

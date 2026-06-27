@@ -15,7 +15,7 @@ import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { login, User } from '../../services/api';
-import { API_URL } from '../../config/api.config';
+import { API_URL, getWebUrl } from '../../config/api.config';
 import VerifyEmail from '../../screens/VerifyEmail';
 import ForgotPasswordModal from './ForgotPasswordModal';
 import MultiStepSignup from './MultiStepSignup';
@@ -139,6 +139,25 @@ const Auth: React.FC<AuthProps> = ({ onBack, onNavigate }) => {
             isRTL
               ? 'هذا الحساب مخصص للإدارة فقط. يرجى تسجيل الدخول عبر المتصفح.'
               : 'This account is for administration only. Please log in via the web browser.',
+            [
+              {
+                text: isRTL ? 'إلغاء' : 'Cancel',
+                style: 'cancel',
+                onPress: () => {},
+              },
+              {
+                text: isRTL ? 'المتصفح' : 'Browser',
+                style: 'default',
+                onPress: async () => {
+                  try {
+                    const webUrl = `${getWebUrl()}/${isRTL ? 'ar' : 'en'}/login`;
+                    await Linking.openURL(webUrl);
+                  } catch (err) {
+                    console.error('Failed to open web URL:', err);
+                  }
+                },
+              },
+            ]
           );
           return;
         }

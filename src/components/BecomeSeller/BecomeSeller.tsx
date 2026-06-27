@@ -12,6 +12,7 @@ import {
   StatusBar,
   Image,
   Modal,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -271,7 +272,11 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack }) => {
         onClose={() => setAlertVisible(false)}
       />
 
-      <View style={styles.container}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      >
         {/* Header Bar */}
         <View
           style={[
@@ -551,7 +556,7 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack }) => {
             </TouchableOpacity>
           </View>
         </ScrollView>
-      </View>
+      </KeyboardAvoidingView>
 
       {/* Terms & Conditions Modal */}
       <Modal

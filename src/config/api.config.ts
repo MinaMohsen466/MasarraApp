@@ -48,6 +48,24 @@ export const API_URL = `${API_BASE_URL}/api`;
 export const ADMIN_URL = `${API_BASE_URL}/admin`;
 
 /**
+ * Get the appropriate web client URL based on environment
+ */
+export const getWebUrl = (): string => {
+  // Always use production server if USE_LOCAL_IN_DEV is false
+  if (!USE_LOCAL_IN_DEV) {
+    return PRODUCTION_URL;
+  }
+
+  // In production/release mode, always use the production server
+  if (!__DEV__) {
+    return PRODUCTION_URL;
+  }
+
+  // In development mode (if USE_LOCAL_IN_DEV is true):
+  return `http://${LOCAL_IP}:5173`;
+};
+
+/**
  * Helper function to get full image URL
  * @param imagePath - The image path from the database (can be full URL, /public/ path, or just filename)
  * @param bustCache - If true, adds timestamp to URL to bypass cache (useful for profile pictures)

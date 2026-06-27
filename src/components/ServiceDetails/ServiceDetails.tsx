@@ -13,8 +13,6 @@ import {
   Share,
   Animated,
   TextInput,
-  Dimensions,
-  Easing,
   StatusBar,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
@@ -134,13 +132,9 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
     }>;
   }>({ visible: false, title: '', message: '', buttons: [] });
 
-  // Animation states
-  const [showFlyingIcon, setShowFlyingIcon] = useState(false);
-  const [iconStartPosition, setIconStartPosition] = useState({ x: 0, y: 0 });
-  const flyingIconTranslate = useRef(
-    new Animated.ValueXY({ x: 0, y: 0 }),
-  ).current;
-  const flyingIconScale = useRef(new Animated.Value(1)).current;
+  const [isSuccessState, setIsSuccessState] = useState(false);
+
+
 
   // Fetch services and find the selected service - Load first for faster UI
   const { data: services, isLoading } = useQuery({
@@ -186,105 +180,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
 
   // Animation function for adding to cart
   const triggerAddToCartAnimation = () => {
-    // Get button position
-    if (addToCartButtonRef.current) {
-      addToCartButtonRef.current.measure(
-        (_x, _y, width, height, pageX, pageY) => {
-          // Calculate start position (center of button)
-          const startX = pageX + width / 2;
-          const startY = pageY + height / 2;
-
-          // Get actual screen dimensions
-          const screenHeight = Dimensions.get('window').height;
-          const screenWidth = Dimensions.get('window').width;
-          const isTabletDevice = screenWidth >= 600;
-
-          // ---- Accurate BottomNavigation layout calculation ----
-          // From BottomNavigation/styles.ts:
-          //   container: position absolute, bottom:0, paddingVertical: 16(tablet)/12(mobile),
-          //              paddingBottom: 24(tablet)/18(mobile), paddingHorizontal: 16
-          //   navItem: paddingVertical: 12(tablet)/8(mobile)
-          //   iconSize: 36(tablet)/28(mobile)
-          // From App.tsx: there's a 20px View below the BottomNavigation
-
-          const bottomViewHeight = 20; // View below BottomNav in App.tsx
-          const navPaddingBottom = isTabletDevice ? 24 : 18; // paddingBottom overrides paddingVertical bottom
-          const navItemPaddingVertical = isTabletDevice ? 12 : 8;
-          const navIconSize = isTabletDevice ? 36 : 28;
-          const navPaddingHorizontal = 16;
-
-          // Total nav bar height = paddingTop + paddingBottom + navItem content height
-          // navItem content height = paddingVertical*2 + iconSize
-
-          // The icon center Y from screen bottom:
-          // bottomViewHeight + navPaddingBottom + navItemPaddingVertical + iconSize/2
-          const iconCenterFromBottom =
-            bottomViewHeight +
-            navPaddingBottom +
-            navItemPaddingVertical +
-            navIconSize / 2;
-          const targetY = screenHeight - iconCenterFromBottom;
-
-          // ---- X position: space-around with paddingHorizontal ----
-          // The container uses justifyContent: 'space-around' with paddingHorizontal: 16
-          // Available width for space-around = screenWidth - 2 * paddingHorizontal
-          // With space-around and N items, each item gets equal "slots"
-          // Item center positions: slot_width * (i + 0.5) + paddingHorizontal
-          const numItems = 5;
-          const availableWidth = screenWidth - 2 * navPaddingHorizontal;
-          const slotWidth = availableWidth / numItems;
-          const cartIconIndex = 4; // 0-based, cart is 5th item
-
-          // In RTL, flexDirection is row-reverse, so cart (index 4) appears first
-          const cartPosition = isRTL ? 0 : cartIconIndex;
-          const targetX =
-            navPaddingHorizontal + slotWidth * cartPosition + slotWidth / 2;
-
-          // Calculate icon size (60x60 flying icon)
-          const iconSize = 60;
-
-          // Calculate translation needed from start position
-          const translateX = targetX - startX;
-          const translateY2 = targetY - startY;
-
-          // Set start position (center-based)
-          setIconStartPosition({
-            x: startX - iconSize / 2,
-            y: startY - iconSize / 2,
-          });
-          setShowFlyingIcon(true);
-
-          // Reset animations
-          flyingIconTranslate.setValue({ x: 0, y: 0 });
-          flyingIconScale.setValue(1);
-
-          // Animate icon flying to cart
-          Animated.parallel([
-            Animated.timing(flyingIconTranslate, {
-              toValue: { x: translateX, y: translateY2 },
-              duration: 600,
-              easing: Easing.bezier(0.25, 0.1, 0.25, 1),
-              useNativeDriver: true,
-            }),
-            Animated.sequence([
-              Animated.timing(flyingIconScale, {
-                toValue: 1.2,
-                duration: 100,
-                useNativeDriver: true,
-              }),
-              Animated.timing(flyingIconScale, {
-                toValue: 0.3,
-                duration: 500,
-                useNativeDriver: true,
-              }),
-            ]),
-          ]).start(() => {
-            // Hide flying icon
-            setShowFlyingIcon(false);
-          });
-        },
-      );
-    }
+    // No-op because bottom navigation bar is hidden on this screen
   };
 
   // Load user token and userId
@@ -899,7 +795,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                       }
                       video {
                         width: 100%;
-                        height: 100%;
+                        height: calc(100% - 24px);
                         object-fit: contain;
                       }
                     </style>
@@ -921,31 +817,62 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
               scalesPageToFit={true}
             />
           ) : (
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => setPlayingVideoIndex(index)}
-              style={{ flex: 1 }}
-            >
-              <Image
-                source={{ uri: getServiceImageUrl(item.src) }}
+            <View style={{ flex: 1 }}>
+              <WebView
+                source={{
+                  html: `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                      <style>
+                        body, html {
+                          margin: 0;
+                          padding: 0;
+                          width: 100%;
+                          height: 100%;
+                          background-color: black;
+                          display: flex;
+                          justify-content: center;
+                          align-items: center;
+                          overflow: hidden;
+                        }
+                        video {
+                          width: 100%;
+                          height: calc(100% - 24px);
+                          object-fit: cover;
+                          background-color: black;
+                        }
+                      </style>
+                      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+                    </head>
+                    <body>
+                      <video src="${getServiceImageUrl(item.src)}" preload="metadata" playsinline></video>
+                    </body>
+                    </html>
+                  `,
+                }}
                 style={styles.carouselImage}
-                resizeMode="cover"
+                allowsInlineMediaPlayback={true}
+                mediaPlaybackRequiresUserAction={true}
               />
-              <View style={styles.videoPlayOverlay}>
-                <Svg width={48} height={48} viewBox="0 0 24 24" fill="none">
-                  <Path
-                    d="M8 5v14l11-7z"
-                    fill="#FFFFFF"
-                    stroke="#FFFFFF"
-                    strokeWidth={1}
-                  />
-                </Svg>
-              </View>
-            </TouchableOpacity>
-          )}
-          {hasDiscount && discountPercent > 0 && (
-            <View style={styles.imageDiscountBadge}>
-              <Text style={styles.imageDiscountText}>{discountPercent}%</Text>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setPlayingVideoIndex(index)}
+                style={styles.videoPlayOverlay}
+              >
+                <View style={styles.playButtonCircle}>
+                  <Svg width={26} height={26} viewBox="0 0 24 24" fill="none">
+                    <Path
+                      d="M8 5v14l11-7z"
+                      fill="#ffffff"
+                      stroke="#ffffff"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </Svg>
+                </View>
+              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -958,12 +885,6 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
           style={styles.carouselImage}
           resizeMode="cover"
         />
-        {/* Show discount badge on all images */}
-        {hasDiscount && discountPercent > 0 && (
-          <View style={styles.imageDiscountBadge}>
-            <Text style={styles.imageDiscountText}>{discountPercent}%</Text>
-          </View>
-        )}
       </View>
     );
   };
@@ -1026,9 +947,9 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
   return (
     <View style={styles.container}>
       <StatusBar
-        backgroundColor="#00a19c"
-        barStyle="light-content"
-        translucent={false}
+        backgroundColor="transparent"
+        barStyle="dark-content"
+        translucent={true}
       />
       {/* Fixed actions bar under notch (not scrolling) */}
       <View
@@ -1229,7 +1150,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingTop: fixedHeight,
+          paddingTop: 0,
           paddingBottom:
             SCREEN_WIDTH >= 600 ? insets.bottom + 280 : insets.bottom + 180,
         }}
@@ -2020,6 +1941,13 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                         </Svg>
                                       )}
                                     </View>
+                                    {input.optionImages?.[optIndex] ? (
+                                      <Image
+                                        source={{ uri: getServiceImageUrl(input.optionImages[optIndex]) }}
+                                        style={[styles.optionImage, isRTL && styles.optionImageRTL]}
+                                        resizeMode="cover"
+                                      />
+                                    ) : null}
                                     <View style={{ flex: 1 }}>
                                       <Text
                                         style={[
@@ -2110,9 +2038,21 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                   isRTL && styles.menuItemRowRTL,
                                 ]}
                               >
+                                {input.optionImages?.[optIndex] ? (
+                                  <Image
+                                    source={{ uri: getServiceImageUrl(input.optionImages[optIndex]) }}
+                                    style={[styles.menuItemImage, isRTL && styles.menuItemImageRTL]}
+                                    resizeMode="cover"
+                                  />
+                                ) : null}
                                 <View style={styles.menuItemInfo}>
                                   <Text style={styles.menuItemName}>
                                     {labelText}
+                                    {price > 0 && (
+                                      <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 13 }}>
+                                        {`   +${price.toFixed(3)} ${isRTL ? 'د.ك' : 'KD'}`}
+                                      </Text>
+                                    )}
                                   </Text>
                                   {/* Per-option description */}
                                   {(
@@ -2135,11 +2075,6 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                         : input.optionDescriptions[optIndex]}
                                     </Text>
                                   ) : null}
-                                  {price > 0 && (
-                                    <Text style={styles.menuItemPrice}>
-                                      +{price.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
-                                    </Text>
-                                  )}
                                 </View>
                                 <View style={styles.menuItemStepper}>
                                   <TouchableOpacity
@@ -2519,7 +2454,9 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
           styles.bottomActions,
           {
             paddingBottom:
-              SCREEN_WIDTH >= 600 ? insets.bottom + 120 : insets.bottom + 60,
+              SCREEN_WIDTH >= 600
+                ? insets.bottom + 24
+                : Math.max(insets.bottom + 12, 16),
           },
         ]}
       >
@@ -2827,7 +2764,12 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                 // Add to local storage cart
                 await addToCart(cartItem);
 
-                // Trigger animation
+                // Trigger success button state and reset after 2 seconds
+                setIsSuccessState(true);
+                setTimeout(() => {
+                  setIsSuccessState(false);
+                }, 2000);
+
                 triggerAddToCartAnimation();
 
                 // Reset date, time, and custom inputs after successful add to cart
@@ -2870,7 +2812,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
             }
           }}
         >
-          {editCartItemId ? (
+          {isSuccessState || editCartItemId ? (
             <Svg
               width={22}
               height={22}
@@ -2881,7 +2823,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
               <Path
                 d="M5 13l4 4L19 7"
                 stroke={colors.textWhite}
-                strokeWidth={2}
+                strokeWidth={2.5}
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
@@ -2912,6 +2854,10 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
               ? isRTL
                 ? 'جاري الإضافة...'
                 : 'ADDING...'
+              : isSuccessState
+              ? isRTL
+                ? '✓ تم الإضافة'
+                : '✓ ADDED'
               : editCartItemId
               ? isRTL
                 ? 'حفظ التغييرات'
@@ -3003,53 +2949,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
         />
       )}
 
-      {/* Flying Cart Icon Animation */}
-      {showFlyingIcon && (
-        <Animated.View
-          style={{
-            position: 'absolute',
-            width: 60,
-            height: 60,
-            left: iconStartPosition.x,
-            top: iconStartPosition.y,
-            transform: [
-              { translateX: flyingIconTranslate.x },
-              { translateY: flyingIconTranslate.y },
-              { scale: flyingIconScale },
-            ],
-            zIndex: 9999,
-          }}
-        >
-          <View
-            style={{
-              width: 60,
-              height: 60,
-              backgroundColor: colors.primary,
-              borderRadius: 30,
-              justifyContent: 'center',
-              alignItems: 'center',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 8 },
-              shadowOpacity: 0.35,
-              shadowRadius: 16,
-              elevation: 20,
-              borderWidth: 2,
-              borderColor: '#FFFFFF',
-            }}
-          >
-            <Svg width={32} height={32} viewBox="0 0 24 24" fill="none">
-              <Path
-                d="M9 2L7 6M17 6L15 2M2 6h20l-2 14H4L2 6z"
-                stroke="#FFFFFF"
-                strokeWidth={2.2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                fill="none"
-              />
-            </Svg>
-          </View>
-        </Animated.View>
-      )}
+
 
       {/* Custom Alert for Delete Confirmation */}
       <CustomAlert

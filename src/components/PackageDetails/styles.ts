@@ -3,7 +3,7 @@ import { colors } from '../../constants/colors';
 
 export const createStyles = (SCREEN_WIDTH: number) => {
   const isTablet = SCREEN_WIDTH >= 600;
-  const imageHeight = isTablet ? 400 : 330;
+  const imageHeight = isTablet ? 480 : 380;
 
   return StyleSheet.create({
     container: {
@@ -52,7 +52,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: 8,
-      backgroundColor: colors.backgroundLight,
+      backgroundColor: 'transparent',
       zIndex: 50,
     },
     headerLeft: {
@@ -70,13 +70,18 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       gap: 8,
     },
     headerButton: {
-      width: 34,
-      height: 34,
-      borderRadius: 17,
-      backgroundColor: 'rgba(0, 161, 156, 0.1)',
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      backgroundColor: 'rgba(255, 255, 255, 0.9)',
       justifyContent: 'center',
       alignItems: 'center',
       marginHorizontal: 4,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 4,
+      elevation: 3,
     },
 
     // ScrollView Content
@@ -111,7 +116,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
     },
     paginationContainer: {
       position: 'absolute',
-      bottom: 16,
+      bottom: 36,
       left: 0,
       right: 0,
       flexDirection: 'row',
@@ -133,7 +138,12 @@ export const createStyles = (SCREEN_WIDTH: number) => {
 
     // Package Info Section
     infoSection: {
-      padding: 20,
+      backgroundColor: colors.background,
+      paddingHorizontal: 20,
+      paddingVertical: 20,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      marginTop: -24,
     },
     packageNameContainer: {
       flexDirection: 'row',

@@ -40,20 +40,20 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: 24,
   },
   descriptionText: {
     fontSize: 14,
     color: '#666',
     textAlign: 'center',
-    marginTop: 20,
-    marginBottom: 20,
+    marginTop: 12,
+    marginBottom: 12,
     lineHeight: 20,
   },
   formCard: {
     backgroundColor: colors.backgroundCard || '#ffffff',
     borderRadius: 12,
-    padding: 20,
+    padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -61,7 +61,7 @@ export const styles = StyleSheet.create({
     elevation: 3,
   },
   inputGroup: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   inputLabel: {
     fontSize: 13,
@@ -115,11 +115,11 @@ export const styles = StyleSheet.create({
     borderColor: '#D1D5DB',
     borderStyle: 'dashed',
     borderRadius: 10,
-    padding: 20,
+    padding: 16,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#F9FAFB',
-    minHeight: 120,
+    minHeight: 100,
   },
   dashedUploadButtonActive: {
     borderColor: colors.primary,
@@ -150,7 +150,7 @@ export const styles = StyleSheet.create({
   },
   previewImage: {
     width: '100%',
-    height: 200,
+    height: 150,
     borderRadius: 8,
   },
   removeImageBadge: {
@@ -168,7 +168,7 @@ export const styles = StyleSheet.create({
   submitButton: {
     backgroundColor: colors.primary,
     borderRadius: 8,
-    paddingVertical: 14,
+    paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,

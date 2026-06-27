@@ -695,15 +695,19 @@ function AppContent() {
       ) : shouldRenderWithoutSafeArea ? (
         <View style={{ flex: 1 }} {...panResponder.panHandlers}>
           {renderScreen()}
-          {showBottomNav && currentRoute !== 'cart' && currentRoute !== 'auth' && (
-            <>
-              <BottomNavigation
-                activeRoute={currentRoute}
-                onNavigate={handleNavigation}
-              />
-              <View style={{ height: 20, backgroundColor: colors.backgroundHome }} />
-            </>
-          )}
+          {showBottomNav &&
+            currentRoute !== 'cart' &&
+            currentRoute !== 'auth' &&
+            currentRoute !== 'service-details' &&
+            currentRoute !== 'package-details' && (
+              <>
+                <BottomNavigation
+                  activeRoute={currentRoute}
+                  onNavigate={handleNavigation}
+                />
+                <View style={{ height: 20, backgroundColor: colors.backgroundHome }} />
+              </>
+            )}
         </View>
       ) : (
         <SafeAreaView style={{ flex: 1, backgroundColor: dynamicBgColor }}>

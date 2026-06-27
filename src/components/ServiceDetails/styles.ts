@@ -3,7 +3,7 @@ import { colors } from '../../constants/colors';
 
 export const createStyles = (SCREEN_WIDTH: number) => {
   const isTablet = SCREEN_WIDTH >= 600;
-  const carouselHeight = isTablet ? 400 : 330;
+  const carouselHeight = isTablet ? 480 : 380;
 
   return StyleSheet.create({
     container: {
@@ -31,7 +31,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       justifyContent: 'space-between',
       paddingHorizontal: 10,
       paddingVertical: 6,
-      backgroundColor: colors.background,
+      backgroundColor: 'transparent',
       zIndex: 50,
       borderRadius: 0,
     },
@@ -66,13 +66,18 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       fontWeight: '600',
     },
     headerCircleButton: {
-      width: 34,
-      height: 34,
-      borderRadius: 17,
-      backgroundColor: 'rgba(0, 161, 156, 0.1)',
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      backgroundColor: 'rgba(255, 255, 255, 0.9)',
       justifyContent: 'center',
       alignItems: 'center',
       marginHorizontal: 4,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 4,
+      elevation: 3,
     },
     backButton: {
       position: 'absolute',
@@ -173,7 +178,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
     },
     paginationContainer: {
       position: 'absolute',
-      bottom: 16,
+      bottom: 36,
       left: 0,
       right: 0,
       flexDirection: 'row',
@@ -196,6 +201,9 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       backgroundColor: colors.background,
       paddingHorizontal: 20,
       paddingVertical: 20,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      marginTop: -24,
     },
     serviceName: {
       fontSize: 22,
@@ -494,7 +502,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
 
     optionExpandedContent: {
       paddingHorizontal: 12,
-      paddingVertical: 6,
+      paddingVertical: 2,
     },
 
     /* Custom Inputs Section */
@@ -855,7 +863,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
 
     /* Restaurant Menu Item Selector */
     menuItemContainer: {
-      marginTop: 4,
+      marginTop: 0,
     },
     menuItemRow: {
       flexDirection: 'row',
@@ -863,7 +871,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       justifyContent: 'space-between',
       backgroundColor: colors.backgroundLight,
       borderRadius: 10,
-      paddingVertical: 8,
+      paddingVertical: 12,
       paddingHorizontal: 12,
       marginBottom: 6,
     },
@@ -890,10 +898,10 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       gap: 10,
     },
     menuItemStepperButton: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      borderWidth: 2,
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      borderWidth: 1.5,
       borderColor: colors.primary,
       alignItems: 'center',
       justifyContent: 'center',
@@ -902,16 +910,16 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       opacity: 0.4,
     },
     menuItemStepperButtonText: {
-      fontSize: 18,
+      fontSize: 15,
       fontWeight: '700',
       color: colors.primary,
-      lineHeight: 20,
+      lineHeight: 16,
     },
     menuItemQuantity: {
-      fontSize: 16,
+      fontSize: 14,
       fontWeight: '700',
       color: colors.textDark,
-      minWidth: 24,
+      minWidth: 20,
       textAlign: 'center',
     },
 
@@ -931,6 +939,41 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       justifyContent: 'center',
       alignItems: 'center',
       backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    },
+    playButtonCircle: {
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      borderWidth: 2,
+      borderColor: '#ffffff',
+      backgroundColor: 'transparent',
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingLeft: 4,
+    },
+    optionImage: {
+      width: 44,
+      height: 44,
+      borderRadius: 8,
+      marginRight: 12,
+      marginLeft: 0,
+      backgroundColor: '#f0f0f0',
+    },
+    optionImageRTL: {
+      marginLeft: 12,
+      marginRight: 0,
+    },
+    menuItemImage: {
+      width: 44,
+      height: 44,
+      borderRadius: 8,
+      marginRight: 12,
+      marginLeft: 0,
+      backgroundColor: '#f0f0f0',
+    },
+    menuItemImageRTL: {
+      marginLeft: 12,
+      marginRight: 0,
     },
   });
 };

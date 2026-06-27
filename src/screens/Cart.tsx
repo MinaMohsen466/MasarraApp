@@ -2575,10 +2575,10 @@ const Cart: React.FC<CartProps> = ({
                 activeOpacity={0.7}
                 onPress={() => setTermsAccepted(prev => !prev)}
                 style={{
-                  width: 22,
-                  height: 22,
-                  borderRadius: 5,
-                  borderWidth: 2,
+                  width: 18,
+                  height: 18,
+                  borderRadius: 4,
+                  borderWidth: 1.5,
                   borderColor: termsAccepted ? colors.primary : '#aaa',
                   backgroundColor: termsAccepted
                     ? colors.primary
@@ -2592,9 +2592,9 @@ const Cart: React.FC<CartProps> = ({
                   <Text
                     style={{
                       color: '#fff',
-                      fontSize: 13,
+                      fontSize: 10,
                       fontWeight: '700',
-                      lineHeight: 15,
+                      lineHeight: 12,
                     }}
                   >
                     ✓
@@ -2613,12 +2613,12 @@ const Cart: React.FC<CartProps> = ({
               >
                 <Text
                   style={{
-                    fontSize: 13,
+                    fontSize: 11,
                     color: '#666',
-                    lineHeight: 19,
+                    lineHeight: 15,
                   }}
                 >
-                  {isRTL ? 'أوافق على ' : 'I agree to the '}
+                  {isRTL ? 'أوافق على ' : 'I agree to '}
                 </Text>
                 <TouchableOpacity
                   activeOpacity={0.7}
@@ -2626,24 +2626,24 @@ const Cart: React.FC<CartProps> = ({
                 >
                   <Text
                     style={{
-                      fontSize: 13,
+                      fontSize: 11,
                       color: colors.primary,
                       fontWeight: '700',
-                      lineHeight: 19,
+                      lineHeight: 15,
                       textDecorationLine: 'underline',
                     }}
                   >
-                    {isRTL ? 'الشروط والأحكام' : 'Terms & Conditions'}
+                    {isRTL ? 'الشروط' : 'Terms & Conditions'}
                   </Text>
                 </TouchableOpacity>
                 <Text
                   style={{
-                    fontSize: 13,
+                    fontSize: 11,
                     color: '#666',
-                    lineHeight: 19,
+                    lineHeight: 15,
                   }}
                 >
-                  {isRTL ? ' و ' : ' and the '}
+                  {isRTL ? ' و ' : ' & '}
                 </Text>
                 <TouchableOpacity
                   activeOpacity={0.7}
@@ -2651,25 +2651,16 @@ const Cart: React.FC<CartProps> = ({
                 >
                   <Text
                     style={{
-                      fontSize: 13,
+                      fontSize: 11,
                       color: colors.primary,
                       fontWeight: '700',
-                      lineHeight: 19,
+                      lineHeight: 15,
                       textDecorationLine: 'underline',
                     }}
                   >
                     {isRTL ? 'سياسة الاسترجاع' : 'Refund Policy'}
                   </Text>
                 </TouchableOpacity>
-                <Text
-                  style={{
-                    fontSize: 13,
-                    color: '#666',
-                    lineHeight: 19,
-                  }}
-                >
-                  {isRTL ? ' الخاصة بـ مسرة' : ' of Masarra'}
-                </Text>
               </View>
             </View>
 
