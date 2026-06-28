@@ -3,7 +3,7 @@ import { colors } from '../../constants/colors';
 
 export const createStyles = (SCREEN_WIDTH: number) => {
   const isTablet = SCREEN_WIDTH >= 600;
-  const cardsVisible = isTablet ? 3.2 : 2.3;
+  const cardsVisible = isTablet ? 3.2 : 2.25; // Changed from 2.05 to 2.25 to reduce card width
   const CARD_WIDTH = (SCREEN_WIDTH - 0) / cardsVisible;
 
   return StyleSheet.create({
@@ -87,14 +87,14 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       width: CARD_WIDTH,
       backgroundColor: colors.backgroundCard,
       borderRadius: 16,
-      marginRight: 12,
+      marginRight: 6, // Reduced from 8 to 6 to reduce gap between cards
       overflow: 'hidden',
       borderWidth: 1,
       borderColor: colors.border,
     },
     imageContainer: {
       width: '100%',
-      height: 170,
+      height: isTablet ? 200 : 140, // Reduced from 170 to 140 on mobile
       backgroundColor: colors.backgroundLight,
       overflow: 'hidden',
       borderRadius: 16,
@@ -137,25 +137,25 @@ export const createStyles = (SCREEN_WIDTH: number) => {
     },
     infoContainer: {
       padding: 8,
-      minHeight: 160,
+      minHeight: isTablet ? 180 : 110, // Reduced from 160 to 110 on mobile
     },
     serviceName: {
-      fontSize: 16,
+      fontSize: 14, // Reduced from 16
       fontWeight: '700',
       color: colors.textDark,
-      marginBottom: 8,
-      minHeight: 24,
+      marginBottom: 4, // Reduced from 8
+      minHeight: 20, // Reduced from 24
     },
     serviceNameRTL: {
       textAlign: 'right',
       writingDirection: 'rtl',
     },
     serviceDescription: {
-      fontSize: 12,
+      fontSize: 11, // Reduced from 12
       color: colors.textSecondary,
-      lineHeight: 20,
-      marginBottom: 12,
-      minHeight: 40,
+      lineHeight: 16, // Reduced from 20
+      marginBottom: 6, // Reduced from 12
+      minHeight: 32, // Reduced from 40
       flex: 1,
     },
     serviceDescriptionRTL: {
@@ -166,10 +166,10 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'flex-end',
-      paddingTop: 12,
+      paddingTop: 6, // Reduced from 12
       borderTopWidth: 1,
       borderTopColor: colors.border,
-      gap: 8,
+      gap: 4,
       marginTop: 'auto',
     },
     priceRatingRowRTL: {
@@ -180,6 +180,9 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       alignItems: 'flex-start',
       flex: 1,
       minWidth: 0,
+    },
+    priceColumnRTL: {
+      alignItems: 'flex-end',
     },
     ratingRow: {
       flexDirection: 'row',

@@ -657,6 +657,7 @@ function AppContent() {
             onBack={handleBack}
             onShowChat={() => setShowBottomNav(false)}
             onHideChat={() => setShowBottomNav(true)}
+            onNavigate={handleNavigation}
           />
         );
       case 'addresses':

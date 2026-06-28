@@ -143,4 +143,54 @@ export const styles = StyleSheet.create({
     textAlign: 'right',
     writingDirection: 'rtl',
   },
+  vendorBanner: {
+    backgroundColor: '#EBF7F6',
+    borderWidth: 1,
+    borderColor: '#C3E5E2',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  vendorBannerRTL: {
+    flexDirection: 'row-reverse',
+  },
+  vendorBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 12,
+  },
+  vendorBannerLeftRTL: {
+    flexDirection: 'row-reverse',
+  },
+  vendorIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#C3E5E2',
+  },
+  vendorBannerTextContainer: {
+    flex: 1,
+    alignItems: 'flex-start',
+  },
+  vendorBannerTextContainerRTL: {
+    alignItems: 'flex-end',
+  },
+  vendorBannerTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.primaryDark,
+    marginBottom: 2,
+  },
+  vendorBannerSubtitle: {
+    fontSize: 11,
+    color: colors.textSecondary,
+  },
 });

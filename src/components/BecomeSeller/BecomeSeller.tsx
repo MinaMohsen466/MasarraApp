@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { submitVendorApplication } from '../../services/api';
 import { colors } from '../../constants/colors';
 import { styles } from './styles';
@@ -30,11 +31,12 @@ interface BecomeSellerProps {
 
 const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack }) => {
   const { isRTL, t } = useLanguage();
+  const { user } = useAuth();
   const insets = useSafeAreaInsets();
 
   const [businessName, setBusinessName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState(user?.email || '');
+  const [phone, setPhone] = useState(user?.phone || '');
   const [licenseImageUri, setLicenseImageUri] = useState<string | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -378,7 +380,11 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack }) => {
                   ]}
                 />
                 <TextInput
-                  style={[styles.input, isRTL && styles.inputRTL]}
+                  style={[
+                    styles.input,
+                    isRTL && styles.inputRTL,
+                    user?.email && { color: '#9CA3AF' }
+                  ]}
                   value={email}
                   onChangeText={setEmail}
                   placeholder={isRTL ? 'البريد الإلكتروني' : 'Enter email address'}
@@ -387,7 +393,7 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack }) => {
                   autoCapitalize="none"
                   onFocus={() => setEmailActive(true)}
                   onBlur={() => setEmailActive(false)}
-                  editable={!isSubmitting}
+                  editable={!isSubmitting && !user?.email}
                 />
               </View>
             </View>

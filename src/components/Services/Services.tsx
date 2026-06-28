@@ -161,7 +161,7 @@ const Services: React.FC<ServicesProps> = ({ onSelectService, onViewAll }) => {
           <View
             style={[styles.priceRatingRow, isRTL && styles.priceRatingRowRTL]}
           >
-            <View style={styles.priceColumn}>
+            <View style={[styles.priceColumn, isRTL && styles.priceColumnRTL]}>
               {item.hidePrice ? (
                 <>
                   <Text
@@ -187,7 +187,17 @@ const Services: React.FC<ServicesProps> = ({ onSelectService, onViewAll }) => {
                     {isRTL ? 'السعر يبدأ من' : 'Price starts from'}
                   </Text>
                   {hasDiscount ? (
-                    <View style={{ gap: 2 }}>
+                    <View
+                      style={[
+                        {
+                          flexDirection: 'row',
+                          alignItems: 'baseline',
+                          gap: 6,
+                          flexWrap: 'wrap',
+                        },
+                        isRTL && { flexDirection: 'row-reverse' },
+                      ]}
+                    >
                       <Text
                         style={[
                           styles.priceValue,

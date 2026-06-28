@@ -24,12 +24,14 @@ interface ContactProps {
   onBack?: () => void;
   onShowChat?: () => void;
   onHideChat?: () => void;
+  onNavigate?: (route: string) => void;
 }
 
 const Contact: React.FC<ContactProps> = ({
   onBack,
   onShowChat,
   onHideChat,
+  onNavigate,
 }) => {
   const { isRTL } = useLanguage();
   const insets = useSafeAreaInsets();
@@ -306,6 +308,52 @@ const Contact: React.FC<ContactProps> = ({
               )}
             </View>
           ) : null}
+
+          {/* Become a Seller Promo Banner */}
+          {(!isLoggedIn || (user && user.role === 'customer')) && (
+            <TouchableOpacity
+              style={[contactStyles.vendorBanner, isRTL && contactStyles.vendorBannerRTL]}
+              onPress={() => onNavigate && onNavigate('become-seller')}
+              activeOpacity={0.8}
+            >
+              <View style={[contactStyles.vendorBannerLeft, isRTL && contactStyles.vendorBannerLeftRTL]}>
+                <View style={contactStyles.vendorIconContainer}>
+                  <Svg
+                    width={22}
+                    height={22}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke={colors.primary}
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <Path d="M3 21h18M3 10h18M5 10V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v5M10 21V14h4v7" />
+                  </Svg>
+                </View>
+                <View style={[contactStyles.vendorBannerTextContainer, isRTL && contactStyles.vendorBannerTextContainerRTL]}>
+                  <Text style={[contactStyles.vendorBannerTitle, isRTL && contactStyles.textRTL]}>
+                    {isRTL ? 'سجل كمزود خدمة' : 'Register as a Vendor'}
+                  </Text>
+                  <Text style={[contactStyles.vendorBannerSubtitle, isRTL && contactStyles.textRTL]}>
+                    {isRTL ? 'ابدأ في تقديم خدماتك وحقق أرباحاً معنا' : 'Start offering your services & earn with us'}
+                  </Text>
+                </View>
+              </View>
+              <Svg
+                width={16}
+                height={16}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={colors.primary}
+                strokeWidth={2.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <Path d={isRTL ? 'M15 18l-6-6 6-6' : 'M9 18l6-6-6-6'} />
+              </Svg>
+            </TouchableOpacity>
+          )}
 
           {/* Additional Information */}
           <View style={contactStyles.additionalInfoContainer}>

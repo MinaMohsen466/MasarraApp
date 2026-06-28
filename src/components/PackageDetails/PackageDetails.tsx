@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   useWindowDimensions,
   Alert,
-  Modal,
   Share,
   StatusBar,
   Animated,
@@ -33,7 +32,6 @@ import DatePickerModal from '../DatePickerModal/DatePickerModal';
 import TimePickerModal from '../TimePickerModal/TimePickerModal';
 import { addToCart, updateCartItem } from '../../services/cart';
 import { checkTimeSlotAvailability, getUserBookings } from '../../services/api';
-import AllReviews from '../../screens/AllReviews';
 import WriteReview from '../../screens/WriteReview';
 import {
   getServiceReviews,
@@ -116,7 +114,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
   // Reviews state
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewStats, setReviewStats] = useState<ReviewStats | null>(null);
-  const [showAllReviewsModal, setShowAllReviewsModal] = useState(false);
+  const [isReviewsExpanded, setIsReviewsExpanded] = useState(false);
   const [hasPurchased, setHasPurchased] = useState(false);
   const [userBookingId, setUserBookingId] = useState<string | null>(null);
   const [showWriteReviewModal, setShowWriteReviewModal] = useState(false);
@@ -1507,106 +1505,127 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                 )}
               </View>
 
-              {/* Review Stats */}
+              {/* Review Stats and Reviews Container */}
               {reviewStats && reviewStats.totalRatings > 0 && (
                 <View
-                  style={[
-                    styles.reviewStatsCard,
-                    isRTL && { flexDirection: 'row-reverse' },
-                  ]}
+                  style={{
+                    backgroundColor: colors.backgroundCard,
+                    borderRadius: 16,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    marginTop: 12,
+                    overflow: 'hidden',
+                  }}
                 >
+                  {/* Review Stats */}
                   <View
                     style={[
-                      styles.averageRatingContainer,
-                      isRTL && {
-                        paddingRight: 0,
-                        paddingLeft: 16,
-                        borderRightWidth: 0,
-                        borderLeftWidth: 1,
+                      styles.reviewStatsCard,
+                      isRTL && { flexDirection: 'row-reverse' },
+                      {
+                        backgroundColor: 'transparent',
+                        borderWidth: 0,
+                        marginBottom: 0,
+                        elevation: 0,
+                        shadowOpacity: 0,
+                        borderBottomWidth: reviews.length > 0 ? 1 : 0,
+                        borderBottomColor: colors.border,
+                        borderRadius: 0,
                       },
                     ]}
                   >
-                    <Text style={styles.averageRatingNumber}>
-                      {reviewStats.averageRating.toFixed(1)}
-                    </Text>
-                    <Text style={styles.averageRatingStars}>
-                      {'★'.repeat(Math.round(reviewStats.averageRating))}
-                      {'☆'.repeat(5 - Math.round(reviewStats.averageRating))}
-                    </Text>
-                    <Text style={styles.averageRatingText}>
-                      {reviewStats.totalRatings} {isRTL ? 'تقييم' : 'reviews'}
-                    </Text>
-                  </View>
-
-                  {/* Rating Distribution */}
-                  <View
-                    style={[
-                      styles.ratingDistribution,
-                      isRTL && { paddingLeft: 0, paddingRight: 16 },
-                    ]}
-                  >
-                    {[5, 4, 3, 2, 1].map(star => {
-                      const count =
-                        reviewStats.ratingDistribution[
-                        star as keyof typeof reviewStats.ratingDistribution
-                        ] || 0;
-                      const percentage =
-                        reviewStats.totalRatings > 0
-                          ? (count / reviewStats.totalRatings) * 100
-                          : 0;
-                      return (
-                        <View
-                          key={star}
-                          style={[
-                            styles.distributionRow,
-                            isRTL && { flexDirection: 'row-reverse' },
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.distributionStar,
-                              { textAlign: isRTL ? 'left' : 'right' },
-                            ]}
-                          >
-                            {star}★
-                          </Text>
-                          <View style={styles.distributionBar}>
-                            <View
-                              style={[
-                                styles.distributionFill,
-                                { width: `${percentage}%` },
-                              ]}
-                            />
-                          </View>
-                          <Text
-                            style={[
-                              styles.distributionCount,
-                              { textAlign: isRTL ? 'right' : 'left' },
-                            ]}
-                          >
-                            {count}
-                          </Text>
-                        </View>
-                      );
-                    })}
-                  </View>
-                </View>
-              )}
-
-              {/* Individual Reviews */}
-              {reviewStats &&
-                reviewStats.totalRatings > 0 &&
-                reviews.length > 0 && (
-                  <View>
-                    <ScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={styles.reviewsListHorizontal}
+                    <View
+                      style={[
+                        styles.averageRatingContainer,
+                        isRTL && {
+                          paddingRight: 0,
+                          paddingLeft: 16,
+                          borderRightWidth: 0,
+                          borderLeftWidth: 1,
+                        },
+                      ]}
                     >
-                      {reviews.slice(0, 5).map(review => (
+                      <Text style={styles.averageRatingNumber}>
+                        {reviewStats.averageRating.toFixed(1)}
+                      </Text>
+                      <Text style={styles.averageRatingStars}>
+                        {'★'.repeat(Math.round(reviewStats.averageRating))}
+                        {'☆'.repeat(5 - Math.round(reviewStats.averageRating))}
+                      </Text>
+                      <Text style={styles.averageRatingText}>
+                        {reviewStats.totalRatings} {isRTL ? 'تقييم' : 'reviews'}
+                      </Text>
+                    </View>
+
+                    {/* Rating Distribution */}
+                    <View
+                      style={[
+                        styles.ratingDistribution,
+                        isRTL && { paddingLeft: 0, paddingRight: 16 },
+                      ]}
+                    >
+                      {[5, 4, 3, 2, 1].map(star => {
+                        const count =
+                          reviewStats.ratingDistribution[
+                            star as keyof typeof reviewStats.ratingDistribution
+                          ] || 0;
+                        const percentage =
+                          reviewStats.totalRatings > 0
+                            ? (count / reviewStats.totalRatings) * 100
+                            : 0;
+                        return (
+                          <View
+                            key={star}
+                            style={[
+                              styles.distributionRow,
+                              isRTL && { flexDirection: 'row-reverse' },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.distributionStar,
+                                { textAlign: isRTL ? 'left' : 'right' },
+                              ]}
+                            >
+                              {star}★
+                            </Text>
+                            <View style={styles.distributionBar}>
+                              <View
+                                style={[
+                                  styles.distributionFill,
+                                  { width: `${percentage}%` },
+                                ]}
+                              />
+                            </View>
+                            <Text
+                              style={[
+                                styles.distributionCount,
+                                { textAlign: isRTL ? 'right' : 'left' },
+                              ]}
+                            >
+                              {count}
+                            </Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  </View>
+
+                  {/* Individual Reviews */}
+                  {reviews.length > 0 && (
+                    <View style={{ paddingHorizontal: 16, paddingVertical: 4 }}>
+                      {reviews.slice(0, isReviewsExpanded ? reviews.length : 2).map((review, index) => (
                         <View
                           key={review._id}
-                          style={styles.reviewCardHorizontal}
+                          style={{
+                            paddingVertical: 10,
+                            borderBottomWidth:
+                              index <
+                              (isReviewsExpanded ? reviews.length : Math.min(reviews.length, 2)) - 1
+                                ? 1
+                                : 0,
+                            borderBottomColor: colors.border,
+                          }}
                         >
                           <View style={styles.reviewHeader}>
                             <View
@@ -1618,17 +1637,32 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                               {review.user?.profilePicture ? (
                                 <Image
                                   source={{
-                                    uri: getImageUrl(
-                                      review.user.profilePicture,
-                                    ),
+                                    uri: getImageUrl(review.user.profilePicture),
                                   }}
-                                  style={styles.reviewUserAvatar}
+                                  style={{
+                                    width: 26,
+                                    height: 26,
+                                    borderRadius: 13,
+                                  }}
                                 />
                               ) : (
                                 <View
-                                  style={styles.reviewUserAvatarPlaceholder}
+                                  style={{
+                                    width: 26,
+                                    height: 26,
+                                    borderRadius: 13,
+                                    backgroundColor: colors.primary,
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                  }}
                                 >
-                                  <Text style={styles.reviewUserAvatarText}>
+                                  <Text
+                                    style={{
+                                      color: '#FFF',
+                                      fontSize: 12,
+                                      fontWeight: '600',
+                                    }}
+                                  >
                                     {(review.user?.name || 'M')
                                       .charAt(0)
                                       .toUpperCase()}
@@ -1643,6 +1677,8 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                                       : 'row',
                                     alignItems: 'center',
                                     flexWrap: 'wrap',
+                                    marginLeft: isRTL ? 0 : 8,
+                                    marginRight: isRTL ? 8 : 0,
                                   }}
                                 >
                                   <Text
@@ -1663,6 +1699,8 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                                       : 'row',
                                     alignItems: 'center',
                                     marginTop: 2,
+                                    marginLeft: isRTL ? 0 : 8,
+                                    marginRight: isRTL ? 8 : 0,
                                   }}
                                 >
                                   <Text style={styles.reviewDate}>
@@ -1748,7 +1786,6 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                               styles.reviewComment,
                               isRTL && styles.reviewCommentRTL,
                             ]}
-                            numberOfLines={2}
                           >
                             {review.comment}
                           </Text>
@@ -1769,7 +1806,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                                     styles.vendorReplyText,
                                     isRTL && styles.vendorReplyTextRTL,
                                   ]}
-                                  numberOfLines={1}
+                                  numberOfLines={2}
                                 >
                                   {review.vendorReply.text}
                                 </Text>
@@ -1777,65 +1814,61 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                             )}
                         </View>
                       ))}
-                    </ScrollView>
+                    </View>
+                  )}
 
-                    {/* Show More Reviews Button */}
-                    {reviews.length > 2 && (
-                      <TouchableOpacity
-                        style={styles.showMoreReviewsButton}
-                        activeOpacity={0.7}
-                        onPress={() => setShowAllReviewsModal(true)}
+                  {/* Show More/Less Button */}
+                  {reviews.length > 2 && (
+                    <TouchableOpacity
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        paddingVertical: 8,
+                        paddingHorizontal: 16,
+                        alignSelf: 'center',
+                        marginTop: 8,
+                        marginBottom: 8,
+                      }}
+                      activeOpacity={0.7}
+                      onPress={() => setIsReviewsExpanded(!isReviewsExpanded)}
+                    >
+                      <Text style={{ fontSize: 13, fontWeight: '600', color: colors.primary }}>
+                        {isReviewsExpanded
+                          ? (isRTL ? 'عرض أقل' : 'Show Less')
+                          : (isRTL
+                              ? `عرض المزيد (${reviews.length - 2})`
+                              : `Show More (${reviews.length - 2})`)}
+                      </Text>
+                      <Svg
+                        width={16}
+                        height={16}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        style={{
+                          marginLeft: isRTL ? 0 : 4,
+                          marginRight: isRTL ? 4 : 0,
+                          transform: [{ rotate: isReviewsExpanded ? '270deg' : '90deg' }],
+                        }}
                       >
-                        <Text style={styles.showMoreReviewsText}>
-                          {isRTL
-                            ? `عرض جميع التقييمات (${reviews.length})`
-                            : `Show All Reviews (${reviews.length})`}
-                        </Text>
-                        <Svg
-                          width={20}
-                          height={20}
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          style={{
-                            marginLeft: isRTL ? 0 : 8,
-                            marginRight: isRTL ? 8 : 0,
-                            transform: isRTL ? [{ rotate: '180deg' }] : [],
-                          }}
-                        >
-                          <Path
-                            d="M9 18l6-6-6-6"
-                            stroke={colors.primary}
-                            strokeWidth={2}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </Svg>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                )}
+                        <Path
+                          d="M9 18l6-6-6-6"
+                          stroke={colors.primary}
+                          strokeWidth={2.5}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </Svg>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
             </View>
           )}
         </View>
       </Animated.ScrollView>
 
-      {/* All Reviews Modal */}
-      <Modal
-        visible={showAllReviewsModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowAllReviewsModal(false)}
-      >
-        {reviewStats && reviews.length > 0 && (
-          <AllReviews
-            reviews={reviews}
-            reviewStats={reviewStats}
-            serviceName={displayName}
-            onBack={() => setShowAllReviewsModal(false)}
-            onReviewDeleted={() => refetchReviews()}
-          />
-        )}
-      </Modal>
+
 
       {/* Write Review Modal */}
       {packageData?.service && (
