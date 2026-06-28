@@ -11,6 +11,8 @@ import {
   Modal,
   Share,
   StatusBar,
+  Animated,
+  Clipboard,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -61,10 +63,12 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
   const styles = createStyles(SCREEN_WIDTH);
   const { isRTL } = useLanguage();
   const insets = useSafeAreaInsets();
-  const fixedHeight = insets.top + 46;
+  const fixedHeight = insets.top + 56; // Increased from 46 to 56 to add vertical padding
   const isTablet = SCREEN_WIDTH >= 600;
   const backIconSize = isTablet ? 18 : 20;
   const headerIconSize = isTablet ? 16 : 18;
+  const imageHeight = isTablet ? 480 : 380;
+  const threshold = imageHeight - fixedHeight - 20;
   const {
     data: packageData,
     isLoading,
@@ -75,6 +79,25 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
     error: any;
   };
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Ref to track scroll position and interpolate header background & title opacity
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const headerBgColor = scrollY.interpolate({
+    inputRange: [threshold - 60, threshold],
+    outputRange: ['rgba(206, 223, 215, 0)', 'rgba(206, 223, 215, 1)'],
+    extrapolate: 'clamp',
+  });
+  const headerBorderColor = scrollY.interpolate({
+    inputRange: [threshold - 60, threshold],
+    outputRange: ['rgba(44, 95, 93, 0)', 'rgba(44, 95, 93, 0.1)'],
+    extrapolate: 'clamp',
+  });
+  const titleOpacity = scrollY.interpolate({
+    inputRange: [threshold - 30, threshold],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
+
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -527,7 +550,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
       showAlert(
         isRTL ? 'خطأ' : 'Error',
         err.message ||
-          (isRTL ? 'فشل في إضافة الباقة' : 'Failed to add package'),
+        (isRTL ? 'فشل في إضافة الباقة' : 'Failed to add package'),
       );
     } finally {
       setIsAddingToCart(false);
@@ -582,7 +605,14 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
       // Create package URL
       const packageUrl = `https://masarrakw.com/packages/${packageData._id}`;
 
-      await Share.share({ message: packageUrl });
+      // Copy link to clipboard
+      await Clipboard.setString(packageUrl);
+
+      // Build sharing message
+      const packageName = isRTL ? packageData.nameAr : packageData.name;
+      const shareMessage = `${packageName}\n${packageUrl}`;
+
+      await Share.share({ message: shareMessage });
     } catch (error: any) {
       Alert.alert(
         isRTL ? 'خطأ' : 'Error',
@@ -616,12 +646,15 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
         translucent={true}
       />
       {/* Header */}
-      <View
+      <Animated.View
         style={[
           styles.header,
           {
             height: fixedHeight,
             paddingTop: insets.top,
+            backgroundColor: headerBgColor,
+            borderBottomWidth: 1,
+            borderBottomColor: headerBorderColor,
           },
         ]}
       >
@@ -629,26 +662,34 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
         <View style={styles.headerLeft}>
           {!isRTL ? (
             // LTR: Back button on left
-            <TouchableOpacity
-              onPress={onBack}
-              activeOpacity={0.7}
-              style={styles.headerButton}
-            >
-              <Svg
-                width={backIconSize}
-                height={backIconSize}
-                viewBox="0 0 24 24"
-                fill="none"
+            <>
+              <TouchableOpacity
+                onPress={onBack}
+                activeOpacity={0.7}
+                style={styles.headerButton}
               >
-                <Path
-                  d="M15 6l-6 6 6 6"
-                  stroke={colors.primary}
-                  strokeWidth={2.4}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </Svg>
-            </TouchableOpacity>
+                <Svg
+                  width={backIconSize}
+                  height={backIconSize}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <Path
+                    d="M15 6l-6 6 6 6"
+                    stroke={colors.primary}
+                    strokeWidth={2.4}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              </TouchableOpacity>
+              <Animated.Text
+                style={[styles.headerTitle, { marginLeft: 4, opacity: titleOpacity }]}
+                numberOfLines={1}
+              >
+                {packageData?.name}
+              </Animated.Text>
+            </>
           ) : (
             // RTL: Wishlist & Share on left
             <>
@@ -721,26 +762,34 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
         <View style={styles.headerRight}>
           {isRTL ? (
             // RTL: Back button on right
-            <TouchableOpacity
-              onPress={onBack}
-              activeOpacity={0.7}
-              style={styles.headerButton}
-            >
-              <Svg
-                width={backIconSize}
-                height={backIconSize}
-                viewBox="0 0 24 24"
-                fill="none"
+            <>
+              <Animated.Text
+                style={[styles.headerTitle, { marginRight: 4, opacity: titleOpacity }]}
+                numberOfLines={1}
               >
-                <Path
-                  d="M9 6l6 6-6 6"
-                  stroke={colors.primary}
-                  strokeWidth={2.4}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </Svg>
-            </TouchableOpacity>
+                {packageData?.nameAr || packageData?.name}
+              </Animated.Text>
+              <TouchableOpacity
+                onPress={onBack}
+                activeOpacity={0.7}
+                style={styles.headerButton}
+              >
+                <Svg
+                  width={backIconSize}
+                  height={backIconSize}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <Path
+                    d="M9 6l6 6-6 6"
+                    stroke={colors.primary}
+                    strokeWidth={2.4}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              </TouchableOpacity>
+            </>
           ) : (
             // LTR: Wishlist & Share on right
             <>
@@ -808,11 +857,16 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
             </>
           )}
         </View>
-      </View>
+      </Animated.View>
 
-      <ScrollView
+      <Animated.ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false }
+        )}
+        scrollEventThrottle={16}
         contentContainerStyle={[
           styles.scrollContent,
           {
@@ -931,19 +985,19 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                 >
                   {isRTL
                     ? `استرداد كامل حتى ${(() => {
-                        const h = packageData.vendor.vendorProfile.refundPeriodHours;
-                        if (h === 0) return 'أي وقت';
-                        if (h < 24) return `${h} ساعة`;
-                        const d = Number((h / 24).toFixed(1).replace(/\.0$/, ''));
-                        return `${d} يوم`;
-                      })()} قبل المناسبة`
+                      const h = packageData.vendor.vendorProfile.refundPeriodHours;
+                      if (h === 0) return 'أي وقت';
+                      if (h < 24) return `${h} ساعة`;
+                      const d = Number((h / 24).toFixed(1).replace(/\.0$/, ''));
+                      return `${d} يوم`;
+                    })()} قبل المناسبة`
                     : `Full refund up to ${(() => {
-                        const h = packageData.vendor.vendorProfile.refundPeriodHours;
-                        if (h === 0) return 'any time';
-                        if (h < 24) return `${h} hours`;
-                        const d = Number((h / 24).toFixed(1).replace(/\.0$/, ''));
-                        return `${d} days`;
-                      })()} before the event`}
+                      const h = packageData.vendor.vendorProfile.refundPeriodHours;
+                      if (h === 0) return 'any time';
+                      if (h < 24) return `${h} hours`;
+                      const d = Number((h / 24).toFixed(1).replace(/\.0$/, ''));
+                      return `${d} days`;
+                    })()} before the event`}
                 </Text>
               </View>
             </View>
@@ -1070,16 +1124,16 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                 >
                   {selectedDate
                     ? selectedDate.toLocaleDateString(
-                        isRTL ? 'ar-KW' : 'en-US',
-                        {
-                          year: 'numeric',
-                          month: '2-digit',
-                          day: '2-digit',
-                        },
-                      )
+                      isRTL ? 'ar-KW' : 'en-US',
+                      {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                      },
+                    )
                     : isRTL
-                    ? 'اختر التاريخ'
-                    : 'Select Date'}
+                      ? 'اختر التاريخ'
+                      : 'Select Date'}
                 </Text>
               </TouchableOpacity>
 
@@ -1149,16 +1203,16 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                       ? 'جاري التحقق...'
                       : 'Checking...'
                     : !isTimeSlotAvailable && selectedDate && selectedTime
-                    ? isRTL
-                      ? '✗ غير متاح'
-                      : '✗ Not Available'
-                    : selectedDate && selectedTime
-                    ? isRTL
-                      ? '✓ متاح'
-                      : '✓ Available'
-                    : isRTL
-                    ? 'اختر التاريخ والوقت'
-                    : 'Select Date & Time'}
+                      ? isRTL
+                        ? '✗ غير متاح'
+                        : '✗ Not Available'
+                      : selectedDate && selectedTime
+                        ? isRTL
+                          ? '✓ متاح'
+                          : '✓ Available'
+                        : isRTL
+                          ? 'اختر التاريخ والوقت'
+                          : 'Select Date & Time'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -1494,7 +1548,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                     {[5, 4, 3, 2, 1].map(star => {
                       const count =
                         reviewStats.ratingDistribution[
-                          star as keyof typeof reviewStats.ratingDistribution
+                        star as keyof typeof reviewStats.ratingDistribution
                         ] || 0;
                       const percentage =
                         reviewStats.totalRatings > 0
@@ -1763,7 +1817,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
             </View>
           )}
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
 
       {/* All Reviews Modal */}
       <Modal
@@ -1880,16 +1934,16 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                     ? 'جاري الإضافة...'
                     : 'ADDING...'
                   : isSuccessState
-                  ? isRTL
-                    ? '✓ تم الإضافة'
-                    : '✓ ADDED'
-                  : editCartItemId
-                  ? isRTL
-                    ? 'حفظ التغييرات'
-                    : 'SAVE CHANGES'
-                  : isRTL
-                  ? 'أضف إلى السلة'
-                  : 'ADD TO CART'}
+                    ? isRTL
+                      ? '✓ تم الإضافة'
+                      : '✓ ADDED'
+                    : editCartItemId
+                      ? isRTL
+                        ? 'حفظ التغييرات'
+                        : 'SAVE CHANGES'
+                      : isRTL
+                        ? 'أضف إلى السلة'
+                        : 'ADD TO CART'}
               </Text>
             </>
           )}

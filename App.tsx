@@ -565,6 +565,7 @@ function AppContent() {
             onBack={handleBack}
             onSelectService={(serviceId) => handleServiceSelect(serviceId, 'services')}
             onSelectOccasion={(occasion) => handleOccasionSelect(occasion._id, occasion.name || occasion.nameAr, 'occasions')}
+            onSelectPackage={(packageId) => handlePackageSelect(packageId, 'packages')}
           />
         );
       case 'occasions':

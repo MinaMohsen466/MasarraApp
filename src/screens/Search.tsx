@@ -18,12 +18,15 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useServices } from '../hooks/useServices';
 import { useOccasions } from '../hooks/useOccasions';
 import { getServiceImageUrl } from '../services/servicesApi';
+import { getImageUrl } from '../services/api';
+import { usePackages } from '../hooks/usePackages';
 import { colors } from '../constants/colors';
 
 interface SearchProps {
   onBack?: () => void;
   onSelectService?: (serviceId: string) => void;
   onSelectOccasion?: (occasion: any) => void;
+  onSelectPackage?: (packageId: string) => void;
 }
 
 const { width } = Dimensions.get('window');
@@ -57,10 +60,12 @@ const Search: React.FC<SearchProps> = ({
   onBack,
   onSelectService,
   onSelectOccasion,
+  onSelectPackage,
 }) => {
   const { isRTL } = useLanguage();
   const { data: services, isLoading: servicesLoading } = useServices();
   const { data: occasions, isLoading: occasionsLoading } = useOccasions();
+  const { data: packages } = usePackages();
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredResults, setFilteredResults] = useState<any[]>([]);
   const [searchType, setSearchType] = useState<
@@ -96,6 +101,7 @@ const Search: React.FC<SearchProps> = ({
     const results: any[] = [];
 
     if (searchType === 'all' || searchType === 'services') {
+      // 1. Filter Services
       services?.forEach(service => {
         const nameMatch = service.name?.toLowerCase().includes(query);
         const nameArMatch = service.nameAr?.toLowerCase().includes(query);
@@ -104,13 +110,18 @@ const Search: React.FC<SearchProps> = ({
           ?.toLowerCase()
           .includes(query);
         const vendorMatch = service.vendor?.name?.toLowerCase().includes(query);
+        const idMatch = service._id && (
+          service._id.toLowerCase() === query ||
+          query.includes(service._id.toLowerCase())
+        );
 
         if (
           nameMatch ||
           nameArMatch ||
           descMatch ||
           descArMatch ||
-          vendorMatch
+          vendorMatch ||
+          idMatch
         ) {
           results.push({
             ...service,
@@ -119,6 +130,43 @@ const Search: React.FC<SearchProps> = ({
             displaySubtitle:
               service.vendor?.name || (isRTL ? 'خدمة' : 'Service'),
             image: service.images?.[0],
+          });
+        }
+      });
+
+      // 2. Filter Packages
+      packages?.forEach(pkg => {
+        const nameMatch = pkg.name?.toLowerCase().includes(query);
+        const nameArMatch = pkg.nameAr?.toLowerCase().includes(query);
+        const descMatch = pkg.description?.toLowerCase().includes(query);
+        const descArMatch = pkg.descriptionAr
+          ?.toLowerCase()
+          .includes(query);
+        const vendorMatch = pkg.vendor?.name?.toLowerCase().includes(query);
+        const idMatch = pkg._id && (
+          pkg._id.toLowerCase() === query ||
+          query.includes(pkg._id.toLowerCase())
+        );
+
+        if (
+          nameMatch ||
+          nameArMatch ||
+          descMatch ||
+          descArMatch ||
+          vendorMatch ||
+          idMatch
+        ) {
+          results.push({
+            ...pkg,
+            type: 'package',
+            displayName: isRTL ? pkg.nameAr : pkg.name,
+            displaySubtitle:
+              pkg.vendor?.name || (isRTL ? 'باقة' : 'Package'),
+            image: pkg.images?.[0],
+            price: pkg.totalPrice || 0,
+            isOnSale: pkg.discountPrice > 0,
+            salePrice: pkg.discountPrice > 0 ? (pkg.totalPrice - pkg.discountPrice) : undefined,
+            discountPercentage: pkg.discountPrice > 0 && pkg.totalPrice > 0 ? Math.round((pkg.discountPrice / pkg.totalPrice) * 100) : undefined,
           });
         }
       });
@@ -142,11 +190,13 @@ const Search: React.FC<SearchProps> = ({
     }
 
     setFilteredResults(results);
-  }, [searchQuery, services, occasions, searchType, isRTL]);
+  }, [searchQuery, services, occasions, packages, searchType, isRTL]);
 
   const handleResultPress = (item: any) => {
     if (item.type === 'service' && onSelectService) {
       onSelectService(item._id);
+    } else if (item.type === 'package' && onSelectPackage) {
+      onSelectPackage(item._id);
     } else if (item.type === 'occasion' && onSelectOccasion) {
       onSelectOccasion({
         ...item,
@@ -181,6 +231,8 @@ const Search: React.FC<SearchProps> = ({
                   uri:
                     item.type === 'service'
                       ? getServiceImageUrl(item.image)
+                      : item.type === 'package'
+                      ? getImageUrl(item.image)
                       : item.image,
                 }}
                 style={styles.resultImage}
@@ -220,13 +272,26 @@ const Search: React.FC<SearchProps> = ({
           >
             <View style={[styles.badgeRow, isRTL && styles.badgeRowRTL]}>
               <View
-                style={[styles.typeBadge, isOccasion && styles.occasionBadge]}
+                style={[
+                  styles.typeBadge,
+                  isOccasion && styles.occasionBadge,
+                  item.type === 'package' && styles.packageBadge,
+                ]}
               >
-                <Text style={styles.typeBadgeText}>
+                <Text
+                  style={[
+                    styles.typeBadgeText,
+                    item.type === 'package' && styles.packageBadgeText,
+                  ]}
+                >
                   {isOccasion
                     ? isRTL
                       ? 'مناسبة'
                       : 'Occasion'
+                    : item.type === 'package'
+                    ? isRTL
+                      ? 'باقة'
+                      : 'Package'
                     : isRTL
                     ? 'خدمة'
                     : 'Service'}
@@ -882,6 +947,12 @@ const styles = StyleSheet.create({
   },
   occasionBadge: {
     backgroundColor: '#FF6B6B20',
+  },
+  packageBadge: {
+    backgroundColor: '#8A2BE220',
+  },
+  packageBadgeText: {
+    color: '#8A2BE2',
   },
   typeBadgeText: {
     fontSize: 10,

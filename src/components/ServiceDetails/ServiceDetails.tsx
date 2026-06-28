@@ -14,6 +14,7 @@ import {
   Animated,
   TextInput,
   StatusBar,
+  Clipboard,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import Svg, { Path } from 'react-native-svg';
@@ -70,15 +71,35 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
   const { isRTL } = useLanguage();
   const { globalSelectedDate, setGlobalSelectedDate } = useGlobalDate();
   const insets = useSafeAreaInsets();
-  const fixedHeight = insets.top + 46; // 22 (ACTIONS_BAR_HEIGHT) + 24 (EXTRA_HEIGHT)
+  const fixedHeight = insets.top + 56; // Increased from 46 to 56 to add vertical padding
 
   const isTablet = SCREEN_WIDTH >= 600;
   const backIconSize = isTablet ? 18 : 20;
   const headerIconSize = isTablet ? 16 : 18;
+  const carouselHeight = isTablet ? 480 : 380;
+  const threshold = carouselHeight - fixedHeight - 20;
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const dotAnimations = useRef<Animated.Value[]>([]).current;
+
+  // Ref to track scroll position and interpolate header background & title opacity
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const headerBgColor = scrollY.interpolate({
+    inputRange: [threshold - 60, threshold],
+    outputRange: ['rgba(206, 223, 215, 0)', 'rgba(206, 223, 215, 1)'],
+    extrapolate: 'clamp',
+  });
+  const headerBorderColor = scrollY.interpolate({
+    inputRange: [threshold - 60, threshold],
+    outputRange: ['rgba(44, 95, 93, 0)', 'rgba(44, 95, 93, 0.1)'],
+    extrapolate: 'clamp',
+  });
+  const titleOpacity = scrollY.interpolate({
+    inputRange: [threshold - 30, threshold],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
 
   // Date/Time picker state - initialize with global date if available
   const [selectedDate, setSelectedDate] = useState<Date | null>(
@@ -803,8 +824,8 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                   </head>
                   <body>
                     <video src="${getServiceImageUrl(
-                      item.src,
-                    )}" controls autoplay playsinline></video>
+                  item.src,
+                )}" controls autoplay playsinline></video>
                   </body>
                   </html>
                 `,
@@ -927,8 +948,15 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
       // Create service URL
       const serviceUrl = `https://masarrakw.com/services/${service._id}`;
 
+      // Copy link to clipboard
+      await Clipboard.setString(serviceUrl);
+
+      // Build sharing message
+      const serviceName = isRTL ? service.nameAr || service.name : service.name;
+      const shareMessage = `${serviceName}\n${serviceUrl}`;
+
       const result = await Share.share({
-        message: serviceUrl,
+        message: shareMessage,
       });
 
       if (result.action === Share.sharedAction) {
@@ -952,13 +980,16 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
         translucent={true}
       />
       {/* Fixed actions bar under notch (not scrolling) */}
-      <View
+      <Animated.View
         style={[
           styles.fixedActionsRow,
           {
             top: 0,
             height: fixedHeight,
             paddingTop: insets.top,
+            backgroundColor: headerBgColor,
+            borderBottomWidth: 1,
+            borderBottomColor: headerBorderColor,
           },
         ]}
       >
@@ -1030,54 +1061,70 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
               </TouchableOpacity>
             </>
           ) : (
-            <TouchableOpacity
-              onPress={onBack}
-              activeOpacity={0.7}
-              style={styles.headerCircleButton}
-              accessibilityLabel="Back"
-            >
-              <Svg
-                width={backIconSize}
-                height={backIconSize}
-                viewBox="0 0 24 24"
-                fill="none"
+            <>
+              <TouchableOpacity
+                onPress={onBack}
+                activeOpacity={0.7}
+                style={styles.headerCircleButton}
+                accessibilityLabel="Back"
               >
-                <Path
-                  d="M15 18l-6-6 6-6"
-                  stroke={colors.primary}
-                  strokeWidth={2.4}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </Svg>
-            </TouchableOpacity>
+                <Svg
+                  width={backIconSize}
+                  height={backIconSize}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <Path
+                    d="M15 18l-6-6 6-6"
+                    stroke={colors.primary}
+                    strokeWidth={2.4}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              </TouchableOpacity>
+              <Animated.Text
+                style={[styles.headerTitle, { marginLeft: 4, opacity: titleOpacity }]}
+                numberOfLines={1}
+              >
+                {service?.name}
+              </Animated.Text>
+            </>
           )}
         </View>
 
         {/* Right Container: Contains Back button in RTL, Wishlist/Share in LTR */}
         <View style={styles.actionsRight}>
           {isRTL ? (
-            <TouchableOpacity
-              onPress={onBack}
-              activeOpacity={0.7}
-              style={styles.headerCircleButton}
-              accessibilityLabel="Back"
-            >
-              <Svg
-                width={backIconSize}
-                height={backIconSize}
-                viewBox="0 0 24 24"
-                fill="none"
+            <>
+              <Animated.Text
+                style={[styles.headerTitle, { marginRight: 4, opacity: titleOpacity }]}
+                numberOfLines={1}
               >
-                <Path
-                  d="M9 18l6-6-6-6"
-                  stroke={colors.primary}
-                  strokeWidth={2.4}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </Svg>
-            </TouchableOpacity>
+                {service?.nameAr || service?.name}
+              </Animated.Text>
+              <TouchableOpacity
+                onPress={onBack}
+                activeOpacity={0.7}
+                style={styles.headerCircleButton}
+                accessibilityLabel="Back"
+              >
+                <Svg
+                  width={backIconSize}
+                  height={backIconSize}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <Path
+                    d="M9 18l6-6-6-6"
+                    stroke={colors.primary}
+                    strokeWidth={2.4}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </Svg>
+              </TouchableOpacity>
+            </>
           ) : (
             <>
               <TouchableOpacity
@@ -1145,10 +1192,15 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
             </>
           )}
         </View>
-      </View>
+      </Animated.View>
 
-      <ScrollView
+      <Animated.ScrollView
         showsVerticalScrollIndicator={false}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false }
+        )}
+        scrollEventThrottle={16}
         contentContainerStyle={{
           paddingTop: 0,
           paddingBottom:
@@ -1298,11 +1350,11 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                   </Text>
 
                   {service.isOnSale === true &&
-                  ((service.salePrice &&
-                    service.salePrice > 0 &&
-                    service.salePrice < service.price) ||
-                    (service.discountPercentage &&
-                      service.discountPercentage > 0)) ? (
+                    ((service.salePrice &&
+                      service.salePrice > 0 &&
+                      service.salePrice < service.price) ||
+                      (service.discountPercentage &&
+                        service.discountPercentage > 0)) ? (
                     <View style={{ gap: 4 }}>
                       {/* Sale Price (dynamic total) */}
                       <Text style={styles.priceValue}>
@@ -1443,9 +1495,9 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                       policyItem.customTextAr && policyItem.customTextAr.trim();
                     const selectedDescription = policyItem.selectedDescriptionId
                       ? policy.descriptions?.find(
-                          (desc: any) =>
-                            desc._id === policyItem.selectedDescriptionId,
-                        )
+                        (desc: any) =>
+                          desc._id === policyItem.selectedDescriptionId,
+                      )
                       : null;
 
                     const description = hasCustomText
@@ -1453,16 +1505,16 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                         ? policyItem.customTextAr
                         : policyItem.customText
                       : selectedDescription
-                      ? isRTL && selectedDescription.textAr
-                        ? selectedDescription.textAr
-                        : selectedDescription.text
-                      : policy.descriptions && policy.descriptions.length > 0
-                      ? isRTL
-                        ? policy.descriptions[0].textAr
-                        : policy.descriptions[0].text
-                      : isRTL && policy.descriptionAr
-                      ? policy.descriptionAr
-                      : policy.description || '';
+                        ? isRTL && selectedDescription.textAr
+                          ? selectedDescription.textAr
+                          : selectedDescription.text
+                        : policy.descriptions && policy.descriptions.length > 0
+                          ? isRTL
+                            ? policy.descriptions[0].textAr
+                            : policy.descriptions[0].text
+                          : isRTL && policy.descriptionAr
+                            ? policy.descriptionAr
+                            : policy.description || '';
 
                     return (
                       <View
@@ -1536,19 +1588,19 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                   >
                     {isRTL
                       ? `استرداد كامل حتى ${(() => {
-                          const h = service.vendor.vendorProfile.refundPeriodHours;
-                          if (h === 0) return 'أي وقت';
-                          if (h < 24) return `${h} ساعة`;
-                          const d = Number((h / 24).toFixed(1).replace(/\.0$/, ''));
-                          return `${d} يوم`;
-                        })()} قبل المناسبة`
+                        const h = service.vendor.vendorProfile.refundPeriodHours;
+                        if (h === 0) return 'أي وقت';
+                        if (h < 24) return `${h} ساعة`;
+                        const d = Number((h / 24).toFixed(1).replace(/\.0$/, ''));
+                        return `${d} يوم`;
+                      })()} قبل المناسبة`
                       : `Full refund up to ${(() => {
-                          const h = service.vendor.vendorProfile.refundPeriodHours;
-                          if (h === 0) return 'any time';
-                          if (h < 24) return `${h} hours`;
-                          const d = Number((h / 24).toFixed(1).replace(/\.0$/, ''));
-                          return `${d} days`;
-                        })()} before the event`}
+                        const h = service.vendor.vendorProfile.refundPeriodHours;
+                        if (h === 0) return 'any time';
+                        if (h < 24) return `${h} hours`;
+                        const d = Number((h / 24).toFixed(1).replace(/\.0$/, ''));
+                        return `${d} days`;
+                      })()} before the event`}
                   </Text>
                 </View>
               )}
@@ -1612,12 +1664,12 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                 >
                   {selectedDate
                     ? selectedDate.toLocaleDateString(
-                        isRTL ? 'ar-KW' : 'en-US',
-                        { year: 'numeric', month: '2-digit', day: '2-digit' },
-                      )
+                      isRTL ? 'ar-KW' : 'en-US',
+                      { year: 'numeric', month: '2-digit', day: '2-digit' },
+                    )
                     : isRTL
-                    ? 'اختر التاريخ'
-                    : 'Select Date'}
+                      ? 'اختر التاريخ'
+                      : 'Select Date'}
                 </Text>
               </TouchableOpacity>
 
@@ -1684,20 +1736,20 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                       ? 'جاري التحقق...'
                       : 'Checking...'
                     : isTimeInPast()
-                    ? isRTL
-                      ? '⚠ وقت قديم'
-                      : '⚠ Past Time'
-                    : !isTimeSlotAvailable && selectedDate && selectedTime
-                    ? isRTL
-                      ? '✗ غير متاح'
-                      : '✗ Not Available'
-                    : selectedDate && selectedTime
-                    ? isRTL
-                      ? '✓ متاح'
-                      : '✓ Available'
-                    : isRTL
-                    ? 'اختر التاريخ والوقت'
-                    : 'Select Date & Time'}
+                      ? isRTL
+                        ? '⚠ وقت قديم'
+                        : '⚠ Past Time'
+                      : !isTimeSlotAvailable && selectedDate && selectedTime
+                        ? isRTL
+                          ? '✗ غير متاح'
+                          : '✗ Not Available'
+                        : selectedDate && selectedTime
+                          ? isRTL
+                            ? '✓ متاح'
+                            : '✓ Available'
+                          : isRTL
+                            ? 'اختر التاريخ والوقت'
+                            : 'Select Date & Time'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -1754,7 +1806,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
 
                       {/* Group subtitle/description - shown when collapsed */}
                       {!isExpanded &&
-                      (isRTL ? input.descriptionAr : input.description) ? (
+                        (isRTL ? input.descriptionAr : input.description) ? (
                         <Text
                           style={[
                             {
@@ -1781,8 +1833,8 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                               rotate: isExpanded
                                 ? '90deg'
                                 : isRTL
-                                ? '180deg'
-                                : '0deg',
+                                  ? '180deg'
+                                  : '0deg',
                             },
                           ],
                         }}
@@ -1884,8 +1936,8 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                       const currentArray = selectedArray;
                                       const newArray = isSelected
                                         ? currentArray.filter(
-                                            idx => idx !== optIndex,
-                                          )
+                                          idx => idx !== optIndex,
+                                        )
                                         : [...currentArray, optIndex];
 
                                       if (newArray.length === 0) {
@@ -1953,7 +2005,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                         style={[
                                           styles.optionText,
                                           isSelected &&
-                                            styles.optionTextSelected,
+                                          styles.optionTextSelected,
                                         ]}
                                       >
                                         {option}
@@ -1962,8 +2014,8 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                       {(
                                         isRTL
                                           ? input.optionDescriptionsAr?.[
-                                              optIndex
-                                            ]
+                                          optIndex
+                                          ]
                                           : input.optionDescriptions?.[optIndex]
                                       ) ? (
                                         <Text
@@ -1977,11 +2029,11 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                         >
                                           {isRTL
                                             ? input.optionDescriptionsAr[
-                                                optIndex
-                                              ]
+                                            optIndex
+                                            ]
                                             : input.optionDescriptions[
-                                                optIndex
-                                              ]}
+                                            optIndex
+                                            ]}
                                         </Text>
                                       ) : null}
                                     </View>
@@ -2081,7 +2133,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                     style={[
                                       styles.menuItemStepperButton,
                                       qty <= 0 &&
-                                        styles.menuItemStepperButtonDisabled,
+                                      styles.menuItemStepperButtonDisabled,
                                     ]}
                                     onPress={() =>
                                       setMenuQty(option, Math.max(0, qty - 1))
@@ -2201,7 +2253,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                       {[5, 4, 3, 2, 1].map(star => {
                         const count =
                           reviewStats.ratingDistribution[
-                            star as keyof typeof reviewStats.ratingDistribution
+                          star as keyof typeof reviewStats.ratingDistribution
                           ] || 0;
                         const percentage =
                           reviewStats.totalRatings > 0
@@ -2446,7 +2498,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
             </View>
           )}
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
 
       {/* Bottom Action Buttons */}
       <View
@@ -2625,8 +2677,8 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                     const selectedIndices = isMultiple
                       ? (selectedValue as number[]) || []
                       : selectedValue !== undefined
-                      ? [selectedValue as number]
-                      : [];
+                        ? [selectedValue as number]
+                        : [];
 
                     if (selectedIndices.length > 0) {
                       const selectedOptions = selectedIndices.map(
@@ -2851,20 +2903,20 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                 ? 'جاري التحقق...'
                 : 'CHECKING...'
               : isAddingToCart
-              ? isRTL
-                ? 'جاري الإضافة...'
-                : 'ADDING...'
-              : isSuccessState
-              ? isRTL
-                ? '✓ تم الإضافة'
-                : '✓ ADDED'
-              : editCartItemId
-              ? isRTL
-                ? 'حفظ التغييرات'
-                : 'SAVE CHANGES'
-              : isRTL
-              ? 'أضف إلى السلة'
-              : 'ADD TO CART'}
+                ? isRTL
+                  ? 'جاري الإضافة...'
+                  : 'ADDING...'
+                : isSuccessState
+                  ? isRTL
+                    ? '✓ تم الإضافة'
+                    : '✓ ADDED'
+                  : editCartItemId
+                    ? isRTL
+                      ? 'حفظ التغييرات'
+                      : 'SAVE CHANGES'
+                    : isRTL
+                      ? 'أضف إلى السلة'
+                      : 'ADD TO CART'}
           </Text>
         </TouchableOpacity>
 

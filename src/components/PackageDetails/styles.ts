@@ -83,6 +83,13 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       shadowRadius: 4,
       elevation: 3,
     },
+    headerTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.textPrimary,
+      flexShrink: 1,
+      maxWidth: SCREEN_WIDTH - 150,
+    },
 
     // ScrollView Content
     scrollView: {
