@@ -509,7 +509,8 @@ export const createStyles = (SCREEN_WIDTH: number) => {
 
     optionExpandedContent: {
       paddingHorizontal: 12,
-      paddingVertical: 2,
+      paddingTop: 10,
+      paddingBottom: 2,
     },
 
     /* Custom Inputs Section */

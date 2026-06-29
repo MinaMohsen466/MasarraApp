@@ -193,18 +193,28 @@ const Contact: React.FC<ContactProps> = ({
             style={[
               contactStyles.backButton,
               {
-                top: insets.top + 9,
+                top: insets.top + 11,
                 left: isRTL ? undefined : 12,
                 right: isRTL ? 12 : undefined,
               },
             ]}
             activeOpacity={0.8}
           >
-            <Text
-              style={{ fontSize: 37, color: colors.textWhite, lineHeight: 40 }}
+            <Svg
+              width={20}
+              height={20}
+              viewBox="0 0 24 24"
+              fill="none"
+              style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined}
             >
-              {isRTL ? '›' : '‹'}
-            </Text>
+              <Path
+                d="M15 18L9 12L15 6"
+                stroke={colors.textWhite}
+                strokeWidth={2.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
           </TouchableOpacity>
           <Text style={contactStyles.headerTitle}>
             {isRTL ? 'اتصل بنا' : 'Contact Us'}

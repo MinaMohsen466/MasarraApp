@@ -18,9 +18,10 @@ export const styles = StyleSheet.create({
   },
   backButton: {
     position: 'absolute',
-    width: 38,
-    height: 38,
-    borderRadius: 22,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },

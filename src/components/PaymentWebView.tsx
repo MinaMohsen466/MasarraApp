@@ -245,11 +245,11 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
                   // Check if paymentUrl is HTML content or a URL
                   source={
                     paymentUrl.startsWith('<!DOCTYPE') ||
-                    paymentUrl.startsWith('<html')
+                      paymentUrl.startsWith('<html')
                       ? {
-                          html: paymentUrl,
-                          baseUrl: 'https://demo.myfatoorah.com',
-                        }
+                        html: paymentUrl,
+                        baseUrl: 'https://demo.myfatoorah.com',
+                      }
                       : { uri: paymentUrl }
                   }
                   style={styles.webView}
@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    height: '70%',
+    height: '80%',
     backgroundColor: colors.textWhite,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,

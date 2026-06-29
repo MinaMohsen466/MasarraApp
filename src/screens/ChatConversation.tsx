@@ -309,7 +309,7 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
           'Content-Type': 'application/json',
         },
       });
-    } catch {}
+    } catch { }
   };
 
   const handleTyping = (text: string) => {

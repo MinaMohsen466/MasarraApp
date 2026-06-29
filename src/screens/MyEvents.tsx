@@ -70,7 +70,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
   // Date and Occasion filters
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [selectedOccasion, setSelectedOccasion] = useState<string>('');
+  const [selectedOccasionId, setSelectedOccasionId] = useState<string>('');
   const [occasions, setOccasions] = useState<Occasion[]>([]);
   const [showOccasionPicker, setShowOccasionPicker] = useState(false);
 
@@ -111,20 +111,27 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
       });
     }
 
-    // Filter by occasion (service name)
-    if (selectedOccasion) {
+    // Filter by occasion
+    if (selectedOccasionId) {
       filtered = filtered.filter(item => {
-        const serviceName = item.service?.name || '';
-        const serviceNameAr = item.service?.nameAr || '';
-        return (
-          serviceName.toLowerCase().includes(selectedOccasion.toLowerCase()) ||
-          serviceNameAr.toLowerCase().includes(selectedOccasion.toLowerCase())
-        );
+        const fullService = item.service;
+        if (fullService && Array.isArray(fullService.occasions)) {
+          const matchesOccasion = fullService.occasions.some((occ: any) => {
+            const occId = occ.occasion && occ.occasion._id ? String(occ.occasion._id) : String(occ.occasion || '');
+            return occId === selectedOccasionId;
+          });
+          if (matchesOccasion) return true;
+        }
+
+        const bookingOccId = item.booking?.occasion && item.booking.occasion._id
+          ? String(item.booking.occasion._id)
+          : String(item.booking?.occasion || '');
+        return bookingOccId === selectedOccasionId;
       });
     }
 
     return filtered;
-  }, [events, selectedFilter, selectedDate, selectedOccasion]);
+  }, [events, selectedFilter, selectedDate, selectedOccasionId]);
 
   const loadOccasions = async () => {
     try {
@@ -186,6 +193,17 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
 
       allBookings.forEach((booking: any) => {
         (booking.services || []).forEach((s: any) => {
+          // Hide cancelled services
+          if (s.status === 'cancelled') return;
+
+          // Hide services whose event date has already passed
+          const svcDate = s.eventDate || booking.eventDate;
+          if (svcDate) {
+            const eventDay = new Date(svcDate);
+            eventDay.setHours(23, 59, 59, 999); // event counts as "passed" only after its day ends
+            if (eventDay < new Date()) return;
+          }
+
           const serviceId = s.service && s.service._id ? String(s.service._id) : String(s.service || '');
           
           let isServiceAllowed = false;
@@ -484,7 +502,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
   };
 
   const clearOccasionFilter = () => {
-    setSelectedOccasion('');
+    setSelectedOccasionId('');
   };
 
   const formatDate = (dateString: string) => {
@@ -887,10 +905,15 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
                 numberOfLines={1}
                 ellipsizeMode="tail"
               >
-                {selectedOccasion ||
-                  (isRTL ? 'اختر المناسبة' : 'Select Occasion')}
+                {selectedOccasionId
+                  ? (occasions.find(o => o._id === selectedOccasionId)
+                      ? (isRTL
+                          ? occasions.find(o => o._id === selectedOccasionId)?.nameAr
+                          : occasions.find(o => o._id === selectedOccasionId)?.name)
+                      : '')
+                  : (isRTL ? 'اختر المناسبة' : 'Select Occasion')}
               </Text>
-              {selectedOccasion ? (
+              {selectedOccasionId ? (
                 <TouchableOpacity
                   onPress={clearOccasionFilter}
                   style={styles.clearButton}
@@ -974,10 +997,10 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
             visible={showOccasionPicker}
             onClose={() => setShowOccasionPicker(false)}
             onSelect={occasion => {
-              setSelectedOccasion(isRTL ? occasion.nameAr : occasion.name);
+              setSelectedOccasionId(occasion._id);
             }}
             selectedOccasion={occasions.find(
-              o => (isRTL ? o.nameAr : o.name) === selectedOccasion,
+              o => o._id === selectedOccasionId,
             )}
           />
 

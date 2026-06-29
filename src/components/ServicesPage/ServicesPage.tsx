@@ -76,6 +76,42 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
   const [serviceRatings, setServiceRatings] = useState<{
     [key: string]: { rating: number; totalReviews: number };
   }>({});
+  const [packageRatings, setPackageRatings] = useState<{
+    [key: string]: { rating: number; totalReviews: number };
+  }>({});
+
+  // Load ratings for loaded packages
+  useEffect(() => {
+    const loadRatings = async () => {
+      if (!packages || packages.length === 0) return;
+
+      const ratingsData: {
+        [key: string]: { rating: number; totalReviews: number };
+      } = {};
+
+      for (const pkg of packages) {
+        if (packageRatings[pkg._id]) continue;
+
+        if (pkg.service?._id) {
+          try {
+            const reviewsData = await getServiceReviews(pkg.service._id, 1, 1);
+            ratingsData[pkg._id] = {
+              rating: reviewsData.stats.averageRating || 0,
+              totalReviews: reviewsData.stats.totalRatings || 0,
+            };
+          } catch {
+            ratingsData[pkg._id] = { rating: 0, totalReviews: 0 };
+          }
+        }
+      }
+
+      if (Object.keys(ratingsData).length > 0) {
+        setPackageRatings(prev => ({ ...prev, ...ratingsData }));
+      }
+    };
+
+    loadRatings();
+  }, [packages]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -489,8 +525,12 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
 
   const renderPackageCard = ({ item }: { item: Package }) => {
     const displayName = isRTL ? item.nameAr : item.name;
+    const displayDescription = isRTL ? item.descriptionAr : item.description;
     const displayPrice =
-      item.discountPrice > 0 ? item.discountPrice : item.totalPrice;
+      item.discountPrice > 0 ? item.totalPrice - item.discountPrice : item.totalPrice;
+
+    const rating = packageRatings[item._id]?.rating || 0;
+    const totalReviews = packageRatings[item._id]?.totalReviews || 0;
 
     return (
       <TouchableOpacity
@@ -511,25 +551,9 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
             </View>
           )}
           {item.discountPrice > 0 && (
-            <View
-              style={{
-                position: 'absolute',
-                top: 8,
-                right: 8,
-                backgroundColor: colors.primary,
-                paddingHorizontal: 8,
-                paddingVertical: 4,
-                borderRadius: 4,
-              }}
-            >
-              <Text
-                style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}
-              >
-                {Math.round(
-                  ((item.totalPrice - item.discountPrice) / item.totalPrice) *
-                    100,
-                )}
-                %
+            <View style={styles.discountBadge}>
+              <Text style={styles.discountText}>
+                {Math.round((item.discountPrice / item.totalPrice) * 100)}%
               </Text>
             </View>
           )}
@@ -537,22 +561,22 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
         <View style={styles.infoContainer}>
           <Text
             style={[styles.serviceName, isRTL && styles.serviceNameRTL]}
-            numberOfLines={2}
+            numberOfLines={1}
           >
             {displayName}
           </Text>
+
           <View
-            style={{
-              flexDirection: isRTL ? 'row-reverse' : 'row',
-              alignItems: 'center',
-              marginTop: 4,
-            }}
+            style={[
+              { flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', marginBottom: 4 },
+              isRTL && { justifyContent: 'flex-start' },
+            ]}
           >
             <Text
               style={{
                 fontSize: 10,
                 color: colors.primary,
-                fontWeight: 'bold',
+                fontWeight: '700',
                 backgroundColor: colors.primary + '15',
                 paddingHorizontal: 6,
                 paddingVertical: 2,
@@ -562,43 +586,71 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
               {isRTL ? 'باقة' : 'PACKAGE'}
             </Text>
           </View>
-          <View
+
+          <Text
             style={[
-              styles.priceContainer,
-              isRTL && styles.priceContainerRTL,
-              { marginTop: 8 },
+              styles.serviceDescription,
+              isRTL && styles.serviceDescriptionRTL,
             ]}
+            numberOfLines={2}
           >
-            {item.discountPrice > 0 && (
-              <Text
-                style={{
-                  fontSize: 12,
-                  color: '#999',
-                  textDecorationLine: 'line-through',
-                  marginRight: 6,
-                }}
-              >
-                {item.totalPrice.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
-              </Text>
-            )}
-            <Text style={[styles.priceValue, isRTL && styles.priceValueRTL]}>
-              {displayPrice.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
-            </Text>
-          </View>
-          {item.totalReviews > 0 && (
-            <View
-              style={{
-                flexDirection: isRTL ? 'row-reverse' : 'row',
-                alignItems: 'center',
-                marginTop: 4,
-              }}
-            >
-              <Text style={{ color: '#FFB800', fontSize: 12 }}>★</Text>
-              <Text style={{ fontSize: 12, color: '#666', marginLeft: 4 }}>
-                {item.rating.toFixed(1)} ({item.totalReviews})
-              </Text>
+            {displayDescription}
+          </Text>
+
+          <View
+            style={[styles.priceRatingRow, isRTL && styles.priceRatingRowRTL]}
+          >
+            <View style={styles.priceColumn}>
+              {item.discountPrice > 0 ? (
+                <View
+                  style={[
+                    {
+                      flexDirection: 'row',
+                      alignItems: 'baseline',
+                      gap: 6,
+                      flexWrap: 'wrap',
+                    },
+                    isRTL && { flexDirection: 'row-reverse' },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.priceValue,
+                      isRTL && styles.priceValueRTL,
+                    ]}
+                  >
+                    {isRTL
+                      ? `${displayPrice.toFixed(3)} د.ك`
+                      : `${displayPrice.toFixed(3)} KD`}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.originalPrice,
+                      isRTL && styles.originalPriceRTL,
+                    ]}
+                  >
+                    {isRTL
+                      ? `${item.totalPrice.toFixed(3)} د.ك`
+                      : `${item.totalPrice.toFixed(3)} KD`}
+                  </Text>
+                </View>
+              ) : (
+                <Text
+                  style={[styles.priceValue, isRTL && styles.priceValueRTL]}
+                >
+                  {isRTL
+                    ? `${item.totalPrice.toFixed(3)} د.ك`
+                    : `${item.totalPrice.toFixed(3)} KD`}
+                </Text>
+              )}
             </View>
-          )}
+            <View style={[styles.ratingRow, isRTL && styles.ratingRowRTL]}>
+              <Text style={styles.rating}>
+                ★ {rating > 0 ? rating.toFixed(1) : '0.0'}
+              </Text>
+              <Text style={styles.reviews}>({totalReviews})</Text>
+            </View>
+          </View>
         </View>
       </TouchableOpacity>
     );

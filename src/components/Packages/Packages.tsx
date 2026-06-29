@@ -199,7 +199,9 @@ const Packages: React.FC<PackagesProps> = ({ onSelectPackage, onBack }) => {
               resizeMode="cover"
             />
           ) : (
-            <View style={styles.placeholderImage} />
+            <View style={styles.placeholderImage}>
+              <Text style={{ color: colors.textSecondary, fontSize: 12 }}>No Image</Text>
+            </View>
           )}
           {item.discountPrice > 0 && (
             <View style={styles.discountBadge}>
@@ -231,12 +233,34 @@ const Packages: React.FC<PackagesProps> = ({ onSelectPackage, onBack }) => {
             style={[styles.priceRatingRow, isRTL && styles.priceRatingRowRTL]}
           >
             <View style={styles.priceColumn}>
-              <Text style={styles.packagePrice}>
-                {displayPrice.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
-              </Text>
-              {item.discountPrice > 0 && (
-                <Text style={styles.originalPrice}>
-                  {item.totalPrice.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
+              {item.discountPrice > 0 ? (
+                <View
+                  style={[
+                    {
+                      flexDirection: 'row',
+                      alignItems: 'baseline',
+                      gap: 6,
+                      flexWrap: 'wrap',
+                    },
+                    isRTL && { flexDirection: 'row-reverse' },
+                  ]}
+                >
+                  <Text style={styles.packagePrice}>
+                    {isRTL
+                      ? `${displayPrice.toFixed(3)} د.ك`
+                      : `${displayPrice.toFixed(3)} KD`}
+                  </Text>
+                  <Text style={styles.originalPrice}>
+                    {isRTL
+                      ? `${item.totalPrice.toFixed(3)} د.ك`
+                      : `${item.totalPrice.toFixed(3)} KD`}
+                  </Text>
+                </View>
+              ) : (
+                <Text style={styles.packagePrice}>
+                  {isRTL
+                    ? `${item.totalPrice.toFixed(3)} د.ك`
+                    : `${item.totalPrice.toFixed(3)} KD`}
                 </Text>
               )}
             </View>

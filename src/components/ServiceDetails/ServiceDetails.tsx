@@ -167,6 +167,17 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
   const service = (services as any)?.find((s: any) => s._id === serviceId);
   const addToCartButtonRef = useRef<View>(null);
 
+  // Automatically expand the first custom input by default when service loads/changes
+  React.useEffect(() => {
+    if (service?.customInputs && service.customInputs.length > 0) {
+      const firstInput = service.customInputs[0];
+      const firstInputId = firstInput._id || firstInput.label || 'input_0';
+      setExpandedCustomInputs({
+        [firstInputId]: true,
+      });
+    }
+  }, [service]);
+
   // Helper function to check if selected date/time is in the past
   const isTimeInPast = () => {
     if (!selectedDate || !selectedTime) return false;
@@ -822,7 +833,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                   <body>
                     <video src="${getServiceImageUrl(
                   item.src,
-                )}" controls autoplay playsinline></video>
+                )}" poster="${service.images && service.images.length > 0 ? getServiceImageUrl(service.images[0]) : ''}" controls autoplay playsinline></video>
                   </body>
                   </html>
                 `,
@@ -856,7 +867,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                         }
                         video {
                           width: 100%;
-                          height: calc(100% - 24px);
+                          height: 100%;
                           object-fit: cover;
                           background-color: black;
                         }
@@ -864,7 +875,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                       <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
                     </head>
                     <body>
-                      <video src="${getServiceImageUrl(item.src)}" preload="metadata" playsinline></video>
+                      <video src="${getServiceImageUrl(item.src)}#t=0.1" poster="${service.images && service.images.length > 0 ? getServiceImageUrl(service.images[0]) : ''}" preload="metadata" playsinline></video>
                     </body>
                     </html>
                   `,

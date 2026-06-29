@@ -68,9 +68,8 @@ const UserProfile: React.FC<UserProfileProps> = ({
     handleNotificationPress,
   } = useNotification();
 
-  const handleOpenNotifications = async () => {
+  const handleOpenNotifications = () => {
     setShowNotifications(true);
-    await markAllAsRead();
   };
 
   const handleCloseNotifications = async () => {
@@ -912,38 +911,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
               </View>
             </View>
 
-            {/* Enable/Disable Notifications Toggle Switch */}
-            <View
-              style={[notifStyles.toggleRow, isRTL && notifStyles.toggleRowRTL]}
-            >
-              <View
-                style={[
-                  notifStyles.toggleLabelContainer,
-                  isRTL && notifStyles.toggleLabelContainerRTL,
-                ]}
-              >
-                <Icon
-                  name={
-                    notificationsEnabled
-                      ? 'notifications-outline'
-                      : 'notifications-off-outline'
-                  }
-                  size={20}
-                  color={notificationsEnabled ? colors.primary : '#64748b'}
-                  style={isRTL ? { marginLeft: 8 } : { marginRight: 8 }}
-                />
-                <Text style={notifStyles.toggleLabel}>
-                  {isRTL ? 'تفعيل الإشعارات' : 'Enable Notifications'}
-                </Text>
-              </View>
-              <Switch
-                value={notificationsEnabled}
-                onValueChange={toggleNotificationsEnabled}
-                trackColor={{ false: '#cbd5e1', true: '#9bf0ec' }}
-                thumbColor={notificationsEnabled ? colors.primary : '#f4f3f4'}
-                ios_backgroundColor="#cbd5e1"
-              />
-            </View>
+            {/* Enable/Disable Notifications Switch Removed */}
 
             {/* Content */}
             <ScrollView
