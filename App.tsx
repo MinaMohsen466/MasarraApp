@@ -43,6 +43,7 @@ import Addresses from "./src/components/Addresses";
 import Search from "./src/screens/Search";
 import Contact from "./src/screens/Contact";
 import BecomeSeller from "./src/components/BecomeSeller";
+import { Onboarding } from "./src/components/Auth/Onboarding";
 
 // Helper component with auth
 const AddressesWithAuth: React.FC<{ onBack: () => void }> = ({ onBack }) => {
@@ -321,6 +322,8 @@ function AppContent() {
   const { data: siteSettings } = useSiteSettings();
   const [isBannerDismissed, setIsBannerDismissed] = useState<boolean>(false);
   const [showSplash, setShowSplash] = useState<boolean>(true);
+  const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
+  const [initialShowSignup, setInitialShowSignup] = useState<boolean>(false);
   const [currentRoute, setCurrentRoute] = useState<string>('home');
   const [showBottomNav, setShowBottomNav] = useState<boolean>(true);
   const [selectedVendorId, setSelectedVendorId] = useState<string | undefined>(undefined);
@@ -335,6 +338,21 @@ function AppContent() {
   const [selectedSearchDate, setSelectedSearchDate] = useState<Date | undefined>(undefined);
   const [editCartItemId, setEditCartItemId] = useState<string | undefined>(undefined);
   const [becomeSellerOrigin, setBecomeSellerOrigin] = useState<string | undefined>(undefined);
+
+  // Check if onboarding needs to be shown on mount
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      try {
+        const completed = await AsyncStorage.getItem('has_completed_onboarding');
+        if (completed !== 'true') {
+          setShowOnboarding(true);
+        }
+      } catch (err) {
+        console.error('Failed to read onboarding state:', err);
+      }
+    };
+    checkOnboarding();
+  }, []);
 
   const { checkBookingsStatusChanges, registerNavigationHandler } = useNotification();
   const { token, user } = useAuth();
@@ -557,6 +575,7 @@ function AppContent() {
             onSelectOccasion={(occasion, searchDate) => handleOccasionSelect(occasion._id, occasion.name || occasion.nameAr, 'home', searchDate)}
             isBannerDismissed={isBannerDismissed}
             setIsBannerDismissed={setIsBannerDismissed}
+            initialShowSignup={initialShowSignup}
           />
         );
       case 'search':
@@ -694,6 +713,27 @@ function AppContent() {
       <SocketNotificationListener setCurrentRoute={setCurrentRoute} />
       {showSplash ? (
         <SplashScreen onFinish={() => setShowSplash(false)} />
+      ) : showOnboarding ? (
+        <Onboarding
+          onFinish={async (targetRoute) => {
+            try {
+              await AsyncStorage.setItem('has_completed_onboarding', 'true');
+            } catch (err) {
+              console.error('Failed to save onboarding state:', err);
+            }
+            setShowOnboarding(false);
+            if (targetRoute === 'auth') {
+              setInitialShowSignup(false);
+              setCurrentRoute('auth');
+            } else if (targetRoute === 'signup') {
+              setInitialShowSignup(true);
+              setCurrentRoute('auth');
+            } else {
+              setInitialShowSignup(false);
+              setCurrentRoute('home');
+            }
+          }}
+        />
       ) : shouldRenderWithoutSafeArea ? (
         <View style={{ flex: 1 }} {...panResponder.panHandlers}>
           {renderScreen()}

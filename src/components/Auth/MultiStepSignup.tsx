@@ -13,6 +13,7 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import Svg, { Path } from 'react-native-svg';
 import { styles } from './styles';
+import { FloatingLabelInput } from './FloatingLabelInput';
 import { CustomAlert } from '../CustomAlert';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { colors } from '../../constants/colors';
@@ -31,7 +32,7 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
   onSignupSuccess,
   onNavigate,
 }) => {
-  const { isRTL } = useLanguage();
+  const { isRTL, language, setLanguage } = useLanguage();
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -66,16 +67,7 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
   const otpInputRefs = useRef<(TextInput | null)[]>([]);
 
   // Focus states
-  const [nameActive, setNameActive] = useState(false);
-  const [emailActive, setEmailActive] = useState(false);
-  const [passwordActive, setPasswordActive] = useState(false);
-  const [confirmPasswordActive, setConfirmPasswordActive] = useState(false);
   const [phoneActive, setPhoneActive] = useState(false);
-  const [addressNameActive, setAddressNameActive] = useState(false);
-  const [streetActive, setStreetActive] = useState(false);
-  const [houseNumberActive, setHouseNumberActive] = useState(false);
-  const [floorNumberActive, setFloorNumberActive] = useState(false);
-  const [cityActive, setCityActive] = useState(false);
 
   // Helper function to show custom alert
   const showAlert = (title: string, message: string, callback?: () => void) => {
@@ -399,14 +391,15 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
           />
         </Svg>
 
-        {/* Top Overlay Navigation/Back Button */}
-        {onBack && (
-          <View
-            style={[
-              styles.headerOverlayBar,
-              isRTL && styles.headerOverlayBarRTL,
-            ]}
-          >
+        {/* Top Overlay Navigation/Back Button & Language Switcher */}
+        <View
+          style={[
+            styles.headerOverlayBar,
+            isRTL && styles.headerOverlayBarRTL,
+            { paddingTop: insets.top > 24 ? insets.top - 12 : 8 },
+          ]}
+        >
+          {onBack ? (
             <TouchableOpacity
               style={styles.headerBackButtonCircle}
               onPress={onBack}
@@ -418,8 +411,41 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
                 color={colors.textWhite}
               />
             </TouchableOpacity>
-          </View>
-        )}
+          ) : (
+            <View />
+          )}
+
+          <TouchableOpacity
+            style={{
+              flexDirection: isRTL ? 'row-reverse' : 'row',
+              alignItems: 'center',
+              backgroundColor: 'rgba(255, 255, 255, 0.18)',
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 20,
+              height: 36,
+            }}
+            onPress={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
+            activeOpacity={0.8}
+          >
+            <Icon
+              name="globe-outline"
+              size={16}
+              color={colors.textWhite}
+              style={{ marginRight: isRTL ? 0 : 6, marginLeft: isRTL ? 6 : 0 }}
+            />
+            <Text
+              style={{
+                color: colors.textWhite,
+                fontSize: 13,
+                fontWeight: '600',
+                fontFamily: 'System',
+              }}
+            >
+              {language === 'ar' ? 'English' : 'العربية'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Curved Wave Divider */}
@@ -470,150 +496,65 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
         </Text>
 
         {/* Full Name */}
-        <Text
-          style={[
-            styles.label,
-            isRTL && styles.labelRTL,
-            { marginBottom: 6, fontSize: 13, color: '#6B7280' },
-          ]}
-        >
-          {isRTL ? 'الاسم الكامل' : 'Full Name'}
-        </Text>
-        <View
-          style={[
-            styles.sleekInputWrapper,
-            isRTL && styles.sleekInputWrapperRTL,
-            nameActive && styles.sleekInputWrapperActive,
-          ]}
-        >
-          <Icon
-            name="person-outline"
-            size={18}
-            color={nameActive ? colors.primary : '#9CA3AF'}
-            style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
-          />
-          <View
-            style={[
-              styles.sleekInputDivider,
-              isRTL && styles.sleekInputDividerRTL,
-            ]}
-          />
-          <TextInput
-            ref={ref => {
-              if (inputRefs.current) inputRefs.current[0] = ref;
-            }}
-            style={[styles.sleekTextInput, isRTL && styles.sleekTextInputRTL]}
-            value={name}
-            onChangeText={setName}
-            placeholder={isRTL ? 'أدخل اسمك الكامل' : 'Enter your full name'}
-            placeholderTextColor="#9CA3AF"
-            onFocus={() => setNameActive(true)}
-            onBlur={() => setNameActive(false)}
-            editable={!isLoading}
-          />
-        </View>
+        <FloatingLabelInput
+          ref={ref => {
+            if (inputRefs.current) inputRefs.current[0] = ref;
+          }}
+          label={isRTL ? 'الاسم الكامل' : 'Full Name'}
+          iconName="person-outline"
+          isRTL={isRTL}
+          value={name}
+          onChangeText={setName}
+          editable={!isLoading}
+          returnKeyType="next"
+          onSubmitEditing={() => inputRefs.current[1]?.focus()}
+        />
 
         {/* Email */}
-        <Text
-          style={[
-            styles.label,
-            isRTL && styles.labelRTL,
-            { marginBottom: 6, fontSize: 13, color: '#6B7280' },
-          ]}
-        >
-          {isRTL ? 'البريد الإلكتروني' : 'Email'}
-        </Text>
-        <View
-          style={[
-            styles.sleekInputWrapper,
-            isRTL && styles.sleekInputWrapperRTL,
-            emailActive && styles.sleekInputWrapperActive,
-          ]}
-        >
-          <Icon
-            name="mail-outline"
-            size={18}
-            color={emailActive ? colors.primary : '#9CA3AF'}
-            style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
-          />
-          <View
-            style={[
-              styles.sleekInputDivider,
-              isRTL && styles.sleekInputDividerRTL,
-            ]}
-          />
-          <TextInput
-            ref={ref => {
-              if (inputRefs.current) inputRefs.current[1] = ref;
-            }}
-            style={[styles.sleekTextInput, isRTL && styles.sleekTextInputRTL]}
-            value={email}
-            onChangeText={setEmail}
-            placeholder={isRTL ? 'أدخل بريدك الإلكتروني' : 'Enter your email'}
-            placeholderTextColor="#9CA3AF"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            onFocus={() => setEmailActive(true)}
-            onBlur={() => setEmailActive(false)}
-            editable={!isLoading}
-          />
-        </View>
+        <FloatingLabelInput
+          ref={ref => {
+            if (inputRefs.current) inputRefs.current[1] = ref;
+          }}
+          label={isRTL ? 'البريد الإلكتروني' : 'Email'}
+          iconName="mail-outline"
+          isRTL={isRTL}
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          editable={!isLoading}
+          returnKeyType="next"
+          onSubmitEditing={() => inputRefs.current[2]?.focus()}
+        />
 
         {/* Password */}
-        <Text
-          style={[
-            styles.label,
-            isRTL && styles.labelRTL,
-            { marginBottom: 6, fontSize: 13, color: '#6B7280' },
-          ]}
-        >
-          {isRTL ? 'كلمة المرور' : 'Password'}
-        </Text>
-        <View
-          style={[
-            styles.sleekInputWrapper,
-            isRTL && styles.sleekInputWrapperRTL,
-            passwordActive && styles.sleekInputWrapperActive,
-          ]}
-        >
-          <Icon
-            name="lock-closed-outline"
-            size={18}
-            color={passwordActive ? colors.primary : '#9CA3AF'}
-            style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
-          />
-          <View
-            style={[
-              styles.sleekInputDivider,
-              isRTL && styles.sleekInputDividerRTL,
-            ]}
-          />
-          <TextInput
-            ref={ref => {
-              if (inputRefs.current) inputRefs.current[2] = ref;
-            }}
-            style={[styles.sleekTextInput, isRTL && styles.sleekTextInputRTL]}
-            value={password}
-            onChangeText={setPassword}
-            placeholder={isRTL ? 'أدخل كلمة المرور' : 'Enter your password'}
-            placeholderTextColor="#9CA3AF"
-            secureTextEntry={!showPassword}
-            onFocus={() => setPasswordActive(true)}
-            onBlur={() => setPasswordActive(false)}
-            editable={!isLoading}
-          />
-          <TouchableOpacity
-            onPress={() => setShowPassword(!showPassword)}
-            activeOpacity={0.7}
-            style={{ paddingHorizontal: 6 }}
-          >
-            <Icon
-              name={showPassword ? 'eye-outline' : 'eye-off-outline'}
-              size={18}
-              color="#6B7280"
-            />
-          </TouchableOpacity>
-        </View>
+        <FloatingLabelInput
+          ref={ref => {
+            if (inputRefs.current) inputRefs.current[2] = ref;
+          }}
+          label={isRTL ? 'كلمة المرور' : 'Password'}
+          iconName="lock-closed-outline"
+          isRTL={isRTL}
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry={!showPassword}
+          editable={!isLoading}
+          returnKeyType="next"
+          onSubmitEditing={() => inputRefs.current[3]?.focus()}
+          rightElement={
+            <TouchableOpacity
+              onPress={() => setShowPassword(!showPassword)}
+              activeOpacity={0.7}
+              style={{ paddingHorizontal: 6 }}
+            >
+              <Icon
+                name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                size={18}
+                color="#6B7280"
+              />
+            </TouchableOpacity>
+          }
+        />
         {password.length > 0 && (
           <View
             style={[multiStepStyles.passwordRequirements, { marginBottom: 16 }]}
@@ -659,62 +600,33 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
         )}
 
         {/* Confirm Password */}
-        <Text
-          style={[
-            styles.label,
-            isRTL && styles.labelRTL,
-            { marginBottom: 6, fontSize: 13, color: '#6B7280' },
-          ]}
-        >
-          {isRTL ? 'تأكيد كلمة المرور' : 'Confirm Password'}
-        </Text>
-        <View
-          style={[
-            styles.sleekInputWrapper,
-            isRTL && styles.sleekInputWrapperRTL,
-            confirmPasswordActive && styles.sleekInputWrapperActive,
-          ]}
-        >
-          <Icon
-            name="lock-closed-outline"
-            size={18}
-            color={confirmPasswordActive ? colors.primary : '#9CA3AF'}
-            style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
-          />
-          <View
-            style={[
-              styles.sleekInputDivider,
-              isRTL && styles.sleekInputDividerRTL,
-            ]}
-          />
-          <TextInput
-            ref={ref => {
-              if (inputRefs.current) inputRefs.current[3] = ref;
-            }}
-            style={[styles.sleekTextInput, isRTL && styles.sleekTextInputRTL]}
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            placeholder={
-              isRTL ? 'أعد إدخال كلمة المرور' : 'Re-enter your password'
-            }
-            placeholderTextColor="#9CA3AF"
-            secureTextEntry={!showConfirmPassword}
-            onFocus={() => setConfirmPasswordActive(true)}
-            onBlur={() => setConfirmPasswordActive(false)}
-            editable={!isLoading}
-          />
-          <TouchableOpacity
-            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-            activeOpacity={0.7}
-            style={{ paddingHorizontal: 6 }}
-          >
-            <Icon
-              name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'}
-              size={18}
-              color="#6B7280"
-            />
-          </TouchableOpacity>
-        </View>
+        <FloatingLabelInput
+          ref={ref => {
+            if (inputRefs.current) inputRefs.current[3] = ref;
+          }}
+          label={isRTL ? 'تأكيد كلمة المرور' : 'Confirm Password'}
+          iconName="lock-closed-outline"
+          isRTL={isRTL}
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          secureTextEntry={!showConfirmPassword}
+          editable={!isLoading}
+          returnKeyType="next"
+          onSubmitEditing={() => inputRefs.current[4]?.focus()}
+          rightElement={
+            <TouchableOpacity
+              onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+              activeOpacity={0.7}
+              style={{ paddingHorizontal: 6 }}
+            >
+              <Icon
+                name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'}
+                size={18}
+                color="#6B7280"
+              />
+            </TouchableOpacity>
+          }
+        />
         {confirmPassword.length > 0 && (
           <View
             style={[multiStepStyles.passwordRequirements, { marginBottom: 16 }]}
@@ -734,85 +646,60 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
         )}
 
         {/* Phone Number */}
-        <Text
-          style={[
-            styles.label,
-            isRTL && styles.labelRTL,
-            { marginBottom: 6, fontSize: 13, color: '#6B7280' },
-          ]}
-        >
-          {isRTL ? 'رقم الهاتف' : 'Phone Number'}
-        </Text>
-        <View
-          style={[
-            styles.sleekInputWrapper,
-            isRTL && styles.sleekInputWrapperRTL,
-            phoneActive && styles.sleekInputWrapperActive,
-          ]}
-        >
-          <Icon
-            name="call-outline"
-            size={18}
-            color={phoneActive ? colors.primary : '#9CA3AF'}
-            style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
-          />
-          <View
-            style={[
-              styles.sleekInputDivider,
-              isRTL && styles.sleekInputDividerRTL,
-            ]}
-          />
-
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Text
-              style={{
-                fontSize: 15,
-                color: colors.textDark,
-                fontWeight: '600',
-                marginRight: 4,
-              }}
-            >
-              +
-            </Text>
-            <TextInput
-              style={{
-                fontSize: 15,
-                color: colors.textDark,
-                fontWeight: '600',
-                padding: 0,
-                minWidth: 32,
-                textAlign: 'center',
-              }}
-              value={countryCode}
-              onChangeText={setCountryCode}
-              placeholder="965"
-              placeholderTextColor="#9CA3AF"
-              keyboardType="number-pad"
-              maxLength={4}
-              editable={!isLoading}
-            />
-            <Text
-              style={{ fontSize: 15, color: '#E5E7EB', marginHorizontal: 6 }}
-            >
-              |
-            </Text>
-          </View>
-
-          <TextInput
-            ref={ref => {
-              if (inputRefs.current) inputRefs.current[4] = ref;
-            }}
-            style={[styles.sleekTextInput, isRTL && styles.sleekTextInputRTL]}
-            value={phone}
-            onChangeText={handlePhoneChange}
-            placeholder="12345678"
-            placeholderTextColor="#9CA3AF"
-            keyboardType="phone-pad"
-            onFocus={() => setPhoneActive(true)}
-            onBlur={() => setPhoneActive(false)}
-            editable={!isLoading}
-          />
-        </View>
+        <FloatingLabelInput
+          ref={ref => {
+            if (inputRefs.current) inputRefs.current[4] = ref;
+          }}
+          label={isRTL ? 'رقم الهاتف' : 'Phone Number'}
+          iconName="call-outline"
+          isRTL={isRTL}
+          value={phone}
+          onChangeText={handlePhoneChange}
+          keyboardType="phone-pad"
+          onFocus={() => setPhoneActive(true)}
+          onBlur={() => setPhoneActive(false)}
+          editable={!isLoading}
+          returnKeyType="done"
+          onSubmitEditing={handleStep1Submit}
+          leftElement={
+            (phoneActive || phone.length > 0) ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text
+                  style={{
+                    fontSize: 15,
+                    color: colors.textDark,
+                    fontWeight: '600',
+                    marginRight: 4,
+                  }}
+                >
+                  +
+                </Text>
+                <TextInput
+                  style={{
+                    fontSize: 15,
+                    color: colors.textDark,
+                    fontWeight: '600',
+                    padding: 0,
+                    minWidth: 32,
+                    textAlign: 'center',
+                  }}
+                  value={countryCode}
+                  onChangeText={setCountryCode}
+                  placeholder="965"
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="number-pad"
+                  maxLength={4}
+                  editable={!isLoading}
+                />
+                <Text
+                  style={{ fontSize: 15, color: '#E5E7EB', marginHorizontal: 6 }}
+                >
+                  |
+                </Text>
+              </View>
+            ) : null
+          }
+        />
 
         {/* Next Button */}
         <TouchableOpacity
@@ -922,9 +809,9 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
           />
         </Svg>
 
-        {/* Top Overlay Navigation/Back Button */}
+        {/* Top Overlay Navigation/Back Button & Language Switcher */}
         <View
-          style={[styles.headerOverlayBar, isRTL && styles.headerOverlayBarRTL]}
+          style={[styles.headerOverlayBar, isRTL && styles.headerOverlayBarRTL, { paddingTop: insets.top > 24 ? insets.top - 12 : 8 }]}
         >
           <TouchableOpacity
             style={styles.headerBackButtonCircle}
@@ -940,6 +827,37 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
               size={20}
               color={colors.textWhite}
             />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={{
+              flexDirection: isRTL ? 'row-reverse' : 'row',
+              alignItems: 'center',
+              backgroundColor: 'rgba(255, 255, 255, 0.18)',
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 20,
+              height: 36,
+            }}
+            onPress={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
+            activeOpacity={0.8}
+          >
+            <Icon
+              name="globe-outline"
+              size={16}
+              color={colors.textWhite}
+              style={{ marginRight: isRTL ? 0 : 6, marginLeft: isRTL ? 6 : 0 }}
+            />
+            <Text
+              style={{
+                color: colors.textWhite,
+                fontSize: 13,
+                fontWeight: '600',
+                fontFamily: 'System',
+              }}
+            >
+              {language === 'ar' ? 'English' : 'العربية'}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -1143,9 +1061,9 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
           />
         </Svg>
 
-        {/* Top Overlay Navigation/Back Button */}
+        {/* Top Overlay Navigation/Back Button & Language Switcher */}
         <View
-          style={[styles.headerOverlayBar, isRTL && styles.headerOverlayBarRTL]}
+          style={[styles.headerOverlayBar, isRTL && styles.headerOverlayBarRTL, { paddingTop: insets.top > 24 ? insets.top - 12 : 8 }]}
         >
           <TouchableOpacity
             style={styles.headerBackButtonCircle}
@@ -1158,6 +1076,37 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
               size={20}
               color={colors.textWhite}
             />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={{
+              flexDirection: isRTL ? 'row-reverse' : 'row',
+              alignItems: 'center',
+              backgroundColor: 'rgba(255, 255, 255, 0.18)',
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 20,
+              height: 36,
+            }}
+            onPress={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
+            activeOpacity={0.8}
+          >
+            <Icon
+              name="globe-outline"
+              size={16}
+              color={colors.textWhite}
+              style={{ marginRight: isRTL ? 0 : 6, marginLeft: isRTL ? 6 : 0 }}
+            />
+            <Text
+              style={{
+                color: colors.textWhite,
+                fontSize: 13,
+                fontWeight: '600',
+                fontFamily: 'System',
+              }}
+            >
+              {language === 'ar' ? 'English' : 'العربية'}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -1234,228 +1183,66 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
         </Text>
 
         {/* Address Name */}
-        <Text
-          style={[
-            styles.label,
-            isRTL && styles.labelRTL,
-            { marginBottom: 6, fontSize: 13, color: '#6B7280' },
-          ]}
-        >
-          {isRTL ? 'اسم العنوان' : 'Address Name'}
-        </Text>
-        <View
-          style={[
-            styles.sleekInputWrapper,
-            isRTL && styles.sleekInputWrapperRTL,
-            addressNameActive && styles.sleekInputWrapperActive,
-          ]}
-        >
-          <Icon
-            name="bookmark-outline"
-            size={18}
-            color={addressNameActive ? colors.primary : '#9CA3AF'}
-            style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
-          />
-          <View
-            style={[
-              styles.sleekInputDivider,
-              isRTL && styles.sleekInputDividerRTL,
-            ]}
-          />
-          <TextInput
-            style={[styles.sleekTextInput, isRTL && styles.sleekTextInputRTL]}
-            value={addressName}
-            onChangeText={setAddressName}
-            placeholder={isRTL ? 'مثلاً: المنزل، العمل' : 'e.g., Home, Work'}
-            placeholderTextColor="#9CA3AF"
-            onFocus={() => setAddressNameActive(true)}
-            onBlur={() => setAddressNameActive(false)}
-            editable={!isLoading}
-          />
-        </View>
+        <FloatingLabelInput
+          label={isRTL ? 'اسم العنوان' : 'Address Name'}
+          iconName="bookmark-outline"
+          isRTL={isRTL}
+          value={addressName}
+          onChangeText={setAddressName}
+          placeholder={isRTL ? 'مثلاً: المنزل، العمل' : 'e.g., Home, Work'}
+          editable={!isLoading}
+        />
 
         {/* Street */}
-        <Text
-          style={[
-            styles.label,
-            isRTL && styles.labelRTL,
-            { marginBottom: 6, fontSize: 13, color: '#6B7280' },
-          ]}
-        >
-          {isRTL ? 'الشارع' : 'Street'}
-        </Text>
-        <View
-          style={[
-            styles.sleekInputWrapper,
-            isRTL && styles.sleekInputWrapperRTL,
-            streetActive && styles.sleekInputWrapperActive,
-          ]}
-        >
-          <Icon
-            name="location-outline"
-            size={18}
-            color={streetActive ? colors.primary : '#9CA3AF'}
-            style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
-          />
-          <View
-            style={[
-              styles.sleekInputDivider,
-              isRTL && styles.sleekInputDividerRTL,
-            ]}
-          />
-          <TextInput
-            style={[styles.sleekTextInput, isRTL && styles.sleekTextInputRTL]}
-            value={street}
-            onChangeText={setStreet}
-            placeholder={isRTL ? 'أدخل الشارع' : 'Enter street name'}
-            placeholderTextColor="#9CA3AF"
-            onFocus={() => setStreetActive(true)}
-            onBlur={() => setStreetActive(false)}
-            editable={!isLoading}
-          />
-        </View>
+        <FloatingLabelInput
+          label={isRTL ? 'الشارع' : 'Street'}
+          iconName="location-outline"
+          isRTL={isRTL}
+          value={street}
+          onChangeText={setStreet}
+          placeholder={isRTL ? 'أدخل الشارع' : 'Enter street name'}
+          editable={!isLoading}
+        />
 
         {/* House Number + Floor Number */}
         <View style={multiStepStyles.rowContainer}>
           <View style={multiStepStyles.halfInput}>
-            <Text
-              style={[
-                styles.label,
-                isRTL && styles.labelRTL,
-                { marginBottom: 6, fontSize: 13, color: '#6B7280' },
-              ]}
-            >
-              {isRTL ? 'رقم المنزل' : 'House Number'}
-            </Text>
-            <View
-              style={[
-                styles.sleekInputWrapper,
-                isRTL && styles.sleekInputWrapperRTL,
-                houseNumberActive && styles.sleekInputWrapperActive,
-              ]}
-            >
-              <Icon
-                name="home-outline"
-                size={16}
-                color={houseNumberActive ? colors.primary : '#9CA3AF'}
-                style={[
-                  styles.sleekInputIcon,
-                  isRTL && styles.sleekInputIconRTL,
-                ]}
-              />
-              <View
-                style={[
-                  styles.sleekInputDivider,
-                  isRTL && styles.sleekInputDividerRTL,
-                ]}
-              />
-              <TextInput
-                style={[
-                  styles.sleekTextInput,
-                  isRTL && styles.sleekTextInputRTL,
-                ]}
-                value={houseNumber}
-                onChangeText={setHouseNumber}
-                placeholder={isRTL ? 'المنزل' : 'House'}
-                placeholderTextColor="#9CA3AF"
-                keyboardType="number-pad"
-                onFocus={() => setHouseNumberActive(true)}
-                onBlur={() => setHouseNumberActive(false)}
-                editable={!isLoading}
-              />
-            </View>
+            <FloatingLabelInput
+              label={isRTL ? 'رقم المنزل' : 'House Number'}
+              iconName="home-outline"
+              isRTL={isRTL}
+              value={houseNumber}
+              onChangeText={setHouseNumber}
+              placeholder={isRTL ? 'المنزل' : 'House'}
+              keyboardType="number-pad"
+              editable={!isLoading}
+            />
           </View>
 
           <View style={multiStepStyles.halfInput}>
-            <Text
-              style={[
-                styles.label,
-                isRTL && styles.labelRTL,
-                { marginBottom: 6, fontSize: 13, color: '#6B7280' },
-              ]}
-            >
-              {isRTL ? 'رقم الطابق' : 'Floor Number'}
-            </Text>
-            <View
-              style={[
-                styles.sleekInputWrapper,
-                isRTL && styles.sleekInputWrapperRTL,
-                floorNumberActive && styles.sleekInputWrapperActive,
-              ]}
-            >
-              <Icon
-                name="layers-outline"
-                size={16}
-                color={floorNumberActive ? colors.primary : '#9CA3AF'}
-                style={[
-                  styles.sleekInputIcon,
-                  isRTL && styles.sleekInputIconRTL,
-                ]}
-              />
-              <View
-                style={[
-                  styles.sleekInputDivider,
-                  isRTL && styles.sleekInputDividerRTL,
-                ]}
-              />
-              <TextInput
-                style={[
-                  styles.sleekTextInput,
-                  isRTL && styles.sleekTextInputRTL,
-                ]}
-                value={floorNumber}
-                onChangeText={setFloorNumber}
-                placeholder={isRTL ? 'الطابق' : 'Floor'}
-                placeholderTextColor="#9CA3AF"
-                keyboardType="number-pad"
-                onFocus={() => setFloorNumberActive(true)}
-                onBlur={() => setFloorNumberActive(false)}
-                editable={!isLoading}
-              />
-            </View>
+            <FloatingLabelInput
+              label={isRTL ? 'رقم الطابق' : 'Floor Number'}
+              iconName="layers-outline"
+              isRTL={isRTL}
+              value={floorNumber}
+              onChangeText={setFloorNumber}
+              placeholder={isRTL ? 'الطابق' : 'Floor'}
+              keyboardType="number-pad"
+              editable={!isLoading}
+            />
           </View>
         </View>
 
         {/* City */}
-        <Text
-          style={[
-            styles.label,
-            isRTL && styles.labelRTL,
-            { marginBottom: 6, fontSize: 13, color: '#6B7280' },
-          ]}
-        >
-          {isRTL ? 'المدينة' : 'City'}
-        </Text>
-        <View
-          style={[
-            styles.sleekInputWrapper,
-            isRTL && styles.sleekInputWrapperRTL,
-            cityActive && styles.sleekInputWrapperActive,
-          ]}
-        >
-          <Icon
-            name="business-outline"
-            size={18}
-            color={cityActive ? colors.primary : '#9CA3AF'}
-            style={[styles.sleekInputIcon, isRTL && styles.sleekInputIconRTL]}
-          />
-          <View
-            style={[
-              styles.sleekInputDivider,
-              isRTL && styles.sleekInputDividerRTL,
-            ]}
-          />
-          <TextInput
-            style={[styles.sleekTextInput, isRTL && styles.sleekTextInputRTL]}
-            value={city}
-            onChangeText={setCity}
-            placeholder={isRTL ? 'أدخل المدينة' : 'Enter city name'}
-            placeholderTextColor="#9CA3AF"
-            onFocus={() => setCityActive(true)}
-            onBlur={() => setCityActive(false)}
-            editable={!isLoading}
-          />
-        </View>
+        <FloatingLabelInput
+          label={isRTL ? 'المدينة' : 'City'}
+          iconName="business-outline"
+          isRTL={isRTL}
+          value={city}
+          onChangeText={setCity}
+          placeholder={isRTL ? 'أدخل المدينة' : 'Enter city name'}
+          editable={!isLoading}
+        />
 
         {/* Complete Signup Button */}
         <TouchableOpacity

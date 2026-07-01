@@ -11,6 +11,7 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import Svg, { Path } from 'react-native-svg';
 import { styles } from './styles';
+import { FloatingLabelInput } from './FloatingLabelInput';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -26,22 +27,22 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 interface AuthProps {
   onBack?: () => void;
   onNavigate?: (route: string) => void;
+  initialShowSignup?: boolean;
 }
 
-const Auth: React.FC<AuthProps> = ({ onBack, onNavigate }) => {
-  const { isRTL } = useLanguage();
+const Auth: React.FC<AuthProps> = ({ onBack, onNavigate, initialShowSignup }) => {
+  const { isRTL, language, setLanguage } = useLanguage();
   const insets = useSafeAreaInsets();
   const { login: saveLogin } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
-  const [showMultiStepSignup, setShowMultiStepSignup] = useState(false);
+  const [showMultiStepSignup, setShowMultiStepSignup] = useState(initialShowSignup || false);
   const [showVerifyEmail, setShowVerifyEmail] = useState(false);
   const [pendingUserId, setPendingUserId] = useState<string>('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [emailActive, setEmailActive] = useState(false);
-  const [passwordActive, setPasswordActive] = useState(false);
+  const passwordInputRef = React.useRef<TextInput>(null);
   const [rememberMe, setRememberMe] = useState(false);
 
   // Load saved credentials on mount if Remember Me was checked
@@ -341,14 +342,15 @@ const Auth: React.FC<AuthProps> = ({ onBack, onNavigate }) => {
               />
             </Svg>
 
-            {/* Top Overlay Navigation/Back Button */}
-            {onBack && (
-              <View
-                style={[
-                  styles.headerOverlayBar,
-                  isRTL && styles.headerOverlayBarRTL,
-                ]}
-              >
+            {/* Top Overlay Navigation/Back Button & Language Switcher */}
+            <View
+              style={[
+                styles.headerOverlayBar,
+                isRTL && styles.headerOverlayBarRTL,
+                { paddingTop: insets.top > 24 ? insets.top - 12 : 8 },
+              ]}
+            >
+              {onBack ? (
                 <TouchableOpacity
                   style={styles.headerBackButtonCircle}
                   onPress={onBack}
@@ -360,8 +362,41 @@ const Auth: React.FC<AuthProps> = ({ onBack, onNavigate }) => {
                     color={colors.textWhite}
                   />
                 </TouchableOpacity>
-              </View>
-            )}
+              ) : (
+                <View />
+              )}
+
+              <TouchableOpacity
+                style={{
+                  flexDirection: isRTL ? 'row-reverse' : 'row',
+                  alignItems: 'center',
+                  backgroundColor: 'rgba(255, 255, 255, 0.18)',
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  borderRadius: 20,
+                  height: 36,
+                }}
+                onPress={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
+                activeOpacity={0.8}
+              >
+                <Icon
+                  name="globe-outline"
+                  size={16}
+                  color={colors.textWhite}
+                  style={{ marginRight: isRTL ? 0 : 6, marginLeft: isRTL ? 6 : 0 }}
+                />
+                <Text
+                  style={{
+                    color: colors.textWhite,
+                    fontSize: 13,
+                    fontWeight: '600',
+                    fontFamily: 'System',
+                  }}
+                >
+                  {language === 'ar' ? 'English' : 'العربية'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Curved Wave Divider (Concave curve matching the sign-in mockup) */}
@@ -402,112 +437,43 @@ const Auth: React.FC<AuthProps> = ({ onBack, onNavigate }) => {
             </View>
 
             {/* Email input field */}
-            <Text
-              style={[
-                styles.label,
-                isRTL && styles.labelRTL,
-                { marginBottom: 6, fontSize: 13, color: '#6B7280' },
-              ]}
-            >
-              {isRTL ? 'البريد الإلكتروني' : 'Email'}
-            </Text>
-            <View
-              style={[
-                styles.sleekInputWrapper,
-                isRTL && styles.sleekInputWrapperRTL,
-                emailActive && styles.sleekInputWrapperActive,
-              ]}
-            >
-              <Icon
-                name="mail-outline"
-                size={18}
-                color={emailActive ? colors.primary : '#9CA3AF'}
-                style={[
-                  styles.sleekInputIcon,
-                  isRTL && styles.sleekInputIconRTL,
-                ]}
-              />
-              <View
-                style={[
-                  styles.sleekInputDivider,
-                  isRTL && styles.sleekInputDividerRTL,
-                ]}
-              />
-              <TextInput
-                style={[
-                  styles.sleekTextInput,
-                  isRTL && styles.sleekTextInputRTL,
-                ]}
-                value={email}
-                onChangeText={setEmail}
-                placeholder={
-                  isRTL ? 'أدخل بريدك الإلكتروني' : 'Enter your email'
-                }
-                placeholderTextColor="#9CA3AF"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                onFocus={() => setEmailActive(true)}
-                onBlur={() => setEmailActive(false)}
-              />
-            </View>
+            <FloatingLabelInput
+              label={isRTL ? 'البريد الإلكتروني' : 'Email'}
+              iconName="mail-outline"
+              isRTL={isRTL}
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              returnKeyType="next"
+              onSubmitEditing={() => passwordInputRef.current?.focus()}
+            />
 
             {/* Password input field */}
-            <Text
-              style={[
-                styles.label,
-                isRTL && styles.labelRTL,
-                { marginBottom: 6, fontSize: 13, color: '#6B7280' },
-              ]}
-            >
-              {isRTL ? 'كلمة المرور' : 'Password'}
-            </Text>
-            <View
-              style={[
-                styles.sleekInputWrapper,
-                isRTL && styles.sleekInputWrapperRTL,
-                passwordActive && styles.sleekInputWrapperActive,
-              ]}
-            >
-              <Icon
-                name="lock-closed-outline"
-                size={18}
-                color={passwordActive ? colors.primary : '#9CA3AF'}
-                style={[
-                  styles.sleekInputIcon,
-                  isRTL && styles.sleekInputIconRTL,
-                ]}
-              />
-              <View
-                style={[
-                  styles.sleekInputDivider,
-                  isRTL && styles.sleekInputDividerRTL,
-                ]}
-              />
-              <TextInput
-                style={[
-                  styles.sleekTextInput,
-                  isRTL && styles.sleekTextInputRTL,
-                ]}
-                value={password}
-                onChangeText={setPassword}
-                placeholder={isRTL ? 'أدخل كلمة المرور' : 'Enter your password'}
-                placeholderTextColor="#9CA3AF"
-                secureTextEntry={!showPassword}
-                onFocus={() => setPasswordActive(true)}
-                onBlur={() => setPasswordActive(false)}
-              />
-              <TouchableOpacity
-                onPress={() => setShowPassword(!showPassword)}
-                activeOpacity={0.7}
-                style={{ paddingHorizontal: 6 }}
-              >
-                <Icon
-                  name={showPassword ? 'eye-outline' : 'eye-off-outline'}
-                  size={18}
-                  color="#6B7280"
-                />
-              </TouchableOpacity>
-            </View>
+            <FloatingLabelInput
+              ref={passwordInputRef}
+              label={isRTL ? 'كلمة المرور' : 'Password'}
+              iconName="lock-closed-outline"
+              isRTL={isRTL}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+              returnKeyType="done"
+              onSubmitEditing={handleSubmit}
+              rightElement={
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  activeOpacity={0.7}
+                  style={{ paddingHorizontal: 6 }}
+                >
+                  <Icon
+                    name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                    size={18}
+                    color="#6B7280"
+                  />
+                </TouchableOpacity>
+              }
+            />
 
             {/* Remember me & Forgot Password */}
             <View

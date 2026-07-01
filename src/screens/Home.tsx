@@ -31,6 +31,7 @@ interface HomeProps {
   onSelectOccasion?: (occasion: any, selectedDate?: Date) => void;
   isBannerDismissed?: boolean;
   setIsBannerDismissed?: (val: boolean) => void;
+  initialShowSignup?: boolean;
 }
 
 const Home: React.FC<HomeProps> = ({
@@ -40,6 +41,7 @@ const Home: React.FC<HomeProps> = ({
   onSelectOccasion,
   isBannerDismissed,
   setIsBannerDismissed,
+  initialShowSignup,
 }) => {
   const { isRTL, t } = useLanguage();
   const { user } = useAuth();
@@ -190,6 +192,7 @@ const Home: React.FC<HomeProps> = ({
       <Auth
         onBack={() => onNavigate && onNavigate('home')}
         onNavigate={onNavigate}
+        initialShowSignup={initialShowSignup}
       />
     );
   }

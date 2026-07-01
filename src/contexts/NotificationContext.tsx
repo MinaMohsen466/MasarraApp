@@ -160,13 +160,13 @@ export interface NotificationItem {
   message: string;
   messageEn: string;
   type:
-    | 'booking_created'
-    | 'booking_confirmed'
-    | 'booking_payment_confirmed'
-    | 'booking_confirmed_by_vendor'
-    | 'booking_rejected_by_vendor'
-    | 'vendor_uploaded'
-    | string;
+  | 'booking_created'
+  | 'booking_confirmed'
+  | 'booking_payment_confirmed'
+  | 'booking_confirmed_by_vendor'
+  | 'booking_rejected_by_vendor'
+  | 'vendor_uploaded'
+  | string;
   bookingId?: string;
   createdAt: string;
   read: boolean;
@@ -480,7 +480,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
       const token = await AsyncStorage.getItem('userToken');
       if (token && notifications.length > 0) {
         await Promise.all(
-          notifications.map(n => deleteServerNotification(token, n.id).catch(() => {}))
+          notifications.map(n => deleteServerNotification(token, n.id).catch(() => { }))
         );
       }
     } catch (err) {

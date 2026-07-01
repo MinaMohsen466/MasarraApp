@@ -203,7 +203,7 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   formHeadingContainer: {
-    marginBottom: 28,
+    marginBottom: 16,
     alignSelf: 'flex-start',
     width: '100%',
   },
