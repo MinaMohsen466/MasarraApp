@@ -5,6 +5,7 @@ import { styles } from './styles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getCartCount, subscribeToCartChanges } from '../../services/cart';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface BottomNavigationProps {
   activeRoute?: string;
@@ -21,6 +22,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
   const isTablet = screenWidth >= 600;
   const iconSize = isTablet ? 40 : 34;
   const [cartCount, setCartCount] = React.useState(0);
+  const insets = useSafeAreaInsets();
 
   React.useEffect(() => {
     const loadCartCount = async () => {
@@ -221,7 +223,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
   const navOrder = isRTL ? [...ltrOrder].reverse() : ltrOrder;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: (isTablet ? 24 : 14) + insets.bottom }]}>
       {navOrder.map(route => {
         const active = isActive(route);
         const isCart = route === 'cart';

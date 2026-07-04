@@ -46,9 +46,20 @@ import BecomeSeller from "./src/components/BecomeSeller";
 import { Onboarding } from "./src/components/Auth/Onboarding";
 
 // Helper component with auth
-const AddressesWithAuth: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+const AddressesWithAuth: React.FC<{
+  onBack: () => void;
+  onShowMapPicker?: () => void;
+  onHideMapPicker?: () => void;
+}> = ({ onBack, onShowMapPicker, onHideMapPicker }) => {
   const { token } = useAuth();
-  return <Addresses onBack={onBack} token={token} />;
+  return (
+    <Addresses
+      onBack={onBack}
+      token={token}
+      onShowMapPicker={onShowMapPicker}
+      onHideMapPicker={onHideMapPicker}
+    />
+  );
 };
 
 // Query client setup - Optimized for faster loading
@@ -680,7 +691,13 @@ function AppContent() {
           />
         );
       case 'addresses':
-        return <AddressesWithAuth onBack={handleBack} />;
+        return (
+          <AddressesWithAuth
+            onBack={handleBack}
+            onShowMapPicker={() => setShowBottomNav(false)}
+            onHideMapPicker={() => setShowBottomNav(true)}
+          />
+        );
       case 'terms':
         return <Terms onBack={handleBack} />;
       case 'privacy':

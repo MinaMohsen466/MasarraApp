@@ -13,6 +13,7 @@ import {
   TextInput,
   StatusBar,
   Clipboard,
+  Modal,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import Svg, { Path } from 'react-native-svg';
@@ -151,6 +152,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
   }>({ visible: false, title: '', message: '', buttons: [] });
 
   const [isSuccessState, setIsSuccessState] = useState(false);
+  const [activeFullImageUrl, setActiveFullImageUrl] = useState<string | null>(null);
 
 
 
@@ -2002,11 +2004,16 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                       )}
                                     </View>
                                     {input.optionImages?.[optIndex] ? (
-                                      <Image
-                                        source={{ uri: getServiceImageUrl(input.optionImages[optIndex]) }}
-                                        style={[styles.optionImage, isRTL && styles.optionImageRTL]}
-                                        resizeMode="cover"
-                                      />
+                                      <TouchableOpacity
+                                        activeOpacity={0.8}
+                                        onPress={() => setActiveFullImageUrl(getServiceImageUrl(input.optionImages[optIndex]))}
+                                      >
+                                        <Image
+                                          source={{ uri: getServiceImageUrl(input.optionImages[optIndex]) }}
+                                          style={[styles.optionImage, isRTL && styles.optionImageRTL]}
+                                          resizeMode="cover"
+                                        />
+                                      </TouchableOpacity>
                                     ) : null}
                                     <View style={{ flex: 1 }}>
                                       <Text
@@ -2099,11 +2106,16 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                 ]}
                               >
                                 {input.optionImages?.[optIndex] ? (
-                                  <Image
-                                    source={{ uri: getServiceImageUrl(input.optionImages[optIndex]) }}
-                                    style={[styles.menuItemImage, isRTL && styles.menuItemImageRTL]}
-                                    resizeMode="cover"
-                                  />
+                                  <TouchableOpacity
+                                    activeOpacity={0.8}
+                                    onPress={() => setActiveFullImageUrl(getServiceImageUrl(input.optionImages[optIndex]))}
+                                  >
+                                    <Image
+                                      source={{ uri: getServiceImageUrl(input.optionImages[optIndex]) }}
+                                      style={[styles.menuItemImage, isRTL && styles.menuItemImageRTL]}
+                                      resizeMode="cover"
+                                    />
+                                  </TouchableOpacity>
                                 ) : null}
                                 <View style={styles.menuItemInfo}>
                                   <Text style={styles.menuItemName}>
@@ -3042,6 +3054,78 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
         buttons={alertConfig.buttons}
         onClose={() => setAlertConfig({ ...alertConfig, visible: false })}
       />
+
+      {/* Fullscreen Image Viewer Overlay */}
+      {activeFullImageUrl && (
+        <View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 99999,
+          }}
+        >
+          {/* Main click outside area to dismiss */}
+          <TouchableOpacity
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+            }}
+            activeOpacity={1}
+            onPress={() => setActiveFullImageUrl(null)}
+          />
+
+          {/* Image Container directly holding the rounded image and close button */}
+          <View
+            style={{
+              width: SCREEN_WIDTH * 0.9,
+              height: SCREEN_WIDTH * 0.9,
+              position: 'relative',
+              shadowColor: '#000000',
+              shadowOffset: { width: 0, height: 10 },
+              shadowOpacity: 0.3,
+              shadowRadius: 15,
+              elevation: 10,
+            }}
+          >
+            <Image
+              source={{ uri: activeFullImageUrl }}
+              style={{
+                width: '100%',
+                height: '100%',
+                borderRadius: 16,
+              }}
+              resizeMode="cover"
+            />
+            {/* Close Button on top of the image itself */}
+            <TouchableOpacity
+              style={{
+                position: 'absolute',
+                top: 12,
+                right: 12,
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                justifyContent: 'center',
+                alignItems: 'center',
+                zIndex: 100000,
+              }}
+              onPress={() => setActiveFullImageUrl(null)}
+            >
+              <Icon name="close" size={18} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </View>
   );
 };

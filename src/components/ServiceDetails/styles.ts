@@ -3,7 +3,7 @@ import { colors } from '../../constants/colors';
 
 export const createStyles = (SCREEN_WIDTH: number) => {
   const isTablet = SCREEN_WIDTH >= 600;
-  const carouselHeight = isTablet ? 480 : 380;
+  const carouselHeight = isTablet ? 430 : 330;
 
   return StyleSheet.create({
     container: {
