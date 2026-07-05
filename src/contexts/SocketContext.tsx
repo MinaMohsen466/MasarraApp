@@ -4,6 +4,7 @@ import React, {
   useEffect,
   useState,
   useCallback,
+  useRef,
 } from 'react';
 import { io, Socket } from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -41,12 +42,14 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const { user } = useAuth();
+  const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
     // Only connect if user is authenticated
     if (!user) {
-      if (socket) {
-        socket.disconnect();
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
         setSocket(null);
         setIsConnected(false);
       }
@@ -94,6 +97,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
         newSocket.on('error', error => {});
 
+        socketRef.current = newSocket;
         setSocket(newSocket);
       } catch (error) {}
     };
@@ -102,12 +106,12 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
     // Cleanup on unmount or when user changes
     return () => {
-      if (socket) {
-        socket.disconnect();
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]); // Only depend on user to avoid reconnecting on every socket change
+  }, [user]);
 
   // Join a chat room
   const joinChat = useCallback(

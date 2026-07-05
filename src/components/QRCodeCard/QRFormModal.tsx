@@ -17,6 +17,7 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { getSecureToken } from '../../utils/secureStorage';
 import { colors } from '../../constants/colors';
 import { getQRCodeSettings, generateQRCode } from '../../services/qrCodeApi';
 import { QRCodeResultModal } from './QRCodeResultModal';
@@ -26,6 +27,14 @@ import type {
   QRCodeSettings,
   QRCodeData,
 } from '../../services/qrCodeApi';
+
+/** Convert a Date to a local YYYY-MM-DD string (avoids UTC timezone shift) */
+const getLocalDateString = (d: Date): string => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 const QRLoader: React.FC<{ isRTL: boolean }> = ({ isRTL }) => {
   const [scanAnim] = useState(new Animated.Value(0));
@@ -168,7 +177,6 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
   const [selectedBackgroundId, setSelectedBackgroundId] = useState<
     string | null
   >(null);
-  const [guestCount, setGuestCount] = useState('1');
   const [showResultModal, setShowResultModal] = useState(false);
   const [generatedQRCode, setGeneratedQRCode] = useState<QRCodeData | null>(
     null,
@@ -181,7 +189,6 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
   const [originalBackgroundId, setOriginalBackgroundId] = useState<
     string | null
   >(null);
-  const [originalGuestCount, setOriginalGuestCount] = useState<string>('1');
   const [alertConfig, setAlertConfig] = useState<{
     visible: boolean;
     title: string;
@@ -196,10 +203,11 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
   const [formData, setFormData] = useState<QRCodeCustomDetails>({
     name1: '',
     name2: '',
-    eventDate: new Date().toISOString().split('T')[0],
+    eventDate: getLocalDateString(new Date()),
     eventTime: '12:00',
     location: '',
     contact: '',
+    guestCount: '',
   });
 
   useEffect(() => {
@@ -209,33 +217,66 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
 
       if (existingQRCode?.customDetails) {
         // If QR code already exists, show it directly instead of edit form
-        // Store existing QR code data
         setGeneratedQRCode(existingQRCode);
-        setFormData(existingQRCode.customDetails);
 
         // Handle selectedBackgroundImage - could be object or string ID
         let backgroundId = null;
         if (existingQRCode.selectedBackgroundImage) {
           if (typeof existingQRCode.selectedBackgroundImage === 'object') {
-            // Server returns it as {id, name, url}
             backgroundId =
               existingQRCode.selectedBackgroundImage.id ||
               existingQRCode.selectedBackgroundImage._id;
           } else {
-            // It's already a string ID
             backgroundId = existingQRCode.selectedBackgroundImage;
           }
         }
         setSelectedBackgroundId(backgroundId);
 
-        // Initialize guest count from booking limit
-        const limitStr = booking?.guestLimit?.toString() || '1';
-        setGuestCount(limitStr);
+        // Get base fields for merging if any are null/missing in existing QR customDetails
+        let baseEventDate = '';
+        if (booking?.eventDate) {
+          try {
+            baseEventDate = getLocalDateString(new Date(booking.eventDate));
+          } catch (e) {}
+        }
+        if (!baseEventDate && booking?.eventTime?.start) {
+          try {
+            const startDate = new Date(booking.eventTime.start);
+            const year = startDate.getFullYear();
+            const month = String(startDate.getMonth() + 1).padStart(2, '0');
+            const day = String(startDate.getDate()).padStart(2, '0');
+            baseEventDate = `${year}-${month}-${day}`;
+          } catch (e) {}
+        }
+        if (!baseEventDate) {
+          baseEventDate = getLocalDateString(new Date());
+        }
 
-        // Store original data for change detection
-        setOriginalFormData(existingQRCode.customDetails);
+        let baseEventTime = '12:00';
+        if (booking?.eventTime?.start) {
+          try {
+            const start = new Date(booking.eventTime.start);
+            const hours = start.getHours();
+            const minutes = start.getMinutes();
+            baseEventTime = `${String(hours).padStart(2, '0')}:${String(
+              minutes,
+            ).padStart(2, '0')}`;
+          } catch (e) {}
+        }
+
+        const baseDetails: QRCodeCustomDetails = {
+          name1: existingQRCode.customDetails.name1 ?? booking?.customer?.name ?? booking?.customerName ?? '',
+          name2: existingQRCode.customDetails.name2 ?? '',
+          eventDate: existingQRCode.customDetails.eventDate ?? baseEventDate,
+          eventTime: existingQRCode.customDetails.eventTime ?? baseEventTime,
+          location: existingQRCode.customDetails.location ?? booking?.location ?? booking?.venue ?? '',
+          contact: existingQRCode.customDetails.contact ?? booking?.customer?.phone ?? booking?.customer?.email ?? booking?.customerPhone ?? booking?.customerEmail ?? '',
+          guestCount: existingQRCode.customDetails.guestCount ?? booking?.guestLimit?.toString() ?? '',
+        };
+
+        setFormData(baseDetails);
+        setOriginalFormData(baseDetails);
         setOriginalBackgroundId(backgroundId);
-        setOriginalGuestCount(limitStr);
         setHasChanges(false);
 
         // Show result modal directly
@@ -243,54 +284,66 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
         setIsPreviewMode(false);
       } else if (booking) {
         // Load booking data
-        // Use eventTime.start for date to avoid timezone issues
-        let eventDate = new Date().toISOString().split('T')[0];
-        if (booking.eventTime?.start) {
-          // Extract date from eventTime.start (which is a Date object)
-          const startDate = new Date(booking.eventTime.start);
-          // Format as YYYY-MM-DD
-          const year = startDate.getFullYear();
-          const month = String(startDate.getMonth() + 1).padStart(2, '0');
-          const day = String(startDate.getDate()).padStart(2, '0');
-          eventDate = `${year}-${month}-${day}`;
+        let eventDate = '';
+        if (booking.eventDate) {
+          try {
+            eventDate = getLocalDateString(new Date(booking.eventDate));
+          } catch (e) {}
+        }
+        if (!eventDate && booking.eventTime?.start) {
+          try {
+            const startDate = new Date(booking.eventTime.start);
+            const year = startDate.getFullYear();
+            const month = String(startDate.getMonth() + 1).padStart(2, '0');
+            const day = String(startDate.getDate()).padStart(2, '0');
+            eventDate = `${year}-${month}-${day}`;
+          } catch (e) {}
+        }
+        if (!eventDate) {
+          eventDate = getLocalDateString(new Date());
         }
 
         let eventTime = '12:00';
         if (booking.eventTime?.start) {
-          const start = new Date(booking.eventTime.start);
-          const hours = start.getHours();
-          const minutes = start.getMinutes();
-          eventTime = `${String(hours).padStart(2, '0')}:${String(
-            minutes,
-          ).padStart(2, '0')}`;
+          try {
+            const start = new Date(booking.eventTime.start);
+            const hours = start.getHours();
+            const minutes = start.getMinutes();
+            eventTime = `${String(hours).padStart(2, '0')}:${String(
+              minutes,
+            ).padStart(2, '0')}`;
+          } catch (e) {}
         }
 
-        const locationText = booking.location || '';
-        const services = booking.services || [];
-        const serviceName = services.length > 0 ? services[0].name : '';
+        const customerName = booking.customer?.name || booking.customerName || '';
+        const contactDetails = booking.customer?.phone || booking.customer?.email || booking.customerPhone || booking.customerEmail || '';
+        const locationText = booking.location || booking.venue || '';
+        const defaultGuestLimit = booking.guestLimit?.toString() || '';
 
-        setFormData({
-          name1: serviceName,
+        const initialDetails: QRCodeCustomDetails = {
+          name1: customerName,
           name2: '',
           eventDate,
           eventTime,
           location: locationText,
-          contact: '',
-        });
+          contact: contactDetails,
+          guestCount: defaultGuestLimit,
+        };
+
+        setFormData(initialDetails);
         setSelectedBackgroundId(null);
-        setGuestCount(booking.guestLimit?.toString() || '1');
       } else {
         // Default empty state
         setFormData({
           name1: '',
           name2: '',
-          eventDate: new Date().toISOString().split('T')[0],
+          eventDate: getLocalDateString(new Date()),
           eventTime: '12:00',
           location: '',
           contact: '',
+          guestCount: '',
         });
         setSelectedBackgroundId(null);
-        setGuestCount('1');
       }
     }
   }, [visible, existingQRCode, booking]);
@@ -298,9 +351,17 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
   const loadSettings = async () => {
     setLoading(true);
     try {
-      const token = await AsyncStorage.getItem('userToken');
+      const token = await getSecureToken();
       if (!token) {
         setLoading(false);
+        setAlertConfig({
+          visible: true,
+          title: isRTL ? 'خطأ في المصادقة' : 'Authentication Error',
+          message: isRTL
+            ? 'لم يتم العثور على رمز تسجيل الدخول. يرجى تسجيل الدخول مجدداً.'
+            : 'Login session not found. Please log in again.',
+          buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
+        });
         return;
       }
 
@@ -332,17 +393,14 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
       const formDataChanged =
         JSON.stringify(formData) !== JSON.stringify(originalFormData);
       const backgroundChanged = selectedBackgroundId !== originalBackgroundId;
-      const guestCountChanged = guestCount !== originalGuestCount;
-      setHasChanges(formDataChanged || backgroundChanged || guestCountChanged);
+      setHasChanges(formDataChanged || backgroundChanged);
     }
   }, [
     formData,
     selectedBackgroundId,
-    guestCount,
     existingQRCode,
     originalFormData,
     originalBackgroundId,
-    originalGuestCount,
   ]);
 
   const handleSubmit = async () => {
@@ -401,8 +459,18 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
 
     setSubmitting(true);
     try {
-      const token = await AsyncStorage.getItem('userToken');
-      if (!token) return;
+      const token = await getSecureToken();
+      if (!token) {
+        setAlertConfig({
+          visible: true,
+          title: isRTL ? 'انتهت الجلسة' : 'Session Expired',
+          message: isRTL
+            ? 'انتهت صلاحية جلسة تسجيل الدخول. يرجى تسجيل الدخول مجدداً.'
+            : 'Your login session has expired. Please log in again.',
+          buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
+        });
+        return;
+      }
 
       // Get first service ID if available
       const serviceId =
@@ -414,7 +482,7 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
         formData,
         selectedBackgroundId,
         serviceId,
-        parseInt(guestCount, 10) || undefined,
+        parseInt(formData.guestCount || '0', 10) || undefined,
       );
 
       // Store the generated QR code data
@@ -441,7 +509,6 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
         setHasChanges(false);
         setOriginalFormData(formData);
         setOriginalBackgroundId(selectedBackgroundId);
-        setOriginalGuestCount(guestCount);
       }
     } catch (error: any) {
       setAlertConfig({
@@ -585,16 +652,23 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
                 </TouchableOpacity>
                 {showDatePicker && (
                   <DateTimePicker
-                    value={new Date(formData.eventDate)}
+                    value={(() => {
+                      const [y, m, d] = formData.eventDate.split('-').map(Number);
+                      return new Date(y, m - 1, d);
+                    })()}
                     mode="date"
                     display="default"
                     onChange={(_e, date) => {
                       setShowDatePicker(false);
-                      if (date)
+                      if (date) {
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const day = String(date.getDate()).padStart(2, '0');
                         setFormData(prev => ({
                           ...prev,
-                          eventDate: date.toISOString().split('T')[0],
+                          eventDate: `${year}-${month}-${day}`,
                         }));
+                      }
                     }}
                   />
                 )}
@@ -610,16 +684,24 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
                 </TouchableOpacity>
                 {showTimePicker && (
                   <DateTimePicker
-                    value={new Date(`2024-01-01T${formData.eventTime}`)}
+                    value={(() => {
+                      const [hours, minutes] = formData.eventTime.split(':').map(Number);
+                      const d = new Date();
+                      d.setHours(hours, minutes, 0, 0);
+                      return d;
+                    })()}
                     mode="time"
                     display="default"
                     onChange={(_e, time) => {
                       setShowTimePicker(false);
-                      if (time)
+                      if (time) {
+                        const hours = String(time.getHours()).padStart(2, '0');
+                        const minutes = String(time.getMinutes()).padStart(2, '0');
                         setFormData(prev => ({
                           ...prev,
-                          eventTime: time.toTimeString().slice(0, 5),
+                          eventTime: `${hours}:${minutes}`,
                         }));
+                      }
                     }}
                   />
                 )}
@@ -665,8 +747,10 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
                 <TextInput
                   style={styles.input}
                   placeholder="100"
-                  value={guestCount}
-                  onChangeText={setGuestCount}
+                  value={formData.guestCount || ''}
+                  onChangeText={text =>
+                    setFormData(prev => ({ ...prev, guestCount: text }))
+                  }
                   keyboardType="number-pad"
                   placeholderTextColor="#999"
                 />
@@ -692,7 +776,7 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
                   <ActivityIndicator size="small" color="#fff" />
                 ) : isUpdated && existingQRCode ? (
                   <Text style={styles.generateButtonText}>
-                    {isRTL ? '✓ تم التحديث' : '✓ Updated'}
+                     {isRTL ? '✓ تم التحديث' : '✓ Updated'}
                   </Text>
                 ) : existingQRCode && !hasChanges ? (
                   <Text style={styles.generateButtonText}>
@@ -737,7 +821,7 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
         onClose={() => {
           setShowResultModal(false);
           if (!isPreviewMode) {
-            onSuccess(generatedQRCode, parseInt(guestCount, 10) || 1);
+            onSuccess(generatedQRCode, parseInt(formData.guestCount || '0', 10) || 1);
             onClose();
           }
         }}

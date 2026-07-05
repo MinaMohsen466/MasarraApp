@@ -6,6 +6,7 @@ import React, {
   ReactNode,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { setSecureToken, getSecureToken, removeSecureToken } from '../utils/secureStorage';
 import {
   User,
   updateUserProfileWithImage,
@@ -50,7 +51,7 @@ export const AuthProvider: React.FC<{
 
   const refreshUser = async () => {
     try {
-      const storedToken = await AsyncStorage.getItem('userToken');
+      const storedToken = await getSecureToken();
       if (!storedToken) {
         return;
       }
@@ -75,7 +76,7 @@ export const AuthProvider: React.FC<{
   const loadUserData = async () => {
     try {
       console.log('📱 Loading user data from AsyncStorage...');
-      const storedToken = await AsyncStorage.getItem('userToken');
+      const storedToken = await getSecureToken();
       const storedUser = await AsyncStorage.getItem('userData');
 
       if (storedToken && storedUser) {
@@ -109,7 +110,7 @@ export const AuthProvider: React.FC<{
 
   const login = async (userData: User, authToken: string) => {
     try {
-      await AsyncStorage.setItem('userToken', authToken);
+      await setSecureToken(authToken);
       await AsyncStorage.setItem('userData', JSON.stringify(userData));
       // Save userId for user-specific cart
       if (userData._id) {
@@ -135,7 +136,7 @@ export const AuthProvider: React.FC<{
       // Clear wishlist data
       await clearWishlist();
 
-      await AsyncStorage.removeItem('userToken');
+      await removeSecureToken();
       await AsyncStorage.removeItem('userData');
       await AsyncStorage.removeItem('userId');
       setToken(null);
@@ -211,7 +212,7 @@ export const AuthProvider: React.FC<{
       const { clearCartCache } = require('../services/cart');
       const { clearWishlist } = require('../services/wishlist');
 
-      await AsyncStorage.removeItem('userToken');
+      await removeSecureToken();
       await AsyncStorage.removeItem('userData');
       setToken(null);
       setUser(null);

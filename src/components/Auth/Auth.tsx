@@ -23,6 +23,7 @@ import MultiStepSignup from './MultiStepSignup';
 import { CustomAlert } from '../CustomAlert';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Keychain from 'react-native-keychain';
 
 interface AuthProps {
   onBack?: () => void;
@@ -54,12 +55,29 @@ const Auth: React.FC<AuthProps> = ({ onBack, onNavigate, initialShowSignup }) =>
         );
         if (savedRememberMe === 'true') {
           const savedEmail = await AsyncStorage.getItem('remembered_email');
-          const savedPassword = await AsyncStorage.getItem(
-            'remembered_password',
-          );
-          setRememberMe(true);
           if (savedEmail) setEmail(savedEmail);
-          if (savedPassword) setPassword(savedPassword);
+
+          // Load password from secure Keychain
+          try {
+            const credentials = await Keychain.getGenericPassword({
+              service: 'com.masarra.rememberme',
+            });
+            if (credentials) {
+              setPassword(credentials.password);
+            }
+          } catch (_keychainErr) {
+            // Fallback: try old AsyncStorage (migrate away)
+            const oldPwd = await AsyncStorage.getItem('remembered_password');
+            if (oldPwd) {
+              setPassword(oldPwd);
+              // Migrate to Keychain and remove plain-text copy
+              await Keychain.setGenericPassword('rememberme', oldPwd, {
+                service: 'com.masarra.rememberme',
+              });
+              await AsyncStorage.removeItem('remembered_password');
+            }
+          }
+          setRememberMe(true);
         }
       } catch (error) {
         console.error('Error loading remembered credentials:', error);
@@ -171,11 +189,15 @@ const Auth: React.FC<AuthProps> = ({ onBack, onNavigate, initialShowSignup }) =>
           if (rememberMe) {
             await AsyncStorage.setItem('rememberMe_checked', 'true');
             await AsyncStorage.setItem('remembered_email', email);
-            await AsyncStorage.setItem('remembered_password', password);
+            // Store password securely in Keychain instead of plain-text AsyncStorage
+            await Keychain.setGenericPassword('rememberme', password, {
+              service: 'com.masarra.rememberme',
+              accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+            });
           } else {
             await AsyncStorage.removeItem('rememberMe_checked');
             await AsyncStorage.removeItem('remembered_email');
-            await AsyncStorage.removeItem('remembered_password');
+            await Keychain.resetGenericPassword({ service: 'com.masarra.rememberme' });
           }
         } catch (storageErr) {
           console.error('Error saving remembered credentials:', storageErr);

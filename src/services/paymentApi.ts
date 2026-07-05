@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSecureToken } from '../utils/secureStorage';
 import { API_URL } from '../config/api.config';
 
 /**
@@ -9,7 +9,7 @@ import { API_URL } from '../config/api.config';
 // Helper to get auth token
 async function getAuthToken(): Promise<string | null> {
   try {
-    return await AsyncStorage.getItem('userToken');
+    return await getSecureToken();
   } catch (e) {
     return null;
   }

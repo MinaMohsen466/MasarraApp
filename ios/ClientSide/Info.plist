@@ -35,7 +35,7 @@
 		<true/>
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string></string>
+	<string>يحتاج التطبيق إلى الوصول إلى موقعك لتحديد عنوانك وعرضه على الخريطة.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app needs access to your photo library to select a profile picture.</string>
 	<key>NSCameraUsageDescription</key>

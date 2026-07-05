@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL, checkTimeSlotAvailability } from './api';
+import { getSecureToken } from '../utils/secureStorage';
 import { clearDatePickerCacheForService } from '../components/DatePickerModal/DatePickerModal';
 
 const CART_STORAGE_PREFIX = '@masarra_cart_';
@@ -75,7 +76,7 @@ function notifyCartChange(): void {
 // Helper to get auth token
 async function getAuthToken(): Promise<string | null> {
   try {
-    return await AsyncStorage.getItem('userToken');
+    return await getSecureToken();
   } catch (e) {
     return null;
   }
@@ -106,7 +107,7 @@ async function getUserId(): Promise<string> {
     }
 
     // If no userId found and user is not logged in, use 'guest' as fallback
-    const token = await AsyncStorage.getItem('userToken');
+    const token = await getSecureToken();
     if (!token) {
       // User is not logged in - this is expected, use guest silently
       return 'guest';

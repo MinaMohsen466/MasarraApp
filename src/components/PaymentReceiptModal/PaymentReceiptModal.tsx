@@ -5,9 +5,9 @@ import {
   TouchableOpacity,
   Modal,
   ScrollView,
-  SafeAreaView,
   Share,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Line } from 'react-native-svg';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';

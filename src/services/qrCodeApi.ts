@@ -7,6 +7,7 @@ export interface QRCodeCustomDetails {
   eventTime: string;
   location: string;
   contact: string;
+  guestCount?: string;
 }
 
 export interface QRCodeData {

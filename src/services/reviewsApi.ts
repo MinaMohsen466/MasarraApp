@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from './api';
+import { getSecureToken } from '../utils/secureStorage';
 
 export interface Review {
   _id: string;
@@ -86,7 +87,7 @@ export async function createReview(
   bookingId?: string,
 ): Promise<Review> {
   try {
-    const token = await AsyncStorage.getItem('userToken');
+    const token = await getSecureToken();
     if (!token) {
       throw new Error('Authentication required');
     }
@@ -149,7 +150,7 @@ export async function checkUserReviewedService(
   serviceId: string,
 ): Promise<Review | null> {
   try {
-    const token = await AsyncStorage.getItem('userToken');
+    const token = await getSecureToken();
     if (!token) {
       return null;
     }
@@ -173,7 +174,7 @@ export async function checkUserReviewedService(
 // Delete a review
 export async function deleteReview(reviewId: string): Promise<void> {
   try {
-    const token = await AsyncStorage.getItem('userToken');
+    const token = await getSecureToken();
     if (!token) {
       throw new Error('Authentication required');
     }
