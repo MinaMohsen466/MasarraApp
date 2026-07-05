@@ -1,11 +1,8 @@
-import { Platform } from 'react-native';
 import {
   API_URL,
-  API_BASE_URL as BASE_URL,
   getImageUrl,
 } from '../config/api.config';
 
-// Use the centralized API_URL
 const API_BASE_URL = API_URL;
 
 export interface PolicyDescription {
@@ -24,6 +21,29 @@ export interface Policy {
     isActive: boolean;
   };
   _id: string;
+}
+
+export interface CustomInputOption {
+  label: string;
+  labelAr?: string;
+  price?: number;
+  value?: string | number;
+  valueAr?: string | number;
+}
+
+export interface CustomInput {
+  _id?: string;
+  type: string;
+  label: string;
+  labelAr?: string;
+  placeholder?: string;
+  placeholderAr?: string;
+  required?: boolean;
+  options?: CustomInputOption[];
+  validation?: {
+    min?: number;
+    max?: number;
+  };
 }
 
 export interface Service {
@@ -51,7 +71,7 @@ export interface Service {
   rating: number;
   totalReviews: number;
   isFeatured: boolean;
-  customInputs?: any[];
+  customInputs?: CustomInput[];
   policies?: Policy[];
   timeSlotDuration?: number;
   workingHours?: {
@@ -76,11 +96,11 @@ export const fetchServices = async (): Promise<Service[]> => {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const data = await response.json();
+    const data: Service[] = await response.json();
 
     // Debug: Log discount info for Birthday Party Catering
     const birthdayCatering = data.find(
-      (s: any) => s.name === 'Birthday Party Catering',
+      (s: Service) => s.name === 'Birthday Party Catering',
     );
     if (birthdayCatering) {
     }
@@ -157,6 +177,21 @@ export const fetchServicesWithPagination = async (
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Fetch a single service by ID
+ */
+export const fetchServiceById = async (id: string): Promise<Service> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/services/${id}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
     return await response.json();
   } catch (error) {
     throw error;

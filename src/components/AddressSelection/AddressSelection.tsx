@@ -1,19 +1,26 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  StyleSheet,
   TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
+  TouchableWithoutFeedback,
+  PermissionsAndroid,
 } from 'react-native';
 import { fetchAddresses, createAddress } from '../../services/api';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
-import Icon from 'react-native-vector-icons/Ionicons';
 import { CustomAlert } from '../CustomAlert/CustomAlert';
 import { BottomSheet } from '../common/BottomSheet';
+import { WebView } from 'react-native-webview';
+import { MAP_VIEW_HTML } from '../../constants/mapHtml';
+import { styles } from './styles';
+
 
 interface Address {
   _id: string;
@@ -27,6 +34,8 @@ interface Address {
   city: string;
   isDefault?: boolean;
 }
+
+
 
 interface AddressSelectionProps {
   visible: boolean;
@@ -68,6 +77,170 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
+
+  // Map & Location permission states
+  const topMapRef = useRef<WebView>(null);
+  const [mapLoadingAddress, setMapLoadingAddress] = useState(false);
+
+  const handleOpenForm = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          {
+            title: isRTL ? 'إذن الوصول للموقع' : 'Location Permission',
+            message: isRTL
+              ? 'يحتاج التطبيق للوصول إلى موقعك لعرضه على الخريطة.'
+              : 'This app needs access to your location to show it on the map.',
+            buttonNeutral: isRTL ? 'اسألني لاحقاً' : 'Ask Me Later',
+            buttonNegative: isRTL ? 'إلغاء' : 'Cancel',
+            buttonPositive: isRTL ? 'موافق' : 'OK',
+          }
+        );
+      } catch (err) {
+        console.warn(err);
+      }
+    }
+    setForm({
+      name: '',
+      city: '',
+      block: '',
+      street: '',
+      lane: '',
+      houseNumber: '',
+      floorNumber: '',
+      apartmentNumber: '',
+    });
+    setShowForm(true);
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      topMapRef.current?.postMessage(
+        JSON.stringify({
+          type: 'SHOW_PIN',
+          show: showForm,
+        })
+      );
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [showForm]);
+
+  const handleMapMessage = async (event: { nativeEvent: { data: string } }) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      if (data.type === 'LOCATION_SELECTED') {
+        const { lat, lng } = data;
+        setMapLoadingAddress(true);
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=${
+            isRTL ? 'ar' : 'en'
+          }`,
+          {
+            headers: {
+              'User-Agent': 'MasarraApp/1.0',
+            },
+          }
+        );
+        const result = await response.json();
+        setMapLoadingAddress(false);
+        if (result && result.address) {
+          const addr = result.address;
+          const road = addr.road || '';
+          const suburb =
+            addr.suburb ||
+            addr.neighbourhood ||
+            addr.quarter ||
+            addr.city_district ||
+            '';
+          const city =
+            addr.city || addr.town || addr.village || addr.county || '';
+
+          // Pre-populate form fields
+          setForm(prev => ({
+            ...prev,
+            city: city || suburb || '',
+            street: road || suburb || '',
+            block:
+              addr.neighbourhood ||
+              addr.quarter ||
+              addr.city_district ||
+              '',
+            houseNumber: addr.house_number || '',
+          }));
+        }
+      } else if (data.type === 'GEOLOCATION_FAILED') {
+        setAlertTitle(isRTL ? 'تحديد الموقع' : 'Location Services');
+        setAlertMessage(
+          isRTL
+            ? 'تعذر تحديد موقعك الحالي تلقائياً. يرجى التأكد من تفعيل خدمة الموقع (GPS) في جهازك ومنح الإذن للتطبيق.'
+            : 'Could not retrieve your location automatically. Please ensure location services (GPS) are enabled and permissions are granted.'
+        );
+        setAlertVisible(true);
+      }
+    } catch (error) {
+      console.error('Error fetching address:', error);
+      setMapLoadingAddress(false);
+    }
+  };
+
+  const renderInputField = (
+    label: string,
+    value: string,
+    onChangeText: (text: string) => void,
+    fieldKey: string,
+    required: boolean = false,
+    _flex: number = 1,
+    placeholder: string = ''
+  ) => {
+    const isActive = activeField === fieldKey;
+    const hasValue =
+      value !== undefined &&
+      value !== null &&
+      value.toString().trim().length > 0;
+    const showLabel = isActive || hasValue;
+
+    return (
+      <View style={styles.inputFieldContainer}>
+        <View
+          style={[
+            styles.modalInputWrapper,
+            isActive && styles.modalInputWrapperActive,
+            isRTL && styles.modalInputWrapperRTL,
+          ]}
+        >
+          {showLabel && (
+            <Text
+              style={[
+                styles.modalInputLabel,
+                isRTL && styles.modalInputLabelRTL,
+                isActive && styles.modalInputLabelActive,
+              ]}
+              numberOfLines={1}
+            >
+              {label}
+              {required && <Text style={styles.requiredStar}>*</Text>}
+            </Text>
+          )}
+          <TextInput
+            placeholder={
+              !showLabel ? label + (required ? ' *' : '') : placeholder
+            }
+            value={value}
+            onChangeText={onChangeText}
+            style={[
+              styles.modalTextInput,
+              isRTL && styles.modalTextInputRTL,
+            ]}
+            placeholderTextColor="#94A3B8"
+            onFocus={() => setActiveField(fieldKey)}
+            onBlur={() => setActiveField(null)}
+          />
+        </View>
+      </View>
+    );
+  };
+
 
   const handleSubmit = async () => {
     if (!token) return;
@@ -159,381 +332,180 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
 
     if (showForm) {
       return (
-        <View style={styles.listContainer}>
-          <ScrollView
-            style={styles.addressList}
-            contentContainerStyle={{ paddingBottom: 24 }}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            {/* Name Input */}
-            <View
-              style={[
-                styles.modalInputWrapper,
-                isRTL && styles.modalInputWrapperRTL,
-                activeField === 'name' && styles.modalInputWrapperActive,
-              ]}
-            >
-              <Icon
-                name="pricetag-outline"
-                size={18}
-                color={
-                  activeField === 'name' ? colors.primary : '#94A3B8'
-                }
-                style={[
-                  styles.modalInputIcon,
-                  isRTL && styles.modalInputIconRTL,
-                ]}
+        <View style={styles.formContainer}>
+          {/* Active Address Geocode Loading Notification */}
+          {mapLoadingAddress && (
+            <View style={styles.mapLoadingBanner}>
+              <ActivityIndicator
+                size="small"
+                color={colors.primary}
+                style={isRTL ? styles.successIconMarginLTR : styles.successIconMarginRTL}
               />
-              <View
-                style={[
-                  styles.modalInputDivider,
-                  isRTL && styles.modalInputDividerRTL,
-                ]}
-              />
-              <TextInput
-                placeholder={
-                  isRTL
-                    ? 'الاسم (مثل: المنزل، العمل) *'
-                    : 'Name (e.g. Home, Work) *'
-                }
-                value={form.name}
-                onChangeText={t => setForm(s => ({ ...s, name: t }))}
-                style={[
-                  styles.modalTextInput,
-                  isRTL && styles.modalTextInputRTL,
-                ]}
-                placeholderTextColor="#94A3B8"
-                onFocus={() => setActiveField('name')}
-                onBlur={() => setActiveField(null)}
-              />
+              <Text style={styles.mapLoadingBannerText}>
+                {isRTL
+                  ? 'جاري تحديد تفاصيل موقع الخريطة...'
+                  : 'Resolving map address...'}
+              </Text>
             </View>
+          )}
 
-            {/* City Input */}
-            <View
-              style={[
-                styles.modalInputWrapper,
-                isRTL && styles.modalInputWrapperRTL,
-                activeField === 'city' && styles.modalInputWrapperActive,
-              ]}
-            >
-              <Icon
-                name="location-outline"
-                size={18}
-                color={
-                  activeField === 'city' ? colors.primary : '#94A3B8'
-                }
-                style={[
-                  styles.modalInputIcon,
-                  isRTL && styles.modalInputIconRTL,
-                ]}
-              />
-              <View
-                style={[
-                  styles.modalInputDivider,
-                  isRTL && styles.modalInputDividerRTL,
-                ]}
-              />
-              <TextInput
-                placeholder={
-                  isRTL ? 'المنطقة / المدينة *' : 'Area / City *'
-                }
-                value={form.city}
-                onChangeText={t => setForm(s => ({ ...s, city: t }))}
-                style={[
-                  styles.modalTextInput,
-                  isRTL && styles.modalTextInputRTL,
-                ]}
-                placeholderTextColor="#94A3B8"
-                onFocus={() => setActiveField('city')}
-                onBlur={() => setActiveField(null)}
-              />
-            </View>
-
-            {/* Block Input */}
-            <View
-              style={[
-                styles.modalInputWrapper,
-                isRTL && styles.modalInputWrapperRTL,
-                activeField === 'block' && styles.modalInputWrapperActive,
-              ]}
-            >
-              <Icon
-                name="grid-outline"
-                size={18}
-                color={
-                  activeField === 'block' ? colors.primary : '#94A3B8'
-                }
-                style={[
-                  styles.modalInputIcon,
-                  isRTL && styles.modalInputIconRTL,
-                ]}
-              />
-              <View
-                style={[
-                  styles.modalInputDivider,
-                  isRTL && styles.modalInputDividerRTL,
-                ]}
-              />
-              <TextInput
-                placeholder={isRTL ? 'القطعة *' : 'Block *'}
-                value={form.block}
-                onChangeText={t => setForm(s => ({ ...s, block: t }))}
-                style={[
-                  styles.modalTextInput,
-                  isRTL && styles.modalTextInputRTL,
-                ]}
-                placeholderTextColor="#94A3B8"
-                onFocus={() => setActiveField('block')}
-                onBlur={() => setActiveField(null)}
-              />
-            </View>
-
-            {/* Street Input */}
-            <View
-              style={[
-                styles.modalInputWrapper,
-                isRTL && styles.modalInputWrapperRTL,
-                activeField === 'street' &&
-                  styles.modalInputWrapperActive,
-              ]}
-            >
-              <Icon
-                name="home-outline"
-                size={18}
-                color={
-                  activeField === 'street' ? colors.primary : '#94A3B8'
-                }
-                style={[
-                  styles.modalInputIcon,
-                  isRTL && styles.modalInputIconRTL,
-                ]}
-              />
-              <View
-                style={[
-                  styles.modalInputDivider,
-                  isRTL && styles.modalInputDividerRTL,
-                ]}
-              />
-              <TextInput
-                placeholder={isRTL ? 'الشارع *' : 'Street *'}
-                value={form.street}
-                onChangeText={t => setForm(s => ({ ...s, street: t }))}
-                style={[
-                  styles.modalTextInput,
-                  isRTL && styles.modalTextInputRTL,
-                ]}
-                placeholderTextColor="#94A3B8"
-                onFocus={() => setActiveField('street')}
-                onBlur={() => setActiveField(null)}
-              />
-            </View>
-
-            {/* Lane Input */}
-            <View
-              style={[
-                styles.modalInputWrapper,
-                isRTL && styles.modalInputWrapperRTL,
-                activeField === 'lane' &&
-                  styles.modalInputWrapperActive,
-              ]}
-            >
-              <Icon
-                name="trail-sign-outline"
-                size={18}
-                color={
-                  activeField === 'lane' ? colors.primary : '#94A3B8'
-                }
-                style={[
-                  styles.modalInputIcon,
-                  isRTL && styles.modalInputIconRTL,
-                ]}
-              />
-              <View
-                style={[
-                  styles.modalInputDivider,
-                  isRTL && styles.modalInputDividerRTL,
-                ]}
-              />
-              <TextInput
-                placeholder={isRTL ? 'الجادة (اختياري)' : 'Lane (Optional)'}
-                value={form.lane}
-                onChangeText={t => setForm(s => ({ ...s, lane: t }))}
-                style={[
-                  styles.modalTextInput,
-                  isRTL && styles.modalTextInputRTL,
-                ]}
-                placeholderTextColor="#94A3B8"
-                onFocus={() => setActiveField('lane')}
-                onBlur={() => setActiveField(null)}
-              />
-            </View>
-
-            {/* House Number Input */}
-            <View
-              style={[
-                styles.modalInputWrapper,
-                isRTL && styles.modalInputWrapperRTL,
-                activeField === 'houseNumber' &&
-                  styles.modalInputWrapperActive,
-              ]}
-            >
-              <Icon
-                name="business-outline"
-                size={18}
-                color={
-                  activeField === 'houseNumber'
-                    ? colors.primary
-                    : '#94A3B8'
-                }
-                style={[
-                  styles.modalInputIcon,
-                  isRTL && styles.modalInputIconRTL,
-                ]}
-              />
-              <View
-                style={[
-                  styles.modalInputDivider,
-                  isRTL && styles.modalInputDividerRTL,
-                ]}
-              />
-              <TextInput
-                placeholder={isRTL ? 'رقم المنزل *' : 'House Number *'}
-                value={form.houseNumber}
-                onChangeText={t =>
-                  setForm(s => ({ ...s, houseNumber: t }))
-                }
-                style={[
-                  styles.modalTextInput,
-                  isRTL && styles.modalTextInputRTL,
-                ]}
-                placeholderTextColor="#94A3B8"
-                onFocus={() => setActiveField('houseNumber')}
-                onBlur={() => setActiveField(null)}
-              />
-            </View>
-
-            {/* Floor Number Input */}
-            <View
-              style={[
-                styles.modalInputWrapper,
-                isRTL && styles.modalInputWrapperRTL,
-                activeField === 'floorNumber' &&
-                  styles.modalInputWrapperActive,
-              ]}
-            >
-              <Icon
-                name="layers-outline"
-                size={18}
-                color={
-                  activeField === 'floorNumber'
-                    ? colors.primary
-                    : '#94A3B8'
-                }
-                style={[
-                  styles.modalInputIcon,
-                  isRTL && styles.modalInputIconRTL,
-                ]}
-              />
-              <View
-                style={[
-                  styles.modalInputDivider,
-                  isRTL && styles.modalInputDividerRTL,
-                ]}
-              />
-              <TextInput
-                placeholder={
-                  isRTL
-                    ? 'رقم الطابق (اختياري)'
-                    : 'Floor Number (Optional)'
-                }
-                value={form.floorNumber}
-                onChangeText={t =>
-                  setForm(s => ({ ...s, floorNumber: t }))
-                }
-                style={[
-                  styles.modalTextInput,
-                  isRTL && styles.modalTextInputRTL,
-                ]}
-                placeholderTextColor="#94A3B8"
-                onFocus={() => setActiveField('floorNumber')}
-                onBlur={() => setActiveField(null)}
-              />
-            </View>
-
-            {/* Apartment Number Input */}
-            <View
-              style={[
-                styles.modalInputWrapper,
-                isRTL && styles.modalInputWrapperRTL,
-                activeField === 'apartmentNumber' &&
-                  styles.modalInputWrapperActive,
-              ]}
-            >
-              <Icon
-                name="home-outline"
-                size={18}
-                color={
-                  activeField === 'apartmentNumber'
-                    ? colors.primary
-                    : '#94A3B8'
-                }
-                style={[
-                  styles.modalInputIcon,
-                  isRTL && styles.modalInputIconRTL,
-                ]}
-              />
-              <View
-                style={[
-                  styles.modalInputDivider,
-                  isRTL && styles.modalInputDividerRTL,
-                ]}
-              />
-              <TextInput
-                placeholder={
-                  isRTL
-                    ? 'رقم الشقة (اختياري)'
-                    : 'Apartment Number (Optional)'
-                }
-                value={form.apartmentNumber}
-                onChangeText={t =>
-                  setForm(s => ({ ...s, apartmentNumber: t }))
-                }
-                style={[
-                  styles.modalTextInput,
-                  isRTL && styles.modalTextInputRTL,
-                ]}
-                placeholderTextColor="#94A3B8"
-                onFocus={() => setActiveField('apartmentNumber')}
-                onBlur={() => setActiveField(null)}
-              />
-            </View>
-          </ScrollView>
-
-          <View style={[styles.footer, isRTL && styles.footerRTL]}>
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={() => {
-                if (addresses.length === 0) {
-                  onClose();
-                } else {
-                  setShowForm(false);
-                }
+          {/* Form Map Section */}
+          <View style={styles.formMapWrapper}>
+            <WebView
+              ref={topMapRef}
+              originWhitelist={['*']}
+              source={{
+                html: MAP_VIEW_HTML.replace(
+                  '__RTL_CLASS__',
+                  isRTL ? 'rtl' : 'ltr'
+                ).replace(
+                  '__SEARCH_PLACEHOLDER__',
+                  isRTL ? 'البحث عن موقع...' : 'Search for location...'
+                ),
               }}
-            >
-              <Text style={styles.cancelButtonText}>
-                {isRTL ? 'إلغاء' : 'Cancel'}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.confirmButton}
-              onPress={handleSubmit}
-            >
-              <Text style={styles.confirmButtonText}>
-                {isRTL ? 'إضافة' : 'Add'}
-              </Text>
-            </TouchableOpacity>
+              style={styles.flex1}
+              onMessage={handleMapMessage}
+              geolocationEnabled={true}
+            />
           </View>
+
+          <KeyboardAvoidingView
+            style={styles.flex1}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 100}
+          >
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+              <View style={styles.flex1}>
+                <ScrollView
+                  style={styles.addressList}
+                  contentContainerStyle={styles.scrollContentContainer}
+                  showsVerticalScrollIndicator={false}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  {/* Row 1: Name */}
+                  <View style={[styles.modalInputRow, isRTL && styles.modalInputRowRTL]}>
+                    {renderInputField(
+                      isRTL ? 'اسم العنوان' : 'Address Name',
+                      form.name,
+                      t => setForm(s => ({ ...s, name: t })),
+                      'name',
+                      true,
+                      1,
+                      isRTL
+                        ? 'اسم العنوان (مثل: المنزل، العمل)'
+                        : 'Address Name (e.g. Home, Work)'
+                    )}
+                  </View>
+
+                  {/* Row 2: City & Block */}
+                  <View style={[styles.modalInputRow, isRTL && styles.modalInputRowRTL]}>
+                    {renderInputField(
+                      isRTL ? 'المنطقة / المدينة' : 'Area / City',
+                      form.city,
+                      t => setForm(s => ({ ...s, city: t })),
+                      'city',
+                      true,
+                      1,
+                      isRTL ? 'المنطقة / المدينة' : 'Area / City'
+                    )}
+                    {renderInputField(
+                      isRTL ? 'القطعة' : 'Block',
+                      form.block,
+                      t => setForm(s => ({ ...s, block: t })),
+                      'block',
+                      true,
+                      1,
+                      isRTL ? 'القطعة' : 'Block'
+                    )}
+                  </View>
+
+                  {/* Row 3: Street & Lane */}
+                  <View style={[styles.modalInputRow, isRTL && styles.modalInputRowRTL]}>
+                    {renderInputField(
+                      isRTL ? 'الشارع' : 'Street',
+                      form.street,
+                      t => setForm(s => ({ ...s, street: t })),
+                      'street',
+                      true,
+                      1,
+                      isRTL ? 'الشارع' : 'Street'
+                    )}
+                    {renderInputField(
+                      isRTL ? 'الجادة' : 'Lane',
+                      form.lane,
+                      t => setForm(s => ({ ...s, lane: t })),
+                      'lane',
+                      false,
+                      1,
+                      isRTL ? 'الجادة (اختياري)' : 'Lane (Optional)'
+                    )}
+                  </View>
+
+                  {/* Row 4: House Number */}
+                  <View style={[styles.modalInputRow, isRTL && styles.modalInputRowRTL]}>
+                    {renderInputField(
+                      isRTL ? 'رقم المنزل' : 'House Number',
+                      form.houseNumber,
+                      t => setForm(s => ({ ...s, houseNumber: t })),
+                      'houseNumber',
+                      true,
+                      1,
+                      isRTL ? 'رقم المنزل' : 'House Number'
+                    )}
+                  </View>
+
+                  {/* Row 5: Floor & Apartment */}
+                  <View style={[styles.modalInputRow, isRTL && styles.modalInputRowRTL]}>
+                    {renderInputField(
+                      isRTL ? 'رقم الطابق' : 'Floor Number',
+                      form.floorNumber,
+                      t => setForm(s => ({ ...s, floorNumber: t })),
+                      'floorNumber',
+                      false,
+                      1,
+                      isRTL ? 'رقم الطابق (اختياري)' : 'Floor Number (Optional)'
+                    )}
+                    {renderInputField(
+                      isRTL ? 'رقم الشقة' : 'Apartment Number',
+                      form.apartmentNumber,
+                      t => setForm(s => ({ ...s, apartmentNumber: t })),
+                      'apartmentNumber',
+                      false,
+                      1,
+                      isRTL
+                        ? 'رقم الشقة (اختياري)'
+                        : 'Apartment Number (Optional)'
+                    )}
+                  </View>
+                </ScrollView>
+
+                <View style={[styles.footer, isRTL && styles.footerRTL]}>
+                  <TouchableOpacity
+                    style={styles.cancelButton}
+                    onPress={() => {
+                      if (addresses.length === 0) {
+                        onClose();
+                      } else {
+                        setShowForm(false);
+                      }
+                    }}
+                  >
+                    <Text style={styles.cancelButtonText}>
+                      {isRTL ? 'إلغاء' : 'Cancel'}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.confirmButton}
+                    onPress={handleSubmit}
+                  >
+                    <Text style={styles.confirmButtonText}>
+                      {isRTL ? 'إضافة' : 'Add'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </KeyboardAvoidingView>
         </View>
       );
     }
@@ -550,19 +522,7 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
           </Text>
           <TouchableOpacity
             style={styles.addPrimaryButton}
-            onPress={() => {
-              setForm({
-                name: '',
-                city: '',
-                block: '',
-                street: '',
-                lane: '',
-                houseNumber: '',
-                floorNumber: '',
-                apartmentNumber: '',
-              });
-              setShowForm(true);
-            }}
+            onPress={handleOpenForm}
           >
             <Text style={styles.addPrimaryButtonText}>
               {isRTL ? '+ إضافة عنوان جديد' : '+ Add New Address'}
@@ -611,7 +571,7 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
                 <View
                   style={[
                     styles.nameRow,
-                    isRTL && { flexDirection: 'row-reverse' },
+                    isRTL && styles.flexDirectionRTL,
                   ]}
                 >
                   <Text
@@ -673,19 +633,7 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
           {/* Add Address button inside the scrollable list */}
           <TouchableOpacity
             style={styles.addButton}
-            onPress={() => {
-              setForm({
-                name: '',
-                city: '',
-                block: '',
-                street: '',
-                lane: '',
-                houseNumber: '',
-                floorNumber: '',
-                apartmentNumber: '',
-              });
-              setShowForm(true);
-            }}
+            onPress={handleOpenForm}
           >
             <Text style={styles.addButtonText}>
               {isRTL ? '+ إضافة عنوان جديد' : '+ Add New Address'}
@@ -753,196 +701,5 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
     </BottomSheet>
   );
 };
-
-const styles = StyleSheet.create({
-  overlay: {
-    // Handled by BottomSheet
-  },
-  container: {
-    width: '100%',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  headerRTL: {
-    flexDirection: 'row-reverse',
-  },
-  title: { fontSize: 16, fontWeight: '700', color: colors.textDark },
-  titleRTL: { textAlign: 'right' },
-  closeButton: {
-    width: 30,
-    height: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  closeButtonText: { fontSize: 24, color: colors.textSecondary },
-  loadingContainer: { padding: 40, alignItems: 'center' },
-  emptyContainer: { padding: 40, alignItems: 'center' },
-  emptyText: { fontSize: 14, color: colors.textSecondary, textAlign: 'center' },
-  emptyTextRTL: { textAlign: 'right' },
-  addPrimaryButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 10,
-    marginTop: 20,
-  },
-  addPrimaryButtonText: { color: '#fff', fontSize: 15, fontWeight: '600' },
-  listContainer: { flexShrink: 1, minHeight: 0 },
-  addressList: { paddingHorizontal: 20, paddingTop: 5 },
-  addressCard: {
-    flexDirection: 'row',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 8,
-    borderWidth: 2,
-    borderColor: '#E2E8F0',
-  },
-  addressCardRTL: {
-    flexDirection: 'row-reverse',
-  },
-  addressCardSelected: {
-    borderColor: colors.primary,
-    backgroundColor: '#E8F5F4',
-  },
-  radioContainer: { marginRight: 12, paddingTop: 2 },
-  radioContainerRTL: {
-    marginRight: 0,
-    marginLeft: 12,
-  },
-  radioOuter: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: '#D0D0D0',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  radioOuterSelected: { borderColor: colors.primary },
-  radioInner: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: colors.primary,
-  },
-  addressDetails: { flex: 1 },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-    gap: 8,
-  },
-  addressName: { fontSize: 14, fontWeight: '700', color: colors.textDark },
-  addressNameRTL: { textAlign: 'right' },
-  addressText: { fontSize: 12, color: colors.textSecondary, marginBottom: 2 },
-  addressTextRTL: { textAlign: 'right' },
-  defaultBadge: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  defaultBadgeText: { fontSize: 9, fontWeight: '600', color: '#fff' },
-  addButton: {
-    backgroundColor: colors.textWhite,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 15,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    borderStyle: 'dashed',
-  },
-  addButtonText: {
-    color: colors.primary,
-    fontSize: 13,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  footer: {
-    flexDirection: 'row',
-    padding: 20,
-    gap: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-  },
-  footerRTL: {
-    flexDirection: 'row-reverse',
-  },
-  cancelButton: {
-    flex: 1,
-    backgroundColor: '#F0F0F0',
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  cancelButtonText: { fontSize: 14, fontWeight: '600', color: colors.textDark },
-  confirmButton: {
-    flex: 2,
-    backgroundColor: colors.primary,
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  confirmButtonDisabled: {
-    backgroundColor: colors.textSecondary,
-    opacity: 0.5,
-  },
-  confirmButtonText: { fontSize: 14, fontWeight: '700', color: '#fff' },
-  modalInputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    marginBottom: 12,
-    height: 48,
-  },
-  modalInputWrapperRTL: {
-    flexDirection: 'row-reverse',
-  },
-  modalInputWrapperActive: {
-    borderColor: colors.primary,
-    backgroundColor: '#FFFFFF',
-  },
-  modalInputIcon: {
-    marginRight: 10,
-  },
-  modalInputIconRTL: {
-    marginRight: 0,
-    marginLeft: 10,
-  },
-  modalInputDivider: {
-    width: 1,
-    height: 18,
-    backgroundColor: '#E2E8F0',
-    marginRight: 12,
-  },
-  modalInputDividerRTL: {
-    marginRight: 0,
-    marginLeft: 12,
-  },
-  modalTextInput: {
-    flex: 1,
-    fontSize: 14.5,
-    color: colors.textDark,
-    paddingVertical: 8,
-    textAlign: 'left',
-  },
-  modalTextInputRTL: {
-    textAlign: 'right',
-    fontFamily: 'System',
-  },
-});
 
 export default AddressSelection;

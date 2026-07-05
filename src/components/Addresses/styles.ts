@@ -427,23 +427,7 @@ export const styles = StyleSheet.create({
   modalInputLabelActive: {
     color: colors.primary,
   },
-  modalInputIcon: {
-    marginRight: 10,
-  },
-  modalInputIconRTL: {
-    marginRight: 0,
-    marginLeft: 10,
-  },
-  modalInputDivider: {
-    width: 1,
-    height: 18,
-    backgroundColor: '#E2E8F0',
-    marginRight: 12,
-  },
-  modalInputDividerRTL: {
-    marginRight: 0,
-    marginLeft: 12,
-  },
+
   modalTextInput: {
     flex: 1,
     fontSize: 14,
@@ -705,6 +689,168 @@ export const styles = StyleSheet.create({
   },
   mapConfirmButtonTextRTL: {
     fontFamily: 'System',
+  },
+  containerWhite: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  mapContainer: {
+    height: '38%',
+    width: '100%',
+    position: 'relative',
+  },
+  flex1: {
+    flex: 1,
+  },
+  requiredStar: {
+    color: '#EF4444',
+  },
+  floatingBackButton: {
+    position: 'absolute',
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
+    zIndex: 10,
+  },
+  floatingBackButtonLTR: {
+    left: 16,
+  },
+  floatingBackButtonRTL: {
+    right: 16,
+  },
+  bottomSheetContainer: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -28,
+    paddingTop: 10,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 10,
+    zIndex: 5,
+  },
+  bottomSheetIndicator: {
+    width: 38,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#E2E8F0',
+    alignSelf: 'center',
+    marginBottom: 12,
+  },
+  modalHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 12,
+  },
+  modalHeaderRowRTL: {
+    flexDirection: 'row-reverse',
+  },
+  modalHeaderTitleText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.primaryDark,
+  },
+  scrollContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  scrollContentContainer: {
+    paddingTop: 12,
+    paddingBottom: 24,
+  },
+  successBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0FDF4',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  successBannerRTL: {
+    flexDirection: 'row-reverse',
+  },
+  successBannerText: {
+    fontSize: 12,
+    color: '#15803d',
+    fontWeight: '600',
+  },
+  successIconMarginLTR: {
+    marginLeft: 8,
+  },
+  successIconMarginRTL: {
+    marginRight: 8,
+  },
+  inputFieldContainer: {
+    flex: 1,
+    paddingHorizontal: 6,
+    marginBottom: 14,
+  },
+  modalInputRow: {
+    flexDirection: 'row',
+    marginHorizontal: -6,
+  },
+  modalInputRowRTL: {
+    flexDirection: 'row-reverse',
+  },
+  listHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 14,
+  },
+  listHeaderRowRTL: {
+    flexDirection: 'row-reverse',
+  },
+  listHeaderTitleText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.primaryDark,
+  },
+  listHeaderAddButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  listHeaderAddButtonRTL: {
+    flexDirection: 'row-reverse',
+  },
+  listHeaderAddButtonText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.primary,
+    marginHorizontal: 4,
+  },
+  savedAddressesList: {
+    paddingHorizontal: 16,
+    paddingBottom: 120,
+  },
+  emptyListContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 200,
+  },
+  addressCityText: {
+    color: '#94A3B8',
+    marginTop: 2,
   },
 });
 

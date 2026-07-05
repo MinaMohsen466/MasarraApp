@@ -1,3 +1,4 @@
+/* eslint-disable react-native/no-inline-styles */
 import React, { useState, useRef, useCallback } from 'react';
 import {
   View,
@@ -31,7 +32,7 @@ import {
 } from '../services/cart';
 import { getServiceImageUrl } from '../services/servicesApi';
 import { styles } from './cartStyles';
-import PaymentReceiptModal from '../components/PaymentReceiptModal/PaymentReceiptModal';
+import PaymentReceiptModal, { ReceiptData } from '../components/PaymentReceiptModal/PaymentReceiptModal';
 import AddressSelection from '../components/AddressSelection/AddressSelection';
 import { CustomAlert } from '../components/CustomAlert';
 import { validateCoupon, Coupon } from '../services/couponApi';
@@ -45,6 +46,19 @@ import {
   calculateSupplierShares,
   Supplier,
 } from '../services/paymentApi';
+
+interface Address {
+  _id: string;
+  name: string;
+  street: string;
+  block?: string;
+  lane?: string;
+  houseNumber?: string;
+  floorNumber?: string;
+  apartmentNumber?: string;
+  city: string;
+  isDefault?: boolean;
+}
 
 interface CartProps {
   onBack?: () => void;
@@ -95,7 +109,7 @@ const Cart: React.FC<CartProps> = ({
   const [successfullyBookedItemIds, setSuccessfullyBookedItemIds] = useState<
     string[]
   >([]);
-  const [successReceiptData, setSuccessReceiptData] = useState<any>(null);
+  const [successReceiptData, setSuccessReceiptData] = useState<ReceiptData | null>(null);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   // Coupon state
   const [couponCode, setCouponCode] = useState('');
@@ -105,7 +119,7 @@ const Cart: React.FC<CartProps> = ({
   const [couponMessage, setCouponMessage] = useState('');
   const [couponError, setCouponError] = useState('');
 
-  const loadCart = async () => {
+  const loadCart = useCallback(async () => {
     const items = await getCart();
     setCartItems(items);
     setLoading(false);
@@ -137,8 +151,8 @@ const Cart: React.FC<CartProps> = ({
       if (isToday && item.selectedTime) {
         const timeMatch = item.selectedTime.match(/(\d{1,2}):(\d{2})/);
         if (timeMatch) {
-          const hours = parseInt(timeMatch[1]);
-          const minutes = parseInt(timeMatch[2]);
+          const hours = parseInt(timeMatch[1], 10);
+          const minutes = parseInt(timeMatch[2], 10);
 
           const bookingDateTime = new Date(bookingDate);
           bookingDateTime.setHours(hours, minutes, 0, 0);
@@ -165,7 +179,7 @@ const Cart: React.FC<CartProps> = ({
       setAlertButtons([{ text: t('ok'), style: 'default' }]);
       setAlertVisible(true);
     }
-  };
+  }, [isRTL, t]);
 
   // Use AuthContext as single source of truth for user data
   React.useEffect(() => {
@@ -183,7 +197,7 @@ const Cart: React.FC<CartProps> = ({
       setCartItems([]);
       setLoading(false);
     }
-  }, [isLoggedIn]);
+  }, [isLoggedIn, loadCart]);
 
   // Fetch suppliers for commission calculation when cart items change
   React.useEffect(() => {
@@ -310,7 +324,7 @@ const Cart: React.FC<CartProps> = ({
       setAlertButtons(isRTL ? buttons : buttons.reverse());
       setAlertVisible(true);
     },
-    [isRTL, getSwipeAnim, resetSwipe, t, swipeAnims],
+    [isRTL, getSwipeAnim, resetSwipe, t, swipeAnims, loadCart],
   );
 
   const createPanResponder = useCallback(
@@ -419,7 +433,7 @@ const Cart: React.FC<CartProps> = ({
     }
   };
 
-  const handleAddressSelected = async (address: any) => {
+  const handleAddressSelected = async (address: Address) => {
     try {
       setShowAddressSelection(false);
       setIsProcessingCheckout(true);
@@ -502,11 +516,7 @@ const Cart: React.FC<CartProps> = ({
       const booking = bookings[0];
       const bookingId = booking._id || booking.id;
 
-      console.log('Created booking:', {
-        id: bookingId,
-        requiresPaymentNow: booking._requiresPaymentNow,
-        hasItemsNeedingConfirmation: booking._hasItemsNeedingConfirmation,
-      });
+
 
       setCreatedBookingIds([bookingId]);
 
@@ -587,13 +597,7 @@ const Cart: React.FC<CartProps> = ({
       // Round to 3 decimal places
       const totalAmount = parseFloat(Math.max(0, payableTotal).toFixed(3));
 
-      console.log('[handleAddressSelected] Payment calculation:', {
-        payableSubTotal,
-        payableDeliveryCharges,
-        couponDiscount,
-        payableTotal,
-        totalAmount,
-      });
+
 
       // If total is 0 or less, skip payment
       if (totalAmount <= 0) {
@@ -652,15 +656,7 @@ const Cart: React.FC<CartProps> = ({
         );
       }
 
-      console.log('Payment data:', {
-        bookingId,
-        invoiceValue: totalAmount,
-        customerName,
-        customerEmail,
-        customerMobile,
-        invoiceItems: invoiceItems.length,
-        suppliers: supplierShares?.length || 0,
-      });
+
 
       // Step 7: Send payment link
       const paymentResponse = await sendPayment({
@@ -685,7 +681,7 @@ const Cart: React.FC<CartProps> = ({
         notificationOption: 'LNK',
       });
 
-      console.log('Payment response:', paymentResponse);
+
 
       if (!paymentResponse.success || !paymentResponse.data) {
         throw new Error(
@@ -703,11 +699,12 @@ const Cart: React.FC<CartProps> = ({
       } else {
         throw new Error('No payment URL received');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Checkout error:', error);
       setIsProcessingCheckout(false);
       setAlertTitle(t('error'));
-      setAlertMessage(error.message || t('errorCreatingBookings'));
+      const errorMessage = error instanceof Error ? error.message : t('errorCreatingBookings');
+      setAlertMessage(errorMessage);
       setAlertButtons([{ text: t('ok'), style: 'default' }]);
       setAlertVisible(true);
     }
@@ -788,19 +785,12 @@ const Cart: React.FC<CartProps> = ({
 
   // Helper to delete unpaid bookings created during this checkout session
   const deleteCreatedBookings = async () => {
-    console.log(
-      'deleteCreatedBookings - createdBookingIds:',
-      createdBookingIds,
-    );
-    console.log('deleteCreatedBookings - userToken exists:', !!userToken);
+
 
     if (createdBookingIds && createdBookingIds.length > 0 && userToken) {
       try {
         for (const bookingId of createdBookingIds) {
-          console.log(
-            'Checking status before deletion for booking:',
-            bookingId,
-          );
+
 
           // 1. Fetch current booking status from server to prevent race conditions
           const checkResponse = await fetch(
@@ -816,11 +806,7 @@ const Cart: React.FC<CartProps> = ({
 
           if (checkResponse.ok) {
             const bookingData = await checkResponse.json();
-            console.log('Pre-deletion booking status check:', {
-              id: bookingId,
-              status: bookingData?.status,
-              paymentStatus: bookingData?.paymentStatus,
-            });
+
 
             // If the booking is already paid or completed, do NOT delete it.
             // Instead, transition the user to the success screen!
@@ -829,9 +815,7 @@ const Cart: React.FC<CartProps> = ({
               (bookingData.paymentStatus === 'paid' ||
                 bookingData.status === 'completed')
             ) {
-              console.log(
-                'Booking already paid/confirmed on server. Redirecting to success screen.',
-              );
+
 
               // Transition to success screen
               const successfullyBookedItems = cartItems.filter(item =>
@@ -896,7 +880,7 @@ const Cart: React.FC<CartProps> = ({
           }
 
           // 2. If it is not paid/confirmed, proceed with deleting the booking
-          console.log('Attempting to delete booking:', bookingId);
+
           const deleteResponse = await fetch(
             `${API_URL}/bookings/${bookingId}`,
             {
@@ -909,10 +893,7 @@ const Cart: React.FC<CartProps> = ({
           );
 
           if (deleteResponse.ok) {
-            const deleteData = await deleteResponse.json();
-            console.log('Booking deleted successfully:', bookingId, deleteData);
-          } else {
-            console.log('Delete booking failed:', deleteResponse.status);
+            await deleteResponse.json();
           }
         }
       } catch (error) {
@@ -921,7 +902,7 @@ const Cart: React.FC<CartProps> = ({
       // Clear the booking IDs
       setCreatedBookingIds([]);
     } else {
-      console.log('No bookings to delete or no token');
+
     }
     return false; // Indicating booking was deleted or skipped
   };

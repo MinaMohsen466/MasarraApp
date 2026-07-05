@@ -983,5 +983,65 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       marginLeft: 12,
       marginRight: 0,
     },
+
+    /* Fullscreen Image Modal */
+    fullscreenOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.7)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 99999,
+    },
+    fullscreenClickOutside: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+    },
+    fullscreenImageContainer: {
+      width: SCREEN_WIDTH * 0.9,
+      height: SCREEN_WIDTH * 0.9,
+      position: 'relative',
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 10 },
+      shadowOpacity: 0.3,
+      shadowRadius: 15,
+      elevation: 10,
+    },
+    fullscreenImage: {
+      width: '100%',
+      height: '100%',
+      borderRadius: 16,
+    },
+    fullscreenCloseButton: {
+      position: 'absolute',
+      top: 12,
+      right: 12,
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: 'rgba(0, 0, 0, 0.6)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 100000,
+    },
+    showMoreText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.primary,
+    },
+    showMoreIcon: {
+      marginLeft: 4,
+      marginRight: 0,
+    },
+    showMoreIconRTL: {
+      marginLeft: 0,
+      marginRight: 4,
+    },
   });
 };

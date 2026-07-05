@@ -25,358 +25,23 @@ import {
 import { useLanguage } from '../../contexts/LanguageContext';
 import { CustomAlert } from '../CustomAlert/CustomAlert';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, colorUtils } from '../../constants/colors';
+import { colors } from '../../constants/colors';
 import { WebView } from 'react-native-webview';
 
-const MAP_VIEW_HTML = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <style>
-    body, html, #map {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      background-color: #f8fafc;
-    }
-    #center-marker {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -100%);
-      z-index: 1000;
-      pointer-events: none;
-      transition: all 0.2s ease-out;
-      display: none;
-    }
-    .custom-leaflet-marker {
-      background: none !important;
-      border: none !important;
-    }
-    .leaflet-popup-content-wrapper {
-      background: #00a19c !important;
-      color: #ffffff !important;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      font-size: 14px;
-      font-weight: 700;
-      border-radius: 20px !important;
-      box-shadow: 0 4px 15px rgba(0, 161, 156, 0.25) !important;
-      border: none !important;
-      padding: 0px !important;
-    }
-    .leaflet-popup-content {
-      margin: 6px 14px !important;
-      text-align: center;
-    }
-    .leaflet-popup-tip {
-      background: #00a19c !important;
-      border: none !important;
-      box-shadow: none !important;
-    }
-    /* Address pin pulse */
-    .address-marker-pulse {
-      position: absolute;
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: rgba(0, 161, 156, 0.35);
-      z-index: 1;
-      animation: addressPulse 2s infinite ease-out;
-    }
-    @keyframes addressPulse {
-      0% {
-        transform: scale(1);
-        opacity: 0.9;
-      }
-      100% {
-        transform: scale(3.5);
-        opacity: 0;
-      }
-    }
-    /* Modern Zoom Controls */
-    .leaflet-bottom {
-      bottom: 58px !important;
-    }
-    .leaflet-bar {
-      border: 1px solid rgba(0, 161, 156, 0.15) !important;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
-      border-radius: 12px !important;
-      overflow: hidden;
-    }
-    .leaflet-bar a {
-      background-color: #ffffff !important;
-      color: #00a19c !important;
-      border-bottom: 1px solid #f1f5f9 !important;
-      width: 36px !important;
-      height: 36px !important;
-      line-height: 36px !important;
-      font-size: 18px !important;
-      transition: background-color 0.2s ease;
-    }
-    .leaflet-bar a:hover, .leaflet-bar a:active {
-      background-color: #f1f5f9 !important;
-    }
-    /* Locate Button */
-    #locate-btn {
-      position: absolute;
-      bottom: 58px;
-      left: 20px;
-      width: 44px;
-      height: 44px;
-      border-radius: 22px;
-      background: #ffffff;
-      border: 1px solid rgba(0, 161, 156, 0.15);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      cursor: pointer;
-      z-index: 1000;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      outline: none;
-      transition: transform 0.2s ease, background-color 0.2s ease;
-    }
-    #locate-btn:active {
-      transform: scale(0.92);
-      background-color: #f1f5f9;
-    }
-    /* User pulsing location marker */
-    .user-pulse-marker {
-      position: relative;
-    }
-    .user-pulse-marker .dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: #007aff;
-      border: 2px solid #ffffff;
-      box-shadow: 0 0 6px rgba(0, 122, 255, 0.4);
-    }
-    .user-pulse-marker .pulse {
-      position: absolute;
-      top: -5px;
-      left: -5px;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: rgba(0, 122, 255, 0.2);
-      animation: mapPulse 2s infinite ease-out;
-    }
-    @keyframes mapPulse {
-      0% {
-        transform: scale(0.8);
-        opacity: 0.8;
-      }
-      100% {
-        transform: scale(2.5);
-        opacity: 0;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div id="map"></div>
-  <div id="center-marker">
-    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" fill="#00a19c"/>
-      <circle cx="12" cy="9" r="3" fill="#ffffff"/>
-    </svg>
-  </div>
-  <div id="search-container" class="__RTL_CLASS__">
-    <input type="text" id="search-input" placeholder="__SEARCH_PLACEHOLDER__" onkeypress="handleSearchKeyPress(event)" />
-    <button id="search-btn" onclick="searchLocation()">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M11 19C15.4183 19 19 15.4183 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19Z" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M21 21L16.65 16.65" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </button>
-  </div>
-  <button id="locate-btn" onclick="locateUser()">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="12" cy="12" r="8" stroke="#00a19c" stroke-width="2"/>
-      <circle cx="12" cy="12" r="3" fill="#00a19c"/>
-      <path d="M12 2V4M12 20V22M2 12H4M20 12H22" stroke="#00a19c" stroke-width="2" stroke-linecap="round"/>
-    </svg>
-  </button>
+import { MAP_VIEW_HTML } from '../../constants/mapHtml';
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script>
-    var map = L.map('map', {
-      zoomControl: false,
-      attributionControl: false
-    }).setView([29.3759, 47.9774], 12);
-
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
-
-    L.control.zoom({
-      position: 'bottomright'
-    }).addTo(map);
-
-    var currentMarker = null;
-    var userLocationMarker = null;
-    var showPin = false;
-
-    function showPulsingUserLocation(lat, lng) {
-      if (userLocationMarker) {
-        map.removeLayer(userLocationMarker);
-      }
-      var pulseIcon = L.divIcon({
-        html: '<div class="user-pulse-marker"><div class="dot"></div><div class="pulse"></div></div>',
-        className: 'leaflet-user-pulse',
-        iconSize: [24, 24],
-        iconAnchor: [12, 12]
-      });
-      userLocationMarker = L.marker([lat, lng], { icon: pulseIcon }).addTo(map);
-    }
-
-    function locateUser() {
-      if (navigator.geolocation) {
-        document.getElementById('locate-btn').style.transform = 'scale(0.92)';
-        
-        var getOptions = {
-          enableHighAccuracy: true,
-          timeout: 8000,
-          maximumAge: 10000
-        };
-        
-        function success(pos) {
-          document.getElementById('locate-btn').style.transform = 'none';
-          var lat = pos.coords.latitude;
-          var lng = pos.coords.longitude;
-          map.setView([lat, lng], 16);
-          showPulsingUserLocation(lat, lng);
-        }
-        
-        function error(err) {
-          document.getElementById('locate-btn').style.transform = 'none';
-          console.warn('High accuracy geolocation failed, trying low accuracy...', err);
-          navigator.geolocation.getCurrentPosition(
-            success,
-            function(err2) {
-              console.warn('Geolocation failed completely:', err2);
-              window.ReactNativeWebView.postMessage(JSON.stringify({
-                type: 'GEOLOCATION_FAILED',
-                code: err2.code,
-                message: err2.message
-              }));
-            },
-            {
-              enableHighAccuracy: false,
-              timeout: 10000,
-              maximumAge: 10000
-            }
-          );
-        }
-        
-        navigator.geolocation.getCurrentPosition(success, error, getOptions);
-      }
-    }
-
-    async function searchLocation() {
-      var query = document.getElementById('search-input').value;
-      if (!query || query.trim() === '') return;
-      
-      try {
-        var response = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(query));
-        var data = await response.json();
-        if (data && data.length > 0) {
-          var lat = parseFloat(data[0].lat);
-          var lng = parseFloat(data[0].lon);
-          map.setView([lat, lng], 16);
-          if (!showPin) {
-            showPulsingUserLocation(lat, lng);
-          }
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    function handleSearchKeyPress(e) {
-      if (e.key === 'Enter') {
-        searchLocation();
-      }
-    }
-
-    function handleMessage(event) {
-      try {
-        var data = event.data;
-        if (typeof data === 'string') {
-          try {
-            data = JSON.parse(data);
-          } catch(e) {
-            return;
-          }
-        }
-        if (!data) return;
-
-        if (data.type === 'PAN_TO') {
-          var lat = data.lat;
-          var lng = data.lng;
-          map.setView([lat, lng], 15);
-          
-          if (currentMarker) {
-            map.removeLayer(currentMarker);
-          }
-          var customIcon = L.divIcon({
-            html: '<div style="position: relative; width: 40px; height: 40px; justify-content: center; align-items: center; display: flex;"><div class="address-marker-pulse"></div><svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="z-index: 2;"><path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" fill="#00a19c"/><circle cx="12" cy="9" r="3" fill="#ffffff"/></svg></div>',
-            className: 'custom-leaflet-marker',
-            iconSize: [40, 40],
-            iconAnchor: [20, 40],
-            popupAnchor: [0, -28]
-          });
-          currentMarker = L.marker([lat, lng], { icon: customIcon }).addTo(map);
-          if (data.label) {
-            currentMarker.bindPopup('<div style="font-size: 13px; font-weight: 700; color: #ffffff;">' + data.label + '</div>', {
-              closeButton: false,
-              offset: [0, -5]
-            }).openPopup();
-          }
-        } else if (data.type === 'SHOW_PIN') {
-          showPin = data.show;
-          document.getElementById('center-marker').style.display = showPin ? 'block' : 'none';
-          if (showPin && currentMarker) {
-            map.removeLayer(currentMarker);
-            currentMarker = null;
-          }
-          if (showPin) {
-            locateUser();
-          }
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    window.addEventListener('message', handleMessage);
-    document.addEventListener('message', handleMessage);
-
-    map.on('movestart', function() {
-      if (showPin) {
-        document.getElementById('center-marker').style.transform = 'translate(-50%, -120%) scale(1.1)';
-      }
-    });
-
-    map.on('moveend', function() {
-      if (showPin) {
-        document.getElementById('center-marker').style.transform = 'translate(-50%, -100%) scale(1.0)';
-        var center = map.getCenter();
-        window.ReactNativeWebView.postMessage(JSON.stringify({
-          type: 'LOCATION_SELECTED',
-          lat: center.lat,
-          lng: center.lng
-        }));
-      }
-    });
-
-    window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MAP_READY' }));
-  </script>
-</body>
-</html>
-`;
+interface Address {
+  _id: string;
+  name: string;
+  city: string;
+  block?: string;
+  street: string;
+  lane?: string;
+  houseNumber?: string;
+  floorNumber?: string;
+  apartmentNumber?: string;
+  isDefault?: boolean;
+}
 
 const Addresses: React.FC<{
   onBack?: () => void;
@@ -392,7 +57,7 @@ const Addresses: React.FC<{
     const insets = useSafeAreaInsets();
     const { isRTL } = useLanguage();
     const [loading, setLoading] = useState(false);
-    const [addresses, setAddresses] = useState<any[]>([]);
+    const [addresses, setAddresses] = useState<Address[]>([]);
     const [showForm, setShowForm] = useState(false);
     const [form, setForm] = useState({
       name: '',
@@ -452,7 +117,7 @@ const Addresses: React.FC<{
       }
     };
 
-    const geocodeAndPan = async (addr: any) => {
+    const geocodeAndPan = async (addr: Address) => {
       if (!addr) return;
       try {
         const query = `${addr.street}, ${addr.city}`;
@@ -479,7 +144,7 @@ const Addresses: React.FC<{
     };
 
     React.useEffect(() => {
-      let timer: any;
+      let timer: ReturnType<typeof setTimeout> | undefined;
       if (addresses && addresses.length > 0) {
         const defaultAddr = addresses.find(a => a.isDefault) || addresses[0];
         if (defaultAddr) {
@@ -493,12 +158,12 @@ const Addresses: React.FC<{
       };
     }, [addresses]);
     const [showDeleteAlert, setShowDeleteAlert] = useState(false);
-    const [addressToDelete, setAddressToDelete] = useState<any>(null);
+    const [addressToDelete, setAddressToDelete] = useState<Address | null>(null);
     const [activeField, setActiveField] = useState<string | null>(null);
     const [alertVisible, setAlertVisible] = useState(false);
     const [alertTitle, setAlertTitle] = useState('');
     const [alertMessage, setAlertMessage] = useState('');
-    const [alertButtons, setAlertButtons] = useState<any[]>([]);
+    const [alertButtons, setAlertButtons] = useState<Array<{ text: string; style?: 'default' | 'cancel' | 'destructive'; onPress?: () => void }>>([]);
 
     // Map States
     const [mapLoadingAddress, setMapLoadingAddress] = useState(false);
@@ -521,7 +186,7 @@ const Addresses: React.FC<{
       return () => clearTimeout(timer);
     }, [showForm]);
 
-    const handleMapMessage = async (event: any) => {
+    const handleMapMessage = async (event: { nativeEvent: { data: string } }) => {
       try {
         const data = JSON.parse(event.nativeEvent.data);
         if (data.type === 'LOCATION_SELECTED') {
@@ -571,7 +236,7 @@ const Addresses: React.FC<{
       onChangeText: (text: string) => void,
       fieldKey: string,
       required: boolean = false,
-      flex: number = 1,
+      _flex: number = 1,
       placeholder: string = ''
     ) => {
       const isActive = activeField === fieldKey;
@@ -579,13 +244,7 @@ const Addresses: React.FC<{
       const showLabel = isActive || hasValue;
 
       return (
-        <View
-          style={{
-            flex: flex,
-            paddingHorizontal: 6,
-            marginBottom: 14,
-          }}
-        >
+        <View style={styles.inputFieldContainer}>
           <View
             style={[
               styles.modalInputWrapper,
@@ -602,7 +261,7 @@ const Addresses: React.FC<{
                 numberOfLines={1}
               >
                 {label}
-                {required && <Text style={{ color: '#EF4444' }}>*</Text>}
+                {required && <Text style={styles.requiredStar}>*</Text>}
               </Text>
             )}
             <TextInput
@@ -671,7 +330,7 @@ const Addresses: React.FC<{
       setLoading(true);
       try {
         if (editingId) {
-          const updated = await updateAddress(token, editingId, form as any);
+          const updated = await updateAddress(token, editingId, form);
           setAddresses(prev =>
             prev.map(a => (a._id === updated._id ? updated : a)),
           );
@@ -702,7 +361,7 @@ const Addresses: React.FC<{
       }
     };
 
-    const startEdit = (addr: any) => {
+    const startEdit = (addr: Address) => {
       setEditingId(addr._id);
       setForm({
         name: addr.name || '',
@@ -718,7 +377,7 @@ const Addresses: React.FC<{
       geocodeAndPan(addr);
     };
 
-    const confirmDelete = (addr: any) => {
+    const confirmDelete = (addr: Address) => {
       setAddressToDelete(addr);
       setShowDeleteAlert(true);
     };
@@ -753,11 +412,11 @@ const Addresses: React.FC<{
     };
 
     return (
-      <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+      <View style={styles.containerWhite}>
         {pageStatusBar}
 
         {/* Top Map Section (38% of screen height) */}
-        <View style={{ height: '38%', width: '100%', position: 'relative' }}>
+        <View style={styles.mapContainer}>
           <WebView
             ref={topMapRef}
             originWhitelist={['*']}
@@ -766,31 +425,18 @@ const Addresses: React.FC<{
                 .replace('__RTL_CLASS__', isRTL ? 'rtl' : 'ltr')
                 .replace('__SEARCH_PLACEHOLDER__', isRTL ? 'البحث عن موقع...' : 'Search for location...')
             }}
-            style={{ flex: 1 }}
+            style={styles.flex1}
             onMessage={handleMapMessage}
             geolocationEnabled={true}
           />
           {/* Floating Back Button */}
           {onBack && (
             <TouchableOpacity
-              style={{
-                position: 'absolute',
-                top: insets.top + 10,
-                left: isRTL ? undefined : 16,
-                right: isRTL ? 16 : undefined,
-                width: 42,
-                height: 42,
-                borderRadius: 21,
-                backgroundColor: '#FFFFFF',
-                justifyContent: 'center',
-                alignItems: 'center',
-                shadowColor: '#000000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.15,
-                shadowRadius: 4,
-                elevation: 4,
-                zIndex: 10,
-              }}
+              style={[
+                styles.floatingBackButton,
+                { top: insets.top + 10 },
+                isRTL ? styles.floatingBackButtonRTL : styles.floatingBackButtonLTR,
+              ]}
               onPress={onBack}
               activeOpacity={0.8}
             >
@@ -804,54 +450,16 @@ const Addresses: React.FC<{
         </View>
 
         {/* Bottom Addresses Sheet Container (62% height of screen) */}
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: '#FFFFFF',
-            borderTopLeftRadius: 28,
-            borderTopRightRadius: 28,
-            marginTop: -28, // Overlap the map
-            paddingTop: 10,
-            shadowColor: '#000000',
-            shadowOffset: { width: 0, height: -4 },
-            shadowOpacity: 0.08,
-            shadowRadius: 8,
-            elevation: 10,
-            zIndex: 5,
-          }}
-        >
+        <View style={styles.bottomSheetContainer}>
           {/* Drag handle / grab bar */}
-          <View
-            style={{
-              width: 38,
-              height: 5,
-              borderRadius: 3,
-              backgroundColor: '#E2E8F0',
-              alignSelf: 'center',
-              marginBottom: 12,
-            }}
-          />
+          <View style={styles.bottomSheetIndicator} />
 
           {showForm ? (
             // Add/Edit Address Form inside the bottom sheet
-            <View style={{ flex: 1 }}>
+            <View style={styles.flex1}>
               {/* Header section with Title and Close button */}
-              <View
-                style={{
-                  flexDirection: isRTL ? 'row-reverse' : 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  paddingHorizontal: 20,
-                  marginBottom: 12,
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 18,
-                    fontWeight: '700',
-                    color: colors.primaryDark,
-                  }}
-                >
+              <View style={[styles.modalHeaderRow, isRTL && styles.modalHeaderRowRTL]}>
+                <Text style={styles.modalHeaderTitleText}>
                   {isRTL
                     ? editingId
                       ? 'تعديل العنوان'
@@ -868,30 +476,30 @@ const Addresses: React.FC<{
               </View>
 
               <KeyboardAvoidingView
-                style={{ flex: 1 }}
+                style={styles.flex1}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 100}
               >
                 <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                  <View style={{ flex: 1 }}>
+                  <View style={styles.flex1}>
                     <ScrollView
-                      style={{ flex: 1, paddingHorizontal: 16 }}
-                      contentContainerStyle={{ paddingTop: 12, paddingBottom: 24 }}
+                      style={styles.scrollContainer}
+                      contentContainerStyle={styles.scrollContentContainer}
                       showsVerticalScrollIndicator={false}
                       keyboardShouldPersistTaps="handled"
                     >
                       {/* Active Address Geocode Loading Notification */}
                       {mapLoadingAddress && (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F0FDF4', padding: 10, borderRadius: 8, marginBottom: 12 }}>
-                          <ActivityIndicator size="small" color={colors.primary} style={isRTL ? { marginLeft: 8 } : { marginRight: 8 }} />
-                          <Text style={{ fontSize: 12, color: '#15803d', fontWeight: '600' }}>
+                        <View style={[styles.successBanner, isRTL && styles.successBannerRTL]}>
+                          <ActivityIndicator size="small" color={colors.primary} style={isRTL ? styles.successIconMarginLTR : styles.successIconMarginRTL} />
+                          <Text style={styles.successBannerText}>
                             {isRTL ? 'جاري تحديد تفاصيل موقع الخريطة...' : 'Resolving map address...'}
                           </Text>
                         </View>
                       )}
 
                       {/* Row 1: Name */}
-                      <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', marginHorizontal: -6 }}>
+                      <View style={[styles.modalInputRow, isRTL && styles.modalInputRowRTL]}>
                         {renderInputField(
                           isRTL ? 'اسم العنوان' : 'Address Name',
                           form.name,
@@ -904,7 +512,7 @@ const Addresses: React.FC<{
                       </View>
 
                       {/* Row 2: City & Block */}
-                      <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', marginHorizontal: -6 }}>
+                      <View style={[styles.modalInputRow, isRTL && styles.modalInputRowRTL]}>
                         {renderInputField(
                           isRTL ? 'المنطقة' : 'Area',
                           form.city,
@@ -926,7 +534,7 @@ const Addresses: React.FC<{
                       </View>
 
                       {/* Row 3: Street & Lane */}
-                      <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', marginHorizontal: -6 }}>
+                      <View style={[styles.modalInputRow, isRTL && styles.modalInputRowRTL]}>
                         {renderInputField(
                           isRTL ? 'الشارع' : 'Street',
                           form.street,
@@ -948,7 +556,7 @@ const Addresses: React.FC<{
                       </View>
 
                       {/* Row 4: House Number */}
-                      <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', marginHorizontal: -6 }}>
+                      <View style={[styles.modalInputRow, isRTL && styles.modalInputRowRTL]}>
                         {renderInputField(
                           isRTL ? 'المنزل' : 'House',
                           form.houseNumber,
@@ -961,7 +569,7 @@ const Addresses: React.FC<{
                       </View>
 
                       {/* Row 5: Floor & Apartment */}
-                      <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', marginHorizontal: -6 }}>
+                      <View style={[styles.modalInputRow, isRTL && styles.modalInputRowRTL]}>
                         {renderInputField(
                           isRTL ? 'الطابق' : 'Floor',
                           form.floorNumber,
@@ -989,7 +597,6 @@ const Addresses: React.FC<{
                         styles.modalButtonsRow,
                         isRTL && styles.modalButtonsRowRTL,
                         {
-                          paddingHorizontal: 16,
                           paddingBottom: Math.max(16, 12 + insets.bottom),
                         }
                       ]}
@@ -1023,74 +630,37 @@ const Addresses: React.FC<{
             </View>
           ) : (
             // Saved Addresses List View
-            <View style={{ flex: 1 }}>
+            <View style={styles.flex1}>
               {/* Header section with Title and Add New button */}
-              <View
-                style={{
-                  flexDirection: isRTL ? 'row-reverse' : 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  paddingHorizontal: 20,
-                  marginBottom: 14,
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 18,
-                    fontWeight: '700',
-                    color: colors.primaryDark,
-                  }}
-                >
+              <View style={[styles.listHeaderRow, isRTL && styles.listHeaderRowRTL]}>
+                <Text style={styles.listHeaderTitleText}>
                   {isRTL ? 'العناوين المسجلة' : 'Saved Addresses'}
                 </Text>
                 <TouchableOpacity
-                  style={{
-                    flexDirection: isRTL ? 'row-reverse' : 'row',
-                    alignItems: 'center',
-                    backgroundColor: colorUtils.addOpacity(colors.primary, 0.08),
-                    paddingHorizontal: 12,
-                    paddingVertical: 8,
-                    borderRadius: 20,
-                    borderWidth: 1,
-                    borderColor: colorUtils.addOpacity(colors.primary, 0.15),
-                  }}
+                  style={[styles.listHeaderAddButton, isRTL && styles.listHeaderAddButtonRTL]}
                   onPress={handleAddAddressClick}
                   activeOpacity={0.8}
                 >
                   <Icon name="add-outline" size={16} color={colors.primary} />
-                  <Text
-                    style={{
-                      color: colors.primary,
-                      fontSize: 12,
-                      fontWeight: '700',
-                      marginHorizontal: 4,
-                    }}
-                  >
+                  <Text style={styles.listHeaderAddButtonText}>
                     {isRTL ? 'إضافة جديد' : 'Add New'}
                   </Text>
                 </TouchableOpacity>
               </View>
 
               <KeyboardAvoidingView
-                style={{ flex: 1 }}
+                style={styles.flex1}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 100}
               >
                 <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
                   <ScrollView
-                    contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}
+                    contentContainerStyle={styles.savedAddressesList}
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
                   >
                     {loading ? (
-                      <View
-                        style={{
-                          flex: 1,
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                          minHeight: 200,
-                        }}
-                      >
+                      <View style={styles.emptyListContainer}>
                         <ActivityIndicator size="large" color={colors.primary} />
                       </View>
                     ) : !addresses || addresses.length === 0 ? (
@@ -1274,7 +844,7 @@ const Addresses: React.FC<{
                                       style={[
                                         styles.addressLineText,
                                         isRTL && styles.addressLineTextRTL,
-                                        { color: '#94A3B8', marginTop: 2 }
+                                        styles.addressCityText,
                                       ]}
                                     >
                                       {addr.city}

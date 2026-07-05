@@ -1,3 +1,4 @@
+/* eslint-disable no-console, react-native/no-inline-styles */
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { View, StatusBar, BackHandler, PanResponder, Dimensions } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
@@ -45,6 +46,25 @@ import Contact from "./src/screens/Contact";
 import BecomeSeller from "./src/components/BecomeSeller";
 import { Onboarding } from "./src/components/Auth/Onboarding";
 
+interface AlertButton {
+  text: string;
+  onPress?: () => void;
+  style?: 'default' | 'cancel' | 'destructive';
+}
+
+interface SocketNotificationPayload {
+  title?: string;
+  titleEn?: string;
+  message?: string;
+  messageEn?: string;
+  messageAr?: string;
+  type?: string;
+  bookingId?: string;
+  id?: string;
+  requiresPayment?: boolean;
+  booking?: string;
+}
+
 // Helper component with auth
 const AddressesWithAuth: React.FC<{
   onBack: () => void;
@@ -85,9 +105,9 @@ const SocketNotificationListener: React.FC<{
   const [notificationVisible, setNotificationVisible] = useState(false);
   const [notificationTitle, setNotificationTitle] = useState('');
   const [notificationMessage, setNotificationMessage] = useState('');
-  const [notificationButtons, setNotificationButtons] = useState<any[]>([]);
+  const [notificationButtons, setNotificationButtons] = useState<AlertButton[]>([]);
 
-  const showAlert = useCallback((title: string, message: string, buttons: any[]) => {
+  const showAlert = useCallback((title: string, message: string, buttons: AlertButton[]) => {
     setNotificationTitle(title);
     setNotificationMessage(message);
     setNotificationButtons(buttons);
@@ -100,7 +120,7 @@ const SocketNotificationListener: React.FC<{
     }
 
     // Legacy booking_notification handler
-    const handleBookingNotification = (data: any) => {
+    const handleBookingNotification = (data: SocketNotificationPayload) => {
       console.log('Received booking notification via socket:', data);
       
       const title = isRTL ? data.title : data.titleEn;
@@ -160,7 +180,7 @@ const SocketNotificationListener: React.FC<{
     };
 
     // Payment confirmed notification
-    const handlePaymentConfirmed = (data: any) => {
+    const handlePaymentConfirmed = (data: SocketNotificationPayload) => {
       console.log('Payment confirmed notification:', data);
       const title = isRTL ? '✅ تم تأكيد الدفع' : '✅ Payment Confirmed';
       const message = isRTL
@@ -198,7 +218,7 @@ const SocketNotificationListener: React.FC<{
     };
 
     // Vendor confirmed notification
-    const handleVendorConfirmed = (data: any) => {
+    const handleVendorConfirmed = (data: SocketNotificationPayload) => {
       console.log('Vendor confirmed notification:', data);
       const title = isRTL ? '🎉 تم قبول الحجز' : '🎉 Booking Confirmed';
       const message = isRTL
@@ -215,7 +235,7 @@ const SocketNotificationListener: React.FC<{
         bookingId: data.bookingId || data.id
       }).catch(err => console.error('Failed to add vendor confirmation socket notification:', err));
 
-      const buttons: any[] = [
+      const buttons: AlertButton[] = [
         {
           text: isRTL ? 'إغلاق' : 'Close',
           style: 'cancel',
@@ -254,7 +274,7 @@ const SocketNotificationListener: React.FC<{
     };
 
     // Unified notification handler for new server-generated notifications
-    const handleNewServerNotification = (data: any) => {
+    const handleNewServerNotification = (data: SocketNotificationPayload) => {
       console.log('Received unified notification via socket:', data);
       if (!data) return;
 
@@ -385,10 +405,17 @@ function AppContent() {
     prevUserRef.current = user;
   }, [user]);
 
+  const handleNavigation = useCallback((route: string) => {
+    if (route === 'become-seller') {
+      setBecomeSellerOrigin(currentRoute);
+    }
+    setCurrentRoute(route);
+  }, [currentRoute]);
+
   // Register navigation handler
   useEffect(() => {
     registerNavigationHandler(handleNavigation);
-  }, [registerNavigationHandler]);
+  }, [registerNavigationHandler, handleNavigation]);
 
   // Check booking status changes when app starts or foregrounds
   useEffect(() => {
@@ -408,13 +435,6 @@ function AppContent() {
       subscription.remove();
     };
   }, [token, checkBookingsStatusChanges]);
-
-  const handleNavigation = (route: string) => {
-    if (route === 'become-seller') {
-      setBecomeSellerOrigin(currentRoute);
-    }
-    setCurrentRoute(route);
-  };
 
   const handleBack = useCallback(() => {
     // Handle back navigation based on current route

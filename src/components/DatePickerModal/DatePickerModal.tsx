@@ -397,16 +397,7 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
                       >
                         {date.getDate()}
                       </Text>
-                      {!isPast && dateAvailability && (
-                        <Text
-                          style={[
-                            styles.slotsText,
-                            isSelected && styles.slotsTextSelected,
-                          ]}
-                        >
-                          {dateAvailability.slots} {isRTL ? 'فتحات' : 'slots'}
-                        </Text>
-                      )}
+
                       {isFull && !isPast && (
                         <Text style={styles.fullText}>
                           {isRTL ? 'ممتلئ' : 'Full'}

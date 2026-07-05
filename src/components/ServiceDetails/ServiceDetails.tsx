@@ -1,3 +1,4 @@
+/* eslint-disable react-native/no-inline-styles, @typescript-eslint/no-explicit-any, no-console, react-hooks/exhaustive-deps */
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View,
@@ -13,7 +14,6 @@ import {
   TextInput,
   StatusBar,
   Clipboard,
-  Modal,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import Svg, { Path } from 'react-native-svg';
@@ -25,7 +25,7 @@ import { createStyles } from './styles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useGlobalDate } from '../../contexts/DateContext';
-import { getServiceImageUrl, fetchServices } from '../../services/servicesApi';
+import { getServiceImageUrl, fetchServiceById } from '../../services/servicesApi';
 import {
   getImageUrl,
   checkTimeSlotAvailability,
@@ -156,17 +156,15 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
 
 
 
-  // Fetch services and find the selected service - Load first for faster UI
-  const { data: services, isLoading } = useQuery({
-    queryKey: ['services'],
-    queryFn: fetchServices,
-    staleTime: 15 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
+  // Fetch specific service details for accurate policy data
+  const { data: serviceData, isLoading } = useQuery({
+    queryKey: ['service', serviceId],
+    queryFn: () => fetchServiceById(serviceId),
+    enabled: !!serviceId,
+    staleTime: 5 * 60 * 1000,
   });
 
-  const service = (services as any)?.find((s: any) => s._id === serviceId);
+  const service = serviceData as any;
   const addToCartButtonRef = useRef<View>(null);
 
   // Automatically expand the first custom input by default when service loads/changes
@@ -197,8 +195,8 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
     const timeMatch = startTime.match(/(\d{1,2}):(\d{2})/);
 
     if (timeMatch) {
-      const hours = parseInt(timeMatch[1]);
-      const minutes = parseInt(timeMatch[2]);
+      const hours = parseInt(timeMatch[1], 10);
+      const minutes = parseInt(timeMatch[2], 10);
 
       const selectedDateTime = new Date(selectedDate);
       selectedDateTime.setHours(hours, minutes, 0, 0);
@@ -1898,7 +1896,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                             keyboardType="number-pad"
                             value={(selectedValue as string) || ''}
                             onChangeText={text => {
-                              const num = parseInt(text) || '';
+                              const num = parseInt(text, 10) || '';
                               if (
                                 num === '' ||
                                 (input.validation &&
@@ -2522,7 +2520,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                           activeOpacity={0.7}
                           onPress={() => setIsReviewsExpanded(!isReviewsExpanded)}
                         >
-                          <Text style={{ fontSize: 13, fontWeight: '600', color: colors.primary }}>
+                          <Text style={styles.showMoreText}>
                             {isReviewsExpanded
                               ? (isRTL ? 'عرض أقل' : 'Show Less')
                               : (isRTL
@@ -2534,11 +2532,11 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                             height={16}
                             viewBox="0 0 24 24"
                             fill="none"
-                            style={{
-                              marginLeft: isRTL ? 0 : 4,
-                              marginRight: isRTL ? 4 : 0,
-                              transform: [{ rotate: isReviewsExpanded ? '270deg' : '90deg' }],
-                            }}
+                            style={[
+                              styles.showMoreIcon,
+                              isRTL && styles.showMoreIconRTL,
+                              { transform: [{ rotate: isReviewsExpanded ? '270deg' : '90deg' }] }
+                            ]}
                           >
                             <Path
                               d="M9 18l6-6-6-6"
@@ -2661,10 +2659,10 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
               }
 
               // Extract hours and minutes from the time slot
-              const startHours = parseInt(timeMatch[1]);
-              const startMinutes = parseInt(timeMatch[2]);
-              const endHours = parseInt(timeMatch[3]);
-              const endMinutes = parseInt(timeMatch[4]);
+              const startHours = parseInt(timeMatch[1], 10);
+              const startMinutes = parseInt(timeMatch[2], 10);
+              const endHours = parseInt(timeMatch[3], 10);
+              const endMinutes = parseInt(timeMatch[4], 10);
 
               // IMPORTANT: Convert Kuwait time to UTC before sending
               // User selects 09:00 Kuwait → We send 06:00 UTC to backend
@@ -2891,9 +2889,10 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
               }
 
               // Success - silently added to cart, no alert
-            } catch (error: any) {
+            } catch (error) {
+              const err = error as Error;
               // Backend rejected the booking (time not available, etc.)
-              let errorMessage = error.message || 'Failed to add to cart';
+              let errorMessage = err.message || 'Failed to add to cart';
 
               // Parse common backend error messages
               if (errorMessage.includes('not available')) {
@@ -2971,11 +2970,11 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                     : '✓ ADDED'
                   : editCartItemId
                     ? isRTL
-                      ? 'حفظ التغييرات'
-                      : 'SAVE CHANGES'
+                      ? `حفظ التغييرات (${totalPrice.toFixed(3)} د.ك)`
+                      : `SAVE CHANGES (${totalPrice.toFixed(3)} KD)`
                     : isRTL
-                      ? 'أضف إلى السلة'
-                      : 'ADD TO CART'}
+                      ? `أضف إلى السلة (${totalPrice.toFixed(3)} د.ك)`
+                      : `ADD TO CART (${totalPrice.toFixed(3)} KD)`}
           </Text>
         </TouchableOpacity>
 
@@ -3057,68 +3056,24 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
 
       {/* Fullscreen Image Viewer Overlay */}
       {activeFullImageUrl && (
-        <View
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 99999,
-          }}
-        >
+        <View style={styles.fullscreenOverlay}>
           {/* Main click outside area to dismiss */}
           <TouchableOpacity
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-            }}
+            style={styles.fullscreenClickOutside}
             activeOpacity={1}
             onPress={() => setActiveFullImageUrl(null)}
           />
 
           {/* Image Container directly holding the rounded image and close button */}
-          <View
-            style={{
-              width: SCREEN_WIDTH * 0.9,
-              height: SCREEN_WIDTH * 0.9,
-              position: 'relative',
-              shadowColor: '#000000',
-              shadowOffset: { width: 0, height: 10 },
-              shadowOpacity: 0.3,
-              shadowRadius: 15,
-              elevation: 10,
-            }}
-          >
+          <View style={styles.fullscreenImageContainer}>
             <Image
               source={{ uri: activeFullImageUrl }}
-              style={{
-                width: '100%',
-                height: '100%',
-                borderRadius: 16,
-              }}
+              style={styles.fullscreenImage}
               resizeMode="cover"
             />
             {/* Close Button on top of the image itself */}
             <TouchableOpacity
-              style={{
-                position: 'absolute',
-                top: 12,
-                right: 12,
-                width: 32,
-                height: 32,
-                borderRadius: 16,
-                backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                justifyContent: 'center',
-                alignItems: 'center',
-                zIndex: 100000,
-              }}
+              style={styles.fullscreenCloseButton}
               onPress={() => setActiveFullImageUrl(null)}
             >
               <Icon name="close" size={18} color="#FFFFFF" />

@@ -1,0 +1,255 @@
+import { StyleSheet, Dimensions } from 'react-native';
+import { colors } from '../../constants/colors';
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+export const styles = StyleSheet.create({
+  container: {
+    width: '100%',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  headerRTL: {
+    flexDirection: 'row-reverse',
+  },
+  title: { fontSize: 16, fontWeight: '700', color: colors.textDark },
+  titleRTL: { textAlign: 'right' },
+  closeButton: {
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeButtonText: { fontSize: 24, color: colors.textSecondary },
+  loadingContainer: { padding: 40, alignItems: 'center' },
+  emptyContainer: { padding: 40, alignItems: 'center' },
+  emptyText: { fontSize: 14, color: colors.textSecondary, textAlign: 'center' },
+  emptyTextRTL: { textAlign: 'right' },
+  addPrimaryButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 10,
+    marginTop: 20,
+  },
+  addPrimaryButtonText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  listContainer: { flexShrink: 1, minHeight: 0 },
+  addressList: { paddingHorizontal: 20, paddingTop: 5 },
+  addressCard: {
+    flexDirection: 'row',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 8,
+    borderWidth: 2,
+    borderColor: '#E2E8F0',
+  },
+  addressCardRTL: {
+    flexDirection: 'row-reverse',
+  },
+  addressCardSelected: {
+    borderColor: colors.primary,
+    backgroundColor: '#E8F5F4',
+  },
+  radioContainer: { marginRight: 12, paddingTop: 2 },
+  radioContainerRTL: {
+    marginRight: 0,
+    marginLeft: 12,
+  },
+  radioOuter: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: '#D0D0D0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  radioOuterSelected: { borderColor: colors.primary },
+  radioInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: colors.primary,
+  },
+  addressDetails: { flex: 1 },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+    gap: 8,
+  },
+  addressName: { fontSize: 14, fontWeight: '700', color: colors.textDark },
+  addressNameRTL: { textAlign: 'right' },
+  addressText: { fontSize: 12, color: colors.textSecondary, marginBottom: 2 },
+  addressTextRTL: { textAlign: 'right' },
+  defaultBadge: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  defaultBadgeText: { fontSize: 9, fontWeight: '600', color: '#fff' },
+  addButton: {
+    backgroundColor: colors.textWhite,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 15,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderStyle: 'dashed',
+  },
+  addButtonText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  footer: {
+    flexDirection: 'row',
+    padding: 20,
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  footerRTL: {
+    flexDirection: 'row-reverse',
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  cancelButtonText: { fontSize: 14, fontWeight: '600', color: colors.textDark },
+  confirmButton: {
+    flex: 2,
+    backgroundColor: colors.primary,
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  confirmButtonDisabled: {
+    backgroundColor: colors.textSecondary,
+    opacity: 0.5,
+  },
+  confirmButtonText: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  modalInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    marginBottom: 14,
+    height: 52,
+    position: 'relative',
+  },
+  modalInputWrapperRTL: {
+    flexDirection: 'row-reverse',
+  },
+  modalInputWrapperActive: {
+    borderColor: colors.primary,
+    backgroundColor: '#FFFFFF',
+  },
+  modalInputLabel: {
+    position: 'absolute',
+    top: -9,
+    left: 12,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 6,
+    fontSize: 11.5,
+    color: '#64748B',
+    fontWeight: '600',
+    zIndex: 10,
+  },
+  modalInputLabelRTL: {
+    left: undefined,
+    right: 12,
+  },
+  modalInputLabelActive: {
+    color: colors.primary,
+  },
+  modalTextInput: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.textDark,
+    paddingVertical: 8,
+    height: '100%',
+    textAlign: 'left',
+  },
+  modalTextInputRTL: {
+    textAlign: 'right',
+    fontFamily: 'System',
+  },
+  formContainer: {
+    height: SCREEN_HEIGHT * 0.75,
+    width: '100%',
+  },
+  formMapWrapper: {
+    height: 240,
+    width: '100%',
+    overflow: 'hidden',
+    marginBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  mapLoadingBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0FDF4',
+    padding: 10,
+    borderRadius: 8,
+    marginHorizontal: 20,
+    marginBottom: 10,
+  },
+  mapLoadingBannerText: {
+    fontSize: 12,
+    color: '#15803d',
+    fontWeight: '600',
+  },
+  requiredStar: {
+    color: '#EF4444',
+  },
+  inputFieldContainer: {
+    flex: 1,
+    paddingHorizontal: 6,
+    marginBottom: 14,
+  },
+  successIconMarginLTR: {
+    marginLeft: 8,
+  },
+  successIconMarginRTL: {
+    marginRight: 8,
+  },
+  flex1: {
+    flex: 1,
+  },
+  scrollContentContainer: {
+    paddingBottom: 24,
+    paddingTop: 10,
+  },
+  modalInputRow: {
+    flexDirection: 'row',
+    marginHorizontal: -6,
+  },
+  modalInputRowRTL: {
+    flexDirection: 'row-reverse',
+  },
+  flexDirectionRTL: {
+    flexDirection: 'row-reverse',
+  },
+});
+
+export default styles;
