@@ -27,6 +27,7 @@ import { CustomAlert } from '../CustomAlert/CustomAlert';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../constants/colors';
 import { WebView } from 'react-native-webview';
+import Geolocation from '@react-native-community/geolocation';
 
 import { MAP_VIEW_HTML } from '../../constants/mapHtml';
 
@@ -73,25 +74,26 @@ const Addresses: React.FC<{
 
     const topMapRef = React.useRef<WebView>(null);
 
-    const handleAddAddressClick = async () => {
+    const requestLocationPermission = async () => {
       if (Platform.OS === 'android') {
         try {
-          await PermissionsAndroid.request(
+          await PermissionsAndroid.requestMultiple([
             PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-            {
-              title: isRTL ? 'إذن الوصول للموقع' : 'Location Permission',
-              message: isRTL
-                ? 'يحتاج التطبيق للوصول إلى موقعك لعرضه على الخريطة.'
-                : 'This app needs access to your location to show it on the map.',
-              buttonNeutral: isRTL ? 'اسألني لاحقاً' : 'Ask Me Later',
-              buttonNegative: isRTL ? 'إلغاء' : 'Cancel',
-              buttonPositive: isRTL ? 'موافق' : 'OK',
-            }
-          );
+            PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
+          ]);
         } catch (err) {
           console.warn(err);
         }
       }
+    };
+
+    React.useEffect(() => {
+      if (showForm) {
+        requestLocationPermission();
+      }
+    }, [showForm]);
+
+    const handleAddAddressClick = () => {
       setForm({
         name: '',
         city: '',
@@ -214,6 +216,22 @@ const Addresses: React.FC<{
               houseNumber: addr.house_number || '',
             }));
           }
+        } else if (data.type === 'REQUEST_LOCATION') {
+          // Bridge: get location natively and inject into WebView
+          Geolocation.getCurrentPosition(
+            (position) => {
+              const { latitude, longitude } = position.coords;
+              topMapRef.current?.injectJavaScript(
+                `window.receiveLocation(${latitude}, ${longitude}); true;`
+              );
+            },
+            (_err) => {
+              topMapRef.current?.injectJavaScript(
+                `window.receiveLocationError(); true;`
+              );
+            },
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+          );
         } else if (data.type === 'GEOLOCATION_FAILED') {
           setAlertTitle(isRTL ? 'تحديد الموقع' : 'Location Services');
           setAlertMessage(
@@ -428,6 +446,7 @@ const Addresses: React.FC<{
             style={styles.flex1}
             onMessage={handleMapMessage}
             geolocationEnabled={true}
+            domStorageEnabled={true}
           />
           {/* Floating Back Button */}
           {onBack && (

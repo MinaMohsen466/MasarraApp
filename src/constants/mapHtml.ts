@@ -205,47 +205,31 @@ export const MAP_VIEW_HTML = `
     }
 
     function locateUser() {
-      if (navigator.geolocation) {
-        document.getElementById('locate-btn').style.transform = 'scale(0.92)';
-        
-        var getOptions = {
-          enableHighAccuracy: true,
-          timeout: 8000,
-          maximumAge: 10000
-        };
-        
-        function success(pos) {
-          document.getElementById('locate-btn').style.transform = 'none';
-          var lat = pos.coords.latitude;
-          var lng = pos.coords.longitude;
-          map.setView([lat, lng], 16);
-          showPulsingUserLocation(lat, lng);
-        }
-        
-        function error(err) {
-          document.getElementById('locate-btn').style.transform = 'none';
-          console.warn('High accuracy geolocation failed, trying low accuracy...', err);
-          navigator.geolocation.getCurrentPosition(
-            success,
-            function(err2) {
-              console.warn('Geolocation failed completely:', err2);
-              window.ReactNativeWebView.postMessage(JSON.stringify({
-                type: 'GEOLOCATION_FAILED',
-                code: err2.code,
-                message: err2.message
-              }));
-            },
-            {
-              enableHighAccuracy: false,
-              timeout: 10000,
-              maximumAge: 10000
-            }
-          );
-        }
-        
-        navigator.geolocation.getCurrentPosition(success, error, getOptions);
-      }
+      document.getElementById('locate-btn').style.transform = 'scale(0.92)';
+      // Request location from React Native (bridge approach - more reliable on Android)
+      window.ReactNativeWebView.postMessage(JSON.stringify({
+        type: 'REQUEST_LOCATION'
+      }));
     }
+
+    // Called by React Native when it has the user's location
+    window.receiveLocation = function(lat, lng) {
+      document.getElementById('locate-btn').style.transform = 'none';
+      map.setView([lat, lng], 16);
+      // Only show pulsing dot when NOT in address selection mode
+      // (in selection mode the green center pin is already shown)
+      if (!showPin) {
+        showPulsingUserLocation(lat, lng);
+      }
+    };
+
+    // Called by React Native when location could not be retrieved
+    window.receiveLocationError = function() {
+      document.getElementById('locate-btn').style.transform = 'none';
+      window.ReactNativeWebView.postMessage(JSON.stringify({
+        type: 'GEOLOCATION_FAILED'
+      }));
+    };
 
     async function searchLocation() {
       var query = document.getElementById('search-input').value;
