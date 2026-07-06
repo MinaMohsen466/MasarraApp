@@ -29,7 +29,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
 }) => {
   const [showModal, setShowModal] = useState(visible);
   const [contentHeight, setContentHeight] = useState(SCREEN_HEIGHT * 0.6);
-  
+
   // Animated value for vertical translation
   const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
@@ -53,7 +53,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
         setShowModal(false);
       });
     }
-  }, [visible, contentHeight]);
+  }, [visible, contentHeight, translateY]);
 
   const handleDismiss = () => {
     Animated.timing(translateY, {
@@ -100,7 +100,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
           useNativeDriver: true,
         }).start();
       },
-    })
+    }),
   ).current;
 
   // Dynamic interpolation for backdrop opacity based on translateY position
@@ -125,6 +125,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
       visible={showModal}
       onRequestClose={handleDismiss}
       animationType="none"
+      statusBarTranslucent={true}
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

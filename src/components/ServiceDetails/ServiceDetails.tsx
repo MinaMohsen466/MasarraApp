@@ -25,7 +25,10 @@ import { createStyles } from './styles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useGlobalDate } from '../../contexts/DateContext';
-import { getServiceImageUrl, fetchServiceById } from '../../services/servicesApi';
+import {
+  getServiceImageUrl,
+  fetchServiceById,
+} from '../../services/servicesApi';
 import {
   getImageUrl,
   checkTimeSlotAvailability,
@@ -80,6 +83,22 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
   const [isSaved, setIsSaved] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const dotAnimations = useRef<Animated.Value[]>([]).current;
+  const scrollRef = useRef<any>(null);
+  const [reviewsY, setReviewsY] = useState(0);
+
+  const scrollToReviews = () => {
+    if (scrollRef.current) {
+      const scrollResponder = scrollRef.current.scrollTo
+        ? scrollRef.current
+        : (scrollRef.current as any).getNode?.();
+      if (scrollResponder && scrollResponder.scrollTo) {
+        scrollResponder.scrollTo({
+          y: Math.max(0, reviewsY - 80),
+          animated: true,
+        });
+      }
+    }
+  };
 
   // Ref to track scroll position and interpolate header background & title opacity
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -152,9 +171,9 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
   }>({ visible: false, title: '', message: '', buttons: [] });
 
   const [isSuccessState, setIsSuccessState] = useState(false);
-  const [activeFullImageUrl, setActiveFullImageUrl] = useState<string | null>(null);
-
-
+  const [activeFullImageUrl, setActiveFullImageUrl] = useState<string | null>(
+    null,
+  );
 
   // Fetch specific service details for accurate policy data
   const { data: serviceData, isLoading } = useQuery({
@@ -831,9 +850,10 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
                   </head>
                   <body>
-                    <video src="${getServiceImageUrl(
-                  item.src,
-                )}" poster="${service.images && service.images.length > 0 ? getServiceImageUrl(service.images[0]) : ''}" controls autoplay playsinline></video>
+                    <video src="${getServiceImageUrl(item.src)}" poster="${service.images && service.images.length > 0
+                    ? getServiceImageUrl(service.images[0])
+                    : ''
+                  }" controls autoplay playsinline></video>
                   </body>
                   </html>
                 `,
@@ -875,7 +895,12 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                       <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
                     </head>
                     <body>
-                      <video src="${getServiceImageUrl(item.src)}#t=0.1" poster="${service.images && service.images.length > 0 ? getServiceImageUrl(service.images[0]) : ''}" preload="metadata" playsinline></video>
+                      <video src="${getServiceImageUrl(
+                    item.src,
+                  )}#t=0.1" poster="${service.images && service.images.length > 0
+                      ? getServiceImageUrl(service.images[0])
+                      : ''
+                    }" preload="metadata" playsinline></video>
                     </body>
                     </html>
                   `,
@@ -1092,7 +1117,10 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                 </Svg>
               </TouchableOpacity>
               <Animated.Text
-                style={[styles.headerTitle, { marginLeft: 4, opacity: titleOpacity }]}
+                style={[
+                  styles.headerTitle,
+                  { marginLeft: 4, opacity: titleOpacity },
+                ]}
                 numberOfLines={1}
               >
                 {service?.name}
@@ -1106,7 +1134,10 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
           {isRTL ? (
             <>
               <Animated.Text
-                style={[styles.headerTitle, { marginRight: 4, opacity: titleOpacity }]}
+                style={[
+                  styles.headerTitle,
+                  { marginRight: 4, opacity: titleOpacity },
+                ]}
                 numberOfLines={1}
               >
                 {service?.nameAr || service?.name}
@@ -1203,10 +1234,11 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
       </Animated.View>
 
       <Animated.ScrollView
+        ref={scrollRef}
         showsVerticalScrollIndicator={false}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false }
+          { useNativeDriver: false },
         )}
         scrollEventThrottle={16}
         contentContainerStyle={{
@@ -1366,10 +1398,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                     <View style={{ gap: 4 }}>
                       {/* Sale Price (dynamic total) */}
                       <Text style={styles.priceValue}>
-                        {totalPrice.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}{' '}
-                        <Text style={styles.priceUnit}>
-                          {isRTL ? 'يومياً' : 'per day'}
-                        </Text>
+                        {totalPrice.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
                       </Text>
 
                       {/* Original Price (strikethrough) */}
@@ -1417,10 +1446,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                   ) : (
                     <View>
                       <Text style={styles.priceValue}>
-                        {totalPrice.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}{' '}
-                        <Text style={styles.priceUnit}>
-                          {isRTL ? 'يومياً' : 'per day'}
-                        </Text>
+                        {totalPrice.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
                       </Text>
                       {totalPrice !== service.price && (
                         <Text
@@ -1449,7 +1475,11 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                 </>
               )}
             </View>
-            <View style={styles.ratingContainer}>
+            <TouchableOpacity
+              style={styles.ratingContainer}
+              onPress={scrollToReviews}
+              activeOpacity={0.7}
+            >
               {reviewStats ? (
                 <>
                   <Text style={styles.ratingStars}>
@@ -1458,7 +1488,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                   </Text>
                   <Text style={styles.ratingText}>
                     {reviewStats.averageRating.toFixed(1)} (
-                    {reviewStats.totalRatings} {isRTL ? 'تقييم' : 'Reviews'})
+                    {reviewStats.totalRatings}+)
                   </Text>
                 </>
               ) : (
@@ -1469,7 +1499,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                   </Text>
                 </>
               )}
-            </View>
+            </TouchableOpacity>
           </View>
 
           {/* Description */}
@@ -1480,141 +1510,151 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
           </Text>
 
           {/* Vendor Policy Section */}
-          {((service.policies && service.policies.length > 0) || (service.vendor?.vendorProfile?.refundPeriodHours != null)) && (
-            <View style={styles.policiesSection}>
-              <Text
-                style={[styles.policiesTitle, isRTL && styles.policiesTitleRTL]}
-              >
-                {isRTL ? 'سياسة المورد' : 'VENDOR POLICY'}
-              </Text>
+          {((service.policies && service.policies.length > 0) ||
+            service.vendor?.vendorProfile?.refundPeriodHours != null) && (
+              <View style={styles.policiesSection}>
+                <Text
+                  style={[styles.policiesTitle, isRTL && styles.policiesTitleRTL]}
+                >
+                  {isRTL ? 'سياسة المورد' : 'VENDOR POLICY'}
+                </Text>
 
-              {service.policies && service.policies.length > 0 && (
-                <View style={styles.policiesGrid}>
-                  {service.policies.map((policyItem: any, index: number) => {
-                    // Handle both old and new policy structure for backward compatibility
-                    const policy = policyItem.policy || policyItem;
-                    const policyName =
-                      isRTL && policy.nameAr ? policy.nameAr : policy.name;
+                {service.policies && service.policies.length > 0 && (
+                  <View style={styles.policiesGrid}>
+                    {service.policies.map((policyItem: any, index: number) => {
+                      // Handle both old and new policy structure for backward compatibility
+                      const policy = policyItem.policy || policyItem;
+                      const policyName =
+                        isRTL && policy.nameAr ? policy.nameAr : policy.name;
 
-                    // Priority: customText > selectedDescription > first description
-                    const hasCustomText =
-                      policyItem.customText && policyItem.customText.trim();
-                    const hasCustomTextAr =
-                      policyItem.customTextAr && policyItem.customTextAr.trim();
-                    const selectedDescription = policyItem.selectedDescriptionId
-                      ? policy.descriptions?.find(
-                        (desc: any) =>
-                          desc._id === policyItem.selectedDescriptionId,
-                      )
-                      : null;
+                      // Priority: customText > selectedDescription > first description
+                      const hasCustomText =
+                        policyItem.customText && policyItem.customText.trim();
+                      const hasCustomTextAr =
+                        policyItem.customTextAr && policyItem.customTextAr.trim();
+                      const selectedDescription = policyItem.selectedDescriptionId
+                        ? policy.descriptions?.find(
+                          (desc: any) =>
+                            desc._id === policyItem.selectedDescriptionId,
+                        )
+                        : null;
 
-                    const description = hasCustomText
-                      ? isRTL && hasCustomTextAr
-                        ? policyItem.customTextAr
-                        : policyItem.customText
-                      : selectedDescription
-                        ? isRTL && selectedDescription.textAr
-                          ? selectedDescription.textAr
-                          : selectedDescription.text
-                        : policy.descriptions && policy.descriptions.length > 0
-                          ? isRTL
-                            ? policy.descriptions[0].textAr
-                            : policy.descriptions[0].text
-                          : isRTL && policy.descriptionAr
-                            ? policy.descriptionAr
-                            : policy.description || '';
+                      const description = hasCustomText
+                        ? isRTL && hasCustomTextAr
+                          ? policyItem.customTextAr
+                          : policyItem.customText
+                        : selectedDescription
+                          ? isRTL && selectedDescription.textAr
+                            ? selectedDescription.textAr
+                            : selectedDescription.text
+                          : policy.descriptions && policy.descriptions.length > 0
+                            ? isRTL
+                              ? policy.descriptions[0].textAr
+                              : policy.descriptions[0].text
+                            : isRTL && policy.descriptionAr
+                              ? policy.descriptionAr
+                              : policy.description || '';
 
-                    return (
-                      <View
-                        key={policy._id || index}
-                        style={[styles.policyCard, isRTL && styles.policyCardRTL]}
-                      >
+                      return (
                         <View
+                          key={policy._id || index}
                           style={[
-                            styles.policyIconContainer,
-                            isRTL && styles.policyIconContainerRTL,
+                            styles.policyCard,
+                            isRTL && styles.policyCardRTL,
                           ]}
                         >
-                          {policy.image ? (
-                            <Image
-                              source={{ uri: getImageUrl(policy.image) }}
-                              style={styles.policyIcon}
-                              resizeMode="contain"
-                            />
-                          ) : (
-                            <View style={styles.policyIconPlaceholder} />
-                          )}
-                        </View>
-                        <View style={styles.policyContent}>
-                          <Text
+                          <View
                             style={[
-                              styles.policyName,
-                              isRTL && styles.policyNameRTL,
+                              styles.policyIconContainer,
+                              isRTL && styles.policyIconContainerRTL,
                             ]}
                           >
-                            {policyName}
-                          </Text>
-                          {description ? (
+                            {policy.image ? (
+                              <Image
+                                source={{ uri: getImageUrl(policy.image) }}
+                                style={styles.policyIcon}
+                                resizeMode="contain"
+                              />
+                            ) : (
+                              <View style={styles.policyIconPlaceholder} />
+                            )}
+                          </View>
+                          <View style={styles.policyContent}>
                             <Text
                               style={[
-                                styles.policyDescription,
-                                isRTL && styles.policyDescriptionRTL,
+                                styles.policyName,
+                                isRTL && styles.policyNameRTL,
                               ]}
-                              numberOfLines={2}
-                              ellipsizeMode="tail"
                             >
-                              {description}
+                              {policyName}
                             </Text>
-                          ) : null}
+                            {description ? (
+                              <Text
+                                style={[
+                                  styles.policyDescription,
+                                  isRTL && styles.policyDescriptionRTL,
+                                ]}
+                                numberOfLines={2}
+                                ellipsizeMode="tail"
+                              >
+                                {description}
+                              </Text>
+                            ) : null}
+                          </View>
                         </View>
-                      </View>
-                    );
-                  })}
-                </View>
-              )}
+                      );
+                    })}
+                  </View>
+                )}
 
-              {/* Vendor refund window policy */}
-              {service.vendor?.vendorProfile?.refundPeriodHours != null && (
-                <View
-                  style={{
-                    flexDirection: isRTL ? 'row-reverse' : 'row',
-                    alignItems: 'center',
-                    marginTop: service.policies && service.policies.length > 0 ? 16 : 0,
-                    paddingHorizontal: 20,
-                    gap: 12,
-                  }}
-                >
-                  <Icon name="time-outline" size={24} color={colors.primary} />
-                  <Text
+                {/* Vendor refund window policy */}
+                {service.vendor?.vendorProfile?.refundPeriodHours != null && (
+                  <View
                     style={{
-                      fontSize: 13,
-                      fontWeight: '600',
-                      color: '#0F172A',
-                      flex: 1,
-                      textAlign: isRTL ? 'right' : 'left',
+                      flexDirection: isRTL ? 'row-reverse' : 'row',
+                      alignItems: 'center',
+                      marginTop:
+                        service.policies && service.policies.length > 0 ? 16 : 0,
+                      paddingHorizontal: 20,
+                      gap: 12,
                     }}
                   >
-                    {isRTL
-                      ? `استرداد كامل حتى ${(() => {
-                        const h = service.vendor.vendorProfile.refundPeriodHours;
-                        if (h === 0) return 'أي وقت';
-                        if (h < 24) return `${h} ساعة`;
-                        const d = Number((h / 24).toFixed(1).replace(/\.0$/, ''));
-                        return `${d} يوم`;
-                      })()} قبل المناسبة`
-                      : `Full refund up to ${(() => {
-                        const h = service.vendor.vendorProfile.refundPeriodHours;
-                        if (h === 0) return 'any time';
-                        if (h < 24) return `${h} hours`;
-                        const d = Number((h / 24).toFixed(1).replace(/\.0$/, ''));
-                        return `${d} days`;
-                      })()} before the event`}
-                  </Text>
-                </View>
-              )}
-            </View>
-          )}
-
+                    <Icon name="time-outline" size={24} color={colors.primary} />
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontWeight: '600',
+                        color: '#0F172A',
+                        flex: 1,
+                        textAlign: isRTL ? 'right' : 'left',
+                      }}
+                    >
+                      {isRTL
+                        ? `استرداد كامل حتى ${(() => {
+                          const h =
+                            service.vendor.vendorProfile.refundPeriodHours;
+                          if (h === 0) return 'أي وقت';
+                          if (h < 24) return `${h} ساعة`;
+                          const d = Number(
+                            (h / 24).toFixed(1).replace(/\.0$/, ''),
+                          );
+                          return `${d} يوم`;
+                        })()} قبل المناسبة`
+                        : `Full refund up to ${(() => {
+                          const h =
+                            service.vendor.vendorProfile.refundPeriodHours;
+                          if (h === 0) return 'any time';
+                          if (h < 24) return `${h} hours`;
+                          const d = Number(
+                            (h / 24).toFixed(1).replace(/\.0$/, ''),
+                          );
+                          return `${d} days`;
+                        })()} before the event`}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
 
           {/* Booking / Availability preview under Vendor Policy */}
           <View style={styles.bookingContainer}>
@@ -2004,11 +2044,24 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                     {input.optionImages?.[optIndex] ? (
                                       <TouchableOpacity
                                         activeOpacity={0.8}
-                                        onPress={() => setActiveFullImageUrl(getServiceImageUrl(input.optionImages[optIndex]))}
+                                        onPress={() =>
+                                          setActiveFullImageUrl(
+                                            getServiceImageUrl(
+                                              input.optionImages[optIndex],
+                                            ),
+                                          )
+                                        }
                                       >
                                         <Image
-                                          source={{ uri: getServiceImageUrl(input.optionImages[optIndex]) }}
-                                          style={[styles.optionImage, isRTL && styles.optionImageRTL]}
+                                          source={{
+                                            uri: getServiceImageUrl(
+                                              input.optionImages[optIndex],
+                                            ),
+                                          }}
+                                          style={[
+                                            styles.optionImage,
+                                            isRTL && styles.optionImageRTL,
+                                          ]}
                                           resizeMode="cover"
                                         />
                                       </TouchableOpacity>
@@ -2106,11 +2159,24 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                 {input.optionImages?.[optIndex] ? (
                                   <TouchableOpacity
                                     activeOpacity={0.8}
-                                    onPress={() => setActiveFullImageUrl(getServiceImageUrl(input.optionImages[optIndex]))}
+                                    onPress={() =>
+                                      setActiveFullImageUrl(
+                                        getServiceImageUrl(
+                                          input.optionImages[optIndex],
+                                        ),
+                                      )
+                                    }
                                   >
                                     <Image
-                                      source={{ uri: getServiceImageUrl(input.optionImages[optIndex]) }}
-                                      style={[styles.menuItemImage, isRTL && styles.menuItemImageRTL]}
+                                      source={{
+                                        uri: getServiceImageUrl(
+                                          input.optionImages[optIndex],
+                                        ),
+                                      }}
+                                      style={[
+                                        styles.menuItemImage,
+                                        isRTL && styles.menuItemImageRTL,
+                                      ]}
                                       resizeMode="cover"
                                     />
                                   </TouchableOpacity>
@@ -2119,8 +2185,15 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                   <Text style={styles.menuItemName}>
                                     {labelText}
                                     {price > 0 && (
-                                      <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 13 }}>
-                                        {`   +${price.toFixed(3)} ${isRTL ? 'د.ك' : 'KD'}`}
+                                      <Text
+                                        style={{
+                                          color: colors.primary,
+                                          fontWeight: '600',
+                                          fontSize: 13,
+                                        }}
+                                      >
+                                        {`   +${price.toFixed(3)} ${isRTL ? 'د.ك' : 'KD'
+                                          }`}
                                       </Text>
                                     )}
                                   </Text>
@@ -2193,7 +2266,13 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
           )}
 
           {((reviewStats && reviewStats.totalRatings > 0) || hasPurchased) && (
-            <View style={styles.reviewsSection}>
+            <View
+              onLayout={event => {
+                const { y } = event.nativeEvent.layout;
+                setReviewsY(y);
+              }}
+              style={styles.reviewsSection}
+            >
               {/* Header Row with Title */}
               <View
                 style={{
@@ -2323,186 +2402,205 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                   {/* Individual Reviews */}
                   {reviews.length > 0 && (
                     <View style={{ paddingHorizontal: 16, paddingVertical: 4 }}>
-                      {reviews.slice(0, isReviewsExpanded ? reviews.length : 2).map((review, index) => (
-                        <View
-                          key={review._id}
-                          style={{
-                            paddingVertical: 10,
-                            borderBottomWidth: index < (isReviewsExpanded ? reviews.length : Math.min(reviews.length, 2)) - 1 ? 1 : 0,
-                            borderBottomColor: colors.border,
-                          }}
-                        >
-                          <View style={styles.reviewHeader}>
-                            <View style={styles.reviewUserInfo}>
-                              {review.user?.profilePicture ? (
-                                <Image
-                                  source={{
-                                    uri: getImageUrl(
-                                      review.user.profilePicture,
-                                    ),
-                                  }}
-                                  style={{ width: 26, height: 26, borderRadius: 13 }}
-                                />
-                              ) : (
-                                <View
-                                  style={{
-                                    width: 26,
-                                    height: 26,
-                                    borderRadius: 13,
-                                    backgroundColor: colors.primary,
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
-                                  }}
-                                >
-                                  <Text style={{ color: '#FFF', fontSize: 12, fontWeight: '600' }}>
-                                    {(review.user?.name || 'M')
-                                      .charAt(0)
-                                      .toUpperCase()}
+                      {reviews
+                        .slice(0, isReviewsExpanded ? reviews.length : 2)
+                        .map((review, index) => (
+                          <View
+                            key={review._id}
+                            style={{
+                              paddingVertical: 10,
+                              borderBottomWidth:
+                                index <
+                                  (isReviewsExpanded
+                                    ? reviews.length
+                                    : Math.min(reviews.length, 2)) -
+                                  1
+                                  ? 1
+                                  : 0,
+                              borderBottomColor: colors.border,
+                            }}
+                          >
+                            <View style={styles.reviewHeader}>
+                              <View style={styles.reviewUserInfo}>
+                                {review.user?.profilePicture ? (
+                                  <Image
+                                    source={{
+                                      uri: getImageUrl(
+                                        review.user.profilePicture,
+                                      ),
+                                    }}
+                                    style={{
+                                      width: 26,
+                                      height: 26,
+                                      borderRadius: 13,
+                                    }}
+                                  />
+                                ) : (
+                                  <View
+                                    style={{
+                                      width: 26,
+                                      height: 26,
+                                      borderRadius: 13,
+                                      backgroundColor: colors.primary,
+                                      justifyContent: 'center',
+                                      alignItems: 'center',
+                                    }}
+                                  >
+                                    <Text
+                                      style={{
+                                        color: '#FFF',
+                                        fontSize: 12,
+                                        fontWeight: '600',
+                                      }}
+                                    >
+                                      {(review.user?.name || 'M')
+                                        .charAt(0)
+                                        .toUpperCase()}
+                                    </Text>
+                                  </View>
+                                )}
+                                <View style={{ flex: 1 }}>
+                                  <View
+                                    style={{
+                                      flexDirection: 'row',
+                                      alignItems: 'center',
+                                      flexWrap: 'wrap',
+                                    }}
+                                  >
+                                    <Text
+                                      style={[
+                                        styles.reviewUserName,
+                                        { maxWidth: '100%' },
+                                      ]}
+                                      numberOfLines={1}
+                                    >
+                                      {review.user?.name ||
+                                        (isRTL
+                                          ? 'مستخدم محذوف'
+                                          : 'Deleted User')}
+                                    </Text>
+                                  </View>
+                                  <View
+                                    style={{
+                                      flexDirection: 'row',
+                                      alignItems: 'center',
+                                      marginTop: 2,
+                                    }}
+                                  >
+                                    <Text
+                                      style={{
+                                        fontSize: 11,
+                                        color: colors.textSecondary,
+                                      }}
+                                    >
+                                      {new Date(
+                                        review.createdAt,
+                                      ).toLocaleDateString(
+                                        isRTL ? 'ar-EG' : 'en-US',
+                                        { month: 'short', day: 'numeric' },
+                                      )}
+                                    </Text>
+                                    {review.isVerifiedPurchase && (
+                                      <>
+                                        <Text
+                                          style={{
+                                            fontSize: 11,
+                                            color: colors.textSecondary,
+                                            marginHorizontal: 4,
+                                          }}
+                                        >
+                                          •
+                                        </Text>
+                                        <Text style={styles.verifiedBadge}>
+                                          {isRTL ? 'موثق' : 'Verified'}
+                                        </Text>
+                                      </>
+                                    )}
+                                  </View>
+                                </View>
+                              </View>
+                              <View
+                                style={{
+                                  flexDirection: isRTL ? 'row-reverse' : 'row',
+                                  alignItems: 'center',
+                                  gap: 6,
+                                }}
+                              >
+                                {/* Delete Button - Only show for current user's reviews */}
+                                {currentUserId &&
+                                  review.user?._id === currentUserId && (
+                                    <TouchableOpacity
+                                      style={{
+                                        padding: 6,
+                                        backgroundColor:
+                                          'rgba(220, 53, 69, 0.08)',
+                                        borderRadius: 6,
+                                      }}
+                                      onPress={() => handleDeleteReview(review)}
+                                      disabled={isDeletingReview}
+                                    >
+                                      {isDeletingReview ? (
+                                        <ActivityIndicator
+                                          size="small"
+                                          color="#e57373"
+                                        />
+                                      ) : (
+                                        <Svg
+                                          width={14}
+                                          height={14}
+                                          viewBox="0 0 24 24"
+                                          fill="none"
+                                        >
+                                          <Path
+                                            d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"
+                                            stroke="#e57373"
+                                            strokeWidth={2}
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                          />
+                                        </Svg>
+                                      )}
+                                    </TouchableOpacity>
+                                  )}
+
+                                <View style={styles.reviewRating}>
+                                  <Text style={styles.reviewRatingText}>
+                                    {review.rating.toFixed(1)} ★
+                                  </Text>
+                                </View>
+                              </View>
+                            </View>
+
+                            {/* Comment Section */}
+                            <Text
+                              style={[
+                                styles.reviewComment,
+                                isRTL && styles.reviewCommentRTL,
+                              ]}
+                            >
+                              {review.comment}
+                            </Text>
+
+                            {review.vendorReply &&
+                              review.vendorReply.text &&
+                              review.vendorReply.text.trim() !== '' && (
+                                <View style={styles.vendorReply}>
+                                  <Text style={styles.vendorReplyLabel}>
+                                    {isRTL ? 'رد البائع:' : 'Vendor Reply:'}
+                                  </Text>
+                                  <Text
+                                    style={[
+                                      styles.vendorReplyText,
+                                      isRTL && styles.vendorReplyTextRTL,
+                                    ]}
+                                    numberOfLines={2}
+                                  >
+                                    {review.vendorReply.text}
                                   </Text>
                                 </View>
                               )}
-                              <View style={{ flex: 1 }}>
-                                <View
-                                  style={{
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    flexWrap: 'wrap',
-                                  }}
-                                >
-                                  <Text
-                                    style={[
-                                      styles.reviewUserName,
-                                      { maxWidth: '100%' },
-                                    ]}
-                                    numberOfLines={1}
-                                  >
-                                    {review.user?.name ||
-                                      (isRTL
-                                        ? 'مستخدم محذوف'
-                                        : 'Deleted User')}
-                                  </Text>
-                                </View>
-                                <View
-                                  style={{
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    marginTop: 2,
-                                  }}
-                                >
-                                  <Text
-                                    style={{
-                                      fontSize: 11,
-                                      color: colors.textSecondary,
-                                    }}
-                                  >
-                                    {new Date(
-                                      review.createdAt,
-                                    ).toLocaleDateString(
-                                      isRTL ? 'ar-EG' : 'en-US',
-                                      { month: 'short', day: 'numeric' },
-                                    )}
-                                  </Text>
-                                  {review.isVerifiedPurchase && (
-                                    <>
-                                      <Text
-                                        style={{
-                                          fontSize: 11,
-                                          color: colors.textSecondary,
-                                          marginHorizontal: 4,
-                                        }}
-                                      >
-                                        •
-                                      </Text>
-                                      <Text style={styles.verifiedBadge}>
-                                        {isRTL ? 'موثق' : 'Verified'}
-                                      </Text>
-                                    </>
-                                  )}
-                                </View>
-                              </View>
-                            </View>
-                            <View
-                              style={{
-                                flexDirection: isRTL ? 'row-reverse' : 'row',
-                                alignItems: 'center',
-                                gap: 6,
-                              }}
-                            >
-                              {/* Delete Button - Only show for current user's reviews */}
-                              {currentUserId &&
-                                review.user?._id === currentUserId && (
-                                  <TouchableOpacity
-                                    style={{
-                                      padding: 6,
-                                      backgroundColor:
-                                        'rgba(220, 53, 69, 0.08)',
-                                      borderRadius: 6,
-                                    }}
-                                    onPress={() => handleDeleteReview(review)}
-                                    disabled={isDeletingReview}
-                                  >
-                                    {isDeletingReview ? (
-                                      <ActivityIndicator
-                                        size="small"
-                                        color="#e57373"
-                                      />
-                                    ) : (
-                                      <Svg
-                                        width={14}
-                                        height={14}
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                      >
-                                        <Path
-                                          d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"
-                                          stroke="#e57373"
-                                          strokeWidth={2}
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                        />
-                                      </Svg>
-                                    )}
-                                  </TouchableOpacity>
-                                )}
-
-                              <View style={styles.reviewRating}>
-                                <Text style={styles.reviewRatingText}>
-                                  {review.rating.toFixed(1)} ★
-                                </Text>
-                              </View>
-                            </View>
                           </View>
-
-                          {/* Comment Section */}
-                          <Text
-                            style={[
-                              styles.reviewComment,
-                              isRTL && styles.reviewCommentRTL,
-                            ]}
-                          >
-                            {review.comment}
-                          </Text>
-
-                          {review.vendorReply &&
-                            review.vendorReply.text &&
-                            review.vendorReply.text.trim() !== '' && (
-                              <View style={styles.vendorReply}>
-                                <Text style={styles.vendorReplyLabel}>
-                                  {isRTL ? 'رد البائع:' : 'Vendor Reply:'}
-                                </Text>
-                                <Text
-                                  style={[
-                                    styles.vendorReplyText,
-                                    isRTL && styles.vendorReplyTextRTL,
-                                  ]}
-                                  numberOfLines={2}
-                                >
-                                  {review.vendorReply.text}
-                                </Text>
-                              </View>
-                            )}
-                        </View>
-                      ))}
+                        ))}
 
                       {/* Show More/Less Button */}
                       {reviews.length > 2 && (
@@ -2518,14 +2616,18 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                             marginBottom: 8,
                           }}
                           activeOpacity={0.7}
-                          onPress={() => setIsReviewsExpanded(!isReviewsExpanded)}
+                          onPress={() =>
+                            setIsReviewsExpanded(!isReviewsExpanded)
+                          }
                         >
                           <Text style={styles.showMoreText}>
                             {isReviewsExpanded
-                              ? (isRTL ? 'عرض أقل' : 'Show Less')
-                              : (isRTL
-                                  ? `عرض المزيد (${reviews.length - 2})`
-                                  : `Show More (${reviews.length - 2})`)}
+                              ? isRTL
+                                ? 'عرض أقل'
+                                : 'Show Less'
+                              : isRTL
+                                ? `عرض المزيد (${reviews.length - 2})`
+                                : `Show More (${reviews.length - 2})`}
                           </Text>
                           <Svg
                             width={16}
@@ -2535,7 +2637,15 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                             style={[
                               styles.showMoreIcon,
                               isRTL && styles.showMoreIconRTL,
-                              { transform: [{ rotate: isReviewsExpanded ? '270deg' : '90deg' }] }
+                              {
+                                transform: [
+                                  {
+                                    rotate: isReviewsExpanded
+                                      ? '270deg'
+                                      : '90deg',
+                                  },
+                                ],
+                              },
                             ]}
                           >
                             <Path
@@ -3023,8 +3133,6 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
         />
       )}
 
-
-
       {/* Write Review Modal */}
       {service && (
         <WriteReview
@@ -3042,8 +3150,6 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
           }}
         />
       )}
-
-
 
       {/* Custom Alert for Delete Confirmation */}
       <CustomAlert

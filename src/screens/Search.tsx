@@ -11,45 +11,68 @@ import {
   Dimensions,
   StatusBar,
   Animated,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Circle } from 'react-native-svg';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useServices } from '../hooks/useServices';
 import { useOccasions } from '../hooks/useOccasions';
-import { getServiceImageUrl } from '../services/servicesApi';
-import { getImageUrl } from '../services/api';
+import { getServiceImageUrl, Service } from '../services/servicesApi';
+import { getImageUrl, Occasion } from '../services/api';
 import { usePackages } from '../hooks/usePackages';
 import { colors } from '../constants/colors';
 
 interface SearchProps {
   onBack?: () => void;
   onSelectService?: (serviceId: string) => void;
-  onSelectOccasion?: (occasion: any) => void;
+  onSelectOccasion?: (occasion: Occasion) => void;
   onSelectPackage?: (packageId: string) => void;
+}
+
+interface ServicePriceItem {
+  price: number;
+  isOnSale?: boolean;
+  salePrice?: number;
+  discountPercentage?: number;
+}
+
+interface SearchResultItem extends Partial<Occasion> {
+  _id: string;
+  type: 'service' | 'package' | 'occasion';
+  displayName?: string;
+  displaySubtitle?: string;
+  image?: string;
+  price?: number;
+  isOnSale?: boolean;
+  salePrice?: number;
+  discountPercentage?: number;
+  hidePrice?: boolean;
 }
 
 const { width } = Dimensions.get('window');
 const isTablet = width >= 600;
 
-const getServicePriceInfo = (item: any) => {
+const getServicePriceInfo = (item: Partial<ServicePriceItem>) => {
+  const itemPrice = item.price || 0;
   const hasDiscount =
     item.isOnSale &&
-    ((item.salePrice && item.salePrice > 0 && item.salePrice < item.price) ||
+    ((item.salePrice && item.salePrice > 0 && item.salePrice < itemPrice) ||
       (item.discountPercentage && item.discountPercentage > 0));
 
   let discountPercent = 0;
-  let finalPrice = item.price;
+  let finalPrice = itemPrice;
 
   if (hasDiscount) {
-    if (item.salePrice && item.salePrice > 0 && item.salePrice < item.price) {
+    if (item.salePrice && item.salePrice > 0 && item.salePrice < itemPrice) {
       finalPrice = item.salePrice;
       discountPercent = Math.round(
-        ((item.price - item.salePrice) / item.price) * 100,
+        ((itemPrice - item.salePrice) / itemPrice) * 100,
       );
     } else if (item.discountPercentage && item.discountPercentage > 0) {
       discountPercent = item.discountPercentage;
-      finalPrice = item.price * (1 - item.discountPercentage / 100);
+      finalPrice = itemPrice * (1 - item.discountPercentage / 100);
     }
   }
 
@@ -67,10 +90,64 @@ const Search: React.FC<SearchProps> = ({
   const { data: occasions, isLoading: occasionsLoading } = useOccasions();
   const { data: packages } = usePackages();
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredResults, setFilteredResults] = useState<any[]>([]);
+  const [filteredResults, setFilteredResults] = useState<SearchResultItem[]>(
+    [],
+  );
   const [searchType, setSearchType] = useState<
-    'all' | 'services' | 'occasions'
+    'all' | 'services' | 'packages' | 'occasions'
   >('all');
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+
+  // Load recent searches on mount
+  useEffect(() => {
+    const loadRecentSearches = async () => {
+      try {
+        const saved = await AsyncStorage.getItem('recent_searches');
+        if (saved) {
+          setRecentSearches(JSON.parse(saved));
+        }
+      } catch (error) {
+        console.error('Failed to load recent searches', error);
+      }
+    };
+    loadRecentSearches();
+  }, []);
+
+  const saveRecentSearch = async (query: string) => {
+    const trimmed = query.trim();
+    if (!trimmed) return;
+
+    const updated = [
+      trimmed,
+      ...recentSearches.filter(q => q.toLowerCase() !== trimmed.toLowerCase()),
+    ].slice(0, 8);
+
+    setRecentSearches(updated);
+    try {
+      await AsyncStorage.setItem('recent_searches', JSON.stringify(updated));
+    } catch (error) {
+      console.error('Failed to save recent search', error);
+    }
+  };
+
+  const deleteRecentSearch = async (query: string) => {
+    const updated = recentSearches.filter(q => q !== query);
+    setRecentSearches(updated);
+    try {
+      await AsyncStorage.setItem('recent_searches', JSON.stringify(updated));
+    } catch (error) {
+      console.error('Failed to delete recent search', error);
+    }
+  };
+
+  const clearRecentSearches = async () => {
+    setRecentSearches([]);
+    try {
+      await AsyncStorage.removeItem('recent_searches');
+    } catch (error) {
+      console.error('Failed to clear recent searches', error);
+    }
+  };
 
   // Animation refs
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -89,7 +166,7 @@ const Search: React.FC<SearchProps> = ({
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
+  }, [fadeAnim, slideAnim]);
 
   useEffect(() => {
     if (!searchQuery.trim()) {
@@ -98,7 +175,7 @@ const Search: React.FC<SearchProps> = ({
     }
 
     const query = searchQuery.toLowerCase().trim();
-    const results: any[] = [];
+    const results: SearchResultItem[] = [];
 
     if (searchType === 'all' || searchType === 'services') {
       // 1. Filter Services
@@ -110,10 +187,10 @@ const Search: React.FC<SearchProps> = ({
           ?.toLowerCase()
           .includes(query);
         const vendorMatch = service.vendor?.name?.toLowerCase().includes(query);
-        const idMatch = service._id && (
-          service._id.toLowerCase() === query ||
-          query.includes(service._id.toLowerCase())
-        );
+        const idMatch =
+          service._id &&
+          (service._id.toLowerCase() === query ||
+            query.includes(service._id.toLowerCase()));
 
         if (
           nameMatch ||
@@ -133,20 +210,20 @@ const Search: React.FC<SearchProps> = ({
           });
         }
       });
+    }
 
+    if (searchType === 'all' || searchType === 'packages') {
       // 2. Filter Packages
       packages?.forEach(pkg => {
         const nameMatch = pkg.name?.toLowerCase().includes(query);
         const nameArMatch = pkg.nameAr?.toLowerCase().includes(query);
         const descMatch = pkg.description?.toLowerCase().includes(query);
-        const descArMatch = pkg.descriptionAr
-          ?.toLowerCase()
-          .includes(query);
+        const descArMatch = pkg.descriptionAr?.toLowerCase().includes(query);
         const vendorMatch = pkg.vendor?.name?.toLowerCase().includes(query);
-        const idMatch = pkg._id && (
-          pkg._id.toLowerCase() === query ||
-          query.includes(pkg._id.toLowerCase())
-        );
+        const idMatch =
+          pkg._id &&
+          (pkg._id.toLowerCase() === query ||
+            query.includes(pkg._id.toLowerCase()));
 
         if (
           nameMatch ||
@@ -160,13 +237,18 @@ const Search: React.FC<SearchProps> = ({
             ...pkg,
             type: 'package',
             displayName: isRTL ? pkg.nameAr : pkg.name,
-            displaySubtitle:
-              pkg.vendor?.name || (isRTL ? 'باقة' : 'Package'),
+            displaySubtitle: pkg.vendor?.name || (isRTL ? 'باقة' : 'Package'),
             image: pkg.images?.[0],
             price: pkg.totalPrice || 0,
             isOnSale: pkg.discountPrice > 0,
-            salePrice: pkg.discountPrice > 0 ? (pkg.totalPrice - pkg.discountPrice) : undefined,
-            discountPercentage: pkg.discountPrice > 0 && pkg.totalPrice > 0 ? Math.round((pkg.discountPrice / pkg.totalPrice) * 100) : undefined,
+            salePrice:
+              pkg.discountPrice > 0
+                ? pkg.totalPrice - pkg.discountPrice
+                : undefined,
+            discountPercentage:
+              pkg.discountPrice > 0 && pkg.totalPrice > 0
+                ? Math.round((pkg.discountPrice / pkg.totalPrice) * 100)
+                : undefined,
           });
         }
       });
@@ -192,22 +274,20 @@ const Search: React.FC<SearchProps> = ({
     setFilteredResults(results);
   }, [searchQuery, services, occasions, packages, searchType, isRTL]);
 
-  const handleResultPress = (item: any) => {
+  const handleResultPress = (item: SearchResultItem) => {
+    if (searchQuery.trim()) {
+      saveRecentSearch(searchQuery.trim());
+    }
     if (item.type === 'service' && onSelectService) {
       onSelectService(item._id);
     } else if (item.type === 'package' && onSelectPackage) {
       onSelectPackage(item._id);
     } else if (item.type === 'occasion' && onSelectOccasion) {
-      onSelectOccasion({
-        ...item,
-        name: item.name,
-        nameAr: item.nameAr,
-        _id: item._id,
-      });
+      onSelectOccasion(item as unknown as Occasion);
     }
   };
 
-  const renderSearchResult = ({ item }: { item: any }) => {
+  const renderSearchResult = ({ item }: { item: SearchResultItem }) => {
     const isOccasion = item.type === 'occasion';
     const { hasDiscount, finalPrice, discountPercent } =
       getServicePriceInfo(item);
@@ -245,7 +325,7 @@ const Search: React.FC<SearchProps> = ({
                   isOccasion && styles.occasionPlaceholder,
                 ]}
               >
-                <Svg width={30} height={30} viewBox="0 0 24 24" fill="none">
+                <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
                   {isOccasion ? (
                     <Path
                       d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"
@@ -270,7 +350,13 @@ const Search: React.FC<SearchProps> = ({
           <View
             style={[styles.resultContent, isRTL && styles.resultContentRTL]}
           >
-            <View style={[styles.badgeRow, isRTL && styles.badgeRowRTL]}>
+            <View style={[styles.nameRow, isRTL && styles.nameRowRTL]}>
+              <Text
+                style={[styles.resultName, isRTL && styles.textRTL]}
+                numberOfLines={1}
+              >
+                {item.displayName}
+              </Text>
               <View
                 style={[
                   styles.typeBadge,
@@ -299,25 +385,13 @@ const Search: React.FC<SearchProps> = ({
               </View>
             </View>
             <Text
-              style={[styles.resultName, isRTL && styles.textRTL]}
-              numberOfLines={1}
-            >
-              {item.displayName}
-            </Text>
-            <Text
               style={[styles.resultSubtitle, isRTL && styles.textRTL]}
               numberOfLines={1}
             >
               {item.displaySubtitle}
             </Text>
             {item.hidePrice ? (
-              <Text
-                style={{
-                  fontSize: isTablet ? 14 : 12,
-                  color: colors.textSecondary,
-                  fontStyle: 'italic',
-                }}
-              >
+              <Text style={styles.hidePriceText}>
                 {isRTL
                   ? 'السعر يختلف حسب الاختيار'
                   : 'Price varies by selection'}
@@ -351,22 +425,18 @@ const Search: React.FC<SearchProps> = ({
             )}
           </View>
 
-          {/* Arrow Button */}
-          <TouchableOpacity
-            style={styles.arrowButton}
-            onPress={() => handleResultPress(item)}
-            activeOpacity={0.8}
-          >
-            <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+          {/* Arrow/Chevron Indicator */}
+          <View style={styles.arrowButton}>
+            <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
               <Path
                 d={isRTL ? 'M15 18l-6-6 6-6' : 'M9 18l6-6-6-6'}
-                stroke="#FFFFFF"
+                stroke={colors.primary}
                 strokeWidth={2.5}
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
             </Svg>
-          </TouchableOpacity>
+          </View>
         </TouchableOpacity>
       </Animated.View>
     );
@@ -377,6 +447,7 @@ const Search: React.FC<SearchProps> = ({
   const filterTabs = [
     { key: 'all', labelAr: 'الكل', labelEn: 'All' },
     { key: 'services', labelAr: 'الخدمات', labelEn: 'Services' },
+    { key: 'packages', labelAr: 'الباقات', labelEn: 'Packages' },
     { key: 'occasions', labelAr: 'المناسبات', labelEn: 'Occasions' },
   ];
 
@@ -391,7 +462,7 @@ const Search: React.FC<SearchProps> = ({
       .slice(0, 8);
   }, [services]);
 
-  const renderTrendingCard = ({ item }: { item: any }) => {
+  const renderTrendingCard = ({ item }: { item: Service }) => {
     const { hasDiscount, finalPrice } = getServicePriceInfo(item);
     return (
       <TouchableOpacity
@@ -448,13 +519,7 @@ const Search: React.FC<SearchProps> = ({
               </View>
             )}
             {item.hidePrice ? (
-              <Text
-                style={{
-                  fontSize: 12,
-                  color: colors.textSecondary,
-                  fontStyle: 'italic',
-                }}
-              >
+              <Text style={styles.trendingHidePriceText}>
                 {isRTL ? 'السعر يختلف' : 'Price varies'}
               </Text>
             ) : hasDiscount ? (
@@ -589,8 +654,8 @@ const Search: React.FC<SearchProps> = ({
               style={[styles.searchInput, isRTL && styles.searchInputRTL]}
               placeholder={
                 isRTL
-                  ? 'ابحث عن خدمات أو مناسبات...'
-                  : 'Search services, occasions...'
+                  ? 'ابحث عن خدمات، باقات أو مناسبات...'
+                  : 'Search services, packages, occasions...'
               }
               placeholderTextColor={colors.primary + '80'}
               value={searchQuery}
@@ -598,10 +663,20 @@ const Search: React.FC<SearchProps> = ({
               autoFocus
               returnKeyType="search"
               selectionColor={colors.primary}
+              onSubmitEditing={() => {
+                if (searchQuery.trim()) {
+                  saveRecentSearch(searchQuery.trim());
+                }
+              }}
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity
-                onPress={() => setSearchQuery('')}
+                onPress={() => {
+                  if (searchQuery.trim()) {
+                    saveRecentSearch(searchQuery.trim());
+                  }
+                  setSearchQuery('');
+                }}
                 style={styles.clearButton}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
@@ -627,7 +702,11 @@ const Search: React.FC<SearchProps> = ({
               <TouchableOpacity
                 key={tab.key}
                 style={[styles.filterChip, isActive && styles.filterChipActive]}
-                onPress={() => setSearchType(tab.key as any)}
+                onPress={() =>
+                  setSearchType(
+                    tab.key as 'all' | 'services' | 'packages' | 'occasions',
+                  )
+                }
                 activeOpacity={0.75}
               >
                 <Text
@@ -667,6 +746,87 @@ const Search: React.FC<SearchProps> = ({
                     isRTL && styles.trendingHeaderRTL,
                   ]}
                 >
+                  {/* Recent Searches */}
+                  {recentSearches.length > 0 && (
+                    <View style={styles.recentSearchesContainer}>
+                      <View
+                        style={[
+                          styles.recentHeaderRow,
+                          isRTL && styles.recentHeaderRowRTL,
+                        ]}
+                      >
+                        <Text
+                          style={[styles.recentTitle, isRTL && styles.textRTL]}
+                        >
+                          {isRTL ? 'عمليات البحث الأخيرة' : 'Recent Searches'}
+                        </Text>
+                        <TouchableOpacity
+                          onPress={clearRecentSearches}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.clearAllText}>
+                            {isRTL ? 'مسح الكل' : 'Clear All'}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={[
+                          styles.recentChipsScroll,
+                          isRTL && styles.recentChipsScrollRTL,
+                        ]}
+                      >
+                        {recentSearches.map((item, index) => (
+                          <TouchableOpacity
+                            key={`recent-${index}`}
+                            style={[
+                              styles.recentChip,
+                              isRTL && styles.recentChipRTL,
+                            ]}
+                            onPress={() => setSearchQuery(item)}
+                            activeOpacity={0.75}
+                          >
+                            <Svg
+                              width={12}
+                              height={12}
+                              viewBox="0 0 24 24"
+                              fill="none"
+                            >
+                              <Circle
+                                cx="11"
+                                cy="11"
+                                r="7"
+                                stroke={colors.primary}
+                                strokeWidth={2}
+                              />
+                              <Path
+                                d="M21 21L16.5 16.5"
+                                stroke={colors.primary}
+                                strokeWidth={2}
+                                strokeLinecap="round"
+                              />
+                            </Svg>
+                            <Text
+                              style={styles.recentChipText}
+                              numberOfLines={1}
+                            >
+                              {item}
+                            </Text>
+                            <TouchableOpacity
+                              onPress={() => deleteRecentSearch(item)}
+                              style={styles.recentChipClose}
+                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            >
+                              <Text style={styles.recentChipCloseText}>×</Text>
+                            </TouchableOpacity>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+
+                  {/* Top Picks Title */}
                   <View style={styles.trendingTitleRow}>
                     <Text
                       style={[styles.trendingTitle, isRTL && styles.textRTL]}
@@ -683,7 +843,7 @@ const Search: React.FC<SearchProps> = ({
                   </Text>
                 </View>
               }
-              ItemSeparatorComponent={() => <View style={styles.separator} />}
+              ItemSeparatorComponent={Separator}
             />
           ) : filteredResults.length > 0 ? (
             /* ── Search Results ── */
@@ -705,7 +865,7 @@ const Search: React.FC<SearchProps> = ({
                 keyExtractor={item => `${item.type}-${item._id}`}
                 contentContainerStyle={styles.resultsList}
                 showsVerticalScrollIndicator={false}
-                ItemSeparatorComponent={() => <View style={styles.separator} />}
+                ItemSeparatorComponent={ListDivider}
               />
             </>
           ) : (
@@ -716,8 +876,6 @@ const Search: React.FC<SearchProps> = ({
     </View>
   );
 };
-
-const CARD_RADIUS = 18;
 
 const styles = StyleSheet.create({
   container: {
@@ -843,7 +1001,7 @@ const styles = StyleSheet.create({
   // ── Results Area ──
   resultsContainer: {
     flex: 1,
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingTop: 4,
@@ -873,11 +1031,16 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   resultsList: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 0,
     paddingBottom: isTablet ? 140 : 110,
   },
   separator: {
     height: 10,
+  },
+  listDivider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginHorizontal: 16,
   },
 
   // ── Result Card ──
@@ -885,15 +1048,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: CARD_RADIUS,
-    padding: 12,
-    shadowColor: colors.primaryDark,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 8,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: colors.border,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
   },
   resultCardRTL: {
     flexDirection: 'row-reverse',
@@ -901,18 +1057,18 @@ const styles = StyleSheet.create({
 
   // Image
   resultImageWrapper: {
-    borderRadius: 14,
+    borderRadius: 10,
     overflow: 'hidden',
   },
   resultImage: {
-    width: isTablet ? 80 : 68,
-    height: isTablet ? 80 : 68,
-    borderRadius: 14,
+    width: isTablet ? 70 : 56,
+    height: isTablet ? 70 : 56,
+    borderRadius: 10,
   },
   resultImagePlaceholder: {
-    width: isTablet ? 80 : 68,
-    height: isTablet ? 80 : 68,
-    borderRadius: 14,
+    width: isTablet ? 70 : 56,
+    height: isTablet ? 70 : 56,
+    borderRadius: 10,
     backgroundColor: colors.background,
     justifyContent: 'center',
     alignItems: 'center',
@@ -924,73 +1080,70 @@ const styles = StyleSheet.create({
   // Content
   resultContent: {
     flex: 1,
-    marginLeft: 14,
-    marginRight: 8,
+    marginLeft: 10,
+    marginRight: 6,
   },
   resultContentRTL: {
-    marginLeft: 8,
-    marginRight: 14,
+    marginLeft: 6,
+    marginRight: 10,
     alignItems: 'flex-end',
   },
-  badgeRow: {
+  nameRow: {
     flexDirection: 'row',
-    marginBottom: 5,
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 3,
+    width: '100%',
   },
-  badgeRowRTL: {
+  nameRowRTL: {
     flexDirection: 'row-reverse',
   },
   typeBadge: {
-    backgroundColor: colors.primary + '20',
-    paddingVertical: 2,
-    paddingHorizontal: 8,
-    borderRadius: 6,
+    backgroundColor: colors.primary + '15',
+    paddingVertical: 1,
+    paddingHorizontal: 6,
+    borderRadius: 4,
   },
   occasionBadge: {
-    backgroundColor: '#FF6B6B20',
+    backgroundColor: '#FF6B6B15',
   },
   packageBadge: {
-    backgroundColor: '#8A2BE220',
+    backgroundColor: '#8A2BE215',
   },
   packageBadgeText: {
     color: '#8A2BE2',
   },
   typeBadgeText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
     color: colors.primary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   resultName: {
-    fontSize: isTablet ? 17 : 15,
+    fontSize: isTablet ? 16 : 14,
     fontWeight: '700',
     color: colors.primaryDark,
-    marginBottom: 2,
+    marginBottom: 1,
+    flexShrink: 1,
   },
   resultSubtitle: {
-    fontSize: isTablet ? 14 : 12,
+    fontSize: isTablet ? 13 : 11.5,
     color: colors.textSecondary,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   resultPrice: {
-    fontSize: isTablet ? 15 : 13,
+    fontSize: isTablet ? 14 : 12,
     fontWeight: '700',
     color: colors.primary,
   },
 
-  // Arrow Button
+  // Arrow/Chevron Indicator
   arrowButton: {
-    width: isTablet ? 42 : 36,
-    height: isTablet ? 42 : 36,
-    borderRadius: isTablet ? 14 : 12,
-    backgroundColor: colors.primary,
+    width: 24,
+    height: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.35,
-    shadowRadius: 6,
-    elevation: 4,
   },
 
   // Empty State
@@ -1030,6 +1183,75 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.primary,
     fontWeight: '500',
+  },
+
+  // Recent Searches
+  recentSearchesContainer: {
+    paddingTop: 10,
+    paddingBottom: 16,
+  },
+  recentHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    marginBottom: 8,
+  },
+  recentHeaderRowRTL: {
+    flexDirection: 'row-reverse',
+  },
+  recentTitle: {
+    fontSize: isTablet ? 16 : 14,
+    fontWeight: '700',
+    color: colors.primaryDark,
+  },
+  clearAllText: {
+    fontSize: isTablet ? 13 : 11,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  recentChipsScroll: {
+    paddingVertical: 4,
+  },
+  recentChipsScrollRTL: {
+    flexDirection: 'row-reverse',
+  },
+  recentChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary + '08',
+    borderRadius: 100,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: colors.primary + '15',
+    marginRight: 8,
+    gap: 6,
+  },
+  recentChipRTL: {
+    marginLeft: 8,
+    marginRight: 0,
+    flexDirection: 'row-reverse',
+  },
+  recentChipText: {
+    fontSize: isTablet ? 13 : 11.5,
+    fontWeight: '500',
+    color: colors.primaryDark,
+    maxWidth: 120,
+  },
+  recentChipClose: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: colors.primary + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  recentChipCloseText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: colors.primary,
+    marginTop: -2.5,
   },
 
   // RTL
@@ -1218,6 +1440,19 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '700',
   },
+  hidePriceText: {
+    fontSize: isTablet ? 13 : 11.5,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+  },
+  trendingHidePriceText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+  },
 });
+
+const Separator = () => <View style={styles.separator} />;
+const ListDivider = () => <View style={styles.listDivider} />;
 
 export default Search;

@@ -877,6 +877,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
         animationType="slide"
         transparent={true}
         onRequestClose={handleCloseNotifications}
+        statusBarTranslucent={true}
       >
         <View style={notifStyles.overlay}>
           <View style={notifStyles.container}>
