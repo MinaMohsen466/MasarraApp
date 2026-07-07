@@ -486,4 +486,196 @@ export const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.textSecondary,
   },
+  primaryFlexContainer: {
+    flex: 1,
+    backgroundColor: colors.primary,
+  },
+  paddingTop0: {
+    paddingTop: 0,
+  },
+  profilePlaceholderLogin: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#E2E8F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: -50,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+  },
+  loginPromptTitleBold: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.primaryDark,
+    marginTop: 20,
+    marginBottom: 12,
+  },
+  loginButtonRounded: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 40,
+    borderRadius: 24,
+    height: 46,
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  positionRelative: {
+    position: 'relative',
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 9,
+    height: 9,
+    borderRadius: 4.5,
+    backgroundColor: '#EF4444',
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+  },
+});
+
+export const notifStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'flex-end',
+  },
+  container: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    height: '80%',
+    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  headerRTL: {
+    flexDirection: 'row-reverse',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  headerActionsRTL: {
+    flexDirection: 'row-reverse',
+  },
+  clearButton: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  clearButtonText: {
+    fontSize: 14,
+    color: '#ef4444',
+    fontWeight: '600',
+  },
+  closeButton: {
+    padding: 4,
+  },
+  iconMarginRTL: {
+    marginLeft: 12,
+  },
+  iconMarginLTR: {
+    marginRight: 12,
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 40,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 80,
+  },
+  emptyText: {
+    marginTop: 16,
+    fontSize: 15,
+    color: '#64748b',
+    fontWeight: '500',
+  },
+  card: {
+    flexDirection: 'row',
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+  },
+  cardRTL: {
+    flexDirection: 'row-reverse',
+  },
+  unreadCard: {
+    backgroundColor: '#f8fafc',
+    borderColor: '#e2e8f0',
+  },
+  cardIconContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardTextContainer: {
+    flex: 1,
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  cardHeaderRowRTL: {
+    flexDirection: 'row-reverse',
+  },
+  cardTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#334155',
+  },
+  unreadText: {
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  unreadDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#3b82f6',
+  },
+  cardMessage: {
+    fontSize: 13,
+    color: '#64748b',
+    lineHeight: 18,
+    marginBottom: 6,
+  },
+  cardTime: {
+    fontSize: 10,
+    color: '#94a3b8',
+  },
+  textRight: {
+    textAlign: 'right',
+  },
 });

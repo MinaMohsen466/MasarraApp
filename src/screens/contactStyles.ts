@@ -194,4 +194,42 @@ export const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.textSecondary,
   },
+  rowReverse: {
+    flexDirection: 'row-reverse',
+  },
+  arrowText: {
+    fontSize: 20,
+    color: '#999',
+  },
+  floatingChatButton: {
+    position: 'absolute',
+    left: 16,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#ffffff',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 6,
+    zIndex: 100,
+  },
+  chatModalContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1000,
+    backgroundColor: '#fff',
+  },
+  backButtonRTL: {
+    right: 12,
+  },
+  backButtonLTR: {
+    left: 12,
+  },
 });

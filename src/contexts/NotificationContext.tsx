@@ -170,6 +170,8 @@ export interface NotificationItem {
   bookingId?: string;
   createdAt: string;
   read: boolean;
+  link?: string;
+  chat?: string;
 }
 
 interface NotificationContextType {
@@ -178,7 +180,7 @@ interface NotificationContextType {
   notificationsEnabled: boolean;
   toggleNotificationsEnabled: () => Promise<void>;
   addNotification: (
-    notification: Omit<NotificationItem, 'id' | 'createdAt' | 'read'>,
+    notification: Omit<NotificationItem, 'id' | 'createdAt' | 'read'> & { id?: string },
   ) => Promise<void>;
   markAsRead: (id: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
@@ -275,6 +277,16 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
           if (navHandler) {
             navHandler('profile');
           }
+        } else if (notification.type === 'new_message' || notification.type === 'new_chat' || notification.chat) {
+          await AsyncStorage.setItem('openChat', '1');
+          if (navHandler) {
+            navHandler('contact');
+          }
+        } else if (notification.type === 'event_reminder') {
+          await AsyncStorage.setItem('openMyEvents', '1');
+          if (navHandler) {
+            navHandler('profile');
+          }
         }
       } catch (err) {
         console.error('Error handling notification press:', err);
@@ -332,7 +344,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
   }, [slideAnim, opacityAnim]);
 
   const addNotification = useCallback(
-    async (newNotif: Omit<NotificationItem, 'id' | 'createdAt' | 'read'>) => {
+    async (newNotif: Omit<NotificationItem, 'id' | 'createdAt' | 'read'> & { id?: string }) => {
       if (!notificationsEnabled) {
         console.log(
           '[NotificationService] Notifications are disabled, ignoring.',
@@ -342,7 +354,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 
       const item: NotificationItem = {
         ...newNotif,
-        id:
+        id: newNotif.id ||
           Math.random().toString(36).substring(2, 9) + Date.now().toString(36),
         createdAt: new Date().toISOString(),
         read: false,

@@ -67,6 +67,9 @@ export const AuthProvider: React.FC<{
         await AsyncStorage.setItem('userData', JSON.stringify(freshUserData));
         // Create a new object to ensure React detects the change
         setUser({ ...freshUserData });
+      } else if (response.status === 401) {
+        console.log('🔄 Token is invalid or expired, forcing logout...');
+        await logout();
       }
     } catch (error) {
       console.log('❌ Error refreshing user:', error);

@@ -7,13 +7,11 @@ import {
   ScrollView,
   StatusBar,
   Modal,
-  Switch,
-  StyleSheet,
 } from 'react-native';
 import Svg, { Path, Circle, Rect, Line, Polyline } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { styles } from './styles';
+import { styles, notifStyles } from './styles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -26,6 +24,13 @@ import { useNotification } from '../../contexts/NotificationContext';
 
 import { API_URL } from '../../config/api.config';
 import { fetchAddresses } from '../../services/api';
+
+interface Address {
+  _id: string;
+  name: string;
+  city: string;
+  isDefault?: boolean;
+}
 
 interface UserProfileProps {
   onBack?: () => void;
@@ -61,8 +66,6 @@ const UserProfile: React.FC<UserProfileProps> = ({
   const {
     notifications,
     unreadCount,
-    notificationsEnabled,
-    toggleNotificationsEnabled,
     markAllAsRead,
     clearNotifications,
     handleNotificationPress,
@@ -88,7 +91,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
           await AsyncStorage.removeItem('openEditProfile');
           setShowEditProfile(true);
         }
-      } catch (e) {
+      } catch {
         // Error checking flag
       }
     };
@@ -102,13 +105,28 @@ const UserProfile: React.FC<UserProfileProps> = ({
           await AsyncStorage.removeItem('openOrderHistory');
           setShowOrderHistory(true);
         }
-      } catch (e) {
+      } catch {
+        // Error checking flag
+      }
+    };
+
+    // Check if notification requested opening my events
+    const checkOpenMyEvents = async () => {
+      try {
+        const flag = await AsyncStorage.getItem('openMyEvents');
+        if (flag === '1') {
+          // remove flag and open my events
+          await AsyncStorage.removeItem('openMyEvents');
+          setShowMyEvents(true);
+        }
+      } catch {
         // Error checking flag
       }
     };
 
     checkOpenEdit();
     checkOpenOrderHistory();
+    checkOpenMyEvents();
   }, []);
 
   useEffect(() => {
@@ -117,12 +135,12 @@ const UserProfile: React.FC<UserProfileProps> = ({
       try {
         const data = await fetchAddresses(token);
         if (data && data.length > 0) {
-          const def = data.find((a: any) => a.isDefault) || data[0];
+          const def = data.find((a: Address) => a.isDefault) || data[0];
           if (def) {
             setDefaultAddress(def.city || null);
           }
         }
-      } catch (e) {
+      } catch {
         // Silent catch
       }
     };
@@ -156,7 +174,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
       if (onBack) {
         onBack();
       }
-    } catch (error) {
+    } catch {
       // Error logging out
     }
   };
@@ -224,7 +242,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
           barStyle="light-content"
           translucent={false}
         />
-        <View style={{ flex: 1, backgroundColor: colors.primary }}>
+        <View style={styles.primaryFlexContainer}>
           <View
             style={{ height: insets.top, backgroundColor: colors.primary }}
           />
@@ -302,18 +320,8 @@ const UserProfile: React.FC<UserProfileProps> = ({
               </View>
 
               {/* Login Prompt Section */}
-              <View style={[styles.loginPromptContainer, { paddingTop: 0 }]}>
-                <View
-                  style={[
-                    styles.profilePlaceholder,
-                    {
-                      marginTop: -50,
-                      borderWidth: 3,
-                      borderColor: '#FFFFFF',
-                      backgroundColor: '#E2E8F0',
-                    },
-                  ]}
-                >
+              <View style={[styles.loginPromptContainer, styles.paddingTop0]}>
+                <View style={styles.profilePlaceholderLogin}>
                   <Image
                     source={require('../../imgs/user.png')}
                     style={styles.profileIcon}
@@ -322,9 +330,8 @@ const UserProfile: React.FC<UserProfileProps> = ({
 
                 <Text
                   style={[
-                    styles.loginPromptTitle,
+                    styles.loginPromptTitleBold,
                     isRTL && styles.loginPromptTitleRTL,
-                    { color: colors.primaryDark, fontWeight: '700' },
                   ]}
                 >
                   {isRTL ? 'مرحباً بك!' : 'Welcome!'}
@@ -342,15 +349,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
                 </Text>
 
                 <TouchableOpacity
-                  style={[
-                    styles.loginButton,
-                    {
-                      borderRadius: 24,
-                      height: 46,
-                      justifyContent: 'center',
-                      paddingVertical: 0,
-                    },
-                  ]}
+                  style={styles.loginButtonRounded}
                   onPress={handleLogin}
                   activeOpacity={0.8}
                 >
@@ -373,7 +372,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
         barStyle="light-content"
         translucent={false}
       />
-      <View style={{ flex: 1, backgroundColor: colors.primary }}>
+      <View style={styles.primaryFlexContainer}>
         <View style={{ height: insets.top, backgroundColor: colors.primary }} />
         <View style={styles.fullPageContainer}>
           {/* Scrollable Content */}
@@ -437,7 +436,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
                 <TouchableOpacity
                   style={[
                     styles.headerBackButtonCircle,
-                    { position: 'relative' },
+                    styles.positionRelative,
                   ]}
                   onPress={handleOpenNotifications}
                   activeOpacity={0.8}
@@ -448,19 +447,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
                     color={colors.textWhite}
                   />
                   {unreadCount > 0 && (
-                    <View
-                      style={{
-                        position: 'absolute',
-                        top: 8,
-                        right: 8,
-                        width: 9,
-                        height: 9,
-                        borderRadius: 4.5,
-                        backgroundColor: '#EF4444',
-                        borderWidth: 1.5,
-                        borderColor: colors.primary,
-                      }}
-                    />
+                    <View style={styles.notificationBadge} />
                   )}
                 </TouchableOpacity>
               </View>
@@ -494,6 +481,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
                     style={styles.profileImage}
                     resizeMode="cover"
                     onError={e => {
+                      // eslint-disable-next-line no-console
                       console.log('Image load error:', e.nativeEvent.error);
                     }}
                   />
@@ -949,7 +937,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
                     <View
                       style={[
                         notifStyles.cardIconContainer,
-                        isRTL ? { marginLeft: 12 } : { marginRight: 12 },
+                        isRTL ? notifStyles.iconMarginRTL : notifStyles.iconMarginLTR,
                       ]}
                     >
                       <Icon
@@ -1034,161 +1022,5 @@ const UserProfile: React.FC<UserProfileProps> = ({
   );
 };
 
-const notifStyles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    justifyContent: 'flex-end',
-  },
-  container: {
-    backgroundColor: '#ffffff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    height: '80%',
-    width: '100%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 10,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
-  },
-  headerRTL: {
-    flexDirection: 'row-reverse',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#0f172a',
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  headerActionsRTL: {
-    flexDirection: 'row-reverse',
-  },
-  clearButton: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-  },
-  clearButtonText: {
-    fontSize: 14,
-    color: '#ef4444',
-    fontWeight: '600',
-  },
-  closeButton: {
-    padding: 4,
-  },
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: '#f8fafc',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
-  },
-  toggleRowRTL: {
-    flexDirection: 'row-reverse',
-  },
-  toggleLabelContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  toggleLabelContainerRTL: {
-    flexDirection: 'row-reverse',
-  },
-  toggleLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#334155',
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 80,
-  },
-  emptyText: {
-    marginTop: 16,
-    fontSize: 15,
-    color: '#64748b',
-    fontWeight: '500',
-  },
-  card: {
-    flexDirection: 'row',
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-  },
-  cardRTL: {
-    flexDirection: 'row-reverse',
-  },
-  unreadCard: {
-    backgroundColor: '#f8fafc',
-    borderColor: '#e2e8f0',
-  },
-  cardIconContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cardTextContainer: {
-    flex: 1,
-  },
-  cardHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  cardHeaderRowRTL: {
-    flexDirection: 'row-reverse',
-  },
-  cardTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#334155',
-  },
-  unreadText: {
-    fontWeight: '700',
-    color: '#0f172a',
-  },
-  unreadDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#3b82f6',
-  },
-  cardMessage: {
-    fontSize: 13,
-    color: '#64748b',
-    lineHeight: 18,
-    marginBottom: 6,
-  },
-  cardTime: {
-    fontSize: 10,
-    color: '#94a3b8',
-  },
-  textRight: {
-    textAlign: 'right',
-  },
-});
 
 export default UserProfile;

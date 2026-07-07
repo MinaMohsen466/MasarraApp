@@ -61,8 +61,11 @@ interface SocketNotificationPayload {
   type?: string;
   bookingId?: string;
   id?: string;
+  _id?: string;
   requiresPayment?: boolean;
   booking?: string;
+  link?: string;
+  chat?: string;
 }
 
 // Helper component with auth
@@ -128,6 +131,7 @@ const SocketNotificationListener: React.FC<{
       
       // Save notification to history and show top banner
       addNotification({
+        id: data._id || data.id,
         title: data.title || (isRTL ? 'إشعار الحجز' : 'Booking Notification'),
         titleEn: data.titleEn || 'Booking Notification',
         message: data.message || '',
@@ -189,6 +193,7 @@ const SocketNotificationListener: React.FC<{
       
       // Save notification to history and show top banner
       addNotification({
+        id: data._id || data.id,
         title: isRTL ? 'تم تأكيد الدفع' : 'Payment Confirmed',
         titleEn: 'Payment Confirmed',
         message: data.messageAr || 'تم تأكيد دفعك بنجاح! حجزك مؤكد الآن.',
@@ -227,6 +232,7 @@ const SocketNotificationListener: React.FC<{
       
       // Save notification to history and show top banner
       addNotification({
+        id: data._id || data.id,
         title: isRTL ? 'تم قبول الحجز' : 'Booking Confirmed',
         titleEn: 'Booking Confirmed',
         message: data.messageAr || 'قبل البائع حجزك!',
@@ -282,13 +288,21 @@ const SocketNotificationListener: React.FC<{
       const { title: titleEn, message: messageEn } = renderNotificationText(data, false);
 
       addNotification({
+        id: data._id || data.id,
         title,
         titleEn,
         message,
         messageEn,
         type: data.type || 'notification',
         bookingId: data.booking,
+        link: data.link,
+        chat: data.chat,
       }).catch(err => console.error('Failed to add socket notification:', err));
+
+      // Do not show popup alert for chat/message notifications, just keep them in notifications list
+      if (data.type === 'new_message' || data.type === 'new_chat' || data.chat) {
+        return;
+      }
 
       const buttons: Array<{
         text: string;
@@ -317,6 +331,32 @@ const SocketNotificationListener: React.FC<{
               setCurrentRoute('profile');
             } catch (err) {
               console.error('Error redirecting to order history:', err);
+            }
+          }
+        });
+      } else if (data.type === 'new_message' || data.type === 'new_chat' || data.chat) {
+        buttons.unshift({
+          text: isRTL ? 'عرض الرسائل' : 'View Messages',
+          style: 'default',
+          onPress: async () => {
+            try {
+              await AsyncStorage.setItem('openChat', '1');
+              setCurrentRoute('contact');
+            } catch (err) {
+              console.error('Error redirecting to chat:', err);
+            }
+          }
+        });
+      } else if (data.type === 'event_reminder') {
+        buttons.unshift({
+          text: isRTL ? 'عرض الضيوف' : 'View Guest List',
+          style: 'default',
+          onPress: async () => {
+            try {
+              await AsyncStorage.setItem('openMyEvents', '1');
+              setCurrentRoute('profile');
+            } catch (err) {
+              console.error('Error redirecting to guest list:', err);
             }
           }
         });

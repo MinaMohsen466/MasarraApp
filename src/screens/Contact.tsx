@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View,
   Text,
@@ -38,6 +39,22 @@ const Contact: React.FC<ContactProps> = ({
   const { user, token, isLoggedIn } = useAuth();
   const { data: siteSettings, isLoading: loadingSettings } = useSiteSettings();
   const [showChat, setShowChat] = useState(false);
+
+  useEffect(() => {
+    const checkOpenChat = async () => {
+      try {
+        const flag = await AsyncStorage.getItem('openChat');
+        if (flag === '1') {
+          await AsyncStorage.removeItem('openChat');
+          setShowChat(true);
+          onShowChat?.();
+        }
+      } catch {
+        // Error checking flag
+      }
+    };
+    checkOpenChat();
+  }, [onShowChat]);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -156,11 +173,12 @@ const Contact: React.FC<ContactProps> = ({
           },
         ],
       );
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       showAlert(
         isRTL ? 'خطأ' : 'Error',
-        error.message ||
-          (isRTL ? 'فشل في إرسال الرسالة' : 'Failed to send message'),
+        errorMessage ||
+        (isRTL ? 'فشل في إرسال الرسالة' : 'Failed to send message'),
       );
     } finally {
       setIsSubmitting(false);
@@ -192,11 +210,8 @@ const Contact: React.FC<ContactProps> = ({
             onPress={() => onBack && onBack()}
             style={[
               contactStyles.backButton,
-              {
-                top: insets.top + 11,
-                left: isRTL ? undefined : 12,
-                right: isRTL ? 12 : undefined,
-              },
+              isRTL ? contactStyles.backButtonRTL : contactStyles.backButtonLTR,
+              { top: insets.top + 11 },
             ]}
             activeOpacity={0.8}
           >
@@ -239,7 +254,7 @@ const Contact: React.FC<ContactProps> = ({
 
           {/* Contact Cards */}
           {loadingSettings ? (
-            <View style={[contactStyles.contactCard, { alignItems: 'center' }]}>
+            <View style={contactStyles.contactCard}>
               <ActivityIndicator size="small" color={colors.primary} />
             </View>
           ) : siteSettings &&
@@ -250,7 +265,7 @@ const Contact: React.FC<ContactProps> = ({
                 <TouchableOpacity
                   style={[
                     contactStyles.contactCard,
-                    isRTL && { flexDirection: 'row-reverse' },
+                    isRTL && contactStyles.rowReverse,
                   ]}
                   onPress={() =>
                     Linking.openURL(`mailto:${siteSettings.contactEmail}`)
@@ -275,7 +290,7 @@ const Contact: React.FC<ContactProps> = ({
                       {siteSettings.contactEmail}
                     </Text>
                   </View>
-                  <Text style={{ fontSize: 20, color: '#999' }}>
+                  <Text style={contactStyles.arrowText}>
                     {isRTL ? '‹' : '›'}
                   </Text>
                 </TouchableOpacity>
@@ -286,7 +301,7 @@ const Contact: React.FC<ContactProps> = ({
                 <TouchableOpacity
                   style={[
                     contactStyles.contactCard,
-                    isRTL && { flexDirection: 'row-reverse' },
+                    isRTL && contactStyles.rowReverse,
                   ]}
                   onPress={() =>
                     Linking.openURL(`tel:${siteSettings.contactPhone}`)
@@ -311,7 +326,7 @@ const Contact: React.FC<ContactProps> = ({
                       {siteSettings.contactPhone}
                     </Text>
                   </View>
-                  <Text style={{ fontSize: 20, color: '#999' }}>
+                  <Text style={contactStyles.arrowText}>
                     {isRTL ? '‹' : '›'}
                   </Text>
                 </TouchableOpacity>
@@ -496,23 +511,10 @@ const Contact: React.FC<ContactProps> = ({
         {/* Floating Chat Icon - Only for logged in users */}
         {isLoggedIn && (
           <TouchableOpacity
-            style={{
-              position: 'absolute',
-              bottom: insets.bottom + 96,
-              left: 16,
-              width: 54,
-              height: 54,
-              borderRadius: 27,
-              backgroundColor: colors.primary,
-              justifyContent: 'center',
-              alignItems: 'center',
-              shadowColor: '#ffffff',
-              shadowOffset: { width: 0, height: 3 },
-              shadowOpacity: 0.25,
-              shadowRadius: 4,
-              elevation: 6,
-              zIndex: 100,
-            }}
+            style={[
+              contactStyles.floatingChatButton,
+              { bottom: insets.bottom + 96 },
+            ]}
             onPress={() => {
               setShowChat(true);
               onShowChat?.();
@@ -534,17 +536,7 @@ const Contact: React.FC<ContactProps> = ({
 
       {/* Chat Modal - Full screen overlay covering bottom nav */}
       {showChat && (
-        <View
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 1000,
-            backgroundColor: '#fff',
-          }}
-        >
+        <View style={contactStyles.chatModalContainer}>
           <Chat
             onBack={() => {
               setShowChat(false);

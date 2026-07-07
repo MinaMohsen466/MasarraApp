@@ -1149,7 +1149,7 @@ export const fetchServerNotifications = async (
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to fetch notifications');
+      throw new Error(errorData.error || errorData.message || 'Failed to fetch notifications');
     }
 
     return await response.json();
@@ -1173,7 +1173,7 @@ export const markServerNotificationRead = async (token: string, notificationId: 
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to mark notification as read');
+      throw new Error(errorData.error || errorData.message || 'Failed to mark notification as read');
     }
 
     return await response.json();
@@ -1197,7 +1197,7 @@ export const markAllServerNotificationsRead = async (token: string): Promise<any
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to mark all notifications as read');
+      throw new Error(errorData.error || errorData.message || 'Failed to mark all notifications as read');
     }
 
     return await response.json();
@@ -1221,7 +1221,7 @@ export const deleteServerNotification = async (token: string, notificationId: st
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to delete notification');
+      throw new Error(errorData.error || errorData.message || 'Failed to delete notification');
     }
 
     return await response.json();
