@@ -958,13 +958,29 @@ const Cart: React.FC<CartProps> = ({
     }, 0);
   };
 
+  const calculateOriginalSubTotal = () => {
+    return cartItems.reduce((total, item) => {
+      if (
+        !item.availabilityStatus ||
+        item.availabilityStatus === 'available_now'
+      ) {
+        const itemOriginalTotal = item.originalTotalPriceBeforeDiscount
+          ? item.originalTotalPriceBeforeDiscount * item.quantity
+          : (item.totalPrice ?? item.price * item.quantity);
+        return total + itemOriginalTotal;
+      }
+      return total;
+    }, 0);
+  };
+
   const calculateDeliveryCharges = () => {
     // Calculate delivery charges for EACH cart item that requires delivery
     let totalDelivery = 0;
     cartItems.forEach(item => {
       if (
-        !item.availabilityStatus ||
-        item.availabilityStatus === 'available_now'
+        (!item.availabilityStatus ||
+          item.availabilityStatus === 'available_now') &&
+        item.maxBookingsPerSlot === -1
       ) {
         totalDelivery += item.deliveryFee || 0;
       }
@@ -2055,6 +2071,27 @@ const Cart: React.FC<CartProps> = ({
                             alignItems: 'center',
                           }}
                         >
+                          {(() => {
+                            const itemOriginalTotal = item.originalTotalPriceBeforeDiscount
+                              ? item.originalTotalPriceBeforeDiscount * item.quantity
+                              : null;
+                            const hasDiscount = itemOriginalTotal && itemOriginalTotal > (item.totalPrice ?? item.price * item.quantity);
+                            if (hasDiscount) {
+                              return (
+                                <Text
+                                  style={{
+                                    fontSize: 13,
+                                    textDecorationLine: 'line-through',
+                                    color: colors.textSecondary || '#757575',
+                                    marginHorizontal: 6,
+                                  }}
+                                >
+                                  {itemOriginalTotal.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
+                                </Text>
+                              );
+                            }
+                            return null;
+                          })()}
                           <Text style={styles.priceValue}>
                             {(
                               item.totalPrice ?? item.price * item.quantity
@@ -2192,10 +2229,36 @@ const Cart: React.FC<CartProps> = ({
             {/* Totals */}
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>{t('subTotal')}</Text>
-              <Text style={styles.summaryValue}>
-                {calculateSubTotal().toFixed(3)}
-                {isRTL ? 'د.ك' : 'KD'}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                {(() => {
+                  const originalSubTotal = calculateOriginalSubTotal();
+                  const currentSubTotal = calculateSubTotal();
+                  if (originalSubTotal - currentSubTotal > 0.005) {
+                    return (
+                      <Text
+                        style={[
+                          styles.summaryValue,
+                          {
+                            textDecorationLine: 'line-through',
+                            color: colors.textSecondary || '#757575',
+                            marginRight: isRTL ? 0 : 8,
+                            marginLeft: isRTL ? 8 : 0,
+                            fontSize: 13,
+                          },
+                        ]}
+                      >
+                        {originalSubTotal.toFixed(3)}
+                        {isRTL ? ' د.ك' : ' KD'}
+                      </Text>
+                    );
+                  }
+                  return null;
+                })()}
+                <Text style={styles.summaryValue}>
+                  {calculateSubTotal().toFixed(3)}
+                  {isRTL ? 'د.ك' : 'KD'}
+                </Text>
+              </View>
             </View>
 
             <View style={styles.summaryRow}>
@@ -2210,7 +2273,7 @@ const Cart: React.FC<CartProps> = ({
             {appliedCoupon && couponDiscount > 0 && (
               <View style={styles.discountRow}>
                 <Text style={styles.discountLabel}>
-                  {isRTL ? 'خصم' : 'Discount'} ({appliedCoupon.code})
+                  {isRTL ? 'خصم الكوبون' : 'Coupon Discount'} ({appliedCoupon.code})
                 </Text>
                 <Text style={styles.discountValue}>
                   - {isRTL ? ' د.ك ' : 'KD'} {couponDiscount.toFixed(3)}

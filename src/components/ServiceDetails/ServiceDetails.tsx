@@ -533,6 +533,33 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
     return Math.round((total + Number.EPSILON) * 100) / 100;
   };
 
+  const calculateOriginalTotalPrice = () => {
+    if (!service) return 0;
+    let total = Number(service.price) || 0;
+    // Add custom input option prices
+    service.customInputs?.forEach((input: any) => {
+      const inputId = input._id || input.label;
+      const sel = customInputSelections[inputId];
+      if (input.type === 'radio-single' && typeof sel === 'number') {
+        const price = Number(input.optionPrices?.[sel] ?? 0);
+        if (price > 0) total += price;
+      } else if (input.type === 'radio-multiple' && Array.isArray(sel)) {
+        (sel as number[]).forEach((idx: number) => {
+          const price = Number(input.optionPrices?.[idx] ?? 0);
+          if (price > 0) total += price;
+        });
+      } else if (
+        input.type === 'restaurant-menu' &&
+        sel &&
+        typeof sel === 'object' &&
+        !Array.isArray(sel)
+      ) {
+        total += menuSurcharge(input, sel);
+      }
+    });
+    return Math.round((total + Number.EPSILON) * 100) / 100;
+  };
+
   const totalPrice = useMemo(
     () => calculateTotalPrice(),
     [service, customInputSelections],
@@ -2932,6 +2959,8 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                   } => v !== null,
                 );
 
+              const computedOriginalTotalPrice = calculateOriginalTotalPrice();
+
               const cartItem: CartItem = {
                 _id: `${service._id}_${Date.now()}`,
                 serviceId: service._id,
@@ -2958,6 +2987,8 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                 availabilityStatus: service.availabilityStatus,
                 maxBookingsPerSlot: service.maxBookingsPerSlot, // Pass maxBookingsPerSlot to cart
                 deliveryFee: service.deliveryFee || 0, // Pass delivery fee from service
+                originalPriceBeforeDiscount: service.price,
+                originalTotalPriceBeforeDiscount: computedOriginalTotalPrice,
               };
 
               if (editCartItemId) {
@@ -2966,7 +2997,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                   selectedDate,
                   selectedTime,
                   customInputs: selectedCustomInputs.filter(
-                    v => v !== null && v !== undefined,
+                     v => v !== null && v !== undefined,
                   ),
                   totalPrice: computedTotalPrice,
                   price: basePrice,
@@ -2974,6 +3005,8 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                     start: slotStart,
                     end: slotEnd,
                   },
+                  originalPriceBeforeDiscount: service.price,
+                  originalTotalPriceBeforeDiscount: computedOriginalTotalPrice,
                 });
 
                 if (onBack) {

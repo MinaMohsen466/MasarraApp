@@ -43,6 +43,8 @@ export type CartItem = {
   packageName?: string; // Package name in English
   packageNameAr?: string; // Package name in Arabic
   deliveryFee?: number; // Delivery fee from service
+  originalPriceBeforeDiscount?: number; // Price before discount
+  originalTotalPriceBeforeDiscount?: number; // Total price before discount including options
 };
 
 // In-memory cache to avoid reading from AsyncStorage repeatedly

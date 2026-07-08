@@ -145,6 +145,11 @@ function AppContent() {
     setCurrentRoute(route);
   }, [currentRoute]);
 
+  // Automatically show bottom navigation when the route changes to prevent stuck hidden state
+  useEffect(() => {
+    setShowBottomNav(true);
+  }, [currentRoute]);
+
   // Register navigation handler
   useEffect(() => {
     registerNavigationHandler(handleNavigation);
