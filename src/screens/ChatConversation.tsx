@@ -1,3 +1,4 @@
+/* eslint-disable no-console, @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
@@ -11,6 +12,8 @@ import {
   Alert,
   Dimensions,
   Platform,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
 import {
   SafeAreaView,
@@ -50,9 +53,21 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const flatListRef = useRef<FlatList>(null);
-  const typingTimeoutRef = useRef<any>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const screenWidth = Dimensions.get('window').width;
   const isTablet = screenWidth >= 600;
+
+  const markMessagesAsRead = useCallback(async (token: string, targetChatId: string) => {
+    try {
+      await fetch(`${API_URL}/chats/${targetChatId}/read`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch { }
+  }, []);
 
   // Define loadMessages first with useCallback
   const loadMessages = useCallback(
@@ -163,21 +178,21 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
           },
         );
 
-        let messages: any[] = [];
+        let chatMessages: any[] = [];
         if (fullChatResponse.ok) {
           const fullChatData = await fullChatResponse.json();
-          messages =
+          chatMessages =
             fullChatData.data?.messages ||
             fullChatData.messages ||
             adminChat.messages ||
             [];
         } else {
           // Fallback to messages from list if separate fetch fails
-          messages = adminChat.messages || [];
+          chatMessages = adminChat.messages || [];
         }
 
         // Format messages with correct isMe flag
-        const messagesWithFlag = messages.map((msg: any, index: number) => {
+        const messagesWithFlag = chatMessages.map((msg: any, index: number) => {
           const senderId = msg.sender?._id || msg.sender;
           const messageIsMe = userId ? senderId === userId : false;
           return {
@@ -196,7 +211,7 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
         setTimeout(() => {
           flatListRef.current?.scrollToEnd({ animated: false });
         }, 100);
-      } catch (error) {
+      } catch {
         // Silent error - avoid console spam
       } finally {
         if (!silent) {
@@ -204,7 +219,7 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
         }
       }
     },
-    [currentUserId],
+    [currentUserId, markMessagesAsRead],
   );
 
   // Load messages on mount
@@ -214,103 +229,106 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
 
   // Socket.IO event listeners
   useEffect(() => {
-    if (!socket || !isConnected || !chatId) return;
+    if (socket && isConnected && chatId) {
+      // Listen for new messages
+      const handleNewMessage = (data: {
+        chatId: string;
+        message: {
+          _id?: string;
+          sender?: { _id: string; name?: string } | string;
+          content?: string;
+          message?: string;
+          timestamp?: string;
+          createdAt?: string;
+        };
+      }) => {
+        const { chatId: messageChatId, message } = data;
 
-    // Listen for new messages
-    const handleNewMessage = (data: any) => {
-      const { chatId: messageChatId, message } = data;
+        // Don't add our own messages (they're added optimistically)
+        const senderId = typeof message.sender === 'object' ? message.sender?._id : message.sender;
+        if (senderId === currentUserId) return;
 
-      // Don't add our own messages (they're added optimistically)
-      if (message?.sender === currentUserId) return;
-      if (message?.sender?._id === currentUserId) return;
+        // If this is the active conversation, add the message directly
+        if (messageChatId === chatId && message) {
+          const messageId = message._id || `received-${Date.now()}`;
 
-      // If this is the active conversation, add the message directly
-      if (messageChatId === chatId && message) {
-        const messageId = message._id || `received-${Date.now()}`;
+          // Check if message already exists to prevent duplicates
+          setMessages(prev => {
+            const exists = prev.some(m => m._id === messageId);
+            if (exists) return prev;
 
-        // Check if message already exists to prevent duplicates
-        setMessages(prev => {
-          const exists = prev.some(m => m._id === messageId);
-          if (exists) return prev;
+            const newMessage: Message = {
+              _id: messageId,
+              sender: typeof message.sender === 'object'
+                ? { _id: message.sender._id, name: message.sender.name || 'Admin' }
+                : { _id: String(message.sender || ''), name: 'Admin' },
+              message: message.content || message.message || '',
+              createdAt:
+                message.timestamp ||
+                message.createdAt ||
+                new Date().toISOString(),
+              isMe: false,
+            };
+            return [...prev, newMessage];
+          });
 
-          const newMessage: Message = {
-            _id: messageId,
-            sender: message.sender || { _id: '', name: 'Admin' },
-            message: message.content || message.message || '',
-            createdAt:
-              message.timestamp ||
-              message.createdAt ||
-              new Date().toISOString(),
-            isMe: false,
-          };
-          return [...prev, newMessage];
-        });
-
-        // Scroll to bottom if already at bottom
-        if (isAtBottom) {
-          setTimeout(() => {
-            flatListRef.current?.scrollToEnd({ animated: true });
-          }, 100);
+          // Scroll to bottom if already at bottom
+          if (isAtBottom) {
+            setTimeout(() => {
+              flatListRef.current?.scrollToEnd({ animated: true });
+            }, 100);
+          }
         }
-      }
-    };
+      };
 
-    // Listen for typing indicators
-    const handleUserTyping = ({ userId, isTyping: typing }: any) => {
-      if (userId === currentUserId) return; // Ignore our own typing
-      setIsTyping(typing);
+      // Listen for typing indicators
+      const handleUserTyping = ({ userId, isTyping: typing }: { userId: string; isTyping: boolean }) => {
+        if (userId === currentUserId) return; // Ignore our own typing
+        setIsTyping(typing);
 
-      // Clear typing indicator after 3 seconds
-      if (typing) {
-        if (typingTimeoutRef.current) {
-          clearTimeout(typingTimeoutRef.current);
+        // Clear typing indicator after 3 seconds
+        if (typing) {
+          if (typingTimeoutRef.current) {
+            clearTimeout(typingTimeoutRef.current);
+          }
+          typingTimeoutRef.current = setTimeout(() => {
+            setIsTyping(false);
+          }, 3000);
         }
-        typingTimeoutRef.current = setTimeout(() => {
-          setIsTyping(false);
-        }, 3000);
-      }
-    };
+      };
 
-    // Listen for messages read
-    const handleMessagesRead = ({ chatId: readChatId }: any) => {
-      if (readChatId === chatId) {
-        loadMessages(true);
-      }
-    };
+      // Listen for messages read
+      const handleMessagesRead = ({ chatId: readChatId }: { chatId: string }) => {
+        if (readChatId === chatId) {
+          loadMessages(true);
+        }
+      };
 
-    socket.on('new_message', handleNewMessage);
-    socket.on('user_typing', handleUserTyping);
-    socket.on('messages_read', handleMessagesRead);
+      socket.on('new_message', handleNewMessage);
+      socket.on('user_typing', handleUserTyping);
+      socket.on('messages_read', handleMessagesRead);
 
-    return () => {
-      socket.off('new_message', handleNewMessage);
-      socket.off('user_typing', handleUserTyping);
-      socket.off('messages_read', handleMessagesRead);
-    };
-  }, [socket, isConnected, chatId, currentUserId, isAtBottom]);
+      return () => {
+        socket.off('new_message', handleNewMessage);
+        socket.off('user_typing', handleUserTyping);
+        socket.off('messages_read', handleMessagesRead);
+      };
+    }
+    return () => {};
+  }, [socket, isConnected, chatId, currentUserId, isAtBottom, loadMessages, markMessagesAsRead]);
 
   // Join/leave chat room
   useEffect(() => {
-    if (!socket || !isConnected || !chatId) return;
+    if (socket && isConnected && chatId) {
+      joinChat(chatId);
 
-    joinChat(chatId);
-
-    return () => {
-      leaveChat(chatId);
-    };
+      return () => {
+        leaveChat(chatId);
+      };
+    }
+    return () => {};
   }, [socket, isConnected, chatId, joinChat, leaveChat]);
 
-  const markMessagesAsRead = async (token: string, chatId: string) => {
-    try {
-      await fetch(`${API_URL}/chats/${chatId}/read`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-    } catch { }
-  };
 
   const handleTyping = (text: string) => {
     setMessageText(text);
@@ -415,7 +433,7 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
     return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
   };
 
-  const handleScroll = (event: any) => {
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
     const paddingToBottom = 20;
     const isBottom =
@@ -491,6 +509,7 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
         <View
           style={[
             styles.messagesContainer,
+            // eslint-disable-next-line react-native/no-inline-styles
             { paddingBottom: isTablet ? 120 : 100 },
           ]}
         >
@@ -511,10 +530,7 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
               data={messages}
               renderItem={renderMessage}
               keyExtractor={(item, index) => `${item._id}-${index}`}
-              contentContainerStyle={[
-                styles.messagesContent,
-                { paddingBottom: 16 },
-              ]}
+              contentContainerStyle={styles.messagesContent}
               showsVerticalScrollIndicator={false}
               onScroll={handleScroll}
               scrollEventThrottle={16}
@@ -522,7 +538,7 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
                 isTyping ? (
                   <View style={styles.typingIndicator}>
                     <View style={styles.typingDot} />
-                    <View style={[styles.typingDot, { marginHorizontal: 4 }]} />
+                    <View style={[styles.typingDot, styles.typingDotSpacer]} />
                     <View style={styles.typingDot} />
                     <Text style={styles.typingText}>
                       {isRTL ? 'يكتب...' : 'Typing...'}
@@ -634,12 +650,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginLeft: 8,
   },
-  headerAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    marginRight: 12,
-  },
   headerAvatarPlaceholder: {
     width: 36,
     height: 36,
@@ -746,6 +756,9 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: '#00695C',
+  },
+  typingDotSpacer: {
+    marginHorizontal: 4,
   },
   typingText: {
     marginLeft: 8,

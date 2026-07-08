@@ -6,7 +6,7 @@ export const useVendors = () => {
     queryKey: ['vendors'],
     queryFn: fetchVendors,
     staleTime: 15 * 60 * 1000, // 15 minutes - vendors data doesn't change frequently
-    cacheTime: 30 * 60 * 1000, // 30 minutes cache
+    gcTime: 30 * 60 * 1000, // 30 minutes cache
     retry: 2,
     refetchOnMount: false, // Use cached data on mount
     refetchOnWindowFocus: false,

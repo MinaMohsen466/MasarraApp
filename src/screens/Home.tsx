@@ -32,6 +32,7 @@ interface HomeProps {
   isBannerDismissed?: boolean;
   setIsBannerDismissed?: (val: boolean) => void;
   initialShowSignup?: boolean;
+  navigationKey?: number;
 }
 
 const Home: React.FC<HomeProps> = ({
@@ -42,6 +43,7 @@ const Home: React.FC<HomeProps> = ({
   isBannerDismissed,
   setIsBannerDismissed,
   initialShowSignup,
+  navigationKey,
 }) => {
   const { isRTL, t } = useLanguage();
   const { user } = useAuth();
@@ -183,6 +185,7 @@ const Home: React.FC<HomeProps> = ({
         onSelectService={(serviceId: string) =>
           onSelectService && onSelectService(serviceId)
         }
+        navigationKey={navigationKey}
       />
     );
   }

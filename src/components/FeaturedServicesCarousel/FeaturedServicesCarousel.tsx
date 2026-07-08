@@ -56,20 +56,21 @@ const FeaturedServicesCarousel: React.FC<FeaturedServicesCarouselProps> = ({
 
   // Auto-scroll effect
   useEffect(() => {
-    if (featuredServices.length <= 1) return;
-
-    const interval = setInterval(() => {
-      setCurrentIndex(prevIndex => {
-        const nextIndex = (prevIndex + 1) % featuredServices.length;
-        flatListRef.current?.scrollToIndex({
-          index: nextIndex,
-          animated: true,
+    if (featuredServices.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentIndex(prevIndex => {
+          const nextIndex = (prevIndex + 1) % featuredServices.length;
+          flatListRef.current?.scrollToIndex({
+            index: nextIndex,
+            animated: true,
+          });
+          return nextIndex;
         });
-        return nextIndex;
-      });
-    }, 5000); // Change slide every 5 seconds
+      }, 5000); // Change slide every 5 seconds
 
-    return () => clearInterval(interval);
+      return () => clearInterval(interval);
+    }
+    return () => {};
   }, [featuredServices.length]);
 
   if (isLoading) {
@@ -157,7 +158,7 @@ const FeaturedServicesCarousel: React.FC<FeaturedServicesCarouselProps> = ({
           );
           setCurrentIndex(index);
         }}
-        getItemLayout={(data, index) => ({
+        getItemLayout={(_, index) => ({
           length: SCREEN_WIDTH,
           offset: SCREEN_WIDTH * index,
           index,

@@ -7,7 +7,6 @@ import React, {
   useRef,
 } from 'react';
 import { io, Socket } from 'socket.io-client';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
 import { API_BASE_URL } from '../config/api.config';
 
@@ -41,7 +40,7 @@ interface SocketProviderProps {
 export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const { user } = useAuth();
+  const { user, token: authToken } = useAuth();
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
@@ -53,15 +52,13 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         setSocket(null);
         setIsConnected(false);
       }
-      return;
+      return undefined;
     }
 
     // Initialize socket connection
-    const initSocket = async () => {
+    const initSocket = () => {
       try {
-        const token = await AsyncStorage.getItem('userToken');
-
-        if (!token) {
+        if (!authToken) {
           return;
         }
 
@@ -70,7 +67,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
         const newSocket = io(serverUrl, {
           auth: {
-            token,
+            token: authToken,
           },
           transports: ['polling', 'websocket'], // polling first for React Native
           reconnection: true,
@@ -85,21 +82,21 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
           setIsConnected(true);
         });
 
-        newSocket.on('disconnect', reason => {
+        newSocket.on('disconnect', _reason => {
           setIsConnected(false);
         });
 
-        newSocket.on('connect_error', error => {
+        newSocket.on('connect_error', _error => {
           setIsConnected(false);
         });
 
         newSocket.on('reconnect_failed', () => {});
 
-        newSocket.on('error', error => {});
+        newSocket.on('error', _error => {});
 
         socketRef.current = newSocket;
         setSocket(newSocket);
-      } catch (error) {}
+      } catch {}
     };
 
     initSocket();
@@ -111,7 +108,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         socketRef.current = null;
       }
     };
-  }, [user]);
+  }, [user, authToken]);
 
   // Join a chat room
   const joinChat = useCallback(

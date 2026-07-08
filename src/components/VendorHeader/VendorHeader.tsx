@@ -4,7 +4,6 @@ import { styles } from './styles';
 import { Vendor } from '../../services/vendorsApi';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { API_BASE_URL } from '../../config/api.config';
-import { colors } from '../../constants/colors';
 
 interface Occasion {
   _id: string;

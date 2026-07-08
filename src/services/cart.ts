@@ -202,7 +202,7 @@ export async function addToCart(item: CartItem): Promise<CartItem[]> {
     // Generate unique ID for the cart item
     const cartId = `cart_${Date.now()}_${Math.random()
       .toString(36)
-      .substr(2, 9)}`;
+      .substring(2, 11)}`;
 
     const cartItem: CartItem = {
       ...item,

@@ -8,7 +8,6 @@ import {
   FlatList,
   Clipboard,
   StatusBar,
-  Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -25,6 +24,7 @@ import { fetchOccasions, Occasion, getUserDashboardBookings } from '../services/
 import { getQRCodeByBooking, getQRCodeSettings } from '../services/qrCodeApi';
 import { useAuth } from '../contexts/AuthContext';
 import { QRFormModal } from '../components/QRCodeCard/QRFormModal';
+import { GuestListModal } from '../components/MyEvents/GuestListModal';
 
 interface MyEventsProps {
   onBack?: () => void;
@@ -1022,119 +1022,20 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
           )}
 
           {/* Guest List Modal */}
-          <Modal
+          <GuestListModal
             visible={guestListModalVisible}
-            transparent={true}
-            animationType="slide"
-            onRequestClose={() => {
+            isRTL={isRTL}
+            selectedBookingForGuests={selectedBookingForGuests}
+            loadingGuests={loadingGuests}
+            guestsData={guestsData}
+            user={user}
+            onClose={() => {
               setGuestListModalVisible(false);
               setSelectedBookingForGuests(null);
             }}
-          >
-            <View style={styles.guestPageContainer}>
-              <TouchableOpacity
-                style={{ flex: 1 }}
-                activeOpacity={1}
-                onPress={() => {
-                  setGuestListModalVisible(false);
-                  setSelectedBookingForGuests(null);
-                }}
-              />
-              <View style={styles.guestPageContent}>
-                <View style={styles.guestPageHeader}>
-                  <TouchableOpacity
-                    style={styles.guestPageBackButton}
-                    onPress={() => {
-                      setGuestListModalVisible(false);
-                      setSelectedBookingForGuests(null);
-                    }}
-                    activeOpacity={0.8}
-                  >
-                    <Icon
-                      name={isRTL ? 'chevron-forward' : 'chevron-back'}
-                      size={24}
-                      color={colors.primaryDark}
-                    />
-                  </TouchableOpacity>
-                  <Text style={styles.guestPageTitle}>
-                    {isRTL ? 'قائمة الضيوف' : 'Guest List'}
-                  </Text>
-                  <View style={{ width: 40 }} />
-                </View>
-
-                <ScrollView style={styles.guestPageScroll} showsVerticalScrollIndicator={false}>
-                  {selectedBookingForGuests && (
-                    <>
-                      {loadingGuests[selectedBookingForGuests._id] ? (
-                        <View style={styles.loadingContainer}>
-                          <ActivityIndicator size="large" color={colors.primary} />
-                          <Text style={styles.loadingText}>
-                            {isRTL ? 'جاري التحميل...' : 'Loading...'}
-                          </Text>
-                        </View>
-                      ) : !guestsData[selectedBookingForGuests._id] || guestsData[selectedBookingForGuests._id].length === 0 ? (
-                        <View style={styles.emptyGuestList}>
-                          <Text style={styles.emptyGuestText}>
-                            {isRTL ? 'لا يوجد ضيوف' : 'No guests'}
-                          </Text>
-                        </View>
-                      ) : (
-                        <View style={{ backgroundColor: '#ffffff', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 4 }}>
-                          {guestsData[selectedBookingForGuests._id].map((guest: any) => {
-                            const isCurrentUser = guest.user?._id
-                              ? guest.user._id === user?.id || guest.user._id === user?._id
-                              : guest.user === user?.id || guest.user === user?._id;
-
-                            const bookingCustomerId = selectedBookingForGuests.customer?._id || selectedBookingForGuests.customer;
-                            const canRemove =
-                              user?.role === 'admin' ||
-                              (bookingCustomerId && (bookingCustomerId === user?.id || bookingCustomerId === user?._id));
-
-                            return (
-                              <View key={guest._id} style={[styles.guestListItem, isRTL && { flexDirection: 'row-reverse' }]}>
-                                <View style={[{ flex: 1, alignItems: 'flex-start' }, isRTL && { alignItems: 'flex-end' }]}>
-                                  <Text style={[styles.guestListName, isRTL && { textAlign: 'right' }]}>
-                                    {guest.name || guest.user?.name || (isRTL ? 'ضيف' : 'Guest')}
-                                    <Text style={styles.guestListSubText}>
-                                      {guest.phone ? ` (${guest.phone})` : guest.email || guest.user?.email ? ` (${guest.email || guest.user?.email})` : ''}
-                                    </Text>
-                                  </Text>
-                                  <Text style={[styles.guestListMetaText, isRTL && { textAlign: 'right' }]}>
-                                    {`#${String(guest._id).slice(-6)} • `}
-                                    {guest.joinedAt ? new Date(guest.joinedAt).toLocaleString(isRTL ? 'ar-EG' : 'en-US', { dateStyle: 'short', timeStyle: 'short' }) : ''}
-                                  </Text>
-                                </View>
-                                <View style={[{ flexDirection: 'row', gap: 12, alignItems: 'center' }, isRTL && { flexDirection: 'row-reverse' }]}>
-                                  {canRemove && (
-                                    <TouchableOpacity
-                                      style={styles.guestActionIconButton}
-                                      onPress={() => handleRemoveGuest(guest._id, selectedBookingForGuests._id)}
-                                      activeOpacity={0.7}
-                                    >
-                                      <Icon name="trash-outline" size={18} color="#ef4444" />
-                                    </TouchableOpacity>
-                                  )}
-                                  {isCurrentUser && (
-                                    <TouchableOpacity
-                                      style={styles.guestActionIconButton}
-                                      onPress={() => handleLeaveGuest(selectedBookingForGuests._id)}
-                                      activeOpacity={0.7}
-                                    >
-                                      <Icon name="log-out-outline" size={18} color="#f97316" />
-                                    </TouchableOpacity>
-                                  )}
-                                </View>
-                              </View>
-                            );
-                          })}
-                        </View>
-                      )}
-                    </>
-                  )}
-                </ScrollView>
-              </View>
-            </View>
-          </Modal>
+            onRemoveGuest={handleRemoveGuest}
+            onLeaveGuest={handleLeaveGuest}
+          />
         </View>
       </View>
     </>

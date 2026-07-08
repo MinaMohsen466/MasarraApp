@@ -120,7 +120,7 @@ const Services: React.FC<ServicesProps> = ({ onSelectService, onViewAll }) => {
                 source={{ uri: imageUrl }}
                 style={styles.serviceImage}
                 resizeMode="cover"
-                onError={e => {}}
+                onError={() => {}}
                 onLoad={() => {}}
               />
               {hasDiscount && discountPercent > 0 && !item.hidePrice && (

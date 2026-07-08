@@ -266,6 +266,27 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     [],
   );
 
+  const markAsRead = useCallback(async (id: string) => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (token) {
+        await markServerNotificationRead(token, id);
+      }
+    } catch (err) {
+      console.error('[NotificationContext] Failed to mark read on server:', err);
+    }
+    setNotifications(prev => {
+      const updated = prev.map(n => (n.id === id ? { ...n, read: true } : n));
+      AsyncStorage.setItem(
+        '@notifications_history',
+        JSON.stringify(updated),
+      ).catch(err =>
+        console.error('Failed to save updated notifications:', err),
+      );
+      return updated;
+    });
+  }, []);
+
   const handleNotificationPress = useCallback(
     async (notification: NotificationItem) => {
       try {
@@ -292,7 +313,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
         console.error('Error handling notification press:', err);
       }
     },
-    [navHandler],
+    [navHandler, markAsRead],
   );
 
   const showTopBanner = useCallback(
@@ -445,26 +466,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     }
   }, []);
 
-  const markAsRead = useCallback(async (id: string) => {
-    try {
-      const token = await AsyncStorage.getItem('userToken');
-      if (token) {
-        await markServerNotificationRead(token, id);
-      }
-    } catch (err) {
-      console.error('[NotificationContext] Failed to mark read on server:', err);
-    }
-    setNotifications(prev => {
-      const updated = prev.map(n => (n.id === id ? { ...n, read: true } : n));
-      AsyncStorage.setItem(
-        '@notifications_history',
-        JSON.stringify(updated),
-      ).catch(err =>
-        console.error('Failed to save updated notifications:', err),
-      );
-      return updated;
-    });
-  }, []);
+
 
   const markAllAsRead = useCallback(async () => {
     try {

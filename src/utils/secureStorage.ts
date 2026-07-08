@@ -4,10 +4,88 @@ import * as Keychain from 'react-native-keychain';
 const TOKEN_KEY = 'userToken';
 const SERVICE_NAME = 'com.masarra.usertoken';
 
+const USER_DATA_KEY = 'userData';
+const USER_DATA_SERVICE = 'com.masarra.userdata';
+
 // Cache references to the original AsyncStorage methods to prevent infinite recursion loops
 const originalGetItem = AsyncStorage.getItem.bind(AsyncStorage);
 const originalSetItem = AsyncStorage.setItem.bind(AsyncStorage);
 const originalRemoveItem = AsyncStorage.removeItem.bind(AsyncStorage);
+
+/**
+ * Save user data securely using Keychain
+ */
+export const setSecureUserData = async (userDataJson: string): Promise<boolean> => {
+  try {
+    await Keychain.setGenericPassword('userData', userDataJson, {
+      service: USER_DATA_SERVICE,
+      accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+    });
+    await originalRemoveItem(USER_DATA_KEY);
+    return true;
+  } catch (error) {
+    console.warn('Keychain secure user data storage failed, falling back to AsyncStorage:', error);
+    try {
+      await originalSetItem(USER_DATA_KEY, userDataJson);
+      return true;
+    } catch (fsError) {
+      console.error('AsyncStorage fallback failed:', fsError);
+      return false;
+    }
+  }
+};
+
+/**
+ * Retrieve user data securely
+ */
+export const getSecureUserData = async (): Promise<string | null> => {
+  try {
+    const credentials = await Keychain.getGenericPassword({
+      service: USER_DATA_SERVICE,
+    });
+    if (credentials) {
+      return credentials.password;
+    }
+  } catch (error: any) {
+    const errorMsg = error?.message || String(error);
+    console.warn('Reading user data from Keychain failed, checking AsyncStorage fallback:', errorMsg);
+    
+    if (errorMsg.includes('permanently invalidated') || errorMsg.includes('Key permanently invalidated')) {
+      try {
+        await Keychain.resetGenericPassword({ service: USER_DATA_SERVICE });
+        console.log('🔒 Android Keystore healed for User Data: Invalidated key has been reset.');
+      } catch (resetErr) {}
+    }
+  }
+
+  try {
+    return await originalGetItem(USER_DATA_KEY);
+  } catch (fsError) {
+    console.error('AsyncStorage read failed:', fsError);
+    return null;
+  }
+};
+
+/**
+ * Remove user data securely
+ */
+export const removeSecureUserData = async (): Promise<boolean> => {
+  try {
+    await Keychain.resetGenericPassword({
+      service: USER_DATA_SERVICE,
+    });
+    await originalRemoveItem(USER_DATA_KEY);
+    return true;
+  } catch (error) {
+    console.error('Error resetting secure user data:', error);
+    try {
+      await originalRemoveItem(USER_DATA_KEY);
+      return true;
+    } catch (fsError) {
+      return false;
+    }
+  }
+};
 
 /**
  * Save token securely using Keychain/Keystore
@@ -90,7 +168,7 @@ export const removeSecureToken = async (): Promise<boolean> => {
 };
 
 /**
- * Globally intercept AsyncStorage methods to route 'userToken' transparently to Keychain.
+ * Globally intercept AsyncStorage methods to route 'userToken' and 'userData' transparently to Keychain.
  * This guarantees backwards compatibility with all files reading/writing 'userToken' directly
  * without requiring refactoring across dozens of source files.
  */
@@ -98,6 +176,9 @@ export const initSecureStorage = () => {
   AsyncStorage.getItem = async (key: string, ...args: any[]) => {
     if (key === TOKEN_KEY) {
       return await getSecureToken();
+    }
+    if (key === USER_DATA_KEY) {
+      return await getSecureUserData();
     }
     return await originalGetItem(key, ...args);
   };
@@ -107,12 +188,20 @@ export const initSecureStorage = () => {
       const success = await setSecureToken(value);
       return success ? undefined : undefined;
     }
+    if (key === USER_DATA_KEY) {
+      const success = await setSecureUserData(value);
+      return success ? undefined : undefined;
+    }
     return await originalSetItem(key, value, ...args);
   };
 
   AsyncStorage.removeItem = async (key: string, ...args: any[]) => {
     if (key === TOKEN_KEY) {
       const success = await removeSecureToken();
+      return success ? undefined : undefined;
+    }
+    if (key === USER_DATA_KEY) {
+      const success = await removeSecureUserData();
       return success ? undefined : undefined;
     }
     return await originalRemoveItem(key, ...args);

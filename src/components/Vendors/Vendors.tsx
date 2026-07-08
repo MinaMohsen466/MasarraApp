@@ -117,7 +117,7 @@ const Vendors: React.FC<VendorsProps> = ({ onSelectVendor, onBack }) => {
       {!isLoading && !error && (
         <FlatList
           key={String(numColumns)}
-          data={vendors || []}
+          data={(vendors as Vendor[]) || []}
           renderItem={renderVendorCard}
           keyExtractor={(item, index) =>
             item && item._id ? item._id : String(index)

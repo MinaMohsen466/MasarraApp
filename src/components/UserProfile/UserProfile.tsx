@@ -41,6 +41,7 @@ interface UserProfileProps {
   userPhone?: string;
   userEmail?: string;
   profilePicture?: string;
+  navigationKey?: number;
 }
 
 const UserProfile: React.FC<UserProfileProps> = ({
@@ -52,6 +53,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
   userPhone: _userPhone,
   userEmail: _userEmail,
   profilePicture,
+  navigationKey,
 }) => {
   const { isRTL } = useLanguage();
   const { user, logout, token } = useAuth();
@@ -127,7 +129,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
     checkOpenEdit();
     checkOpenOrderHistory();
     checkOpenMyEvents();
-  }, []);
+  }, [navigationKey]);
 
   useEffect(() => {
     const loadDefaultAddress = async () => {

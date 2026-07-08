@@ -1,8 +1,10 @@
+/* eslint-disable no-console, react-hooks/exhaustive-deps */
 import React, {
   createContext,
   useContext,
   useState,
   useEffect,
+  useCallback,
   ReactNode,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -12,7 +14,11 @@ import {
   updateUserProfileWithImage,
   changePassword as apiChangePassword,
   API_BASE_URL,
+  clearApiCaches,
 } from '../services/api';
+import { clearUserCart, clearCartCache } from '../services/cart';
+import { clearWishlist } from '../services/wishlist';
+import { registerAuthCallbacks } from '../utils/apiInterceptor';
 
 interface AuthContextType {
   user: User | null;
@@ -105,7 +111,7 @@ export const AuthProvider: React.FC<{
       } else {
         console.log('❌ No cached user data found');
       }
-    } catch (error) {
+    } catch {
     } finally {
       setIsLoading(false);
     }
@@ -126,12 +132,10 @@ export const AuthProvider: React.FC<{
     }
   };
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
-      // Import clearUserCart to clear cart data completely
-      const { clearUserCart } = require('../services/cart');
-      // Import clearWishlist to clear wishlist data
-      const { clearWishlist } = require('../services/wishlist');
+      // Clear memory API caches
+      clearApiCaches();
 
       // Clear user cart data first (before clearing user session)
       await clearUserCart();
@@ -148,11 +152,26 @@ export const AuthProvider: React.FC<{
       // call optional onLogout callback (e.g. to navigate to home)
       try {
         if (onLogout) onLogout();
-      } catch (err) {}
+      } catch {}
     } catch (error) {
       throw error;
     }
-  };
+  }, [onLogout]);
+
+  // Register API Interceptor callbacks
+  useEffect(() => {
+    registerAuthCallbacks(
+      (newToken, freshUser) => {
+        setToken(newToken);
+        if (freshUser) {
+          setUser({ ...freshUser });
+        }
+      },
+      () => {
+        logout();
+      }
+    );
+  }, [logout]);
 
   const updateUserProfile = async (
     name: string,
@@ -206,14 +225,13 @@ export const AuthProvider: React.FC<{
           method: 'POST',
           credentials: 'include',
         });
-      } catch (err: any) {
+      } catch {
         // non-fatal: server logout may fail if running on a different host in dev
         // Silent error handling
       }
 
       // Clear client state
-      const { clearCartCache } = require('../services/cart');
-      const { clearWishlist } = require('../services/wishlist');
+      clearApiCaches();
 
       await removeSecureToken();
       await AsyncStorage.removeItem('userData');
@@ -229,7 +247,7 @@ export const AuthProvider: React.FC<{
       // navigate to home if provided
       try {
         if (onLogout) onLogout();
-      } catch (err) {}
+      } catch {}
     } catch (error) {
       throw error;
     }

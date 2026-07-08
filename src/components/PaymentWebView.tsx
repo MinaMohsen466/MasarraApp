@@ -1,3 +1,4 @@
+/* eslint-disable no-console, @typescript-eslint/no-explicit-any */
 import React, { useState, useRef } from 'react';
 import {
   View,
@@ -136,7 +137,7 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
           const [key, value] = pair.split('=');
           if (key) params[key] = decodeURIComponent(value || '');
         });
-        const paymentId = params['paymentId'] || params['Id'] || null;
+        const paymentId = params.paymentId || params.Id || null;
 
         if (paymentId) {
           console.log('Payment ID extracted:', paymentId);
@@ -289,7 +290,7 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
                       } else if (message.type === 'PAYMENT_ERROR') {
                         onPaymentError(message.message || 'Payment failed');
                       }
-                    } catch (e) {
+                    } catch {
                       console.log(
                         'Non-JSON message from WebView:',
                         event.nativeEvent.data,
@@ -303,7 +304,7 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
                   mixedContentMode="compatibility"
                   allowsInlineMediaPlayback={true}
                   mediaPlaybackRequiresUserAction={false}
-                  originWhitelist={['*']}
+                  originWhitelist={['https://*', 'http://*']}
                   setSupportMultipleWindows={false}
                   thirdPartyCookiesEnabled={true}
                   sharedCookiesEnabled={true}
