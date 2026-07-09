@@ -2989,6 +2989,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                 deliveryFee: service.deliveryFee || 0, // Pass delivery fee from service
                 originalPriceBeforeDiscount: service.price,
                 originalTotalPriceBeforeDiscount: computedOriginalTotalPrice,
+                addressRequired: service.addressRequired || false,
               };
 
               if (editCartItemId) {
@@ -3007,6 +3008,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                   },
                   originalPriceBeforeDiscount: service.price,
                   originalTotalPriceBeforeDiscount: computedOriginalTotalPrice,
+                  addressRequired: service.addressRequired || false,
                 });
 
                 if (onBack) {

@@ -1,3 +1,5 @@
+/* eslint-disable no-console */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL, checkTimeSlotAvailability } from './api';
 import { getSecureToken } from '../utils/secureStorage';
@@ -45,6 +47,7 @@ export type CartItem = {
   deliveryFee?: number; // Delivery fee from service
   originalPriceBeforeDiscount?: number; // Price before discount
   originalTotalPriceBeforeDiscount?: number; // Total price before discount including options
+  addressRequired?: boolean; // If delivery address is required for this service
 };
 
 // In-memory cache to avoid reading from AsyncStorage repeatedly
@@ -69,7 +72,7 @@ function notifyCartChange(): void {
   cartChangeListeners.forEach(listener => {
     try {
       listener();
-    } catch (error) {
+    } catch {
       // Error handling for cart change listener
     }
   });
@@ -79,7 +82,7 @@ function notifyCartChange(): void {
 async function getAuthToken(): Promise<string | null> {
   try {
     return await getSecureToken();
-  } catch (e) {
+  } catch {
     return null;
   }
 }
@@ -103,7 +106,7 @@ async function getUserId(): Promise<string> {
           await AsyncStorage.setItem('userId', id);
           return id;
         }
-      } catch (parseError) {
+      } catch {
         // Failed to parse userData
       }
     }
@@ -117,7 +120,7 @@ async function getUserId(): Promise<string> {
 
     // User appears to be logged in but no userId found - this is unexpected
     return 'guest';
-  } catch (e) {
+  } catch {
     return 'guest';
   }
 }
@@ -160,7 +163,7 @@ export async function getCart(): Promise<CartItem[]> {
     cacheUserId = userId;
 
     return items;
-  } catch (e) {
+  } catch {
     return [];
   }
 }
@@ -178,7 +181,7 @@ async function saveCart(items: CartItem[]): Promise<void> {
 
     // Notify all listeners that cart has changed
     notifyCartChange();
-  } catch (e) {
+  } catch {
     throw new Error('Failed to save cart');
   }
 }
@@ -233,8 +236,8 @@ export async function addToCart(item: CartItem): Promise<CartItem[]> {
 
     await saveCart(currentCart);
     return currentCart;
-  } catch (e) {
-    throw e;
+  } catch {
+    throw new Error('Failed to add to cart');
   }
 }
 
@@ -245,8 +248,8 @@ export async function removeFromCart(cartItemId: string): Promise<CartItem[]> {
     const updatedCart = currentCart.filter(item => item._id !== cartItemId);
     await saveCart(updatedCart);
     return updatedCart;
-  } catch (e) {
-    throw e;
+  } catch {
+    throw new Error('Failed to remove from cart');
   }
 }
 
@@ -323,8 +326,8 @@ export async function updateCartItem(
       return currentCart;
     }
     return currentCart;
-  } catch (e) {
-    throw e;
+  } catch {
+    throw new Error('Failed to update cart item');
   }
 }
 
@@ -341,8 +344,8 @@ export async function clearCart(): Promise<CartItem[]> {
     notifyCartChange();
 
     return [];
-  } catch (e) {
-    throw e;
+  } catch {
+    throw new Error('Failed to clear cart');
   }
 }
 
@@ -360,7 +363,7 @@ export async function clearUserCart(): Promise<void> {
     cartCache = null;
     cacheUserId = null;
     notifyCartChange();
-  } catch (e) {
+  } catch {
     // Error clearing user cart
   }
 }
@@ -433,7 +436,7 @@ export async function checkCartAvailability(): Promise<{
         }
 
         return null; // Item is available
-      } catch (error) {
+      } catch {
         return { item, reason: 'Error checking availability' };
       }
     });
@@ -452,8 +455,8 @@ export async function checkCartAvailability(): Promise<{
       available: allAvailable,
       unavailableItems,
     };
-  } catch (e) {
-    throw e;
+  } catch {
+    throw new Error('Failed to check cart availability');
   }
 }
 
@@ -471,8 +474,8 @@ export async function createBookingsFromCart(
   _deliveryCharges: number = 0,
 ): Promise<{
   success: boolean;
-  bookings: any[];
-  errors: any[];
+  bookings: Record<string, any>[];
+  errors: { item: CartItem; error: string }[];
 }> {
   try {
     const token = await getAuthToken();
@@ -481,8 +484,8 @@ export async function createBookingsFromCart(
     }
 
     const cartItems = await getCart();
-    const bookings: any[] = [];
-    const errors: any[] = [];
+    const bookings: Record<string, any>[] = [];
+    const errors: { item: CartItem; error: string }[] = [];
 
     console.log('[createBookingsFromCart] Cart items count:', cartItems.length);
     console.log(
@@ -552,8 +555,8 @@ export async function createBookingsFromCart(
     // Create ONE booking for ALL cart items
     try {
       // Build services and packages arrays
-      const servicesArray: any[] = [];
-      const packagesArray: any[] = [];
+      const servicesArray: Record<string, any>[] = [];
+      const packagesArray: Record<string, any>[] = [];
 
       cartItems.forEach(item => {
         const itemDelivery = item.deliveryFee || 0;
@@ -597,7 +600,7 @@ export async function createBookingsFromCart(
       });
 
       // Calculate total price for the combined booking
-      let combinedTotalPrice = cartItems.reduce((total, item) => {
+      const combinedTotalPrice = cartItems.reduce((total, item) => {
         const itemDelivery = item.deliveryFee || 0;
         return total + (item.totalPrice || item.price) + itemDelivery;
       }, 0);
@@ -605,7 +608,7 @@ export async function createBookingsFromCart(
       // Use the first item's date/time for the booking
       const firstItem = cartItems[0];
 
-      const bookingPayload: any = {
+      const bookingPayload: Record<string, any> = {
         eventDate: firstItem.selectedDate,
         eventTime: firstItem.selectedTime,
         timeSlot: {
@@ -687,13 +690,14 @@ export async function createBookingsFromCart(
           clearDatePickerCacheForService(item.serviceId, item.vendorId);
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as Error;
       console.log(
         '[createBookingsFromCart] Exception for booking:',
-        error.message,
+        err.message,
       );
       cartItems.forEach(item => {
-        errors.push({ item, error: error.message || 'Network error' });
+        errors.push({ item, error: err.message || 'Network error' });
       });
     }
 
@@ -709,7 +713,7 @@ export async function createBookingsFromCart(
       bookings,
       errors,
     };
-  } catch (e) {
-    throw e;
+  } catch {
+    throw new Error('Failed to create bookings from cart');
   }
 }

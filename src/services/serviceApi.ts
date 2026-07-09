@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { API_BASE_URL, parseJsonResponse, serviceCache, timeSlotsCache } from './apiUtils';
+import { API_BASE_URL, parseJsonResponse, timeSlotsCache } from './apiUtils';
 import { getImageUrl as getImageUrlFromConfig } from '../config/api.config';
 
 export interface SiteSettings {
@@ -187,75 +187,13 @@ export const checkDateAvailability = async (
   token?: string,
 ): Promise<{ available: boolean; bookingsCount: number; slots: number }> => {
   try {
-    // Cache service details لتجنب طلبات متكررة
-    const cacheKey = `service-${serviceId}`;
-    let service: any;
-
-    // تحقق من الـ cache أولاً
-    const cachedService = serviceCache.get(cacheKey);
-    if (cachedService && Date.now() - cachedService.timestamp < 5 * 60 * 1000) {
-      // 5 minutes cache
-      service = cachedService.data;
-    } else {
-      // Fetch service details مع timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-
-      try {
-        const serviceResponse = await fetch(
-          `${API_BASE_URL}/services/${serviceId}`,
-          {
-            signal: controller.signal,
-          },
-        );
-        clearTimeout(timeoutId);
-
-        if (!serviceResponse.ok) {
-          throw new Error('Failed to fetch service details');
-        }
-        service = await serviceResponse.json();
-
-        // حفظ في الـ cache
-        serviceCache.set(cacheKey, {
-          data: service,
-          timestamp: Date.now(),
-        });
-      } catch (error) {
-        clearTimeout(timeoutId);
-        throw error;
-      }
-    }
-
-    // Extract configuration from service
-    const workingHours = service.workingHours || {
-      start: '09:00',
-      end: '17:00',
-    };
-    const timeSlotDuration = service.timeSlotDuration || 60; // in minutes
-    const workingDays = service.workingDays || [1, 2, 3, 4, 5]; // Mon-Fri by default
-
-    // Check if the selected date is a working day
-    const dayOfWeek = date.getUTCDay();
-    if (!workingDays.includes(dayOfWeek)) {
-      // Not a working day
-      return { available: false, bookingsCount: 0, slots: 0 };
-    }
-
-    // Calculate total slots based on working hours and time slot duration
-    const [startHour, startMinute] = workingHours.start.split(':').map(Number);
-    const [endHour, endMinute] = workingHours.end.split(':').map(Number);
-
-    const totalMinutes =
-      endHour * 60 + endMinute - (startHour * 60 + startMinute);
-    const totalSlotsPerDay = Math.floor(totalMinutes / timeSlotDuration);
-    // Fetch bookings from backend API for this specific date and service
     // Format date as YYYY-MM-DD using UTC to ensure consistency
     const year = date.getUTCFullYear();
     const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
     const day = date.getUTCDate().toString().padStart(2, '0');
     const dateStr = `${year}-${month}-${day}`;
 
-    // مع timeout
+    // Request available slots with a timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
 
@@ -278,11 +216,11 @@ export const checkDateAvailability = async (
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        // Fallback: assume all slots available
+        // Fallback on error
         return {
           available: true,
           bookingsCount: 0,
-          slots: totalSlotsPerDay,
+          slots: 10,
         };
       }
 
@@ -304,16 +242,14 @@ export const checkDateAvailability = async (
         slots: availableSlots,
       };
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        return { available: true, bookingsCount: 0, slots: totalSlotsPerDay };
-      }
       clearTimeout(timeoutId);
       throw error;
     }
   } catch {
-    return { available: true, bookingsCount: 0, slots: 10 }; // Default to available on error
+    return { available: true, bookingsCount: 0, slots: 10 }; // Default fallback on error
   }
 };
+
 
 /**
  * Check time slot availability for a specific date

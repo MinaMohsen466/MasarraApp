@@ -425,7 +425,25 @@ const Cart: React.FC<CartProps> = ({
       }
 
       setIsProcessingCheckout(false);
-      setShowAddressSelection(true);
+
+      // Check if any item in the cart requires a delivery address
+      const requiresAddress = cartItems.some(item => item.addressRequired);
+
+      if (requiresAddress) {
+        setShowAddressSelection(true);
+      } else {
+        // If no items require address, proceed with a dummy address structure
+        handleAddressSelected({
+          _id: 'no-address',
+          name: 'No Address Required',
+          street: isRTL ? 'خدمة موقعية (لا تتطلب عنوان)' : 'Venue/Hall (No delivery address required)',
+          city: '',
+          houseNumber: '',
+          floorNumber: '',
+          apartmentNumber: '',
+          isDefault: false,
+        });
+      }
     } catch {
       setIsProcessingCheckout(false);
       setAlertTitle(t('error'));
@@ -546,11 +564,11 @@ const Cart: React.FC<CartProps> = ({
           console.error('Failed to add booking created notification:', err),
         );
 
-        setAlertTitle(isRTL ? 'تم إنشاء الحجز' : 'Booking Created');
+        setAlertTitle(isRTL ? 'بانتظار موافقة الفيندور' : 'Awaiting Vendor Confirmation');
         setAlertMessage(
           isRTL
-            ? 'تم إنشاء حجزك بنجاح. سيتم إشعارك عندما يؤكد مقدم الخدمة الحجز ويمكنك الدفع.'
-            : 'Your booking has been created successfully. You will be notified when the vendor confirms and you can proceed with payment.',
+            ? 'تم تقديم طلب الحجز بنجاح وهو الآن بانتظار موافقة الفيندور (مقدم الخدمة). سيتم إشعارك فور تأكيده لتتمكن من إتمام الدفع.'
+            : 'Your booking request has been submitted successfully and is now awaiting vendor confirmation. You will be notified once confirmed to complete payment.',
         );
         setAlertButtons([
           {
@@ -712,13 +730,10 @@ const Cart: React.FC<CartProps> = ({
     }
   };
 
-  // Handle payment success from WebView
-  const handlePaymentSuccess = async () => {
-    setShowPaymentWebView(false);
-
-    // Save receipt data BEFORE removing items from cart
+  // Helper to generate success receipt data
+  const generateSuccessReceiptData = (bookingId: string, itemIds: string[]): ReceiptData => {
     const successfullyBookedItems = cartItems.filter(item =>
-      successfullyBookedItemIds.includes(item._id),
+      itemIds.includes(item._id),
     );
     const amount =
       successfullyBookedItems.reduce(
@@ -729,9 +744,9 @@ const Cart: React.FC<CartProps> = ({
       calculateDeliveryCharges() -
       couponDiscount;
 
-    setSuccessReceiptData({
+    return {
       status: 'success',
-      bookingId: createdBookingIds[0] || '',
+      bookingId: bookingId,
       amount: parseFloat(Math.max(0, amount).toFixed(3)) || 0,
       currency: 'KWD',
       services:
@@ -749,26 +764,38 @@ const Cart: React.FC<CartProps> = ({
               },
             ],
       paidAt: new Date(),
-    });
+    };
+  };
 
-    // Remove only the successfully booked items from cart
-    if (successfullyBookedItemIds.length > 0) {
-      for (const itemId of successfullyBookedItemIds) {
+  // Helper to clear successfully booked items from cart
+  const clearSuccessfullyBookedItems = async (itemIds: string[]) => {
+    if (itemIds.length > 0) {
+      for (const itemId of itemIds) {
         try {
           await removeFromCart(itemId);
         } catch (error) {
           console.error('Error removing item from cart:', itemId, error);
         }
       }
-      // Reload cart to get remaining items
       const remainingItems = await getCart();
       setCartItems(remainingItems);
       setSuccessfullyBookedItemIds([]);
     } else {
-      // Fallback: clear entire cart if no specific items tracked
       await clearCart();
       setCartItems([]);
     }
+  };
+
+  // Handle payment success from WebView
+  const handlePaymentSuccess = async () => {
+    setShowPaymentWebView(false);
+
+    // Save receipt data BEFORE removing items from cart
+    const receipt = generateSuccessReceiptData(createdBookingIds[0] || '', successfullyBookedItemIds);
+    setSuccessReceiptData(receipt);
+
+    // Remove only the successfully booked items from cart
+    await clearSuccessfullyBookedItems(successfullyBookedItemIds);
 
     addNotification({
       title: 'تم دفع الحجز بنجاح',
@@ -820,60 +847,11 @@ const Cart: React.FC<CartProps> = ({
 
 
               // Transition to success screen
-              const successfullyBookedItems = cartItems.filter(item =>
-                successfullyBookedItemIds.includes(item._id),
-              );
-              const amount =
-                successfullyBookedItems.reduce(
-                  (total, item) =>
-                    total + (item.totalPrice ?? item.price * item.quantity),
-                  0,
-                ) +
-                calculateDeliveryCharges() -
-                couponDiscount;
-
-              setSuccessReceiptData({
-                status: 'success',
-                bookingId: bookingId,
-                amount: parseFloat(Math.max(0, amount).toFixed(3)) || 0,
-                currency: 'KWD',
-                services:
-                  successfullyBookedItems.length > 0
-                    ? successfullyBookedItems.map(item => ({
-                        name: isRTL ? item.nameAr || item.name : item.name,
-                        quantity: item.quantity,
-                        total: item.totalPrice ?? item.price * item.quantity,
-                      }))
-                    : [
-                        {
-                          name: isRTL ? 'الطلب الخاص بك' : 'Your Order',
-                          quantity: 1,
-                          total: 0,
-                        },
-                      ],
-                paidAt: new Date(),
-              });
+              const receipt = generateSuccessReceiptData(bookingId, successfullyBookedItemIds);
+              setSuccessReceiptData(receipt);
 
               // Clear only the successfully booked items from cart
-              if (successfullyBookedItemIds.length > 0) {
-                for (const itemId of successfullyBookedItemIds) {
-                  try {
-                    await removeFromCart(itemId);
-                  } catch (error) {
-                    console.error(
-                      'Error removing item from cart:',
-                      itemId,
-                      error,
-                    );
-                  }
-                }
-                const remainingItems = await getCart();
-                setCartItems(remainingItems);
-                setSuccessfullyBookedItemIds([]);
-              } else {
-                await clearCart();
-                setCartItems([]);
-              }
+              await clearSuccessfullyBookedItems(successfullyBookedItemIds);
 
               setShowSuccessScreen(true);
               setCreatedBookingIds([]);

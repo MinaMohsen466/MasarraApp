@@ -1,3 +1,4 @@
+/* eslint-disable no-console, @typescript-eslint/no-explicit-any */
 import React, {
   createContext,
   useContext,
@@ -269,7 +270,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
   const markAsRead = useCallback(async (id: string) => {
     try {
       const token = await AsyncStorage.getItem('userToken');
-      if (token) {
+      // Only notify server if ID is a valid MongoDB ObjectId (24 hex characters)
+      const isMongoId = /^[0-9a-fA-F]{24}$/.test(id);
+      if (token && isMongoId) {
         await markServerNotificationRead(token, id);
       }
     } catch (err) {
@@ -316,6 +319,23 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     [navHandler, markAsRead],
   );
 
+  const dismissBanner = useCallback(() => {
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: -150,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setActiveBanner(null);
+    });
+  }, [slideAnim, opacityAnim]);
+
   const showTopBanner = useCallback(
     (notification: NotificationItem) => {
       if (bannerTimeoutRef.current) {
@@ -344,25 +364,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
         dismissBanner();
       }, 4500);
     },
-    [insets.top, slideAnim, opacityAnim],
+    [insets.top, slideAnim, opacityAnim, dismissBanner],
   );
 
-  const dismissBanner = useCallback(() => {
-    Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: -150,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(opacityAnim, {
-        toValue: 0,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setActiveBanner(null);
-    });
-  }, [slideAnim, opacityAnim]);
 
   const addNotification = useCallback(
     async (newNotif: Omit<NotificationItem, 'id' | 'createdAt' | 'read'> & { id?: string }) => {
@@ -426,8 +430,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
         return updated;
       });
 
-      // Trigger top banner (Disabled as requested: only save in notification list, do not pop up)
-      // showTopBanner(item);
+      // Trigger top banner
+      showTopBanner(item);
     },
     [showTopBanner, notificationsEnabled, notifications],
   );
@@ -458,8 +462,24 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
           };
         });
 
-        setNotifications(mapped);
-        await AsyncStorage.setItem('@notifications_history', JSON.stringify(mapped));
+        setNotifications(prev => {
+          const localOnly = prev.filter(n => n.type === 'booking_created');
+          
+          // Filter out server notifications that duplicate bookingId & type
+          const filteredMapped = mapped.filter(serverNotif => 
+            !localOnly.some(localNotif => localNotif.bookingId === serverNotif.bookingId && localNotif.type === serverNotif.type)
+          );
+          
+          const combined = [...localOnly, ...filteredMapped];
+          // Sort by date descending
+          combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          
+          AsyncStorage.setItem('@notifications_history', JSON.stringify(combined)).catch(err =>
+            console.error('Failed to save combined notifications:', err)
+          );
+          
+          return combined;
+        });
       }
     } catch (err) {
       console.error('[NotificationService] Failed to fetch server notifications:', err);
@@ -608,6 +628,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
             <View
               style={[
                 styles.iconContainer,
+                // eslint-disable-next-line react-native/no-inline-styles
                 isRTL ? { marginLeft: 12 } : { marginRight: 12 },
               ]}
             >
@@ -623,6 +644,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
                 style={[
                   styles.bannerTitle,
                   isRTL && styles.textRTL,
+                  // eslint-disable-next-line react-native/no-inline-styles
                   { color: '#0F172A' },
                 ]}
                 numberOfLines={1}
@@ -633,6 +655,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
                 style={[
                   styles.bannerMessage,
                   isRTL && styles.textRTL,
+                  // eslint-disable-next-line react-native/no-inline-styles
                   { color: '#475569' },
                 ]}
                 numberOfLines={2}
