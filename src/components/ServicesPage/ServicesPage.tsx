@@ -111,6 +111,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
     };
 
     loadRatings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [packages]);
 
   const onRefresh = useCallback(async () => {
@@ -160,7 +161,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
               rating: reviewsData.stats.averageRating || 0,
               totalReviews: reviewsData.stats.totalRatings || 0,
             };
-          } catch (error) {
+          } catch {
             return {
               serviceId: service._id,
               rating: 0,
@@ -183,7 +184,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
         });
 
         setServiceRatings(ratingsData);
-      } catch (error) {}
+      } catch {}
     };
 
     loadRatings();
@@ -227,7 +228,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
           rating: averageRating,
           totalReviews: totalReviewsCount,
         });
-      } catch (error) {}
+      } catch {}
     };
 
     fetchAllReviews();
@@ -242,7 +243,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
         const vendors = await fetchVendors();
         const found = vendors.find(v => v._id === vendorId);
         if (found) setVendor(found);
-      } catch (error) {
+      } catch {
         // Silently handle error
       } finally {
         setLoadingVendor(false);
@@ -367,7 +368,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
 
     // Calculate discount
     let finalPrice = item.price;
-    let originalPrice = item.price;
+    const originalPrice = item.price;
     let discountPercent = 0;
 
     if (item.salePrice && item.salePrice > 0 && item.salePrice < item.price) {
@@ -458,7 +459,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
                     style={[
                       styles.priceValue,
                       isRTL && styles.priceValueRTL,
-                      { fontSize: 13, color: colors.textSecondary },
+                      styles.priceVariesText,
                     ]}
                   >
                     {isRTL ? 'يختلف حسب الاختيار' : 'Varies by selection'}
@@ -472,7 +473,12 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
                     {isRTL ? 'السعر يبدأ من' : 'Price starts from'}
                   </Text>
                   {hasDiscount ? (
-                    <View style={{ gap: 2 }}>
+                    <View
+                      style={[
+                        styles.discountPriceContainer,
+                        isRTL && styles.discountPriceContainerRTL,
+                      ]}
+                    >
                       <Text
                         style={[
                           styles.priceValue,
@@ -568,21 +574,11 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
 
           <View
             style={[
-              { flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', marginBottom: 4 },
-              isRTL && { justifyContent: 'flex-start' },
+              styles.packageBadgeRow,
+              isRTL && styles.packageBadgeRowRTL,
             ]}
           >
-            <Text
-              style={{
-                fontSize: 10,
-                color: colors.primary,
-                fontWeight: '700',
-                backgroundColor: colors.primary + '15',
-                paddingHorizontal: 6,
-                paddingVertical: 2,
-                borderRadius: 4,
-              }}
-            >
+            <Text style={styles.packageBadgeText}>
               {isRTL ? 'باقة' : 'PACKAGE'}
             </Text>
           </View>
@@ -604,13 +600,8 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
               {item.discountPrice > 0 ? (
                 <View
                   style={[
-                    {
-                      flexDirection: 'row',
-                      alignItems: 'baseline',
-                      gap: 6,
-                      flexWrap: 'wrap',
-                    },
-                    isRTL && { flexDirection: 'row-reverse' },
+                    styles.discountPriceContainer,
+                    isRTL && styles.discountPriceContainerRTL,
                   ]}
                 >
                   <Text
@@ -875,48 +866,27 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
           <>
             {vendorId && packages && packages.length > 0 && (
               <View>
-                <View
-                  style={{
-                    paddingHorizontal: 16,
-                    paddingVertical: 16,
-                    marginTop: 16,
-                  }}
-                >
+                <View style={styles.packagesSectionHeader}>
                   <Text
-                    style={{
-                      fontSize: 20,
-                      fontWeight: 'bold',
-                      color: colors.primary,
-                      textAlign: isRTL ? 'right' : 'left',
-                    }}
+                    style={[
+                      styles.packagesSectionTitle,
+                      isRTL && styles.packagesSectionTitleRTL,
+                    ]}
                   >
                     {isRTL ? 'الباقات' : 'Packages'}
                   </Text>
                   <View
-                    style={{
-                      height: 3,
-                      width: 50,
-                      backgroundColor: colors.primary,
-                      marginTop: 8,
-                      alignSelf: isRTL ? 'flex-end' : 'flex-start',
-                    }}
+                    style={[
+                      styles.packagesSectionIndicator,
+                      isRTL && styles.packagesSectionIndicatorRTL,
+                    ]}
                   />
                 </View>
-                <View
-                  style={{
-                    flexDirection: isRTL ? 'row-reverse' : 'row',
-                    flexWrap: 'wrap',
-                    paddingHorizontal: 0,
-                  }}
-                >
+                <View style={[styles.packagesGrid, isRTL && styles.packagesGridRTL]}>
                   {packages.map(pkg => (
                     <View
                       key={pkg._id}
-                      style={{
-                        width: '50%',
-                        paddingHorizontal: 4,
-                        paddingVertical: 8,
-                      }}
+                      style={styles.packageGridItem}
                     >
                       {renderPackageCard({ item: pkg })}
                     </View>

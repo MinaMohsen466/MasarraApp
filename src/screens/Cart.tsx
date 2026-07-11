@@ -120,6 +120,7 @@ const Cart: React.FC<CartProps> = ({
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const [couponMessage, setCouponMessage] = useState('');
   const [couponError, setCouponError] = useState('');
+  const [summaryHeight, setSummaryHeight] = useState(360);
 
   const loadCart = useCallback(async () => {
     const items = await getCart();
@@ -1213,7 +1214,10 @@ const Cart: React.FC<CartProps> = ({
         <>
           <ScrollView
             style={[styles.scrollView, { zIndex: isAnyInfoOpen ? 1 : 0 }]}
-            contentContainerStyle={styles.scrollViewContent}
+            contentContainerStyle={[
+              styles.scrollViewContent,
+              { paddingBottom: summaryHeight + 16 },
+            ]}
             showsVerticalScrollIndicator={false}
           >
             {cartItems.map(item => {
@@ -2127,6 +2131,12 @@ const Cart: React.FC<CartProps> = ({
           </ScrollView>
 
           <View
+            onLayout={e => {
+              const { height } = e.nativeEvent.layout;
+              if (height > 0 && height !== summaryHeight) {
+                setSummaryHeight(height);
+              }
+            }}
             style={[
               styles.bottomSummary,
               {

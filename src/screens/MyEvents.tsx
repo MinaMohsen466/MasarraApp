@@ -191,6 +191,27 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
 
       const allBookings = Array.isArray(bookings) ? bookings : [];
 
+      // Fetch QR codes for all bookings to get accurate custom details (like guestLimit and eventDate)
+      const qrCodesMap: { [bookingId: string]: any } = {};
+      try {
+        const qrPromises = allBookings.map(async (b: any) => {
+          try {
+            const qr = await getQRCodeByBooking(token, b._id);
+            return { bookingId: b._id, qr };
+          } catch {
+            return { bookingId: b._id, qr: null };
+          }
+        });
+        const qrResults = await Promise.all(qrPromises);
+        qrResults.forEach(res => {
+          if (res.qr) {
+            qrCodesMap[res.bookingId] = res.qr;
+          }
+        });
+      } catch (err) {
+        console.warn('Error fetching QR codes for user dashboard:', err);
+      }
+
       allBookings.forEach((booking: any) => {
         (booking.services || []).forEach((s: any) => {
           // Hide cancelled services
@@ -217,12 +238,26 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
           }
 
           if (isServiceAllowed) {
+            const qrCode = qrCodesMap[booking._id];
+            
+            // Check if there is an overridden date in the QR code
+            let displayEventDate = booking.eventDate;
+            if (qrCode?.customDetails?.eventDate) {
+              displayEventDate = qrCode.customDetails.eventDate;
+            }
+
             servicesList.push({
               bookingId: booking._id,
               serviceId,
               service: s.service,
               vendor: s.vendor,
-              booking,
+              booking: {
+                ...booking,
+                eventDate: displayEventDate,
+                guestLimit: qrCode?.customDetails?.guestCount !== undefined && qrCode?.customDetails?.guestCount !== ''
+                  ? parseInt(qrCode.customDetails.guestCount, 10)
+                  : booking.guestLimit
+              },
               uniqueKey: `${booking._id}-${serviceId}`
             });
           }

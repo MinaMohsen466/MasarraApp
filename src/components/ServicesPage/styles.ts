@@ -88,11 +88,15 @@ export const createStyles = (screenWidth: number) => {
       paddingBottom: isTablet ? 160 : 110,
     },
     row: {
-      justifyContent: 'space-between',
+      flexDirection: 'row',
+      justifyContent: 'flex-start',
+      gap: 16,
       marginBottom: 16,
     },
     rowRTL: {
       flexDirection: 'row-reverse',
+      justifyContent: 'flex-start',
+      gap: 16,
     },
     serviceCard: {
       width: cardWidth,
@@ -259,6 +263,72 @@ export const createStyles = (screenWidth: number) => {
     },
     originalPriceRTL: {
       textAlign: 'right',
+    },
+    discountPriceContainer: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      gap: 6,
+      flexWrap: 'wrap',
+    },
+    discountPriceContainerRTL: {
+      flexDirection: 'row-reverse',
+    },
+    packageBadgeRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 4,
+    },
+    packageBadgeRowRTL: {
+      flexDirection: 'row-reverse',
+      justifyContent: 'flex-start',
+    },
+    packageBadgeText: {
+      fontSize: 10,
+      color: colors.primary,
+      fontWeight: '700',
+      backgroundColor: colors.primary + '15',
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 4,
+    },
+    packagesSectionHeader: {
+      paddingHorizontal: 16,
+      paddingVertical: 16,
+      marginTop: 16,
+    },
+    packagesSectionTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: colors.primary,
+    },
+    packagesSectionTitleRTL: {
+      textAlign: 'right',
+    },
+    packagesSectionIndicator: {
+      height: 3,
+      width: 50,
+      backgroundColor: colors.primary,
+      marginTop: 8,
+    },
+    packagesSectionIndicatorRTL: {
+      alignSelf: 'flex-end',
+    },
+    packagesGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      paddingHorizontal: 0,
+    },
+    packagesGridRTL: {
+      flexDirection: 'row-reverse',
+    },
+    packageGridItem: {
+      width: '50%',
+      paddingHorizontal: 4,
+      paddingVertical: 8,
+    },
+    priceVariesText: {
+      fontSize: 13,
+      color: colors.textSecondary,
     },
     centerContainer: {
       flex: 1,

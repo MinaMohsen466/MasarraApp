@@ -83,25 +83,6 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
   const topMapRef = useRef<WebView>(null);
   const [mapLoadingAddress, setMapLoadingAddress] = useState(false);
 
-  const requestLocationPermission = async () => {
-    if (Platform.OS === 'android') {
-      try {
-        await PermissionsAndroid.requestMultiple([
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-          PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
-        ]);
-      } catch (err) {
-        console.warn(err);
-      }
-    }
-  };
-
-  useEffect(() => {
-    if (showForm) {
-      requestLocationPermission();
-    }
-  }, [showForm]);
-
   const handleOpenForm = () => {
     setForm({
       name: '',
@@ -172,21 +153,75 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
           }));
         }
       } else if (data.type === 'REQUEST_LOCATION') {
-        // Bridge: get location natively and inject into WebView
-        Geolocation.getCurrentPosition(
-          (position) => {
-            const { latitude, longitude } = position.coords;
-            topMapRef.current?.injectJavaScript(
-              `window.receiveLocation(${latitude}, ${longitude}); true;`
-            );
-          },
-          (_err) => {
+        const getGeoLocation = (highAccuracy: boolean) => {
+          Geolocation.getCurrentPosition(
+            (position) => {
+              const { latitude, longitude } = position.coords;
+              topMapRef.current?.injectJavaScript(
+                `window.receiveLocation(${latitude}, ${longitude}); true;`
+              );
+            },
+            (error) => {
+              console.log(`Geolocation error (highAccuracy: ${highAccuracy}):`, error);
+              if (highAccuracy) {
+                // Fallback to low accuracy (WiFi/Cell tower)
+                getGeoLocation(false);
+              } else {
+                topMapRef.current?.injectJavaScript(
+                  `window.receiveLocationError(); true;`
+                );
+              }
+            },
+            {
+              enableHighAccuracy: highAccuracy,
+              timeout: highAccuracy ? 10000 : 15000,
+              maximumAge: 10000,
+            }
+          );
+        };
+
+        const checkAndGetLocation = async () => {
+          let hasPermission = false;
+          if (Platform.OS === 'android') {
+            try {
+              const fineGranted = await PermissionsAndroid.check(
+                PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+              );
+              const coarseGranted = await PermissionsAndroid.check(
+                PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION
+              );
+              
+              if (fineGranted || coarseGranted) {
+                hasPermission = true;
+              } else {
+                const status = await PermissionsAndroid.requestMultiple([
+                  PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+                  PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
+                ]);
+                if (
+                  status[PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION] === PermissionsAndroid.RESULTS.GRANTED ||
+                  status[PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION] === PermissionsAndroid.RESULTS.GRANTED
+                ) {
+                  hasPermission = true;
+                }
+              }
+            } catch (err) {
+              console.warn('Error checking/requesting Android permissions:', err);
+            }
+          } else {
+            hasPermission = true;
+          }
+
+          if (hasPermission) {
+            getGeoLocation(true);
+          } else {
             topMapRef.current?.injectJavaScript(
               `window.receiveLocationError(); true;`
             );
-          },
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
-        );
+          }
+        };
+
+        checkAndGetLocation();
       } else if (data.type === 'GEOLOCATION_FAILED') {
         setAlertTitle(isRTL ? 'تحديد الموقع' : 'Location Services');
         setAlertMessage(

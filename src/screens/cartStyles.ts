@@ -73,7 +73,7 @@ export const styles = StyleSheet.create({
   },
   scrollViewContent: {
     flexGrow: 1,
-    paddingBottom: 280,
+    paddingBottom: 360,
   },
   cartCard: {
     backgroundColor: colors.backgroundLight,

@@ -94,7 +94,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
     },
     imageContainer: {
       width: '100%',
-      height: isTablet ? 200 : 140, // Reduced from 170 to 140 on mobile
+      height: isTablet ? 200 : 130, // Reduced to 130 on mobile
       backgroundColor: colors.backgroundLight,
       overflow: 'hidden',
       borderRadius: 16,
@@ -137,7 +137,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
     },
     infoContainer: {
       padding: 8,
-      minHeight: isTablet ? 180 : 110, // Reduced from 160 to 110 on mobile
+      minHeight: isTablet ? 180 : 105, // Reduced to 105 on mobile
     },
     serviceName: {
       fontSize: 14, // Reduced from 16
