@@ -209,6 +209,7 @@ const Addresses: React.FC<{
             }));
           }
         } else if (data.type === 'REQUEST_LOCATION') {
+          setMapLoadingAddress(true);
           const getGeoLocation = (highAccuracy: boolean) => {
             Geolocation.getCurrentPosition(
               (position) => {
@@ -223,6 +224,7 @@ const Addresses: React.FC<{
                   // Fallback to low accuracy (WiFi/Cell tower)
                   getGeoLocation(false);
                 } else {
+                  setMapLoadingAddress(false);
                   topMapRef.current?.injectJavaScript(
                     `window.receiveLocationError(); true;`
                   );
@@ -230,8 +232,8 @@ const Addresses: React.FC<{
               },
               {
                 enableHighAccuracy: highAccuracy,
-                timeout: highAccuracy ? 10000 : 15000,
-                maximumAge: 10000,
+                timeout: highAccuracy ? 15000 : 25000,
+                maximumAge: highAccuracy ? 300000 : 600000, // 5 to 10 minutes cache to prevent indoor timeouts
               }
             );
           };
@@ -264,6 +266,13 @@ const Addresses: React.FC<{
               } catch (err) {
                 if (__DEV__) console.warn('Error checking/requesting Android permissions:', err);
               }
+            } else if (Platform.OS === 'ios') {
+              try {
+                Geolocation.requestAuthorization();
+                hasPermission = true;
+              } catch {
+                hasPermission = true;
+              }
             } else {
               hasPermission = true;
             }
@@ -271,6 +280,7 @@ const Addresses: React.FC<{
             if (hasPermission) {
               getGeoLocation(true);
             } else {
+              setMapLoadingAddress(false);
               topMapRef.current?.injectJavaScript(
                 `window.receiveLocationError(); true;`
               );

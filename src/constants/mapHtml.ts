@@ -144,6 +144,18 @@ export const MAP_VIEW_HTML = `
         transform: scale(2.5);
         opacity: 0;
       }
+    /* Locate Button spinner */
+    .btn-spinner {
+      border: 2px solid rgba(0, 161, 156, 0.1);
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border-left-color: #00a19c;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
   </style>
 </head>
@@ -191,6 +203,8 @@ export const MAP_VIEW_HTML = `
     var userLocationMarker = null;
     var showPin = false;
 
+    var locateSvg = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="8" stroke="#00a19c" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="#00a19c"/><path d="M12 2V4M12 20V22M2 12H4M20 12H22" stroke="#00a19c" stroke-width="2" stroke-linecap="round"/></svg>';
+
     function showPulsingUserLocation(lat, lng) {
       if (userLocationMarker) {
         map.removeLayer(userLocationMarker);
@@ -205,7 +219,10 @@ export const MAP_VIEW_HTML = `
     }
 
     function locateUser() {
-      document.getElementById('locate-btn').style.transform = 'scale(0.92)';
+      var btn = document.getElementById('locate-btn');
+      btn.style.transform = 'scale(0.92)';
+      btn.innerHTML = '<div class="btn-spinner"></div>';
+      btn.disabled = true;
       // Request location from React Native (bridge approach - more reliable on Android)
       window.ReactNativeWebView.postMessage(JSON.stringify({
         type: 'REQUEST_LOCATION'
@@ -214,7 +231,10 @@ export const MAP_VIEW_HTML = `
 
     // Called by React Native when it has the user's location
     window.receiveLocation = function(lat, lng) {
-      document.getElementById('locate-btn').style.transform = 'none';
+      var btn = document.getElementById('locate-btn');
+      btn.style.transform = 'none';
+      btn.innerHTML = locateSvg;
+      btn.disabled = false;
       map.setView([lat, lng], 16);
       // Only show pulsing dot when NOT in address selection mode
       // (in selection mode the green center pin is already shown)
@@ -225,7 +245,10 @@ export const MAP_VIEW_HTML = `
 
     // Called by React Native when location could not be retrieved
     window.receiveLocationError = function() {
-      document.getElementById('locate-btn').style.transform = 'none';
+      var btn = document.getElementById('locate-btn');
+      btn.style.transform = 'none';
+      btn.innerHTML = locateSvg;
+      btn.disabled = false;
       window.ReactNativeWebView.postMessage(JSON.stringify({
         type: 'GEOLOCATION_FAILED'
       }));
