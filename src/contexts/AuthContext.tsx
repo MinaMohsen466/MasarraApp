@@ -1,4 +1,4 @@
-/* eslint-disable no-console, react-hooks/exhaustive-deps */
+/* eslint-disable no-console */
 import React, {
   createContext,
   useContext,
@@ -53,6 +53,7 @@ export const AuthProvider: React.FC<{
   // Load user data on app start
   useEffect(() => {
     loadUserData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const refreshUser = async () => {
@@ -74,26 +75,28 @@ export const AuthProvider: React.FC<{
         // Create a new object to ensure React detects the change
         setUser({ ...freshUserData });
       } else if (response.status === 401) {
-        console.log('🔄 Token is invalid or expired, forcing logout...');
+        if (__DEV__) console.log('🔄 Token is invalid or expired, forcing logout...');
         await logout();
       }
     } catch (error) {
-      console.log('❌ Error refreshing user:', error);
+      if (__DEV__) console.log('❌ Error refreshing user:', error);
     }
   };
 
   const loadUserData = async () => {
     try {
-      console.log('📱 Loading user data from AsyncStorage...');
+      if (__DEV__) console.log('📱 Loading user data from AsyncStorage...');
       const storedToken = await getSecureToken();
       const storedUser = await AsyncStorage.getItem('userData');
 
       if (storedToken && storedUser) {
         const userData = JSON.parse(storedUser);
-        console.log('📦 Cached user data loaded:', {
-          name: userData.name,
-          profilePicture: userData.profilePicture,
-        });
+        if (__DEV__) {
+          console.log('📦 Cached user data loaded:', {
+            name: userData.name,
+            profilePicture: userData.profilePicture,
+          });
+        }
 
         // First set cached data for quick load
         setToken(storedToken);
@@ -106,10 +109,10 @@ export const AuthProvider: React.FC<{
         }
 
         // Then fetch fresh user data from server to sync
-        console.log('🔄 Refreshing user data from server...');
+        if (__DEV__) console.log('🔄 Refreshing user data from server...');
         await refreshUser();
       } else {
-        console.log('❌ No cached user data found');
+        if (__DEV__) console.log('❌ No cached user data found');
       }
     } catch {
     } finally {

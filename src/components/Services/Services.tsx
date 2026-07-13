@@ -44,7 +44,7 @@ const Services: React.FC<ServicesProps> = ({ onSelectService, onViewAll }) => {
               rating: reviewsData.stats.averageRating || 0,
               totalReviews: reviewsData.stats.totalRatings || 0,
             };
-          } catch (error) {
+          } catch {
             return {
               serviceId: service._id,
               rating: 0,
@@ -67,7 +67,7 @@ const Services: React.FC<ServicesProps> = ({ onSelectService, onViewAll }) => {
         });
 
         setServiceRatings(ratingsData);
-      } catch (error) {}
+      } catch {}
     };
 
     loadRatings();
@@ -75,7 +75,10 @@ const Services: React.FC<ServicesProps> = ({ onSelectService, onViewAll }) => {
 
   const renderServiceCard = ({ item }: { item: Service }) => {
     const displayName = isRTL ? item.nameAr : item.name;
-    const displayDescription = isRTL ? item.descriptionAr : item.description;
+    const rawDescription = isRTL ? item.descriptionAr : item.description;
+    const displayDescription = rawDescription && rawDescription.length > 50
+      ? rawDescription.substring(0, 50) + '...'
+      : rawDescription;
 
     // Calculate discount and final price
     const hasDiscount =
@@ -173,7 +176,7 @@ const Services: React.FC<ServicesProps> = ({ onSelectService, onViewAll }) => {
                     style={[
                       styles.priceValue,
                       isRTL && styles.priceValueRTL,
-                      { fontSize: 13, color: colors.textSecondary },
+                      styles.priceVariesText,
                     ]}
                   >
                     {isRTL ? 'يختلف حسب الاختيار' : 'Varies by selection'}
@@ -189,13 +192,8 @@ const Services: React.FC<ServicesProps> = ({ onSelectService, onViewAll }) => {
                   {hasDiscount ? (
                     <View
                       style={[
-                        {
-                          flexDirection: 'row',
-                          alignItems: 'baseline',
-                          gap: 6,
-                          flexWrap: 'wrap',
-                        },
-                        isRTL && { flexDirection: 'row-reverse' },
+                        styles.discountPriceContainer,
+                        isRTL && styles.discountPriceContainerRTL,
                       ]}
                     >
                       <Text

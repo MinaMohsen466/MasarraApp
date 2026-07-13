@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -86,6 +87,12 @@ const Addresses: React.FC<{
         apartmentNumber: '',
       });
       setEditingId(null);
+
+      // Immediately remove any existing address marker/popup from the map
+      // BEFORE switching to the form view, so the old label (e.g. "Work")
+      // doesn't linger while waiting for the user's GPS location.
+      topMapRef.current?.postMessage(JSON.stringify({ type: 'CLEAR_MARKERS' }));
+
       setShowForm(true);
     };
 
@@ -122,13 +129,17 @@ const Addresses: React.FC<{
           }));
         }
       } catch (error) {
-        console.error('Error geocoding address:', error);
+        if (__DEV__) console.error('Error geocoding address:', error);
       }
     };
 
     React.useEffect(() => {
       let timer: ReturnType<typeof setTimeout> | undefined;
-      if (addresses && addresses.length > 0) {
+      // Only auto-pan to the default address when the form is NOT open.
+      // Without this guard, the 1200 ms timer can fire *after* the 400 ms
+      // SHOW_PIN message, re-creating the old marker (with its popup label)
+      // on top of the center pin that the user is about to use.
+      if (!showForm && addresses && addresses.length > 0) {
         const defaultAddr = addresses.find(a => a.isDefault) || addresses[0];
         if (defaultAddr) {
           timer = setTimeout(() => {
@@ -139,7 +150,7 @@ const Addresses: React.FC<{
       return () => {
         if (timer) clearTimeout(timer);
       };
-    }, [addresses]);
+    }, [addresses, showForm]);
     const [showDeleteAlert, setShowDeleteAlert] = useState(false);
     const [addressToDelete, setAddressToDelete] = useState<Address | null>(null);
     const [activeField, setActiveField] = useState<string | null>(null);
@@ -207,7 +218,7 @@ const Addresses: React.FC<{
                 );
               },
               (error) => {
-                console.log(`Geolocation error (highAccuracy: ${highAccuracy}):`, error);
+                if (__DEV__) console.log(`Geolocation error (highAccuracy: ${highAccuracy}):`, error);
                 if (highAccuracy) {
                   // Fallback to low accuracy (WiFi/Cell tower)
                   getGeoLocation(false);
@@ -251,7 +262,7 @@ const Addresses: React.FC<{
                   }
                 }
               } catch (err) {
-                console.warn('Error checking/requesting Android permissions:', err);
+                if (__DEV__) console.warn('Error checking/requesting Android permissions:', err);
               }
             } else {
               hasPermission = true;
@@ -278,7 +289,7 @@ const Addresses: React.FC<{
           setAlertVisible(true);
         }
       } catch (error) {
-        console.error('Error fetching address:', error);
+        if (__DEV__) console.error('Error fetching address:', error);
         setMapLoadingAddress(false);
       }
     };

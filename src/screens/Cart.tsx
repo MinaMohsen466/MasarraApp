@@ -491,11 +491,10 @@ const Cart: React.FC<CartProps> = ({
           : undefined;
 
       // Step 1: Create ONE booking for all items (payment status will be 'pending')
-      const deliveryCharges = calculateDeliveryCharges();
+      // Note: Server computes delivery fees from DB prices (never trusts client)
       const { errors, bookings } = await createBookingsFromCart(
         fullAddress,
         couponData,
-        deliveryCharges,
       );
 
       // Check if booking creation failed
@@ -600,16 +599,24 @@ const Cart: React.FC<CartProps> = ({
         return total + itemTotal;
       }, 0);
 
-      // Calculate delivery charges
-      const payableDeliveryCharges = successfullyBookedItems.reduce(
-        (total, item) => {
-          if (item.maxBookingsPerSlot === -1) {
-            return total + (item.deliveryFee ?? 0);
-          }
-          return total;
-        },
-        0,
-      );
+      // Calculate delivery charges: one fee per (vendor, event date) — take highest
+      const deliveryFeeGroups = new Map<string, number>();
+      successfullyBookedItems.forEach(item => {
+        if (item.addressRequired && (item.deliveryFee ?? 0) > 0) {
+          const dateKey = item.selectedDate
+            ? new Date(item.selectedDate).toDateString()
+            : '';
+          const key = `${item.vendorId}|${dateKey}`;
+          deliveryFeeGroups.set(
+            key,
+            Math.max(deliveryFeeGroups.get(key) || 0, item.deliveryFee ?? 0),
+          );
+        }
+      });
+      let payableDeliveryCharges = 0;
+      for (const fee of deliveryFeeGroups.values()) {
+        payableDeliveryCharges += fee;
+      }
 
       // Total = subtotal + delivery - discount
       const payableTotal =
@@ -953,18 +960,32 @@ const Cart: React.FC<CartProps> = ({
   };
 
   const calculateDeliveryCharges = () => {
-    // Calculate delivery charges for EACH cart item that requires delivery
-    let totalDelivery = 0;
+    // One delivery fee per (vendor, event date) — one trip, charged at the
+    // group's highest fee. Mirrors the server-side computation in
+    // bookingController and the web CheckoutPage.
+    const fees = new Map<string, number>();
     cartItems.forEach(item => {
       if (
         (!item.availabilityStatus ||
           item.availabilityStatus === 'available_now') &&
-        item.maxBookingsPerSlot === -1
+        item.addressRequired &&
+        (item.deliveryFee ?? 0) > 0
       ) {
-        totalDelivery += item.deliveryFee || 0;
+        const dateKey = item.selectedDate
+          ? new Date(item.selectedDate).toDateString()
+          : '';
+        const key = `${item.vendorId}|${dateKey}`;
+        fees.set(
+          key,
+          Math.max(fees.get(key) || 0, item.deliveryFee ?? 0),
+        );
       }
     });
-    return totalDelivery;
+    let total = 0;
+    for (const fee of fees.values()) {
+      total += fee;
+    }
+    return total;
   };
 
   const calculateTotalBeforeDiscount = () => {
@@ -2112,7 +2133,7 @@ const Cart: React.FC<CartProps> = ({
                           >
                             {t('afterConfirmation')}
                           </Text>
-                        ) : item.maxBookingsPerSlot === -1 ? (
+                        ) : item.addressRequired && (item.deliveryFee ?? 0) > 0 ? (
                           <Text style={styles.deliveryChargeValue}>
                             {(item.deliveryFee ?? 0).toFixed(3)}{' '}
                             {isRTL ? 'د.ك' : 'KD'}

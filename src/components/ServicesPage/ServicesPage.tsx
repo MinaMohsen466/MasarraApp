@@ -360,7 +360,10 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
 
   const renderServiceCard = ({ item }: { item: Service }) => {
     const displayName = isRTL ? item.nameAr : item.name;
-    const displayDescription = isRTL ? item.descriptionAr : item.description;
+    const rawDescription = isRTL ? item.descriptionAr : item.description;
+    const displayDescription = rawDescription && rawDescription.length > 50
+      ? rawDescription.substring(0, 50) + '...'
+      : rawDescription;
     const imageUrl =
       item.images && item.images.length > 0
         ? getServiceImageUrl(item.images[0])

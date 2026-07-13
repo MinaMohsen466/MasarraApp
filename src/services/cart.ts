@@ -471,7 +471,6 @@ export async function createBookingsFromCart(
     originalPrice: number;
     deductFrom: string;
   },
-  _deliveryCharges: number = 0,
 ): Promise<{
   success: boolean;
   bookings: Record<string, any>[];
@@ -487,15 +486,17 @@ export async function createBookingsFromCart(
     const bookings: Record<string, any>[] = [];
     const errors: { item: CartItem; error: string }[] = [];
 
-    console.log('[createBookingsFromCart] Cart items count:', cartItems.length);
-    console.log(
-      '[createBookingsFromCart] Cart items:',
-      cartItems.map(i => ({
-        name: i.name,
-        serviceId: i.serviceId,
-        availabilityStatus: i.availabilityStatus,
-      })),
-    );
+    if (__DEV__) {
+      console.log('[createBookingsFromCart] Cart items count:', cartItems.length);
+      console.log(
+        '[createBookingsFromCart] Cart items:',
+        cartItems.map(i => ({
+          name: i.name,
+          serviceId: i.serviceId,
+          availabilityStatus: i.availabilityStatus,
+        })),
+      );
+    }
 
     if (cartItems.length === 0) {
       return { success: true, bookings: [], errors: [] };
@@ -506,10 +507,12 @@ export async function createBookingsFromCart(
       item => item.availabilityStatus === 'pending_confirmation',
     );
 
-    console.log(
-      '[createBookingsFromCart] Has items needing confirmation:',
-      hasItemsNeedingConfirmation,
-    );
+    if (__DEV__) {
+      console.log(
+        '[createBookingsFromCart] Has items needing confirmation:',
+        hasItemsNeedingConfirmation,
+      );
+    }
 
     // Helper function to convert customInputs to key-value object format expected by backend validator
     const convertCustomInputs = (item: CartItem) => {
@@ -638,11 +641,13 @@ export async function createBookingsFromCart(
         bookingPayload.totalPrice = combinedTotalPrice - discountShare;
       }
 
-      console.log('[createBookingsFromCart] Sending booking for ALL items:', {
-        itemCount: cartItems.length,
-        hasItemsNeedingConfirmation,
-        totalPrice: bookingPayload.totalPrice,
-      });
+      if (__DEV__) {
+        console.log('[createBookingsFromCart] Sending booking for ALL items:', {
+          itemCount: cartItems.length,
+          hasItemsNeedingConfirmation,
+          totalPrice: bookingPayload.totalPrice,
+        });
+      }
 
       const response = await fetch(`${API_BASE_URL}/bookings`, {
         method: 'POST',
@@ -661,7 +666,9 @@ export async function createBookingsFromCart(
         } else {
           error = { message: 'Server error - received HTML instead of JSON' };
         }
-        console.log('[createBookingsFromCart] Error for booking:', error);
+        if (__DEV__) {
+          console.log('[createBookingsFromCart] Error for booking:', error);
+        }
         // Add error for each item
         cartItems.forEach(item => {
           errors.push({
@@ -672,10 +679,12 @@ export async function createBookingsFromCart(
       } else {
         const responseData = await response.json();
         const booking = responseData.booking || responseData;
-        console.log(
-          '[createBookingsFromCart] Success for booking, ID:',
-          booking._id,
-        );
+        if (__DEV__) {
+          console.log(
+            '[createBookingsFromCart] Success for booking, ID:',
+            booking._id,
+          );
+        }
 
         // Mark if this booking requires payment now
         // Payment is required ONLY if NO items need vendor confirmation
@@ -692,21 +701,25 @@ export async function createBookingsFromCart(
       }
     } catch (error: unknown) {
       const err = error as Error;
-      console.log(
-        '[createBookingsFromCart] Exception for booking:',
-        err.message,
-      );
+      if (__DEV__) {
+        console.log(
+          '[createBookingsFromCart] Exception for booking:',
+          err.message,
+        );
+      }
       cartItems.forEach(item => {
         errors.push({ item, error: err.message || 'Network error' });
       });
     }
 
-    console.log(
-      '[createBookingsFromCart] Final result - Bookings:',
-      bookings.length,
-      'Errors:',
-      errors.length,
-    );
+    if (__DEV__) {
+      console.log(
+        '[createBookingsFromCart] Final result - Bookings:',
+        bookings.length,
+        'Errors:',
+        errors.length,
+      );
+    }
 
     return {
       success: errors.length === 0,

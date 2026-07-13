@@ -109,7 +109,7 @@ export const createStyles = (screenWidth: number) => {
     },
     imageContainer: {
       width: '100%',
-      height: isTablet ? 200 : 130,
+      height: isTablet ? 140 : 130,
       backgroundColor: colors.backgroundCard,
       overflow: 'hidden',
       borderRadius: 16,
@@ -152,7 +152,7 @@ export const createStyles = (screenWidth: number) => {
     },
     infoContainer: {
       padding: 8,
-      minHeight: isTablet ? 180 : 105,
+      minHeight: isTablet ? 110 : 105,
     },
     serviceName: {
       fontSize: 14,

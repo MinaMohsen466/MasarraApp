@@ -291,10 +291,18 @@ export const MAP_VIEW_HTML = `
               offset: [0, -5]
             }).openPopup();
           }
+        } else if (data.type === 'CLEAR_MARKERS') {
+          // Remove any existing address marker and its popup label
+          if (currentMarker) {
+            currentMarker.closePopup();
+            map.removeLayer(currentMarker);
+            currentMarker = null;
+          }
         } else if (data.type === 'SHOW_PIN') {
           showPin = data.show;
           document.getElementById('center-marker').style.display = showPin ? 'block' : 'none';
           if (showPin && currentMarker) {
+            currentMarker.closePopup();
             map.removeLayer(currentMarker);
             currentMarker = null;
           }

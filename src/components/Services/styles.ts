@@ -94,7 +94,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
     },
     imageContainer: {
       width: '100%',
-      height: isTablet ? 200 : 130, // Reduced to 130 on mobile
+      height: isTablet ? 140 : 130, // Reduced to 130 on mobile, 140 on tablet
       backgroundColor: colors.backgroundLight,
       overflow: 'hidden',
       borderRadius: 16,
@@ -137,7 +137,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
     },
     infoContainer: {
       padding: 8,
-      minHeight: isTablet ? 180 : 105, // Reduced to 105 on mobile
+      minHeight: isTablet ? 110 : 105, // Reduced to 105 on mobile, 110 on tablet
     },
     serviceName: {
       fontSize: 14, // Reduced from 16
@@ -241,6 +241,19 @@ export const createStyles = (SCREEN_WIDTH: number) => {
     },
     originalPriceRTL: {
       textAlign: 'right',
+    },
+    discountPriceContainer: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      gap: 6,
+      flexWrap: 'wrap',
+    },
+    discountPriceContainerRTL: {
+      flexDirection: 'row-reverse',
+    },
+    priceVariesText: {
+      fontSize: 13,
+      color: colors.textSecondary,
     },
     centerContainer: {
       paddingVertical: 40,
