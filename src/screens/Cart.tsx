@@ -392,12 +392,6 @@ const Cart: React.FC<CartProps> = ({
     setShowInfo(prev => ({ ...prev, [itemId]: !prev[itemId] }));
   }, []);
 
-  const handleAddAddress = () => {
-    setShowAddressSelection(false);
-    if (onNavigate) {
-      onNavigate('addresses');
-    }
-  };
 
   const handleCheckout = async () => {
     try {
@@ -2437,7 +2431,6 @@ const Cart: React.FC<CartProps> = ({
         visible={showAddressSelection}
         onClose={() => setShowAddressSelection(false)}
         onSelectAddress={handleAddressSelected}
-        onAddAddress={handleAddAddress}
         token={userToken}
       />
 

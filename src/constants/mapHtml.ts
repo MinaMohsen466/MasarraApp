@@ -297,22 +297,26 @@ export const MAP_VIEW_HTML = `
           var lng = data.lng;
           map.setView([lat, lng], 15);
           
-          if (currentMarker) {
-            map.removeLayer(currentMarker);
-          }
-          var customIcon = L.divIcon({
-            html: '<div style="position: relative; width: 40px; height: 40px; justify-content: center; align-items: center; display: flex;"><div class="address-marker-pulse"></div><svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="z-index: 2;"><path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" fill="#00a19c"/><circle cx="12" cy="9" r="3" fill="#ffffff"/></svg></div>',
-            className: 'custom-leaflet-marker',
-            iconSize: [40, 40],
-            iconAnchor: [20, 40],
-            popupAnchor: [0, -28]
-          });
-          currentMarker = L.marker([lat, lng], { icon: customIcon }).addTo(map);
-          if (data.label) {
-            currentMarker.bindPopup('<div style="font-size: 13px; font-weight: 700; color: #ffffff;">' + data.label + '</div>', {
-              closeButton: false,
-              offset: [0, -5]
-            }).openPopup();
+          // Only add address marker when NOT in pin/selection mode
+          // (in pin mode the green center pin is already visible)
+          if (!showPin) {
+            if (currentMarker) {
+              map.removeLayer(currentMarker);
+            }
+            var customIcon = L.divIcon({
+              html: '<div style="position: relative; width: 40px; height: 40px; justify-content: center; align-items: center; display: flex;"><div class="address-marker-pulse"></div><svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="z-index: 2;"><path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" fill="#00a19c"/><circle cx="12" cy="9" r="3" fill="#ffffff"/></svg></div>',
+              className: 'custom-leaflet-marker',
+              iconSize: [40, 40],
+              iconAnchor: [20, 40],
+              popupAnchor: [0, -28]
+            });
+            currentMarker = L.marker([lat, lng], { icon: customIcon }).addTo(map);
+            if (data.label) {
+              currentMarker.bindPopup('<div style="font-size: 13px; font-weight: 700; color: #ffffff;">' + data.label + '</div>', {
+                closeButton: false,
+                offset: [0, -5]
+              }).openPopup();
+            }
           }
         } else if (data.type === 'CLEAR_MARKERS') {
           // Remove any existing address marker and its popup label
@@ -329,7 +333,7 @@ export const MAP_VIEW_HTML = `
             map.removeLayer(currentMarker);
             currentMarker = null;
           }
-          if (showPin) {
+          if (showPin && data.autoLocate !== false) {
             locateUser();
           }
         }

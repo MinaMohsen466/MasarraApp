@@ -74,6 +74,10 @@ const Addresses: React.FC<{
     const [editingId, setEditingId] = useState<string | null>(null);
 
     const topMapRef = React.useRef<WebView>(null);
+    // When true, the next LOCATION_SELECTED from the map is ignored
+    // (used when opening the edit form to prevent GPS auto-locate from
+    // overwriting pre-filled form fields like houseNumber).
+    const skipLocationUpdateRef = React.useRef(false);
 
     const handleAddAddressClick = () => {
       setForm({
@@ -174,16 +178,27 @@ const Addresses: React.FC<{
       const timer = setTimeout(() => {
         topMapRef.current?.postMessage(JSON.stringify({
           type: 'SHOW_PIN',
-          show: showForm
+          show: showForm,
+          autoLocate: showForm && !editingId,
         }));
       }, 400);
       return () => clearTimeout(timer);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showForm]);
 
     const handleMapMessage = async (event: { nativeEvent: { data: string } }) => {
       try {
         const data = JSON.parse(event.nativeEvent.data);
         if (data.type === 'LOCATION_SELECTED') {
+          // When editing, the initial map pan to the address location fires
+          // a LOCATION_SELECTED event.  Skip it so we don't overwrite the
+          // pre-filled form fields (e.g. houseNumber) with reverse-geocoded
+          // data that may be incomplete.
+          if (skipLocationUpdateRef.current) {
+            skipLocationUpdateRef.current = false;
+            setMapLoadingAddress(false);
+            return;
+          }
           const { lat, lng } = data;
           setMapLoadingAddress(true);
           const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=${isRTL ? 'ar' : 'en'}`, {
@@ -239,51 +254,47 @@ const Addresses: React.FC<{
           };
 
           const checkAndGetLocation = async () => {
-            let hasPermission = false;
             if (Platform.OS === 'android') {
               try {
+                // First, try to check if we already have permission
                 const fineGranted = await PermissionsAndroid.check(
                   PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
                 );
                 const coarseGranted = await PermissionsAndroid.check(
                   PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION
                 );
-                
-                if (fineGranted || coarseGranted) {
-                  hasPermission = true;
-                } else {
-                  const status = await PermissionsAndroid.requestMultiple([
-                    PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-                    PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
-                  ]);
-                  if (
-                    status[PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION] === PermissionsAndroid.RESULTS.GRANTED ||
-                    status[PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION] === PermissionsAndroid.RESULTS.GRANTED
-                  ) {
-                    hasPermission = true;
+
+                if (!fineGranted && !coarseGranted) {
+                  // Permission check returned false – this can happen even if
+                  // the user already granted permission (Android 12+ quirk).
+                  // Try requesting; if the user already approved, Android
+                  // will silently grant without showing a dialog.
+                  try {
+                    await PermissionsAndroid.requestMultiple([
+                      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+                      PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
+                    ]);
+                  } catch (reqErr) {
+                    if (__DEV__) console.warn('Error requesting Android permissions:', reqErr);
                   }
                 }
               } catch (err) {
-                if (__DEV__) console.warn('Error checking/requesting Android permissions:', err);
+                if (__DEV__) console.warn('Error checking Android permissions:', err);
               }
+              // Always attempt to get location regardless of the permission
+              // check result – Geolocation.getCurrentPosition will fail on
+              // its own if permission is truly denied, and the fallback /
+              // error handler below will take care of it.
+              getGeoLocation(true);
             } else if (Platform.OS === 'ios') {
               try {
                 Geolocation.requestAuthorization();
-                hasPermission = true;
               } catch {
-                hasPermission = true;
+                // ignore – proceed to get location anyway
               }
-            } else {
-              hasPermission = true;
-            }
-
-            if (hasPermission) {
               getGeoLocation(true);
             } else {
-              setMapLoadingAddress(false);
-              topMapRef.current?.injectJavaScript(
-                `window.receiveLocationError(); true;`
-              );
+              getGeoLocation(true);
             }
           };
 
@@ -310,7 +321,6 @@ const Addresses: React.FC<{
       onChangeText: (text: string) => void,
       fieldKey: string,
       required: boolean = false,
-      _flex: number = 1,
       placeholder: string = ''
     ) => {
       const isActive = activeField === fieldKey;
@@ -447,7 +457,11 @@ const Addresses: React.FC<{
         floorNumber: addr.floorNumber || '',
         apartmentNumber: addr.apartmentNumber || '',
       });
+      // Prevent the initial map pan from overwriting form fields
+      skipLocationUpdateRef.current = true;
       setShowForm(true);
+      // Pan the map to the address location (for visual context only;
+      // the form fields are already populated from the saved address).
       geocodeAndPan(addr);
     };
 
@@ -581,7 +595,6 @@ const Addresses: React.FC<{
                           t => setForm(s => ({ ...s, name: t })),
                           'name',
                           true,
-                          1,
                           isRTL ? 'اسم العنوان (مثل: المنزل، العمل)' : 'Address Name (e.g. Home, Work)'
                         )}
                       </View>
@@ -594,7 +607,6 @@ const Addresses: React.FC<{
                           t => setForm(s => ({ ...s, city: t })),
                           'city',
                           true,
-                          1,
                           isRTL ? 'المنطقة / المدينة' : 'Area / City'
                         )}
                         {renderInputField(
@@ -603,7 +615,6 @@ const Addresses: React.FC<{
                           t => setForm(s => ({ ...s, block: t })),
                           'block',
                           true,
-                          1,
                           isRTL ? 'القطعة' : 'Block'
                         )}
                       </View>
@@ -616,7 +627,6 @@ const Addresses: React.FC<{
                           t => setForm(s => ({ ...s, street: t })),
                           'street',
                           true,
-                          1,
                           isRTL ? 'الشارع' : 'Street'
                         )}
                         {renderInputField(
@@ -625,7 +635,6 @@ const Addresses: React.FC<{
                           t => setForm(s => ({ ...s, lane: t })),
                           'lane',
                           false,
-                          1,
                           isRTL ? 'الجادة (اختياري)' : 'Lane (Optional)'
                         )}
                       </View>
@@ -638,7 +647,6 @@ const Addresses: React.FC<{
                           t => setForm(s => ({ ...s, houseNumber: t })),
                           'houseNumber',
                           true,
-                          1,
                           isRTL ? 'رقم المنزل' : 'House Number'
                         )}
                       </View>
@@ -651,7 +659,6 @@ const Addresses: React.FC<{
                           t => setForm(s => ({ ...s, floorNumber: t })),
                           'floorNumber',
                           false,
-                          1,
                           isRTL ? 'الطابق (اختياري)' : 'Floor (Optional)'
                         )}
                         {renderInputField(
@@ -660,7 +667,6 @@ const Addresses: React.FC<{
                           t => setForm(s => ({ ...s, apartmentNumber: t })),
                           'apartmentNumber',
                           false,
-                          1,
                           isRTL ? 'الشقة (اختياري)' : 'Apartment (Optional)'
                         )}
                       </View>

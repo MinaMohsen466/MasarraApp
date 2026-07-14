@@ -42,7 +42,6 @@ interface AddressSelectionProps {
   visible: boolean;
   onClose: () => void;
   onSelectAddress: (address: Address) => void;
-  onAddAddress: () => void;
   token: string;
 }
 
@@ -50,8 +49,6 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
   visible,
   onClose,
   onSelectAddress,
-  // onAddAddress kept for backwards compatibility
-  onAddAddress: _onAddAddress,
   token,
 }) => {
   const { isRTL } = useLanguage();
@@ -103,6 +100,7 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
         JSON.stringify({
           type: 'SHOW_PIN',
           show: showForm,
+          autoLocate: true,
         })
       );
     }, 400);
@@ -184,51 +182,47 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
         };
 
         const checkAndGetLocation = async () => {
-          let hasPermission = false;
           if (Platform.OS === 'android') {
             try {
+              // First, try to check if we already have permission
               const fineGranted = await PermissionsAndroid.check(
                 PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
               );
               const coarseGranted = await PermissionsAndroid.check(
                 PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION
               );
-              
-              if (fineGranted || coarseGranted) {
-                hasPermission = true;
-              } else {
-                const status = await PermissionsAndroid.requestMultiple([
-                  PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-                  PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
-                ]);
-                if (
-                  status[PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION] === PermissionsAndroid.RESULTS.GRANTED ||
-                  status[PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION] === PermissionsAndroid.RESULTS.GRANTED
-                ) {
-                  hasPermission = true;
+
+              if (!fineGranted && !coarseGranted) {
+                // Permission check returned false – this can happen even if
+                // the user already granted permission (Android 12+ quirk).
+                // Try requesting; if the user already approved, Android
+                // will silently grant without showing a dialog.
+                try {
+                  await PermissionsAndroid.requestMultiple([
+                    PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+                    PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
+                  ]);
+                } catch (reqErr) {
+                  console.warn('Error requesting Android permissions:', reqErr);
                 }
               }
             } catch (err) {
-              console.warn('Error checking/requesting Android permissions:', err);
+              console.warn('Error checking Android permissions:', err);
             }
+            // Always attempt to get location regardless of the permission
+            // check result – Geolocation.getCurrentPosition will fail on
+            // its own if permission is truly denied, and the fallback /
+            // error handler below will take care of it.
+            getGeoLocation(true);
           } else if (Platform.OS === 'ios') {
             try {
               Geolocation.requestAuthorization();
-              hasPermission = true;
             } catch {
-              hasPermission = true;
+              // ignore – proceed to get location anyway
             }
-          } else {
-            hasPermission = true;
-          }
-
-          if (hasPermission) {
             getGeoLocation(true);
           } else {
-            setMapLoadingAddress(false);
-            topMapRef.current?.injectJavaScript(
-              `window.receiveLocationError(); true;`
-            );
+            getGeoLocation(true);
           }
         };
 
@@ -241,9 +235,23 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
             : 'Could not retrieve your location automatically. Please ensure location services (GPS) are enabled and permissions are granted.'
         );
         setAlertVisible(true);
+      } else if (data.type === 'MAP_READY') {
+        // The WebView just finished loading — send SHOW_PIN now to reliably
+        // activate pin mode and auto-locate.  The 400 ms useEffect timer may
+        // fire before the WebView is ready, so this ensures the message gets
+        // through.
+        if (showForm) {
+          topMapRef.current?.postMessage(
+            JSON.stringify({
+              type: 'SHOW_PIN',
+              show: true,
+              autoLocate: true,
+            })
+          );
+        }
       }
     } catch (error) {
-      console.error('Error fetching address:', error);
+      if (__DEV__) console.error('Error fetching address:', error);
       setMapLoadingAddress(false);
     }
   };
@@ -254,7 +262,6 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
     onChangeText: (text: string) => void,
     fieldKey: string,
     required: boolean = false,
-    _flex: number = 1,
     placeholder: string = ''
   ) => {
     const isActive = activeField === fieldKey;
@@ -455,7 +462,6 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
                       t => setForm(s => ({ ...s, name: t })),
                       'name',
                       true,
-                      1,
                       isRTL
                         ? 'اسم العنوان (مثل: المنزل، العمل)'
                         : 'Address Name (e.g. Home, Work)'
@@ -470,7 +476,6 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
                       t => setForm(s => ({ ...s, city: t })),
                       'city',
                       true,
-                      1,
                       isRTL ? 'المنطقة / المدينة' : 'Area / City'
                     )}
                     {renderInputField(
@@ -479,7 +484,6 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
                       t => setForm(s => ({ ...s, block: t })),
                       'block',
                       true,
-                      1,
                       isRTL ? 'القطعة' : 'Block'
                     )}
                   </View>
@@ -492,7 +496,6 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
                       t => setForm(s => ({ ...s, street: t })),
                       'street',
                       true,
-                      1,
                       isRTL ? 'الشارع' : 'Street'
                     )}
                     {renderInputField(
@@ -501,7 +504,6 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
                       t => setForm(s => ({ ...s, lane: t })),
                       'lane',
                       false,
-                      1,
                       isRTL ? 'الجادة (اختياري)' : 'Lane (Optional)'
                     )}
                   </View>
@@ -514,7 +516,6 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
                       t => setForm(s => ({ ...s, houseNumber: t })),
                       'houseNumber',
                       true,
-                      1,
                       isRTL ? 'رقم المنزل' : 'House Number'
                     )}
                   </View>
@@ -527,7 +528,6 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
                       t => setForm(s => ({ ...s, floorNumber: t })),
                       'floorNumber',
                       false,
-                      1,
                       isRTL ? 'رقم الطابق (اختياري)' : 'Floor Number (Optional)'
                     )}
                     {renderInputField(
@@ -536,7 +536,6 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
                       t => setForm(s => ({ ...s, apartmentNumber: t })),
                       'apartmentNumber',
                       false,
-                      1,
                       isRTL
                         ? 'رقم الشقة (اختياري)'
                         : 'Apartment Number (Optional)'
