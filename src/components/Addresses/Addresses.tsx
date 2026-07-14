@@ -367,9 +367,9 @@ const Addresses: React.FC<{
 
     const pageStatusBar = (
       <StatusBar
-        backgroundColor="#00a19c"
-        barStyle="light-content"
-        translucent={false}
+        backgroundColor="transparent"
+        barStyle="dark-content"
+        translucent={true}
       />
     );
 

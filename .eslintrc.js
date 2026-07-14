@@ -1,6 +1,12 @@
 module.exports = {
   root: true,
   extends: '@react-native',
+  parserOptions: {
+    requireConfigFile: false,
+    babelOptions: {
+      configFile: require.resolve('./babel.config.js'),
+    },
+  },
   rules: {
     // Performance & Optimization
     'react-hooks/exhaustive-deps': 'warn',
