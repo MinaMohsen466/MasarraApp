@@ -95,11 +95,12 @@ export const styles = StyleSheet.create({
     marginVertical: 2,
   },
   dayCellBg: {
-    width: '85%',
-    height: '85%',
-    borderRadius: 9999, // circle
+    width: 36,
+    height: 36,
+    borderRadius: 18, // circle
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
   },
   selectedDayCellBg: {
     backgroundColor: colors.primary || '#00a19c',

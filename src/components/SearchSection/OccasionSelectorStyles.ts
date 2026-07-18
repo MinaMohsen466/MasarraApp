@@ -68,10 +68,10 @@ export const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
   },
   iconWrapper: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#FFFFFF',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF', // Clean white background reverted
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#0F172A',
@@ -82,11 +82,12 @@ export const styles = StyleSheet.create({
   },
   iconWrapperSelected: {
     borderColor: colors.primary,
+    borderWidth: 1.5,
   },
   occasionImage: {
     width: '100%',
     height: '100%',
-    borderRadius: 18,
+    borderRadius: 22,
   },
   placeholderIcon: {
     width: 16,

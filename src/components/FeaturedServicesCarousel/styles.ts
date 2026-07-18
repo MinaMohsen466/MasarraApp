@@ -22,7 +22,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
     slideContainer: {
       width: SCREEN_WIDTH,
       height: isTablet ? 300 : 208,
-      paddingHorizontal: isTablet ? 40 : 24,
+      paddingHorizontal: isTablet ? 34 : 18,
     },
     imageCard: {
       width: '100%',

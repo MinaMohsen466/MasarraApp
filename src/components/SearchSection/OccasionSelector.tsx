@@ -64,8 +64,8 @@ const OccasionSelector: React.FC<OccasionSelectorProps> = ({
               item.image.toLowerCase().endsWith('.svg') ? (
                 <SvgUri
                   uri={getImageUrl(item.image)}
-                  width="60%"
-                  height="60%"
+                  width={24}
+                  height={24}
                   fill={isSelected ? colors.primary : '#475569'}
                 />
               ) : (
