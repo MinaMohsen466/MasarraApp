@@ -8,6 +8,14 @@ export const createStyles = (SCREEN_WIDTH: number, SCREEN_HEIGHT: number) => {
     : Math.min(SCREEN_WIDTH - 40, 400);
   const maxModalHeight = isTablet ? SCREEN_HEIGHT * 0.75 : SCREEN_HEIGHT * 0.7;
 
+  const paddingSize = isTablet ? 18 : 12;
+  const maxCalendarWidth = modalWidth - paddingSize * 2 - 4;
+  const cellWidth = 34;
+  const cellMarginHorizontal = Math.floor(
+    (maxCalendarWidth - cellWidth * 7) / 14,
+  );
+  const calendarWidth = cellWidth * 7 + cellMarginHorizontal * 14;
+
   return StyleSheet.create({
     modalOverlay: {
       flex: 1,
@@ -22,7 +30,7 @@ export const createStyles = (SCREEN_WIDTH: number, SCREEN_HEIGHT: number) => {
       maxHeight: maxModalHeight,
       backgroundColor: colors.background,
       borderRadius: 16,
-      padding: isTablet ? 24 : 16,
+      padding: paddingSize,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.3,
@@ -33,8 +41,8 @@ export const createStyles = (SCREEN_WIDTH: number, SCREEN_HEIGHT: number) => {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginBottom: 20,
-      paddingBottom: 16,
+      marginBottom: 14,
+      paddingBottom: 10,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
@@ -52,11 +60,11 @@ export const createStyles = (SCREEN_WIDTH: number, SCREEN_HEIGHT: number) => {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginBottom: 16,
+      marginBottom: 12,
       paddingHorizontal: 8,
     },
     navButton: {
-      padding: 8,
+      padding: 6,
       borderRadius: 8,
       backgroundColor: colors.backgroundLight,
     },
@@ -67,36 +75,40 @@ export const createStyles = (SCREEN_WIDTH: number, SCREEN_HEIGHT: number) => {
     },
     dayNamesRow: {
       flexDirection: 'row',
-      marginBottom: 8,
+      marginBottom: 6,
+      width: calendarWidth,
+      alignSelf: 'center',
     },
     dayNameCell: {
       flex: 1,
       alignItems: 'center',
-      paddingVertical: 8,
+      paddingVertical: 6,
     },
     dayNameText: {
-      fontSize: 12,
+      fontSize: 11,
       fontWeight: '600',
       color: colors.textSecondary,
     },
     calendarScroll: {
-      maxHeight: isTablet ? 350 : 280,
+      maxHeight: isTablet ? 320 : 250,
+      width: calendarWidth,
+      alignSelf: 'center',
     },
     calendarGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
       justifyContent: 'flex-start',
+      width: calendarWidth,
+      alignSelf: 'center',
     },
     dayCell: {
-      width: `${100 / 7}%`,
-      aspectRatio: 1,
+      width: cellWidth,
+      height: cellWidth,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: 4,
-      paddingHorizontal: 2,
-      borderRadius: 12,
+      borderRadius: 18,
       marginVertical: 4,
-      marginHorizontal: 2,
+      marginHorizontal: cellMarginHorizontal,
     },
     dayCellSelected: {
       backgroundColor: colors.primary,
@@ -108,7 +120,7 @@ export const createStyles = (SCREEN_WIDTH: number, SCREEN_HEIGHT: number) => {
       backgroundColor: '#FFE5E5',
     },
     dayText: {
-      fontSize: 14,
+      fontSize: 13,
       fontWeight: '600',
       color: colors.textDark,
     },
@@ -122,21 +134,21 @@ export const createStyles = (SCREEN_WIDTH: number, SCREEN_HEIGHT: number) => {
       color: '#D32F2F',
     },
     slotsText: {
-      fontSize: 9,
+      fontSize: 8,
       color: colors.textSecondary,
-      marginTop: 2,
+      marginTop: 1,
     },
     slotsTextSelected: {
       color: colors.textWhite,
     },
     fullText: {
-      fontSize: 9,
+      fontSize: 8,
       color: '#D32F2F',
       fontWeight: '600',
-      marginTop: 2,
+      marginTop: 1,
     },
     loadingContainer: {
-      paddingVertical: 60,
+      paddingVertical: 40,
       alignItems: 'center',
     },
     loadingText: {
@@ -145,8 +157,8 @@ export const createStyles = (SCREEN_WIDTH: number, SCREEN_HEIGHT: number) => {
       color: colors.textSecondary,
     },
     closeButton: {
-      marginTop: 16,
-      padding: 14,
+      marginTop: 12,
+      padding: 10,
       backgroundColor: colors.backgroundLight,
       borderRadius: 12,
       alignItems: 'center',

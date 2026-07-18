@@ -877,10 +877,11 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
                   </head>
                   <body>
-                    <video src="${getServiceImageUrl(item.src)}" poster="${service.images && service.images.length > 0
+                    <video src="${getServiceImageUrl(item.src)}" poster="${
+                  service.images && service.images.length > 0
                     ? getServiceImageUrl(service.images[0])
                     : ''
-                  }" controls autoplay playsinline></video>
+                }" controls autoplay playsinline></video>
                   </body>
                   </html>
                 `,
@@ -923,11 +924,12 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                     </head>
                     <body>
                       <video src="${getServiceImageUrl(
-                    item.src,
-                  )}#t=0.1" poster="${service.images && service.images.length > 0
+                        item.src,
+                      )}#t=0.1" poster="${
+                    service.images && service.images.length > 0
                       ? getServiceImageUrl(service.images[0])
                       : ''
-                    }" preload="metadata" playsinline></video>
+                  }" preload="metadata" playsinline></video>
                     </body>
                     </html>
                   `,
@@ -1417,11 +1419,11 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                   </Text>
 
                   {service.isOnSale === true &&
-                    ((service.salePrice &&
-                      service.salePrice > 0 &&
-                      service.salePrice < service.price) ||
-                      (service.discountPercentage &&
-                        service.discountPercentage > 0)) ? (
+                  ((service.salePrice &&
+                    service.salePrice > 0 &&
+                    service.salePrice < service.price) ||
+                    (service.discountPercentage &&
+                      service.discountPercentage > 0)) ? (
                     <View style={{ gap: 4 }}>
                       {/* Sale Price (dynamic total) */}
                       <Text style={styles.priceValue}>
@@ -1539,125 +1541,125 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
           {/* Vendor Policy Section */}
           {((service.policies && service.policies.length > 0) ||
             service.vendor?.vendorProfile?.refundPeriodHours != null) && (
-              <View style={styles.policiesSection}>
-                <Text
-                  style={[styles.policiesTitle, isRTL && styles.policiesTitleRTL]}
-                >
-                  {isRTL ? 'سياسة المورد' : 'VENDOR POLICY'}
-                </Text>
+            <View style={styles.policiesSection}>
+              <Text
+                style={[styles.policiesTitle, isRTL && styles.policiesTitleRTL]}
+              >
+                {isRTL ? 'سياسة المورد' : 'VENDOR POLICY'}
+              </Text>
 
-                {service.policies && service.policies.length > 0 && (
-                  <View style={styles.policiesGrid}>
-                    {service.policies.map((policyItem: any, index: number) => {
-                      // Handle both old and new policy structure for backward compatibility
-                      const policy = policyItem.policy || policyItem;
-                      const policyName =
-                        isRTL && policy.nameAr ? policy.nameAr : policy.name;
+              {service.policies && service.policies.length > 0 && (
+                <View style={styles.policiesGrid}>
+                  {service.policies.map((policyItem: any, index: number) => {
+                    // Handle both old and new policy structure for backward compatibility
+                    const policy = policyItem.policy || policyItem;
+                    const policyName =
+                      isRTL && policy.nameAr ? policy.nameAr : policy.name;
 
-                      // Priority: customText > selectedDescription > first description
-                      const hasCustomText =
-                        policyItem.customText && policyItem.customText.trim();
-                      const hasCustomTextAr =
-                        policyItem.customTextAr && policyItem.customTextAr.trim();
-                      const selectedDescription = policyItem.selectedDescriptionId
-                        ? policy.descriptions?.find(
+                    // Priority: customText > selectedDescription > first description
+                    const hasCustomText =
+                      policyItem.customText && policyItem.customText.trim();
+                    const hasCustomTextAr =
+                      policyItem.customTextAr && policyItem.customTextAr.trim();
+                    const selectedDescription = policyItem.selectedDescriptionId
+                      ? policy.descriptions?.find(
                           (desc: any) =>
                             desc._id === policyItem.selectedDescriptionId,
                         )
-                        : null;
+                      : null;
 
-                      const description = hasCustomText
-                        ? isRTL && hasCustomTextAr
-                          ? policyItem.customTextAr
-                          : policyItem.customText
-                        : selectedDescription
-                          ? isRTL && selectedDescription.textAr
-                            ? selectedDescription.textAr
-                            : selectedDescription.text
-                          : policy.descriptions && policy.descriptions.length > 0
-                            ? isRTL
-                              ? policy.descriptions[0].textAr
-                              : policy.descriptions[0].text
-                            : isRTL && policy.descriptionAr
-                              ? policy.descriptionAr
-                              : policy.description || '';
+                    const description = hasCustomText
+                      ? isRTL && hasCustomTextAr
+                        ? policyItem.customTextAr
+                        : policyItem.customText
+                      : selectedDescription
+                      ? isRTL && selectedDescription.textAr
+                        ? selectedDescription.textAr
+                        : selectedDescription.text
+                      : policy.descriptions && policy.descriptions.length > 0
+                      ? isRTL
+                        ? policy.descriptions[0].textAr
+                        : policy.descriptions[0].text
+                      : isRTL && policy.descriptionAr
+                      ? policy.descriptionAr
+                      : policy.description || '';
 
-                      return (
+                    return (
+                      <View
+                        key={policy._id || index}
+                        style={[
+                          styles.policyCard,
+                          isRTL && styles.policyCardRTL,
+                        ]}
+                      >
                         <View
-                          key={policy._id || index}
                           style={[
-                            styles.policyCard,
-                            isRTL && styles.policyCardRTL,
+                            styles.policyIconContainer,
+                            isRTL && styles.policyIconContainerRTL,
                           ]}
                         >
-                          <View
+                          {policy.image ? (
+                            <Image
+                              source={{ uri: getImageUrl(policy.image) }}
+                              style={styles.policyIcon}
+                              resizeMode="contain"
+                            />
+                          ) : (
+                            <View style={styles.policyIconPlaceholder} />
+                          )}
+                        </View>
+                        <View style={styles.policyContent}>
+                          <Text
                             style={[
-                              styles.policyIconContainer,
-                              isRTL && styles.policyIconContainerRTL,
+                              styles.policyName,
+                              isRTL && styles.policyNameRTL,
                             ]}
                           >
-                            {policy.image ? (
-                              <Image
-                                source={{ uri: getImageUrl(policy.image) }}
-                                style={styles.policyIcon}
-                                resizeMode="contain"
-                              />
-                            ) : (
-                              <View style={styles.policyIconPlaceholder} />
-                            )}
-                          </View>
-                          <View style={styles.policyContent}>
+                            {policyName}
+                          </Text>
+                          {description ? (
                             <Text
                               style={[
-                                styles.policyName,
-                                isRTL && styles.policyNameRTL,
+                                styles.policyDescription,
+                                isRTL && styles.policyDescriptionRTL,
                               ]}
+                              numberOfLines={2}
+                              ellipsizeMode="tail"
                             >
-                              {policyName}
+                              {description}
                             </Text>
-                            {description ? (
-                              <Text
-                                style={[
-                                  styles.policyDescription,
-                                  isRTL && styles.policyDescriptionRTL,
-                                ]}
-                                numberOfLines={2}
-                                ellipsizeMode="tail"
-                              >
-                                {description}
-                              </Text>
-                            ) : null}
-                          </View>
+                          ) : null}
                         </View>
-                      );
-                    })}
-                  </View>
-                )}
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
 
-                {/* Vendor refund window policy */}
-                {service.vendor?.vendorProfile?.refundPeriodHours != null && (
-                  <View
+              {/* Vendor refund window policy */}
+              {service.vendor?.vendorProfile?.refundPeriodHours != null && (
+                <View
+                  style={{
+                    flexDirection: isRTL ? 'row-reverse' : 'row',
+                    alignItems: 'center',
+                    marginTop:
+                      service.policies && service.policies.length > 0 ? 16 : 0,
+                    paddingHorizontal: 20,
+                    gap: 12,
+                  }}
+                >
+                  <Icon name="time-outline" size={24} color={colors.primary} />
+                  <Text
                     style={{
-                      flexDirection: isRTL ? 'row-reverse' : 'row',
-                      alignItems: 'center',
-                      marginTop:
-                        service.policies && service.policies.length > 0 ? 16 : 0,
-                      paddingHorizontal: 20,
-                      gap: 12,
+                      fontSize: 13,
+                      fontWeight: '600',
+                      color: '#0F172A',
+                      flex: 1,
+                      textAlign: isRTL ? 'right' : 'left',
                     }}
                   >
-                    <Icon name="time-outline" size={24} color={colors.primary} />
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        fontWeight: '600',
-                        color: '#0F172A',
-                        flex: 1,
-                        textAlign: isRTL ? 'right' : 'left',
-                      }}
-                    >
-                      {isRTL
-                        ? `استرداد كامل حتى ${(() => {
+                    {isRTL
+                      ? `استرداد كامل حتى ${(() => {
                           const h =
                             service.vendor.vendorProfile.refundPeriodHours;
                           if (h === 0) return 'أي وقت';
@@ -1667,7 +1669,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                           );
                           return `${d} يوم`;
                         })()} قبل المناسبة`
-                        : `Full refund up to ${(() => {
+                      : `Full refund up to ${(() => {
                           const h =
                             service.vendor.vendorProfile.refundPeriodHours;
                           if (h === 0) return 'any time';
@@ -1677,11 +1679,11 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                           );
                           return `${d} days`;
                         })()} before the event`}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            )}
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
 
           {/* Booking / Availability preview under Vendor Policy */}
           <View style={styles.bookingContainer}>
@@ -1739,12 +1741,12 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                 >
                   {selectedDate
                     ? selectedDate.toLocaleDateString(
-                      isRTL ? 'ar-KW' : 'en-US',
-                      { year: 'numeric', month: '2-digit', day: '2-digit' },
-                    )
+                        isRTL ? 'ar-KW' : 'en-US',
+                        { year: 'numeric', month: '2-digit', day: '2-digit' },
+                      )
                     : isRTL
-                      ? 'اختر التاريخ'
-                      : 'Select Date'}
+                    ? 'اختر التاريخ'
+                    : 'Select Date'}
                 </Text>
               </TouchableOpacity>
 
@@ -1811,20 +1813,20 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                       ? 'جاري التحقق...'
                       : 'Checking...'
                     : isTimeInPast()
-                      ? isRTL
-                        ? '⚠ وقت قديم'
-                        : '⚠ Past Time'
-                      : !isTimeSlotAvailable && selectedDate && selectedTime
-                        ? isRTL
-                          ? '✗ غير متاح'
-                          : '✗ Not Available'
-                        : selectedDate && selectedTime
-                          ? isRTL
-                            ? '✓ متاح'
-                            : '✓ Available'
-                          : isRTL
-                            ? 'اختر التاريخ والوقت'
-                            : 'Select Date & Time'}
+                    ? isRTL
+                      ? '⚠ وقت قديم'
+                      : '⚠ Past Time'
+                    : !isTimeSlotAvailable && selectedDate && selectedTime
+                    ? isRTL
+                      ? '✗ غير متاح'
+                      : '✗ Not Available'
+                    : selectedDate && selectedTime
+                    ? isRTL
+                      ? '✓ متاح'
+                      : '✓ Available'
+                    : isRTL
+                    ? 'اختر التاريخ والوقت'
+                    : 'Select Date & Time'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -1881,7 +1883,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
 
                       {/* Group subtitle/description - shown when collapsed */}
                       {!isExpanded &&
-                        (isRTL ? input.descriptionAr : input.description) ? (
+                      (isRTL ? input.descriptionAr : input.description) ? (
                         <Text
                           style={[
                             {
@@ -1908,8 +1910,8 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                               rotate: isExpanded
                                 ? '90deg'
                                 : isRTL
-                                  ? '180deg'
-                                  : '0deg',
+                                ? '180deg'
+                                : '0deg',
                             },
                           ],
                         }}
@@ -2002,6 +2004,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                   key={optIndex}
                                   style={[
                                     styles.optionRow,
+                                    isRTL && styles.optionRowRTL,
                                     isSelected && styles.optionRowSelected,
                                   ]}
                                   activeOpacity={0.7}
@@ -2011,8 +2014,8 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                       const currentArray = selectedArray;
                                       const newArray = isSelected
                                         ? currentArray.filter(
-                                          idx => idx !== optIndex,
-                                        )
+                                            idx => idx !== optIndex,
+                                          )
                                         : [...currentArray, optIndex];
 
                                       if (newArray.length === 0) {
@@ -2044,10 +2047,16 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                     }
                                   }}
                                 >
-                                  <View style={styles.checkboxContainer}>
+                                  <View
+                                    style={[
+                                      styles.checkboxContainer,
+                                      isRTL && styles.checkboxContainerRTL,
+                                    ]}
+                                  >
                                     <View
                                       style={[
                                         styles.checkbox,
+                                        isRTL && styles.checkboxRTL,
                                         isSelected && styles.checkboxSelected,
                                       ]}
                                     >
@@ -2097,8 +2106,9 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                       <Text
                                         style={[
                                           styles.optionText,
+                                          isRTL && styles.optionTextRTL,
                                           isSelected &&
-                                          styles.optionTextSelected,
+                                            styles.optionTextSelected,
                                         ]}
                                       >
                                         {option}
@@ -2107,26 +2117,30 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                       {(
                                         isRTL
                                           ? input.optionDescriptionsAr?.[
-                                          optIndex
-                                          ]
+                                              optIndex
+                                            ]
                                           : input.optionDescriptions?.[optIndex]
                                       ) ? (
                                         <Text
-                                          style={{
-                                            fontSize: 11,
-                                            color: isSelected
-                                              ? colors.primary
-                                              : colors.textSecondary,
-                                            marginTop: 1,
-                                          }}
+                                          style={[
+                                            {
+                                              fontSize: 11,
+                                              color: isSelected
+                                                ? colors.primary
+                                                : colors.textSecondary,
+                                              marginTop: 1,
+                                            },
+                                            isRTL &&
+                                              styles.optionDescriptionRTL,
+                                          ]}
                                         >
                                           {isRTL
                                             ? input.optionDescriptionsAr[
-                                            optIndex
-                                            ]
+                                                optIndex
+                                              ]
                                             : input.optionDescriptions[
-                                            optIndex
-                                            ]}
+                                                optIndex
+                                              ]}
                                         </Text>
                                       ) : null}
                                     </View>
@@ -2134,6 +2148,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                   <Text
                                     style={[
                                       styles.optionPrice,
+                                      isRTL && styles.optionPriceRTL,
                                       isSelected && styles.optionPriceSelected,
                                     ]}
                                   >
@@ -2209,21 +2224,33 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                   </TouchableOpacity>
                                 ) : null}
                                 <View style={styles.menuItemInfo}>
-                                  <Text style={styles.menuItemName}>
-                                    {labelText}
+                                  <View
+                                    style={[
+                                      styles.menuItemTextRow,
+                                      isRTL && styles.menuItemTextRowRTL,
+                                    ]}
+                                  >
+                                    <Text
+                                      style={[
+                                        styles.menuItemName,
+                                        isRTL && styles.menuItemNameRTL,
+                                      ]}
+                                    >
+                                      {labelText}
+                                    </Text>
                                     {price > 0 && (
                                       <Text
-                                        style={{
-                                          color: colors.primary,
-                                          fontWeight: '600',
-                                          fontSize: 13,
-                                        }}
+                                        style={[
+                                          styles.menuItemPriceText,
+                                          isRTL && styles.menuItemPriceTextRTL,
+                                        ]}
                                       >
-                                        {`   +${price.toFixed(3)} ${isRTL ? 'د.ك' : 'KD'
-                                          }`}
+                                        {`+${price.toFixed(3)} ${
+                                          isRTL ? 'د.ك' : 'KD'
+                                        }`}
                                       </Text>
                                     )}
-                                  </Text>
+                                  </View>
                                   {/* Per-option description */}
                                   {(
                                     isRTL
@@ -2238,6 +2265,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                           fontWeight: '400',
                                           fontSize: 11,
                                         },
+                                        isRTL && styles.menuItemPriceRTL,
                                       ]}
                                     >
                                       {isRTL
@@ -2251,7 +2279,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                     style={[
                                       styles.menuItemStepperButton,
                                       qty <= 0 &&
-                                      styles.menuItemStepperButtonDisabled,
+                                        styles.menuItemStepperButtonDisabled,
                                     ]}
                                     onPress={() =>
                                       setMenuQty(option, Math.max(0, qty - 1))
@@ -2400,7 +2428,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                       {[5, 4, 3, 2, 1].map(star => {
                         const count =
                           reviewStats.ratingDistribution[
-                          star as keyof typeof reviewStats.ratingDistribution
+                            star as keyof typeof reviewStats.ratingDistribution
                           ] || 0;
                         const percentage =
                           reviewStats.totalRatings > 0
@@ -2438,9 +2466,9 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                               paddingVertical: 10,
                               borderBottomWidth:
                                 index <
-                                  (isReviewsExpanded
-                                    ? reviews.length
-                                    : Math.min(reviews.length, 2)) -
+                                (isReviewsExpanded
+                                  ? reviews.length
+                                  : Math.min(reviews.length, 2)) -
                                   1
                                   ? 1
                                   : 0,
@@ -2653,8 +2681,8 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                                 ? 'عرض أقل'
                                 : 'Show Less'
                               : isRTL
-                                ? `عرض المزيد (${reviews.length - 2})`
-                                : `Show More (${reviews.length - 2})`}
+                              ? `عرض المزيد (${reviews.length - 2})`
+                              : `Show More (${reviews.length - 2})`}
                           </Text>
                           <Svg
                             width={16}
@@ -2871,8 +2899,8 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                     const selectedIndices = isMultiple
                       ? (selectedValue as number[]) || []
                       : selectedValue !== undefined
-                        ? [selectedValue as number]
-                        : [];
+                      ? [selectedValue as number]
+                      : [];
 
                     if (selectedIndices.length > 0) {
                       const selectedOptions = selectedIndices.map(
@@ -2998,7 +3026,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                   selectedDate,
                   selectedTime,
                   customInputs: selectedCustomInputs.filter(
-                     v => v !== null && v !== undefined,
+                    v => v !== null && v !== undefined,
                   ),
                   totalPrice: computedTotalPrice,
                   price: basePrice,
@@ -3106,20 +3134,20 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                 ? 'جاري التحقق...'
                 : 'CHECKING...'
               : isAddingToCart
-                ? isRTL
-                  ? 'جاري الإضافة...'
-                  : 'ADDING...'
-                : isSuccessState
-                  ? isRTL
-                    ? '✓ تم الإضافة'
-                    : '✓ ADDED'
-                  : editCartItemId
-                    ? isRTL
-                      ? `حفظ التغييرات (${totalPrice.toFixed(3)} د.ك)`
-                      : `SAVE CHANGES (${totalPrice.toFixed(3)} KD)`
-                    : isRTL
-                      ? `أضف إلى السلة (${totalPrice.toFixed(3)} د.ك)`
-                      : `ADD TO CART (${totalPrice.toFixed(3)} KD)`}
+              ? isRTL
+                ? 'جاري الإضافة...'
+                : 'ADDING...'
+              : isSuccessState
+              ? isRTL
+                ? '✓ تم الإضافة'
+                : '✓ ADDED'
+              : editCartItemId
+              ? isRTL
+                ? `حفظ التغييرات (${totalPrice.toFixed(3)} د.ك)`
+                : `SAVE CHANGES (${totalPrice.toFixed(3)} KD)`
+              : isRTL
+              ? `أضف إلى السلة (${totalPrice.toFixed(3)} د.ك)`
+              : `ADD TO CART (${totalPrice.toFixed(3)} KD)`}
           </Text>
         </TouchableOpacity>
 

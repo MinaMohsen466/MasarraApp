@@ -110,17 +110,17 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
 
   const dayNamesBase = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const dayNamesBaseAr = [
-    'الأحد',
-    'الإثنين',
-    'الثلاثاء',
-    'الأربعاء',
-    'الخميس',
-    'الجمعة',
-    'السبت',
+    'أحد',
+    'إثنين',
+    'ثلاثاء',
+    'أربعاء',
+    'خميس',
+    'جمعة',
+    'سبت',
   ];
 
-  // في RTL، نعكس ترتيب الأيام لأن اتجاه الـ layout معكوس
-  const dayNames = isRTL ? dayNamesBaseAr.reverse() : dayNamesBase;
+  // في RTL، نستخدم flexDirection: 'row-reverse' لتغيير اتجاه العرض تلقائياً
+  const dayNames = isRTL ? dayNamesBaseAr : dayNamesBase;
 
   // Memoize cache key لتجنب re-renders غير ضرورية
   const cacheKey = useMemo(() => {
@@ -338,7 +338,12 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
           </View>
 
           {/* Day Names */}
-          <View style={styles.dayNamesRow}>
+          <View
+            style={[
+              styles.dayNamesRow,
+              isRTL && { flexDirection: 'row-reverse' },
+            ]}
+          >
             {dayNames.map((name, index) => (
               <View key={index} style={styles.dayNameCell}>
                 <Text style={styles.dayNameText}>{name}</Text>
@@ -359,7 +364,12 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
                 </Text>
               </View>
             ) : (
-              <View style={styles.calendarGrid}>
+              <View
+                style={[
+                  styles.calendarGrid,
+                  isRTL && { flexDirection: 'row-reverse' },
+                ]}
+              >
                 {days.map((date, index) => {
                   if (date === null) {
                     return (

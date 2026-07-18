@@ -2,6 +2,10 @@ import { StyleSheet, Dimensions } from 'react-native';
 import { colors } from '../../constants/colors';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const isTablet = SCREEN_WIDTH >= 600;
+const modalWidth = isTablet
+  ? Math.min(SCREEN_WIDTH * 0.6, 400)
+  : Math.min(SCREEN_WIDTH - 80, 320); // Narrower, more compact layout
 
 export const styles = StyleSheet.create({
   modalOverlay: {
@@ -12,11 +16,11 @@ export const styles = StyleSheet.create({
     padding: 20,
   },
   modalContent: {
-    width: SCREEN_WIDTH - 60,
-    maxHeight: SCREEN_HEIGHT * 0.7,
+    width: modalWidth,
+    maxHeight: SCREEN_HEIGHT * 0.65,
     backgroundColor: colors.background,
     borderRadius: 16,
-    padding: 20,
+    padding: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -27,8 +31,8 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
-    paddingBottom: 16,
+    marginBottom: 12,
+    paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
@@ -38,33 +42,33 @@ export const styles = StyleSheet.create({
     gap: 12,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: colors.primary,
   },
   dateDisplay: {
-    padding: 12,
+    padding: 8,
     backgroundColor: colors.backgroundLight,
     borderRadius: 10,
-    marginBottom: 16,
+    marginBottom: 12,
     alignItems: 'center',
   },
   dateText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: colors.primary,
   },
   slotsScroll: {
-    maxHeight: 320,
+    maxHeight: 250,
   },
   timeSlotCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 14,
+    padding: 10,
     backgroundColor: colors.backgroundLight,
     borderRadius: 12,
-    marginBottom: 10,
+    marginBottom: 8,
     borderWidth: 1.4,
     borderColor: 'transparent',
   },
@@ -81,7 +85,7 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   timeSlotText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
     color: colors.textDark,
   },
@@ -96,7 +100,7 @@ export const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   availabilityText: {
-    fontSize: 12,
+    fontSize: 11,
     color: colors.textSecondary,
     fontWeight: '500',
   },
@@ -104,12 +108,12 @@ export const styles = StyleSheet.create({
     color: colors.textWhite,
   },
   unavailableText: {
-    fontSize: 12,
+    fontSize: 11,
     color: colors.error,
     fontWeight: '600',
   },
   loadingContainer: {
-    paddingVertical: 60,
+    paddingVertical: 40,
     alignItems: 'center',
   },
   loadingText: {
@@ -118,7 +122,7 @@ export const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   emptyContainer: {
-    paddingVertical: 40,
+    paddingVertical: 30,
     alignItems: 'center',
   },
   emptyText: {
@@ -127,8 +131,8 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
   },
   closeButton: {
-    marginTop: 16,
-    padding: 14,
+    marginTop: 12,
+    padding: 10,
     backgroundColor: colors.backgroundLight,
     borderRadius: 12,
     alignItems: 'center',

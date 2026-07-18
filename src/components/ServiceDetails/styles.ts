@@ -455,8 +455,8 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       justifyContent: 'space-between',
       backgroundColor: colors.backgroundLight,
       borderRadius: 10,
-      paddingVertical: 9,
-      paddingHorizontal: 14,
+      paddingVertical: 6,
+      paddingHorizontal: 10,
       marginTop: 0,
     },
     addOptionButtonRTL: {
@@ -476,8 +476,8 @@ export const createStyles = (SCREEN_WIDTH: number) => {
     customTextContainer: {
       backgroundColor: colors.backgroundCard,
       borderRadius: 8,
-      paddingHorizontal: 20,
-      paddingVertical: 14,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
       marginTop: 12,
       marginBottom: 0,
     },
@@ -508,8 +508,8 @@ export const createStyles = (SCREEN_WIDTH: number) => {
     },
 
     optionExpandedContent: {
-      paddingHorizontal: 12,
-      paddingTop: 10,
+      paddingHorizontal: 8,
+      paddingTop: 6,
       paddingBottom: 2,
     },
 
@@ -534,11 +534,15 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingVertical: 12,
-      paddingHorizontal: 14,
+      paddingVertical: 8,
+      paddingHorizontal: 10,
       borderRadius: 8,
       backgroundColor: colors.backgroundLight,
-      marginBottom: 8,
+      marginBottom: 6,
+      gap: 10,
+    },
+    optionRowRTL: {
+      flexDirection: 'row-reverse',
     },
     optionRowSelected: {
       backgroundColor: colors.primaryLight,
@@ -549,6 +553,11 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       flexDirection: 'row',
       alignItems: 'center',
       flex: 1,
+      gap: 12,
+    },
+    checkboxContainerRTL: {
+      flexDirection: 'row-reverse',
+      gap: 12,
     },
     checkbox: {
       width: 20,
@@ -559,8 +568,8 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       backgroundColor: colors.background,
       alignItems: 'center',
       justifyContent: 'center',
-      marginRight: 12,
     },
+    checkboxRTL: {},
     checkboxSelected: {
       backgroundColor: colors.primary,
       borderColor: colors.primary,
@@ -570,16 +579,24 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       color: colors.textDark,
       flex: 1,
     },
+    optionTextRTL: {
+      textAlign: 'right',
+      writingDirection: 'rtl',
+    },
     optionTextSelected: {
       fontWeight: '600',
       color: colors.primary,
+    },
+    optionDescriptionRTL: {
+      textAlign: 'right',
+      writingDirection: 'rtl',
     },
     optionPrice: {
       fontSize: 14,
       fontWeight: '600',
       color: colors.textSecondary,
-      marginLeft: 12,
     },
+    optionPriceRTL: {},
     optionPriceSelected: {
       color: colors.primary,
     },
@@ -835,7 +852,6 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       letterSpacing: 0.3,
     },
 
-
     /* Delivery Fee */
     deliveryFeeText: {
       fontSize: 12,
@@ -879,9 +895,10 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       justifyContent: 'space-between',
       backgroundColor: colors.backgroundLight,
       borderRadius: 10,
-      paddingVertical: 12,
-      paddingHorizontal: 12,
+      paddingVertical: 8,
+      paddingHorizontal: 10,
       marginBottom: 6,
+      gap: 10,
     },
     menuItemRowRTL: {
       flexDirection: 'row-reverse',
@@ -889,10 +906,28 @@ export const createStyles = (SCREEN_WIDTH: number) => {
     menuItemInfo: {
       flex: 1,
     },
+    menuItemTextRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    menuItemTextRowRTL: {
+      flexDirection: 'row-reverse',
+    },
+    menuItemPriceText: {
+      color: colors.primary,
+      fontWeight: '600',
+      fontSize: 13,
+    },
+    menuItemPriceTextRTL: {},
     menuItemName: {
       fontSize: 14,
       color: colors.textDark,
       fontWeight: '500',
+    },
+    menuItemNameRTL: {
+      textAlign: 'right',
+      writingDirection: 'rtl',
     },
     menuItemPrice: {
       fontSize: 12,
@@ -900,15 +935,19 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       color: colors.primary,
       marginTop: 2,
     },
+    menuItemPriceRTL: {
+      textAlign: 'right',
+      writingDirection: 'rtl',
+    },
     menuItemStepper: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 10,
+      gap: 6,
     },
     menuItemStepperButton: {
-      width: 26,
-      height: 26,
-      borderRadius: 13,
+      width: 24,
+      height: 24,
+      borderRadius: 12,
       borderWidth: 1.5,
       borderColor: colors.primary,
       alignItems: 'center',
@@ -918,16 +957,15 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       opacity: 0.4,
     },
     menuItemStepperButtonText: {
-      fontSize: 15,
-      fontWeight: '700',
-      color: colors.primary,
-      lineHeight: 16,
-    },
-    menuItemQuantity: {
       fontSize: 14,
       fontWeight: '700',
+      color: colors.primary,
+    },
+    menuItemQuantity: {
+      fontSize: 13,
+      fontWeight: '700',
       color: colors.textDark,
-      minWidth: 20,
+      minWidth: 16,
       textAlign: 'center',
     },
 
@@ -963,26 +1001,16 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       width: 44,
       height: 44,
       borderRadius: 8,
-      marginRight: 12,
-      marginLeft: 0,
       backgroundColor: '#f0f0f0',
     },
-    optionImageRTL: {
-      marginLeft: 12,
-      marginRight: 0,
-    },
+    optionImageRTL: {},
     menuItemImage: {
       width: 44,
       height: 44,
       borderRadius: 8,
-      marginRight: 12,
-      marginLeft: 0,
       backgroundColor: '#f0f0f0',
     },
-    menuItemImageRTL: {
-      marginLeft: 12,
-      marginRight: 0,
-    },
+    menuItemImageRTL: {},
 
     /* Fullscreen Image Modal */
     fullscreenOverlay: {
