@@ -20,7 +20,11 @@ import OccasionSelector from '../components/SearchSection/OccasionSelector';
 import DateSelector from '../components/SearchSection/DateSelector';
 import { API_URL } from '../config/api.config';
 import { myEventsStyles as styles } from './myEventsStyles';
-import { fetchOccasions, Occasion, getUserDashboardBookings } from '../services/api';
+import {
+  fetchOccasions,
+  Occasion,
+  getUserDashboardBookings,
+} from '../services/api';
 import { getQRCodeByBooking, getQRCodeSettings } from '../services/qrCodeApi';
 import { useAuth } from '../contexts/AuthContext';
 import { QRFormModal } from '../components/QRCodeCard/QRFormModal';
@@ -76,7 +80,8 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
 
   // Guest list Modal display
   const [guestListModalVisible, setGuestListModalVisible] = useState(false);
-  const [selectedBookingForGuests, setSelectedBookingForGuests] = useState<any>(null);
+  const [selectedBookingForGuests, setSelectedBookingForGuests] =
+    useState<any>(null);
   const [guestsData, setGuestsData] = useState<{ [key: string]: EventGuest[] }>(
     {},
   );
@@ -100,7 +105,9 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
 
     // Filter by status
     if (selectedFilter !== 'all') {
-      filtered = filtered.filter(item => item.booking.status === selectedFilter);
+      filtered = filtered.filter(
+        item => item.booking.status === selectedFilter,
+      );
     }
 
     // Filter by date
@@ -117,15 +124,19 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
         const fullService = item.service;
         if (fullService && Array.isArray(fullService.occasions)) {
           const matchesOccasion = fullService.occasions.some((occ: any) => {
-            const occId = occ.occasion && occ.occasion._id ? String(occ.occasion._id) : String(occ.occasion || '');
+            const occId =
+              occ.occasion && occ.occasion._id
+                ? String(occ.occasion._id)
+                : String(occ.occasion || '');
             return occId === selectedOccasionId;
           });
           if (matchesOccasion) return true;
         }
 
-        const bookingOccId = item.booking?.occasion && item.booking.occasion._id
-          ? String(item.booking.occasion._id)
-          : String(item.booking?.occasion || '');
+        const bookingOccId =
+          item.booking?.occasion && item.booking.occasion._id
+            ? String(item.booking.occasion._id)
+            : String(item.booking?.occasion || '');
         return bookingOccId === selectedOccasionId;
       });
     }
@@ -162,8 +173,14 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
 
       const servicesList: EventServiceRow[] = [];
       const matchesId = (id1: any, id2: any) => {
-        const str1 = typeof id1 === 'object' ? id1?._id?.toString() || id1?.toString() : id1?.toString();
-        const str2 = typeof id2 === 'object' ? id2?._id?.toString() || id2?.toString() : id2?.toString();
+        const str1 =
+          typeof id1 === 'object'
+            ? id1?._id?.toString() || id1?.toString()
+            : id1?.toString();
+        const str2 =
+          typeof id2 === 'object'
+            ? id2?._id?.toString() || id2?.toString()
+            : id2?.toString();
         return str1 === str2;
       };
 
@@ -173,12 +190,17 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
         }
 
         const allowedOccasion = settings.allowedOccasions?.find(
-          (ao: any) => matchesId(ao.occasion?._id || ao.occasion, occasionId) && ao.isEnabled
+          (ao: any) =>
+            matchesId(ao.occasion?._id || ao.occasion, occasionId) &&
+            ao.isEnabled,
         );
 
         if (!allowedOccasion) return false;
 
-        const occasionObj = typeof allowedOccasion.occasion === 'object' ? allowedOccasion.occasion : null;
+        const occasionObj =
+          typeof allowedOccasion.occasion === 'object'
+            ? allowedOccasion.occasion
+            : null;
         const availableCategories = (occasionObj as any)?.categories || [];
         const allowedCategoryIds = allowedOccasion.allowedCategories || [];
 
@@ -225,8 +247,11 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
             if (eventDay < new Date()) return;
           }
 
-          const serviceId = s.service && s.service._id ? String(s.service._id) : String(s.service || '');
-          
+          const serviceId =
+            s.service && s.service._id
+              ? String(s.service._id)
+              : String(s.service || '');
+
           let isServiceAllowed = false;
           if (s.service && Array.isArray(s.service.occasions)) {
             for (const occ of s.service.occasions) {
@@ -239,7 +264,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
 
           if (isServiceAllowed) {
             const qrCode = qrCodesMap[booking._id];
-            
+
             // Check if there is an overridden date in the QR code
             let displayEventDate = booking.eventDate;
             if (qrCode?.customDetails?.eventDate) {
@@ -254,11 +279,13 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
               booking: {
                 ...booking,
                 eventDate: displayEventDate,
-                guestLimit: qrCode?.customDetails?.guestCount !== undefined && qrCode?.customDetails?.guestCount !== ''
-                  ? parseInt(qrCode.customDetails.guestCount, 10)
-                  : booking.guestLimit
+                guestLimit:
+                  qrCode?.customDetails?.guestCount !== undefined &&
+                  qrCode?.customDetails?.guestCount !== ''
+                    ? parseInt(qrCode.customDetails.guestCount, 10)
+                    : booking.guestLimit,
               },
-              uniqueKey: `${booking._id}-${serviceId}`
+              uniqueKey: `${booking._id}-${serviceId}`,
             });
           }
         });
@@ -266,8 +293,12 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
 
       // Sort servicesList by booking createdAt descending (newest bookings first)
       servicesList.sort((a, b) => {
-        const timeB = b.booking.createdAt ? new Date(b.booking.createdAt).getTime() : 0;
-        const timeA = a.booking.createdAt ? new Date(a.booking.createdAt).getTime() : 0;
+        const timeB = b.booking.createdAt
+          ? new Date(b.booking.createdAt).getTime()
+          : 0;
+        const timeA = a.booking.createdAt
+          ? new Date(a.booking.createdAt).getTime()
+          : 0;
         return timeB - timeA;
       });
 
@@ -294,7 +325,9 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
     if (bookingStatus === 'cancelled') {
       showAlert(
         isRTL ? 'تنبيه' : 'Info',
-        isRTL ? 'لا يمكن نسخ رمز QR لحجز ملغي.' : 'Cannot copy QR code for a cancelled booking.',
+        isRTL
+          ? 'لا يمكن نسخ رمز QR لحجز ملغي.'
+          : 'Cannot copy QR code for a cancelled booking.',
       );
       setExpandedEventId(null);
       return;
@@ -350,7 +383,9 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
     if (booking?.status === 'cancelled') {
       showAlert(
         isRTL ? 'تنبيه' : 'Info',
-        isRTL ? 'لا يمكن عرض أو تعديل رمز QR لحجز ملغي.' : 'Cannot view or edit QR code for a cancelled booking.',
+        isRTL
+          ? 'لا يمكن عرض أو تعديل رمز QR لحجز ملغي.'
+          : 'Cannot view or edit QR code for a cancelled booking.',
       );
       setExpandedEventId(null);
       return;
@@ -371,9 +406,12 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
       try {
         qrData = await getQRCodeByBooking(token, booking._id);
       } catch (err: any) {
-        console.log('No QR code found or failed to fetch. Opening QR modal in creation mode.', err);
+        console.log(
+          'No QR code found or failed to fetch. Opening QR modal in creation mode.',
+          err,
+        );
       }
-      
+
       setSelectedBooking(booking);
       setSelectedQRCode(qrData);
       setQrModalVisible(true);
@@ -404,13 +442,16 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
       setLoadingGuests(prev => ({ ...prev, [booking._id]: true }));
 
       // Fetch guests for this booking
-      const response = await fetch(`${API_URL}/bookings/${booking._id}/guests`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        `${API_URL}/bookings/${booking._id}/guests`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
         },
-      });
+      );
 
       if (response.ok) {
         const guests = await response.json();
@@ -487,16 +528,13 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
         return;
       }
 
-      const response = await fetch(
-        `${API_URL}/bookings/${bookingId}/guests`,
-        {
-          method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
+      const response = await fetch(`${API_URL}/bookings/${bookingId}/guests`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
-      );
+      });
 
       if (response.ok) {
         // Clear or refresh local guest list
@@ -522,7 +560,8 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
     } catch (error: any) {
       showAlert(
         isRTL ? 'خطأ' : 'Error',
-        error.message || (isRTL ? 'فشل مغادرة قائمة الضيوف' : 'Failed to leave guest list'),
+        error.message ||
+          (isRTL ? 'فشل مغادرة قائمة الضيوف' : 'Failed to leave guest list'),
       );
     }
   };
@@ -571,26 +610,32 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
   const renderEventItem = ({ item }: { item: EventServiceRow }) => {
     const isExpanded = expandedEventId === item.uniqueKey;
     const statusStyle = getStatusBadgeStyle(item.booking?.status || '');
-    const serviceName = isRTL ? (item.service?.nameAr || item.service?.name) : item.service?.name;
+    const serviceName = isRTL
+      ? item.service?.nameAr || item.service?.name
+      : item.service?.name;
     const vendorName = item.vendor?.businessName || item.vendor?.name || '';
 
     return (
-      <View style={[styles.eventCard, isExpanded && { zIndex: 999, elevation: 10 }]}>
+      <View
+        style={[styles.eventCard, isExpanded && { zIndex: 999, elevation: 10 }]}
+      >
         <View style={styles.eventHeader}>
           <View style={styles.eventMainInfo}>
-            <Text style={styles.eventTitle}>{serviceName || (isRTL ? 'خدمة' : 'Service')}</Text>
+            <Text style={styles.eventTitle}>
+              {serviceName || (isRTL ? 'خدمة' : 'Service')}
+            </Text>
             {vendorName ? (
               <Text style={styles.eventVendor}>
                 {isRTL ? 'مقدم الخدمة: ' : 'Vendor: '}
-                <Text style={styles.eventVendorName}>
-                  {vendorName}
-                </Text>
+                <Text style={styles.eventVendorName}>{vendorName}</Text>
               </Text>
             ) : null}
           </View>
           <TouchableOpacity
             style={styles.menuButton}
-            onPress={() => setExpandedEventId(isExpanded ? null : item.uniqueKey)}
+            onPress={() =>
+              setExpandedEventId(isExpanded ? null : item.uniqueKey)
+            }
             activeOpacity={0.7}
           >
             <Icon
@@ -605,7 +650,9 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
           <View style={styles.eventDateBadge}>
             <Icon name="calendar-outline" size={14} color={colors.primary} />
             <Text style={styles.eventDateText}>
-              {item.booking?.eventDate ? formatDate(item.booking.eventDate) : ''}
+              {item.booking?.eventDate
+                ? formatDate(item.booking.eventDate)
+                : ''}
             </Text>
           </View>
 
@@ -613,8 +660,12 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
             <Icon name="people-outline" size={14} color="#475569" />
             <Text style={styles.guestCountText}>
               {isRTL
-                ? `الضيوف: ${item.booking?.guests?.length || 0}/${item.booking?.guestLimit || 0}`
-                : `Guests: ${item.booking?.guests?.length || 0}/${item.booking?.guestLimit || 0}`}
+                ? `الضيوف: ${item.booking?.guests?.length || 0}/${
+                    item.booking?.guestLimit || 0
+                  }`
+                : `Guests: ${item.booking?.guests?.length || 0}/${
+                    item.booking?.guestLimit || 0
+                  }`}
             </Text>
           </View>
 
@@ -628,13 +679,22 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
                   : item.booking?.status === 'pending'
                   ? 'قيد الانتظار'
                   : 'ملغي'
-                : (item.booking?.status ? item.booking.status.charAt(0).toUpperCase() + item.booking.status.slice(1) : '')}
+                : item.booking?.status
+                ? item.booking.status.charAt(0).toUpperCase() +
+                  item.booking.status.slice(1)
+                : ''}
             </Text>
           </View>
         </View>
 
         {isExpanded && (
-          <View style={[styles.menuDropdown, { top: 50 }, isRTL ? { left: 16 } : { right: 16 }]}>
+          <View
+            style={[
+              styles.menuDropdown,
+              { top: 50 },
+              isRTL ? { left: 16 } : { right: 16 },
+            ]}
+          >
             {item.booking?.status !== 'cancelled' && (
               <>
                 <TouchableOpacity
@@ -645,21 +705,31 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
                   }}
                   activeOpacity={0.7}
                 >
-                  <View style={[styles.menuItemContent, isRTL && styles.menuItemContentRTL]}>
+                  <View
+                    style={[
+                      styles.menuItemContent,
+                      isRTL && styles.menuItemContentRTL,
+                    ]}
+                  >
                     <Icon
                       name="copy-outline"
                       size={16}
                       color={colors.primary}
                       style={isRTL ? { marginLeft: 8 } : { marginRight: 8 }}
                     />
-                    <Text style={[styles.menuItemText, isRTL && styles.menuItemTextRTL]}>
+                    <Text
+                      style={[
+                        styles.menuItemText,
+                        isRTL && styles.menuItemTextRTL,
+                      ]}
+                    >
                       {isRTL ? 'نسخ QR' : 'Copy QR'}
                     </Text>
                   </View>
                 </TouchableOpacity>
-                
+
                 <View style={styles.menuDivider} />
-                
+
                 <TouchableOpacity
                   style={styles.menuItem}
                   onPress={() => {
@@ -668,23 +738,33 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
                   }}
                   activeOpacity={0.7}
                 >
-                  <View style={[styles.menuItemContent, isRTL && styles.menuItemContentRTL]}>
+                  <View
+                    style={[
+                      styles.menuItemContent,
+                      isRTL && styles.menuItemContentRTL,
+                    ]}
+                  >
                     <Icon
                       name="qr-code-outline"
                       size={16}
                       color={colors.primary}
                       style={isRTL ? { marginLeft: 8 } : { marginRight: 8 }}
                     />
-                    <Text style={[styles.menuItemText, isRTL && styles.menuItemTextRTL]}>
+                    <Text
+                      style={[
+                        styles.menuItemText,
+                        isRTL && styles.menuItemTextRTL,
+                      ]}
+                    >
                       {isRTL ? 'عرض/تعديل QR' : 'View/Edit QR'}
                     </Text>
                   </View>
                 </TouchableOpacity>
-                
+
                 <View style={styles.menuDivider} />
               </>
             )}
-            
+
             <TouchableOpacity
               style={styles.menuItem}
               onPress={() => {
@@ -693,14 +773,21 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
               }}
               activeOpacity={0.7}
             >
-              <View style={[styles.menuItemContent, isRTL && styles.menuItemContentRTL]}>
+              <View
+                style={[
+                  styles.menuItemContent,
+                  isRTL && styles.menuItemContentRTL,
+                ]}
+              >
                 <Icon
                   name="people-outline"
                   size={16}
                   color={colors.primary}
                   style={isRTL ? { marginLeft: 8 } : { marginRight: 8 }}
                 />
-                <Text style={[styles.menuItemText, isRTL && styles.menuItemTextRTL]}>
+                <Text
+                  style={[styles.menuItemText, isRTL && styles.menuItemTextRTL]}
+                >
                   {isRTL ? 'الضيوف' : 'Guests'}
                 </Text>
               </View>
@@ -941,12 +1028,15 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
                 ellipsizeMode="tail"
               >
                 {selectedOccasionId
-                  ? (occasions.find(o => o._id === selectedOccasionId)
-                      ? (isRTL
-                          ? occasions.find(o => o._id === selectedOccasionId)?.nameAr
-                          : occasions.find(o => o._id === selectedOccasionId)?.name)
-                      : '')
-                  : (isRTL ? 'اختر المناسبة' : 'Select Occasion')}
+                  ? occasions.find(o => o._id === selectedOccasionId)
+                    ? isRTL
+                      ? occasions.find(o => o._id === selectedOccasionId)
+                          ?.nameAr
+                      : occasions.find(o => o._id === selectedOccasionId)?.name
+                    : ''
+                  : isRTL
+                  ? 'اختر المناسبة'
+                  : 'Select Occasion'}
               </Text>
               {selectedOccasionId ? (
                 <TouchableOpacity
@@ -1034,9 +1124,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
             onSelect={occasion => {
               setSelectedOccasionId(occasion._id);
             }}
-            selectedOccasion={occasions.find(
-              o => o._id === selectedOccasionId,
-            )}
+            selectedOccasion={occasions.find(o => o._id === selectedOccasionId)}
           />
 
           {/* QR Form Modal */}

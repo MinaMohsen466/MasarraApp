@@ -141,7 +141,8 @@ export function renderNotificationText(notification: any, isRTL: boolean) {
     message = typeTranslations.message;
   } else {
     title = langTranslations?.fallback?.title || 'Notification';
-    message = langTranslations?.fallback?.message || 'You have a new notification';
+    message =
+      langTranslations?.fallback?.message || 'You have a new notification';
   }
 
   // Simple interpolation helper
@@ -161,13 +162,13 @@ export interface NotificationItem {
   message: string;
   messageEn: string;
   type:
-  | 'booking_created'
-  | 'booking_confirmed'
-  | 'booking_payment_confirmed'
-  | 'booking_confirmed_by_vendor'
-  | 'booking_rejected_by_vendor'
-  | 'vendor_uploaded'
-  | string;
+    | 'booking_created'
+    | 'booking_confirmed'
+    | 'booking_payment_confirmed'
+    | 'booking_confirmed_by_vendor'
+    | 'booking_rejected_by_vendor'
+    | 'vendor_uploaded'
+    | string;
   bookingId?: string;
   createdAt: string;
   read: boolean;
@@ -181,7 +182,9 @@ interface NotificationContextType {
   notificationsEnabled: boolean;
   toggleNotificationsEnabled: () => Promise<void>;
   addNotification: (
-    notification: Omit<NotificationItem, 'id' | 'createdAt' | 'read'> & { id?: string },
+    notification: Omit<NotificationItem, 'id' | 'createdAt' | 'read'> & {
+      id?: string;
+    },
   ) => Promise<void>;
   markAsRead: (id: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
@@ -276,7 +279,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
         await markServerNotificationRead(token, id);
       }
     } catch (err) {
-      console.error('[NotificationContext] Failed to mark read on server:', err);
+      console.error(
+        '[NotificationContext] Failed to mark read on server:',
+        err,
+      );
     }
     setNotifications(prev => {
       const updated = prev.map(n => (n.id === id ? { ...n, read: true } : n));
@@ -301,7 +307,11 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
           if (navHandler) {
             navHandler('profile');
           }
-        } else if (notification.type === 'new_message' || notification.type === 'new_chat' || notification.chat) {
+        } else if (
+          notification.type === 'new_message' ||
+          notification.type === 'new_chat' ||
+          notification.chat
+        ) {
           await AsyncStorage.setItem('openChat', '1');
           if (navHandler) {
             navHandler('contact');
@@ -367,9 +377,12 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     [insets.top, slideAnim, opacityAnim, dismissBanner],
   );
 
-
   const addNotification = useCallback(
-    async (newNotif: Omit<NotificationItem, 'id' | 'createdAt' | 'read'> & { id?: string }) => {
+    async (
+      newNotif: Omit<NotificationItem, 'id' | 'createdAt' | 'read'> & {
+        id?: string;
+      },
+    ) => {
       if (!notificationsEnabled) {
         console.log(
           '[NotificationService] Notifications are disabled, ignoring.',
@@ -379,7 +392,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 
       const item: NotificationItem = {
         ...newNotif,
-        id: newNotif.id ||
+        id:
+          newNotif.id ||
           Math.random().toString(36).substring(2, 9) + Date.now().toString(36),
         createdAt: new Date().toISOString(),
         read: false,
@@ -441,12 +455,17 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
       const userToken = await AsyncStorage.getItem('userToken');
       if (!userToken) return;
 
-      console.log('[NotificationService] Fetching notifications from server...');
+      console.log(
+        '[NotificationService] Fetching notifications from server...',
+      );
       const response = await fetchServerNotifications(userToken, 1, 50);
       if (response && Array.isArray(response.notifications)) {
         const mapped = response.notifications.map((n: any) => {
           const { title, message } = renderNotificationText(n, true); // Arabic
-          const { title: titleEn, message: messageEn } = renderNotificationText(n, false); // English
+          const { title: titleEn, message: messageEn } = renderNotificationText(
+            n,
+            false,
+          ); // English
           return {
             id: n._id,
             title,
@@ -464,29 +483,41 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 
         setNotifications(prev => {
           const localOnly = prev.filter(n => n.type === 'booking_created');
-          
+
           // Filter out server notifications that duplicate bookingId & type
-          const filteredMapped = mapped.filter(serverNotif => 
-            !localOnly.some(localNotif => localNotif.bookingId === serverNotif.bookingId && localNotif.type === serverNotif.type)
+          const filteredMapped = mapped.filter(
+            serverNotif =>
+              !localOnly.some(
+                localNotif =>
+                  localNotif.bookingId === serverNotif.bookingId &&
+                  localNotif.type === serverNotif.type,
+              ),
           );
-          
+
           const combined = [...localOnly, ...filteredMapped];
           // Sort by date descending
-          combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-          
-          AsyncStorage.setItem('@notifications_history', JSON.stringify(combined)).catch(err =>
-            console.error('Failed to save combined notifications:', err)
+          combined.sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
           );
-          
+
+          AsyncStorage.setItem(
+            '@notifications_history',
+            JSON.stringify(combined),
+          ).catch(err =>
+            console.error('Failed to save combined notifications:', err),
+          );
+
           return combined;
         });
       }
     } catch (err) {
-      console.error('[NotificationService] Failed to fetch server notifications:', err);
+      console.error(
+        '[NotificationService] Failed to fetch server notifications:',
+        err,
+      );
     }
   }, []);
-
-
 
   const markAllAsRead = useCallback(async () => {
     try {
@@ -495,7 +526,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
         await markAllServerNotificationsRead(token);
       }
     } catch (err) {
-      console.error('[NotificationContext] Failed to mark all read on server:', err);
+      console.error(
+        '[NotificationContext] Failed to mark all read on server:',
+        err,
+      );
     }
     setNotifications(prev => {
       const updated = prev.map(n => ({ ...n, read: true }));
@@ -514,11 +548,16 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
       const token = await AsyncStorage.getItem('userToken');
       if (token && notifications.length > 0) {
         await Promise.all(
-          notifications.map(n => deleteServerNotification(token, n.id).catch(() => { }))
+          notifications.map(n =>
+            deleteServerNotification(token, n.id).catch(() => {}),
+          ),
         );
       }
     } catch (err) {
-      console.error('[NotificationContext] Failed to delete notifications on server:', err);
+      console.error(
+        '[NotificationContext] Failed to delete notifications on server:',
+        err,
+      );
     }
     setNotifications([]);
     try {
@@ -532,7 +571,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     async (userToken: string) => {
       if (!userToken) return;
       try {
-        console.log('[NotificationService] Refreshing notifications from server...');
+        console.log(
+          '[NotificationService] Refreshing notifications from server...',
+        );
         await fetchNotificationsFromServer();
       } catch (error) {
         console.error('Error checking booking status changes:', error);

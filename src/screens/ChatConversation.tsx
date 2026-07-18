@@ -57,17 +57,20 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
   const screenWidth = Dimensions.get('window').width;
   const isTablet = screenWidth >= 600;
 
-  const markMessagesAsRead = useCallback(async (token: string, targetChatId: string) => {
-    try {
-      await fetch(`${API_URL}/chats/${targetChatId}/read`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-    } catch { }
-  }, []);
+  const markMessagesAsRead = useCallback(
+    async (token: string, targetChatId: string) => {
+      try {
+        await fetch(`${API_URL}/chats/${targetChatId}/read`, {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+      } catch {}
+    },
+    [],
+  );
 
   // Define loadMessages first with useCallback
   const loadMessages = useCallback(
@@ -245,7 +248,10 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
         const { chatId: messageChatId, message } = data;
 
         // Don't add our own messages (they're added optimistically)
-        const senderId = typeof message.sender === 'object' ? message.sender?._id : message.sender;
+        const senderId =
+          typeof message.sender === 'object'
+            ? message.sender?._id
+            : message.sender;
         if (senderId === currentUserId) return;
 
         // If this is the active conversation, add the message directly
@@ -259,9 +265,13 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
 
             const newMessage: Message = {
               _id: messageId,
-              sender: typeof message.sender === 'object'
-                ? { _id: message.sender._id, name: message.sender.name || 'Admin' }
-                : { _id: String(message.sender || ''), name: 'Admin' },
+              sender:
+                typeof message.sender === 'object'
+                  ? {
+                      _id: message.sender._id,
+                      name: message.sender.name || 'Admin',
+                    }
+                  : { _id: String(message.sender || ''), name: 'Admin' },
               message: message.content || message.message || '',
               createdAt:
                 message.timestamp ||
@@ -282,7 +292,13 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
       };
 
       // Listen for typing indicators
-      const handleUserTyping = ({ userId, isTyping: typing }: { userId: string; isTyping: boolean }) => {
+      const handleUserTyping = ({
+        userId,
+        isTyping: typing,
+      }: {
+        userId: string;
+        isTyping: boolean;
+      }) => {
         if (userId === currentUserId) return; // Ignore our own typing
         setIsTyping(typing);
 
@@ -298,7 +314,11 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
       };
 
       // Listen for messages read
-      const handleMessagesRead = ({ chatId: readChatId }: { chatId: string }) => {
+      const handleMessagesRead = ({
+        chatId: readChatId,
+      }: {
+        chatId: string;
+      }) => {
         if (readChatId === chatId) {
           loadMessages(true);
         }
@@ -315,7 +335,15 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
       };
     }
     return () => {};
-  }, [socket, isConnected, chatId, currentUserId, isAtBottom, loadMessages, markMessagesAsRead]);
+  }, [
+    socket,
+    isConnected,
+    chatId,
+    currentUserId,
+    isAtBottom,
+    loadMessages,
+    markMessagesAsRead,
+  ]);
 
   // Join/leave chat room
   useEffect(() => {
@@ -328,7 +356,6 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
     }
     return () => {};
   }, [socket, isConnected, chatId, joinChat, leaveChat]);
-
 
   const handleTyping = (text: string) => {
     setMessageText(text);

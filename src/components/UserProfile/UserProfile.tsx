@@ -448,9 +448,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
                     size={20}
                     color={colors.textWhite}
                   />
-                  {unreadCount > 0 && (
-                    <View style={styles.notificationBadge} />
-                  )}
+                  {unreadCount > 0 && <View style={styles.notificationBadge} />}
                 </TouchableOpacity>
               </View>
             </View>
@@ -939,7 +937,9 @@ const UserProfile: React.FC<UserProfileProps> = ({
                     <View
                       style={[
                         notifStyles.cardIconContainer,
-                        isRTL ? notifStyles.iconMarginRTL : notifStyles.iconMarginLTR,
+                        isRTL
+                          ? notifStyles.iconMarginRTL
+                          : notifStyles.iconMarginLTR,
                       ]}
                     >
                       <Icon
@@ -1023,6 +1023,5 @@ const UserProfile: React.FC<UserProfileProps> = ({
     </>
   );
 };
-
 
 export default UserProfile;

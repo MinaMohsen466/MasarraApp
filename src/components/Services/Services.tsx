@@ -76,9 +76,10 @@ const Services: React.FC<ServicesProps> = ({ onSelectService, onViewAll }) => {
   const renderServiceCard = ({ item }: { item: Service }) => {
     const displayName = isRTL ? item.nameAr : item.name;
     const rawDescription = isRTL ? item.descriptionAr : item.description;
-    const displayDescription = rawDescription && rawDescription.length > 50
-      ? rawDescription.substring(0, 50) + '...'
-      : rawDescription;
+    const displayDescription =
+      rawDescription && rawDescription.length > 50
+        ? rawDescription.substring(0, 50) + '...'
+        : rawDescription;
 
     // Calculate discount and final price
     const hasDiscount =
@@ -288,7 +289,7 @@ const Services: React.FC<ServicesProps> = ({ onSelectService, onViewAll }) => {
       {/* Section Header */}
       <View style={[styles.sectionHeader, isRTL && styles.sectionHeaderRTL]}>
         <Text style={[styles.sectionTitle, isRTL && styles.sectionTitleRTL]}>
-          {isRTL ? 'الخدمات الشائعة' : 'TRENDING'}
+          {isRTL ? 'الخدمات الأكثر طلباً' : 'MOST POPULAR'}
         </Text>
         <TouchableOpacity
           onPress={() => {

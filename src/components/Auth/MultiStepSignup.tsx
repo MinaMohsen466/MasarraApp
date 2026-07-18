@@ -662,7 +662,7 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
           returnKeyType="done"
           onSubmitEditing={handleStep1Submit}
           leftElement={
-            (phoneActive || phone.length > 0) ? (
+            phoneActive || phone.length > 0 ? (
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Text
                   style={{
@@ -692,7 +692,11 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
                   editable={!isLoading}
                 />
                 <Text
-                  style={{ fontSize: 15, color: '#E5E7EB', marginHorizontal: 6 }}
+                  style={{
+                    fontSize: 15,
+                    color: '#E5E7EB',
+                    marginHorizontal: 6,
+                  }}
                 >
                   |
                 </Text>
@@ -811,7 +815,11 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
 
         {/* Top Overlay Navigation/Back Button & Language Switcher */}
         <View
-          style={[styles.headerOverlayBar, isRTL && styles.headerOverlayBarRTL, { paddingTop: insets.top > 24 ? insets.top - 12 : 8 }]}
+          style={[
+            styles.headerOverlayBar,
+            isRTL && styles.headerOverlayBarRTL,
+            { paddingTop: insets.top > 24 ? insets.top - 12 : 8 },
+          ]}
         >
           <TouchableOpacity
             style={styles.headerBackButtonCircle}
@@ -1063,7 +1071,11 @@ const MultiStepSignup: React.FC<MultiStepSignupProps> = ({
 
         {/* Top Overlay Navigation/Back Button & Language Switcher */}
         <View
-          style={[styles.headerOverlayBar, isRTL && styles.headerOverlayBarRTL, { paddingTop: insets.top > 24 ? insets.top - 12 : 8 }]}
+          style={[
+            styles.headerOverlayBar,
+            isRTL && styles.headerOverlayBarRTL,
+            { paddingTop: insets.top > 24 ? insets.top - 12 : 8 },
+          ]}
         >
           <TouchableOpacity
             style={styles.headerBackButtonCircle}

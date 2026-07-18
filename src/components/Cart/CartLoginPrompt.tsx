@@ -1,5 +1,11 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StatusBar } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StatusBar,
+} from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { colors } from '../../constants/colors';
 import { styles } from '../../screens/cartStyles';
@@ -27,9 +33,7 @@ export const CartLoginPrompt: React.FC<CartLoginPromptProps> = ({
         translucent={false}
       />
       <View style={{ flex: 1, backgroundColor: colors.primary }}>
-        <View
-          style={{ height: insets.top, backgroundColor: colors.primary }}
-        />
+        <View style={{ height: insets.top, backgroundColor: colors.primary }} />
         <View style={styles.loginFullPageContainer}>
           <ScrollView
             style={styles.loginScrollContainer}

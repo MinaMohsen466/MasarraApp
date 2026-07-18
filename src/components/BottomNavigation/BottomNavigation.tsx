@@ -223,7 +223,12 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
   const navOrder = isRTL ? [...ltrOrder].reverse() : ltrOrder;
 
   return (
-    <View style={[styles.container, { paddingBottom: (isTablet ? 24 : 14) + insets.bottom }]}>
+    <View
+      style={[
+        styles.container,
+        { paddingBottom: (isTablet ? 24 : 14) + insets.bottom },
+      ]}
+    >
       {navOrder.map(route => {
         const active = isActive(route);
         const isCart = route === 'cart';

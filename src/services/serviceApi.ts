@@ -113,7 +113,9 @@ export const fetchVendorServices = async (vendorId: string): Promise<any[]> => {
     const response = await fetch(`${API_BASE_URL}/services/vendor/${vendorId}`);
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch vendor services: ${response.statusText}`);
+      throw new Error(
+        `Failed to fetch vendor services: ${response.statusText}`,
+      );
     }
 
     const data = await response.json();
@@ -131,7 +133,9 @@ export const fetchServiceDetails = async (serviceId: string): Promise<any> => {
     const response = await fetch(`${API_BASE_URL}/services/${serviceId}`);
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch service details: ${response.statusText}`);
+      throw new Error(
+        `Failed to fetch service details: ${response.statusText}`,
+      );
     }
 
     const data = await response.json();
@@ -162,12 +166,18 @@ export const fetchVendorDetails = async (vendorId: string): Promise<any> => {
 /**
  * Fetch services by occasion ID
  */
-export const fetchOccasionServices = async (occasionId: string): Promise<any[]> => {
+export const fetchOccasionServices = async (
+  occasionId: string,
+): Promise<any[]> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/services/occasion/${occasionId}`);
+    const response = await fetch(
+      `${API_BASE_URL}/services/occasion/${occasionId}`,
+    );
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch occasion services: ${response.statusText}`);
+      throw new Error(
+        `Failed to fetch occasion services: ${response.statusText}`,
+      );
     }
 
     const data = await response.json();
@@ -249,7 +259,6 @@ export const checkDateAvailability = async (
     return { available: true, bookingsCount: 0, slots: 10 }; // Default fallback on error
   }
 };
-
 
 /**
  * Check time slot availability for a specific date
@@ -425,7 +434,8 @@ export const checkBatchDateAvailability = async (
           availabilityMap.set(dateStr, {
             available: availInfo.hasSlots,
             bookingsCount: 0,
-            slots: availInfo.availableSlots === -1 ? 99 : availInfo.availableSlots,
+            slots:
+              availInfo.availableSlots === -1 ? 99 : availInfo.availableSlots,
           });
         }
       }
@@ -433,7 +443,9 @@ export const checkBatchDateAvailability = async (
       return availabilityMap;
     } catch (error) {
       clearTimeout(timeoutId);
-      console.warn('Batch availability failed, falling back to individual requests');
+      console.warn(
+        'Batch availability failed, falling back to individual requests',
+      );
       throw error;
     }
   } catch {

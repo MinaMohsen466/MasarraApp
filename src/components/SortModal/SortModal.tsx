@@ -83,14 +83,9 @@ const SortModal: React.FC<SortModalProps> = ({
                   {isRTL ? option.labelAr : option.label}
                 </Text>
                 <View
-                  style={[
-                    styles.radio,
-                    isSelected && styles.radioSelected,
-                  ]}
+                  style={[styles.radio, isSelected && styles.radioSelected]}
                 >
-                  {isSelected && (
-                    <View style={styles.radioDot} />
-                  )}
+                  {isSelected && <View style={styles.radioDot} />}
                 </View>
               </TouchableOpacity>
             );

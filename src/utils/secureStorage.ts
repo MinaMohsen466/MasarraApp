@@ -15,7 +15,9 @@ const originalRemoveItem = AsyncStorage.removeItem.bind(AsyncStorage);
 /**
  * Save user data securely using Keychain
  */
-export const setSecureUserData = async (userDataJson: string): Promise<boolean> => {
+export const setSecureUserData = async (
+  userDataJson: string,
+): Promise<boolean> => {
   try {
     await Keychain.setGenericPassword('userData', userDataJson, {
       service: USER_DATA_SERVICE,
@@ -24,7 +26,10 @@ export const setSecureUserData = async (userDataJson: string): Promise<boolean> 
     await originalRemoveItem(USER_DATA_KEY);
     return true;
   } catch (error) {
-    console.warn('Keychain secure user data storage failed, falling back to AsyncStorage:', error);
+    console.warn(
+      'Keychain secure user data storage failed, falling back to AsyncStorage:',
+      error,
+    );
     try {
       await originalSetItem(USER_DATA_KEY, userDataJson);
       return true;
@@ -48,12 +53,20 @@ export const getSecureUserData = async (): Promise<string | null> => {
     }
   } catch (error: any) {
     const errorMsg = error?.message || String(error);
-    console.warn('Reading user data from Keychain failed, checking AsyncStorage fallback:', errorMsg);
-    
-    if (errorMsg.includes('permanently invalidated') || errorMsg.includes('Key permanently invalidated')) {
+    console.warn(
+      'Reading user data from Keychain failed, checking AsyncStorage fallback:',
+      errorMsg,
+    );
+
+    if (
+      errorMsg.includes('permanently invalidated') ||
+      errorMsg.includes('Key permanently invalidated')
+    ) {
       try {
         await Keychain.resetGenericPassword({ service: USER_DATA_SERVICE });
-        console.log('🔒 Android Keystore healed for User Data: Invalidated key has been reset.');
+        console.log(
+          '🔒 Android Keystore healed for User Data: Invalidated key has been reset.',
+        );
       } catch (resetErr) {}
     }
   }
@@ -101,7 +114,10 @@ export const setSecureToken = async (token: string): Promise<boolean> => {
     await originalRemoveItem(TOKEN_KEY);
     return true;
   } catch (error) {
-    console.warn('Keychain secure storage failed, falling back to AsyncStorage:', error);
+    console.warn(
+      'Keychain secure storage failed, falling back to AsyncStorage:',
+      error,
+    );
     try {
       await originalSetItem(TOKEN_KEY, token);
       return true;
@@ -126,13 +142,21 @@ export const getSecureToken = async (): Promise<string | null> => {
     }
   } catch (error: any) {
     const errorMsg = error?.message || String(error);
-    console.warn('Reading from Keychain failed, checking AsyncStorage fallback:', errorMsg);
-    
+    console.warn(
+      'Reading from Keychain failed, checking AsyncStorage fallback:',
+      errorMsg,
+    );
+
     // Self-healing: if the Android Keystore key is permanently invalidated, reset it to allow clean regeneration
-    if (errorMsg.includes('permanently invalidated') || errorMsg.includes('Key permanently invalidated')) {
+    if (
+      errorMsg.includes('permanently invalidated') ||
+      errorMsg.includes('Key permanently invalidated')
+    ) {
       try {
         await Keychain.resetGenericPassword({ service: SERVICE_NAME });
-        console.log('🔒 Android Keystore healed: Invalidated key has been reset.');
+        console.log(
+          '🔒 Android Keystore healed: Invalidated key has been reset.',
+        );
       } catch (resetErr) {}
     }
   }

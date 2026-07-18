@@ -1,5 +1,13 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Modal, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  Modal,
+  StyleSheet,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { colors } from '../../constants/colors';
 import { myEventsStyles as styles } from '../../screens/myEventsStyles';
@@ -23,10 +31,12 @@ interface GuestListModalProps {
   isRTL: boolean;
   selectedBookingForGuests: {
     _id: string;
-    customer?: {
-      _id?: string;
-      id?: string;
-    } | string;
+    customer?:
+      | {
+          _id?: string;
+          id?: string;
+        }
+      | string;
   } | null;
   loadingGuests: { [key: string]: boolean };
   guestsData: { [key: string]: EventGuest[] };
@@ -83,7 +93,10 @@ export const GuestListModal: React.FC<GuestListModalProps> = ({
             <View style={localStyles.headerSpacer} />
           </View>
 
-          <ScrollView style={styles.guestPageScroll} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.guestPageScroll}
+            showsVerticalScrollIndicator={false}
+          >
             {selectedBookingForGuests && (
               <>
                 {loadingGuests[selectedBookingForGuests._id] ? (
@@ -93,7 +106,8 @@ export const GuestListModal: React.FC<GuestListModalProps> = ({
                       {isRTL ? 'جاري التحميل...' : 'Loading...'}
                     </Text>
                   </View>
-                ) : !guestsData[selectedBookingForGuests._id] || guestsData[selectedBookingForGuests._id].length === 0 ? (
+                ) : !guestsData[selectedBookingForGuests._id] ||
+                  guestsData[selectedBookingForGuests._id].length === 0 ? (
                   <View style={styles.emptyGuestList}>
                     <Text style={styles.emptyGuestText}>
                       {isRTL ? 'لا يوجد ضيوف' : 'No guests'}
@@ -101,52 +115,108 @@ export const GuestListModal: React.FC<GuestListModalProps> = ({
                   </View>
                 ) : (
                   <View style={localStyles.guestsContainer}>
-                    {guestsData[selectedBookingForGuests._id].map((guest) => {
+                    {guestsData[selectedBookingForGuests._id].map(guest => {
                       const guestUserId = guest.user?._id || guest.user;
                       const isCurrentUser = guestUserId
                         ? guestUserId === user?.id || guestUserId === user?._id
                         : false;
 
-                      const bookingCustomerObj = selectedBookingForGuests.customer;
-                      const bookingCustomerId = typeof bookingCustomerObj === 'object'
-                        ? bookingCustomerObj?._id || bookingCustomerObj?.id
-                        : bookingCustomerObj;
+                      const bookingCustomerObj =
+                        selectedBookingForGuests.customer;
+                      const bookingCustomerId =
+                        typeof bookingCustomerObj === 'object'
+                          ? bookingCustomerObj?._id || bookingCustomerObj?.id
+                          : bookingCustomerObj;
 
                       const canRemove =
                         user?.role === 'admin' ||
-                        (bookingCustomerId && (bookingCustomerId === user?.id || bookingCustomerId === user?._id));
+                        (bookingCustomerId &&
+                          (bookingCustomerId === user?.id ||
+                            bookingCustomerId === user?._id));
 
                       return (
-                        <View key={guest._id} style={[styles.guestListItem, isRTL && localStyles.rowRTL]}>
-                          <View style={[localStyles.flexStart, isRTL && localStyles.alignEnd]}>
-                            <Text style={[styles.guestListName, isRTL && localStyles.textRight]}>
-                              {guest.name || guest.user?.name || (isRTL ? 'ضيف' : 'Guest')}
+                        <View
+                          key={guest._id}
+                          style={[
+                            styles.guestListItem,
+                            isRTL && localStyles.rowRTL,
+                          ]}
+                        >
+                          <View
+                            style={[
+                              localStyles.flexStart,
+                              isRTL && localStyles.alignEnd,
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.guestListName,
+                                isRTL && localStyles.textRight,
+                              ]}
+                            >
+                              {guest.name ||
+                                guest.user?.name ||
+                                (isRTL ? 'ضيف' : 'Guest')}
                               <Text style={styles.guestListSubText}>
-                                {guest.phone ? ` (${guest.phone})` : guest.email || guest.user?.email ? ` (${guest.email || guest.user?.email})` : ''}
+                                {guest.phone
+                                  ? ` (${guest.phone})`
+                                  : guest.email || guest.user?.email
+                                  ? ` (${guest.email || guest.user?.email})`
+                                  : ''}
                               </Text>
                             </Text>
-                            <Text style={[styles.guestListMetaText, isRTL && localStyles.textRight]}>
+                            <Text
+                              style={[
+                                styles.guestListMetaText,
+                                isRTL && localStyles.textRight,
+                              ]}
+                            >
                               {`#${String(guest._id).slice(-6)} • `}
-                              {guest.joinedAt ? new Date(guest.joinedAt).toLocaleString(isRTL ? 'ar-EG' : 'en-US', { dateStyle: 'short', timeStyle: 'short' }) : ''}
+                              {guest.joinedAt
+                                ? new Date(guest.joinedAt).toLocaleString(
+                                    isRTL ? 'ar-EG' : 'en-US',
+                                    { dateStyle: 'short', timeStyle: 'short' },
+                                  )
+                                : ''}
                             </Text>
                           </View>
-                          <View style={[localStyles.actionsContainer, isRTL && localStyles.rowRTL]}>
+                          <View
+                            style={[
+                              localStyles.actionsContainer,
+                              isRTL && localStyles.rowRTL,
+                            ]}
+                          >
                             {canRemove && (
                               <TouchableOpacity
                                 style={styles.guestActionIconButton}
-                                onPress={() => onRemoveGuest(guest._id, selectedBookingForGuests._id)}
+                                onPress={() =>
+                                  onRemoveGuest(
+                                    guest._id,
+                                    selectedBookingForGuests._id,
+                                  )
+                                }
                                 activeOpacity={0.7}
                               >
-                                <Icon name="trash-outline" size={18} color="#ef4444" />
+                                <Icon
+                                  name="trash-outline"
+                                  size={18}
+                                  color="#ef4444"
+                                />
                               </TouchableOpacity>
                             )}
                             {isCurrentUser && (
                               <TouchableOpacity
                                 style={styles.guestActionIconButton}
-                                onPress={() => onLeaveGuest(selectedBookingForGuests._id)}
+                                onPress={() =>
+                                  onLeaveGuest(selectedBookingForGuests._id)
+                                }
                                 activeOpacity={0.7}
                               >
-                                <Icon name="log-out-outline" size={18} color="#f97316" />
+                                <Icon
+                                  name="log-out-outline"
+                                  size={18}
+                                  color="#f97316"
+                                />
                               </TouchableOpacity>
                             )}
                           </View>

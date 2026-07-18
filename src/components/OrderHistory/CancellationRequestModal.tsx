@@ -1,5 +1,13 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Modal } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  ActivityIndicator,
+  Modal,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { colors } from '../../constants/colors';
 import { Booking } from '../../services/bookingApi'; // We can import from bookingApi/apiFacade since they are re-exported.
@@ -16,7 +24,9 @@ interface CancellationRequestModalProps {
   handleSubmitCancellationRequest: () => void;
 }
 
-export const CancellationRequestModal: React.FC<CancellationRequestModalProps> = ({
+export const CancellationRequestModal: React.FC<
+  CancellationRequestModalProps
+> = ({
   visible,
   isRTL,
   selectedCancellationBooking,
@@ -112,7 +122,11 @@ export const CancellationRequestModal: React.FC<CancellationRequestModalProps> =
                     name="information-circle-outline"
                     size={16}
                     color="#F59E0B"
-                    style={{ marginTop: 1, marginRight: isRTL ? 0 : 2, marginLeft: isRTL ? 2 : 0 }}
+                    style={{
+                      marginTop: 1,
+                      marginRight: isRTL ? 0 : 2,
+                      marginLeft: isRTL ? 2 : 0,
+                    }}
                   />
                   <Text
                     style={{
@@ -142,132 +156,207 @@ export const CancellationRequestModal: React.FC<CancellationRequestModalProps> =
                         textAlign: isRTL ? 'right' : 'left',
                       }}
                     >
-                      {isRTL ? 'تفاصيل سياسة إلغاء الخدمات:' : 'Service cancellation details:'}
+                      {isRTL
+                        ? 'تفاصيل سياسة إلغاء الخدمات:'
+                        : 'Service cancellation details:'}
                     </Text>
-                    {selectedCancellationBooking.services.map((svc: any, idx: number) => {
-                      const serviceName = isRTL
-                        ? svc.service?.nameAr || svc.service?.name || svc.service
-                        : svc.service?.name || svc.service;
-                      const vendorName = isRTL
-                        ? svc.vendor?.vendorProfile?.businessName_ar || svc.vendor?.vendorProfile?.businessName || svc.vendor?.name
-                        : svc.vendor?.vendorProfile?.businessName || svc.vendor?.name;
-                      
-                      const refundPeriodHours = svc.vendor?.vendorProfile?.refundPeriodHours !== undefined
-                        ? Number(svc.vendor.vendorProfile.refundPeriodHours)
-                        : 48;
+                    {selectedCancellationBooking.services.map(
+                      (svc: any, idx: number) => {
+                        const serviceName = isRTL
+                          ? svc.service?.nameAr ||
+                            svc.service?.name ||
+                            svc.service
+                          : svc.service?.name || svc.service;
+                        const vendorName = isRTL
+                          ? svc.vendor?.vendorProfile?.businessName_ar ||
+                            svc.vendor?.vendorProfile?.businessName ||
+                            svc.vendor?.name
+                          : svc.vendor?.vendorProfile?.businessName ||
+                            svc.vendor?.name;
 
-                      const formatRefundWindow = (h: number) => {
-                        if (h === 0) return isRTL ? 'أي وقت' : 'any time';
-                        if (h < 24) return isRTL ? `${h} ساعة` : `${h} hours`;
-                        const d = Math.round(h / 24);
-                        return isRTL ? `${d} يوم` : `${d} days`;
-                      };
+                        const refundPeriodHours =
+                          svc.vendor?.vendorProfile?.refundPeriodHours !==
+                          undefined
+                            ? Number(svc.vendor.vendorProfile.refundPeriodHours)
+                            : 48;
 
-                      // Calculate cutoff date & time left
-                      const eventTimeStr = svc.timeSlot?.start || svc.eventDate || selectedCancellationBooking.eventTime?.start || selectedCancellationBooking.eventDate;
-                      let cutoffDate: Date | null = null;
-                      let isWithinWindow = false;
-                      let timeLeftString = '';
+                        const formatRefundWindow = (h: number) => {
+                          if (h === 0) return isRTL ? 'أي وقت' : 'any time';
+                          if (h < 24) return isRTL ? `${h} ساعة` : `${h} hours`;
+                          const d = Math.round(h / 24);
+                          return isRTL ? `${d} يوم` : `${d} days`;
+                        };
 
-                      if (eventTimeStr) {
-                        const d = new Date(eventTimeStr);
-                        if (
-                          d.getUTCHours() === 0 &&
-                          d.getUTCMinutes() === 0 &&
-                          d.getUTCSeconds() === 0 &&
-                          d.getUTCMilliseconds() === 0
-                        ) {
-                          d.setUTCHours(20, 59, 59, 999); // 23:59:59 Kuwait time
-                        }
-                        cutoffDate = new Date(d.getTime() - refundPeriodHours * 60 * 60 * 1000);
-                        const now = new Date();
-                        isWithinWindow = now.getTime() <= cutoffDate.getTime();
-                        
-                        if (isWithinWindow) {
-                          const diffMs = cutoffDate.getTime() - now.getTime();
-                          const totalHours = Math.floor(diffMs / (1000 * 60 * 60));
-                          if (totalHours < 24) {
-                            timeLeftString = isRTL 
-                              ? `متبقي ${totalHours} ساعة للإلغاء المجاني`
-                              : `${totalHours} hours left for free cancellation`;
-                          } else {
-                            const days = Math.floor(totalHours / 24);
-                            const remainingHours = totalHours % 24;
-                            timeLeftString = isRTL
-                              ? `متبقي ${days} يوم و ${remainingHours} ساعة للإلغاء المجاني`
-                              : `${days}d ${remainingHours}h left for free cancellation`;
+                        // Calculate cutoff date & time left
+                        const eventTimeStr =
+                          svc.timeSlot?.start ||
+                          svc.eventDate ||
+                          selectedCancellationBooking.eventTime?.start ||
+                          selectedCancellationBooking.eventDate;
+                        let cutoffDate: Date | null = null;
+                        let isWithinWindow = false;
+                        let timeLeftString = '';
+
+                        if (eventTimeStr) {
+                          const d = new Date(eventTimeStr);
+                          if (
+                            d.getUTCHours() === 0 &&
+                            d.getUTCMinutes() === 0 &&
+                            d.getUTCSeconds() === 0 &&
+                            d.getUTCMilliseconds() === 0
+                          ) {
+                            d.setUTCHours(20, 59, 59, 999); // 23:59:59 Kuwait time
                           }
-                        } else {
-                          timeLeftString = isRTL ? 'انتهت فترة الإلغاء المجاني' : 'Free cancellation period expired';
+                          cutoffDate = new Date(
+                            d.getTime() - refundPeriodHours * 60 * 60 * 1000,
+                          );
+                          const now = new Date();
+                          isWithinWindow =
+                            now.getTime() <= cutoffDate.getTime();
+
+                          if (isWithinWindow) {
+                            const diffMs = cutoffDate.getTime() - now.getTime();
+                            const totalHours = Math.floor(
+                              diffMs / (1000 * 60 * 60),
+                            );
+                            if (totalHours < 24) {
+                              timeLeftString = isRTL
+                                ? `متبقي ${totalHours} ساعة للإلغاء المجاني`
+                                : `${totalHours} hours left for free cancellation`;
+                            } else {
+                              const days = Math.floor(totalHours / 24);
+                              const remainingHours = totalHours % 24;
+                              timeLeftString = isRTL
+                                ? `متبقي ${days} يوم و ${remainingHours} ساعة للإلغاء المجاني`
+                                : `${days}d ${remainingHours}h left for free cancellation`;
+                            }
+                          } else {
+                            timeLeftString = isRTL
+                              ? 'انتهت فترة الإلغاء المجاني'
+                              : 'Free cancellation period expired';
+                          }
                         }
-                      }
 
-                      return (
-                        <View
-                          key={svc._id || idx}
-                          style={{
-                            backgroundColor: '#F8FAFC',
-                            borderWidth: 1,
-                            borderColor: '#E2E8F0',
-                            borderRadius: 10,
-                            padding: 12,
-                            marginBottom: 10,
-                            alignItems: 'stretch',
-                          }}
-                        >
-                          <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#334155', flex: 1, textAlign: isRTL ? 'right' : 'left' }}>
-                              {serviceName}
-                            </Text>
-                            {vendorName && (
-                              <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '500', marginRight: isRTL ? 0 : 4, marginLeft: isRTL ? 4 : 0 }}>
-                                ({vendorName})
-                              </Text>
-                            )}
-                          </View>
-                          
-                          <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                            <Icon name="time-outline" size={14} color="#64748B" />
-                            <Text style={{ fontSize: 11, color: '#475569', textAlign: isRTL ? 'right' : 'left', flex: 1 }}>
-                              {isRTL
-                                ? `سياسة الإلغاء: استرداد كامل حتى ${formatRefundWindow(refundPeriodHours)} قبل الفعالية`
-                                : `Cancellation Policy: Full refund up to ${formatRefundWindow(refundPeriodHours)} before event`}
-                            </Text>
-                          </View>
-
-                          {timeLeftString ? (
+                        return (
+                          <View
+                            key={svc._id || idx}
+                            style={{
+                              backgroundColor: '#F8FAFC',
+                              borderWidth: 1,
+                              borderColor: '#E2E8F0',
+                              borderRadius: 10,
+                              padding: 12,
+                              marginBottom: 10,
+                              alignItems: 'stretch',
+                            }}
+                          >
                             <View
                               style={{
                                 flexDirection: isRTL ? 'row-reverse' : 'row',
+                                justifyContent: 'space-between',
                                 alignItems: 'center',
-                                backgroundColor: isWithinWindow ? '#ECFDF5' : '#FEF2F2',
-                                paddingVertical: 6,
-                                paddingHorizontal: 8,
-                                borderRadius: 6,
-                                gap: 6,
+                                marginBottom: 6,
                               }}
                             >
-                              <Icon
-                                name={isWithinWindow ? 'checkmark-circle' : 'alert-circle'}
-                                size={14}
-                                color={isWithinWindow ? '#059669' : '#DC2626'}
-                              />
                               <Text
                                 style={{
-                                  fontSize: 11,
-                                  fontWeight: '600',
-                                  color: isWithinWindow ? '#047857' : '#B91C1C',
+                                  fontSize: 13,
+                                  fontWeight: '700',
+                                  color: '#334155',
                                   flex: 1,
                                   textAlign: isRTL ? 'right' : 'left',
                                 }}
                               >
-                                {timeLeftString}
+                                {serviceName}
+                              </Text>
+                              {vendorName && (
+                                <Text
+                                  style={{
+                                    fontSize: 11,
+                                    color: '#64748B',
+                                    fontWeight: '500',
+                                    marginRight: isRTL ? 0 : 4,
+                                    marginLeft: isRTL ? 4 : 0,
+                                  }}
+                                >
+                                  ({vendorName})
+                                </Text>
+                              )}
+                            </View>
+
+                            <View
+                              style={{
+                                flexDirection: isRTL ? 'row-reverse' : 'row',
+                                alignItems: 'center',
+                                gap: 6,
+                                marginBottom: 6,
+                              }}
+                            >
+                              <Icon
+                                name="time-outline"
+                                size={14}
+                                color="#64748B"
+                              />
+                              <Text
+                                style={{
+                                  fontSize: 11,
+                                  color: '#475569',
+                                  textAlign: isRTL ? 'right' : 'left',
+                                  flex: 1,
+                                }}
+                              >
+                                {isRTL
+                                  ? `سياسة الإلغاء: استرداد كامل حتى ${formatRefundWindow(
+                                      refundPeriodHours,
+                                    )} قبل الفعالية`
+                                  : `Cancellation Policy: Full refund up to ${formatRefundWindow(
+                                      refundPeriodHours,
+                                    )} before event`}
                               </Text>
                             </View>
-                          ) : null}
-                        </View>
-                      );
-                    })}
+
+                            {timeLeftString ? (
+                              <View
+                                style={{
+                                  flexDirection: isRTL ? 'row-reverse' : 'row',
+                                  alignItems: 'center',
+                                  backgroundColor: isWithinWindow
+                                    ? '#ECFDF5'
+                                    : '#FEF2F2',
+                                  paddingVertical: 6,
+                                  paddingHorizontal: 8,
+                                  borderRadius: 6,
+                                  gap: 6,
+                                }}
+                              >
+                                <Icon
+                                  name={
+                                    isWithinWindow
+                                      ? 'checkmark-circle'
+                                      : 'alert-circle'
+                                  }
+                                  size={14}
+                                  color={isWithinWindow ? '#059669' : '#DC2626'}
+                                />
+                                <Text
+                                  style={{
+                                    fontSize: 11,
+                                    fontWeight: '600',
+                                    color: isWithinWindow
+                                      ? '#047857'
+                                      : '#B91C1C',
+                                    flex: 1,
+                                    textAlign: isRTL ? 'right' : 'left',
+                                  }}
+                                >
+                                  {timeLeftString}
+                                </Text>
+                              </View>
+                            ) : null}
+                          </View>
+                        );
+                      },
+                    )}
                   </View>
                 )}
 
@@ -348,13 +437,18 @@ export const CancellationRequestModal: React.FC<CancellationRequestModalProps> =
 
                   <TouchableOpacity
                     onPress={handleSubmitCancellationRequest}
-                    disabled={!cancellationReason.trim() || submittingCancellation}
+                    disabled={
+                      !cancellationReason.trim() || submittingCancellation
+                    }
                     style={{
                       paddingVertical: 10,
                       paddingHorizontal: 16,
                       borderRadius: 10,
                       backgroundColor: '#EF4444',
-                      opacity: !cancellationReason.trim() || submittingCancellation ? 0.6 : 1,
+                      opacity:
+                        !cancellationReason.trim() || submittingCancellation
+                          ? 0.6
+                          : 1,
                       justifyContent: 'center',
                       alignItems: 'center',
                       minWidth: 120,
@@ -457,7 +551,11 @@ export const CancellationRequestModal: React.FC<CancellationRequestModalProps> =
                     gap: 8,
                   }}
                 >
-                  <Icon name="checkmark-circle-outline" size={18} color="#22C55E" />
+                  <Icon
+                    name="checkmark-circle-outline"
+                    size={18}
+                    color="#22C55E"
+                  />
                   <Text
                     style={{
                       color: '#166534',
@@ -475,7 +573,8 @@ export const CancellationRequestModal: React.FC<CancellationRequestModalProps> =
                 </View>
 
                 {/* Refund Eligibility Notice */}
-                {cancellationResult.eligibility && !cancellationResult.eligibility.anyEligible ? (
+                {cancellationResult.eligibility &&
+                !cancellationResult.eligibility.anyEligible ? (
                   <View
                     style={{
                       backgroundColor: '#FEF2F2',
@@ -498,7 +597,11 @@ export const CancellationRequestModal: React.FC<CancellationRequestModalProps> =
                       name="warning-outline"
                       size={16}
                       color="#EF4444"
-                      style={{ marginTop: 2, marginRight: isRTL ? 0 : 2, marginLeft: isRTL ? 2 : 0 }}
+                      style={{
+                        marginTop: 2,
+                        marginRight: isRTL ? 0 : 2,
+                        marginLeft: isRTL ? 2 : 0,
+                      }}
                     />
                     <Text
                       style={{

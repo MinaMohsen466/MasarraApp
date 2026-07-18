@@ -60,8 +60,6 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack }) => {
     }>
   >([]);
 
-
-
   const showAlert = (
     title: string,
     message: string,
@@ -205,10 +203,7 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack }) => {
     }
 
     if (!licenseImageUri) {
-      showAlert(
-        isRTL ? 'خطأ' : 'Error',
-        t('businessLicenseImageRequired'),
-      );
+      showAlert(isRTL ? 'خطأ' : 'Error', t('businessLicenseImageRequired'));
       return;
     }
 
@@ -232,21 +227,17 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack }) => {
         licenseImageUri,
       );
 
-      showAlert(
-        t('applySuccessTitle'),
-        t('applySuccessMessage'),
-        [
-          {
-            text: isRTL ? 'موافق' : 'OK',
-            onPress: () => {
-              setAlertVisible(false);
-              if (onBack) {
-                onBack();
-              }
-            },
+      showAlert(t('applySuccessTitle'), t('applySuccessMessage'), [
+        {
+          text: isRTL ? 'موافق' : 'OK',
+          onPress: () => {
+            setAlertVisible(false);
+            if (onBack) {
+              onBack();
+            }
           },
-        ],
-      );
+        },
+      ]);
     } catch (error: unknown) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       showAlert(
@@ -337,10 +328,7 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack }) => {
                   style={[styles.inputIcon, isRTL && styles.inputIconRTL]}
                 />
                 <View
-                  style={[
-                    styles.inputDivider,
-                    isRTL && styles.inputDividerRTL,
-                  ]}
+                  style={[styles.inputDivider, isRTL && styles.inputDividerRTL]}
                 />
                 <TextInput
                   style={[styles.input, isRTL && styles.inputRTL]}
@@ -374,20 +362,19 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack }) => {
                   style={[styles.inputIcon, isRTL && styles.inputIconRTL]}
                 />
                 <View
-                  style={[
-                    styles.inputDivider,
-                    isRTL && styles.inputDividerRTL,
-                  ]}
+                  style={[styles.inputDivider, isRTL && styles.inputDividerRTL]}
                 />
                 <TextInput
                   style={[
                     styles.input,
                     isRTL && styles.inputRTL,
-                    user?.email && { color: '#9CA3AF' }
+                    user?.email && { color: '#9CA3AF' },
                   ]}
                   value={email}
                   onChangeText={setEmail}
-                  placeholder={isRTL ? 'البريد الإلكتروني' : 'Enter email address'}
+                  placeholder={
+                    isRTL ? 'البريد الإلكتروني' : 'Enter email address'
+                  }
                   placeholderTextColor="#9CA3AF"
                   keyboardType="email-address"
                   autoCapitalize="none"
@@ -417,10 +404,7 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack }) => {
                   style={[styles.inputIcon, isRTL && styles.inputIconRTL]}
                 />
                 <View
-                  style={[
-                    styles.inputDivider,
-                    isRTL && styles.inputDividerRTL,
-                  ]}
+                  style={[styles.inputDivider, isRTL && styles.inputDividerRTL]}
                 />
                 <TextInput
                   style={[styles.input, isRTL && styles.inputRTL]}
@@ -489,10 +473,7 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack }) => {
 
             {/* Terms & Conditions Checkbox */}
             <View
-              style={[
-                styles.termsContainer,
-                isRTL && styles.termsContainerRTL,
-              ]}
+              style={[styles.termsContainer, isRTL && styles.termsContainerRTL]}
             >
               <TouchableOpacity
                 activeOpacity={0.7}

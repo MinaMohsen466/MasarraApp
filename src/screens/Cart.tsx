@@ -32,7 +32,9 @@ import {
 } from '../services/cart';
 import { getServiceImageUrl } from '../services/servicesApi';
 import { styles } from './cartStyles';
-import PaymentReceiptModal, { ReceiptData } from '../components/PaymentReceiptModal/PaymentReceiptModal';
+import PaymentReceiptModal, {
+  ReceiptData,
+} from '../components/PaymentReceiptModal/PaymentReceiptModal';
 import AddressSelection from '../components/AddressSelection/AddressSelection';
 import { CustomAlert } from '../components/CustomAlert';
 import { validateCoupon, Coupon } from '../services/couponApi';
@@ -111,7 +113,8 @@ const Cart: React.FC<CartProps> = ({
   const [successfullyBookedItemIds, setSuccessfullyBookedItemIds] = useState<
     string[]
   >([]);
-  const [successReceiptData, setSuccessReceiptData] = useState<ReceiptData | null>(null);
+  const [successReceiptData, setSuccessReceiptData] =
+    useState<ReceiptData | null>(null);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   // Coupon state
   const [couponCode, setCouponCode] = useState('');
@@ -283,10 +286,10 @@ const Cart: React.FC<CartProps> = ({
 
   const confirmAndDelete = useCallback(
     (itemId: string) => {
-      // Snap to revealed position first
+      // Snap to revealed position first (always swipe left to delete)
       const translateX = getSwipeAnim(itemId);
       Animated.spring(translateX, {
-        toValue: isRTL ? 80 : -80,
+        toValue: -80,
         useNativeDriver: true,
         tension: 100,
         friction: 10,
@@ -300,7 +303,7 @@ const Cart: React.FC<CartProps> = ({
           onPress: async () => {
             // Animate card off-screen then delete
             Animated.timing(translateX, {
-              toValue: isRTL ? 500 : -500,
+              toValue: -500,
               duration: 200,
               useNativeDriver: true,
             }).start(async () => {
@@ -330,6 +333,12 @@ const Cart: React.FC<CartProps> = ({
     [isRTL, getSwipeAnim, resetSwipe, t, swipeAnims, loadCart],
   );
 
+  const isRtlRef = useRef(isRTL);
+  isRtlRef.current = isRTL;
+
+  const confirmAndDeleteRef = useRef(confirmAndDelete);
+  confirmAndDeleteRef.current = confirmAndDelete;
+
   const createPanResponder = useCallback(
     (itemId: string) => {
       const translateX = getSwipeAnim(itemId);
@@ -342,25 +351,18 @@ const Cart: React.FC<CartProps> = ({
           );
         },
         onPanResponderMove: (_, gestureState) => {
-          if (isRTL) {
-            if (gestureState.dx > 0) {
-              translateX.setValue(gestureState.dx);
-            } else {
-              translateX.setValue(Math.max(gestureState.dx, 0));
-            }
+          // Always swipe left to delete for both languages
+          if (gestureState.dx < 0) {
+            translateX.setValue(gestureState.dx);
           } else {
-            if (gestureState.dx < 0) {
-              translateX.setValue(gestureState.dx);
-            } else {
-              translateX.setValue(Math.min(gestureState.dx, 0));
-            }
+            translateX.setValue(Math.min(gestureState.dx, 0));
           }
         },
         onPanResponderRelease: (_, gestureState) => {
           const absX = Math.abs(gestureState.dx);
           // If swiped beyond REVEAL_THRESHOLD, trigger delete confirmation
           if (absX > REVEAL_THRESHOLD) {
-            confirmAndDelete(itemId);
+            confirmAndDeleteRef.current(itemId);
           }
           // Always snap the card back to the 0 position
           Animated.spring(translateX, {
@@ -372,7 +374,7 @@ const Cart: React.FC<CartProps> = ({
         },
       });
     },
-    [isRTL, getSwipeAnim, confirmAndDelete],
+    [getSwipeAnim],
   );
 
   const panResponders = useRef<{
@@ -391,7 +393,6 @@ const Cart: React.FC<CartProps> = ({
   const handleInfoPress = useCallback((itemId: string) => {
     setShowInfo(prev => ({ ...prev, [itemId]: !prev[itemId] }));
   }, []);
-
 
   const handleCheckout = async () => {
     try {
@@ -431,7 +432,9 @@ const Cart: React.FC<CartProps> = ({
         handleAddressSelected({
           _id: 'no-address',
           name: 'No Address Required',
-          street: isRTL ? 'خدمة موقعية (لا تتطلب عنوان)' : 'Venue/Hall (No delivery address required)',
+          street: isRTL
+            ? 'خدمة موقعية (لا تتطلب عنوان)'
+            : 'Venue/Hall (No delivery address required)',
           city: '',
           houseNumber: '',
           floorNumber: '',
@@ -530,8 +533,6 @@ const Cart: React.FC<CartProps> = ({
       const booking = bookings[0];
       const bookingId = booking._id || booking.id;
 
-
-
       setCreatedBookingIds([bookingId]);
 
       // Get the cart items that were successfully booked
@@ -558,7 +559,9 @@ const Cart: React.FC<CartProps> = ({
           console.error('Failed to add booking created notification:', err),
         );
 
-        setAlertTitle(isRTL ? 'بانتظار موافقة الفيندور' : 'Awaiting Vendor Confirmation');
+        setAlertTitle(
+          isRTL ? 'بانتظار موافقة الفيندور' : 'Awaiting Vendor Confirmation',
+        );
         setAlertMessage(
           isRTL
             ? 'تم تقديم طلب الحجز بنجاح وهو الآن بانتظار موافقة الفيندور (مقدم الخدمة). سيتم إشعارك فور تأكيده لتتمكن من إتمام الدفع.'
@@ -619,8 +622,6 @@ const Cart: React.FC<CartProps> = ({
       // Round to 3 decimal places
       const totalAmount = parseFloat(Math.max(0, payableTotal).toFixed(3));
 
-
-
       // If total is 0 or less, skip payment
       if (totalAmount <= 0) {
         await clearCart();
@@ -678,8 +679,6 @@ const Cart: React.FC<CartProps> = ({
         );
       }
 
-
-
       // Step 7: Send payment link
       const paymentResponse = await sendPayment({
         bookingId,
@@ -703,8 +702,6 @@ const Cart: React.FC<CartProps> = ({
         notificationOption: 'LNK',
       });
 
-
-
       if (!paymentResponse.success || !paymentResponse.data) {
         throw new Error(
           paymentResponse.message || 'Failed to create payment link',
@@ -725,7 +722,8 @@ const Cart: React.FC<CartProps> = ({
       console.error('Checkout error:', error);
       setIsProcessingCheckout(false);
       setAlertTitle(t('error'));
-      const errorMessage = error instanceof Error ? error.message : t('errorCreatingBookings');
+      const errorMessage =
+        error instanceof Error ? error.message : t('errorCreatingBookings');
       setAlertMessage(errorMessage);
       setAlertButtons([{ text: t('ok'), style: 'default' }]);
       setAlertVisible(true);
@@ -733,7 +731,10 @@ const Cart: React.FC<CartProps> = ({
   };
 
   // Helper to generate success receipt data
-  const generateSuccessReceiptData = (bookingId: string, itemIds: string[]): ReceiptData => {
+  const generateSuccessReceiptData = (
+    bookingId: string,
+    itemIds: string[],
+  ): ReceiptData => {
     const successfullyBookedItems = cartItems.filter(item =>
       itemIds.includes(item._id),
     );
@@ -793,7 +794,10 @@ const Cart: React.FC<CartProps> = ({
     setShowPaymentWebView(false);
 
     // Save receipt data BEFORE removing items from cart
-    const receipt = generateSuccessReceiptData(createdBookingIds[0] || '', successfullyBookedItemIds);
+    const receipt = generateSuccessReceiptData(
+      createdBookingIds[0] || '',
+      successfullyBookedItemIds,
+    );
     setSuccessReceiptData(receipt);
 
     // Remove only the successfully booked items from cart
@@ -816,13 +820,9 @@ const Cart: React.FC<CartProps> = ({
 
   // Helper to delete unpaid bookings created during this checkout session
   const deleteCreatedBookings = async () => {
-
-
     if (createdBookingIds && createdBookingIds.length > 0 && userToken) {
       try {
         for (const bookingId of createdBookingIds) {
-
-
           // 1. Fetch current booking status from server to prevent race conditions
           const checkResponse = await fetch(
             `${API_URL}/bookings/${bookingId}`,
@@ -838,7 +838,6 @@ const Cart: React.FC<CartProps> = ({
           if (checkResponse.ok) {
             const bookingData = await checkResponse.json();
 
-
             // If the booking is already paid or completed, do NOT delete it.
             // Instead, transition the user to the success screen!
             if (
@@ -846,10 +845,11 @@ const Cart: React.FC<CartProps> = ({
               (bookingData.paymentStatus === 'paid' ||
                 bookingData.status === 'completed')
             ) {
-
-
               // Transition to success screen
-              const receipt = generateSuccessReceiptData(bookingId, successfullyBookedItemIds);
+              const receipt = generateSuccessReceiptData(
+                bookingId,
+                successfullyBookedItemIds,
+              );
               setSuccessReceiptData(receipt);
 
               // Clear only the successfully booked items from cart
@@ -884,7 +884,6 @@ const Cart: React.FC<CartProps> = ({
       // Clear the booking IDs
       setCreatedBookingIds([]);
     } else {
-
     }
     return false; // Indicating booking was deleted or skipped
   };
@@ -946,7 +945,7 @@ const Cart: React.FC<CartProps> = ({
       ) {
         const itemOriginalTotal = item.originalTotalPriceBeforeDiscount
           ? item.originalTotalPriceBeforeDiscount * item.quantity
-          : (item.totalPrice ?? item.price * item.quantity);
+          : item.totalPrice ?? item.price * item.quantity;
         return total + itemOriginalTotal;
       }
       return total;
@@ -969,10 +968,7 @@ const Cart: React.FC<CartProps> = ({
           ? new Date(item.selectedDate).toDateString()
           : '';
         const key = `${item.vendorId}|${dateKey}`;
-        fees.set(
-          key,
-          Math.max(fees.get(key) || 0, item.deliveryFee ?? 0),
-        );
+        fees.set(key, Math.max(fees.get(key) || 0, item.deliveryFee ?? 0));
       }
     });
     let total = 0;
@@ -1246,8 +1242,8 @@ const Cart: React.FC<CartProps> = ({
               const panHandler = getPanResponder(item._id);
               const translateX = getSwipeAnim(item._id);
               const swipeOpacity = translateX.interpolate({
-                inputRange: isRTL ? [0, 5, 20] : [-20, -5, 0],
-                outputRange: isRTL ? [0, 0, 1] : [1, 0, 0],
+                inputRange: [-20, -5, 0],
+                outputRange: [1, 0, 0],
                 extrapolate: 'clamp',
               });
               return (
@@ -1262,7 +1258,6 @@ const Cart: React.FC<CartProps> = ({
                   <Animated.View
                     style={[
                       styles.swipeDeleteBehind,
-                      isRTL && styles.swipeDeleteBehindRTL,
                       { opacity: swipeOpacity },
                     ]}
                   >
@@ -2069,10 +2064,15 @@ const Cart: React.FC<CartProps> = ({
                           }}
                         >
                           {(() => {
-                            const itemOriginalTotal = item.originalTotalPriceBeforeDiscount
-                              ? item.originalTotalPriceBeforeDiscount * item.quantity
-                              : null;
-                            const hasDiscount = itemOriginalTotal && itemOriginalTotal > (item.totalPrice ?? item.price * item.quantity);
+                            const itemOriginalTotal =
+                              item.originalTotalPriceBeforeDiscount
+                                ? item.originalTotalPriceBeforeDiscount *
+                                  item.quantity
+                                : null;
+                            const hasDiscount =
+                              itemOriginalTotal &&
+                              itemOriginalTotal >
+                                (item.totalPrice ?? item.price * item.quantity);
                             if (hasDiscount) {
                               return (
                                 <Text
@@ -2083,7 +2083,8 @@ const Cart: React.FC<CartProps> = ({
                                     marginHorizontal: 6,
                                   }}
                                 >
-                                  {itemOriginalTotal.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
+                                  {itemOriginalTotal.toFixed(3)}{' '}
+                                  {isRTL ? 'د.ك' : 'KD'}
                                 </Text>
                               );
                             }
@@ -2127,7 +2128,8 @@ const Cart: React.FC<CartProps> = ({
                           >
                             {t('afterConfirmation')}
                           </Text>
-                        ) : item.addressRequired && (item.deliveryFee ?? 0) > 0 ? (
+                        ) : item.addressRequired &&
+                          (item.deliveryFee ?? 0) > 0 ? (
                           <Text style={styles.deliveryChargeValue}>
                             {(item.deliveryFee ?? 0).toFixed(3)}{' '}
                             {isRTL ? 'د.ك' : 'KD'}
@@ -2276,7 +2278,8 @@ const Cart: React.FC<CartProps> = ({
             {appliedCoupon && couponDiscount > 0 && (
               <View style={styles.discountRow}>
                 <Text style={styles.discountLabel}>
-                  {isRTL ? 'خصم الكوبون' : 'Coupon Discount'} ({appliedCoupon.code})
+                  {isRTL ? 'خصم الكوبون' : 'Coupon Discount'} (
+                  {appliedCoupon.code})
                 </Text>
                 <Text style={styles.discountValue}>
                   - {isRTL ? ' د.ك ' : 'KD'} {couponDiscount.toFixed(3)}
@@ -2365,7 +2368,7 @@ const Cart: React.FC<CartProps> = ({
                       textDecorationLine: 'underline',
                     }}
                   >
-                    {isRTL ? 'الشروط' : 'Terms & Conditions'}
+                    {isRTL ? 'الشروط والأحكام' : 'Terms & Conditions'}
                   </Text>
                 </TouchableOpacity>
                 <Text
@@ -2415,7 +2418,7 @@ const Cart: React.FC<CartProps> = ({
 
             <TouchableOpacity
               style={styles.continueShoppingButton}
-              onPress={() => onNavigate && onNavigate('home')}
+              onPress={() => onNavigate && onNavigate('services')}
               disabled={isProcessingCheckout}
             >
               <Text style={styles.continueShoppingButtonText}>

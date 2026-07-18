@@ -36,7 +36,8 @@ export const initiatePaymentSession = async (
       throw new Error('Authentication required');
     }
 
-    if (__DEV__) console.log('Initiating payment session for:', customerIdentifier);
+    if (__DEV__)
+      console.log('Initiating payment session for:', customerIdentifier);
 
     const response = await fetch(`${API_URL}/payment/initiate-session`, {
       method: 'POST',
@@ -48,7 +49,8 @@ export const initiatePaymentSession = async (
     });
 
     const data = await response.json();
-    if (__DEV__) console.log('Initiate session response:', JSON.stringify(data, null, 2));
+    if (__DEV__)
+      console.log('Initiate session response:', JSON.stringify(data, null, 2));
 
     if (!response.ok) {
       console.error('Initiate session failed:', data);
@@ -127,7 +129,8 @@ export const executePayment = async (
     });
 
     const data = await response.json();
-    if (__DEV__) console.log('Payment execute response:', JSON.stringify(data, null, 2));
+    if (__DEV__)
+      console.log('Payment execute response:', JSON.stringify(data, null, 2));
 
     if (!response.ok) {
       console.error('Payment execute failed:', data);
@@ -223,7 +226,8 @@ export const sendPayment = async (
     }
 
     const data = await response.json();
-    if (__DEV__) console.log('Initiate session response:', JSON.stringify(data, null, 2));
+    if (__DEV__)
+      console.log('Initiate session response:', JSON.stringify(data, null, 2));
 
     if (!response.ok || !data.success) {
       console.error('Initiate session failed:', data);

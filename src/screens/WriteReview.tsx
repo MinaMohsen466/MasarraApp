@@ -176,7 +176,12 @@ const WriteReview: React.FC<WriteReviewProps> = ({
       <View style={styles.container}>
         {/* Header */}
         <View style={[styles.header, isRTL && styles.headerRTL]}>
-          <View style={[styles.headerTitleContainer, isRTL && styles.headerTitleContainerRTL]}>
+          <View
+            style={[
+              styles.headerTitleContainer,
+              isRTL && styles.headerTitleContainerRTL,
+            ]}
+          >
             <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
               {isRTL ? 'تقييم الخدمة' : 'Rate Service'}
             </Text>

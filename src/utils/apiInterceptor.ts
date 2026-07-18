@@ -39,7 +39,8 @@ const processQueue = (error: any, token: string | null = null) => {
       if (prom.config.init) {
         prom.config.init.headers = headers;
       }
-      globalThis.fetch(prom.config.input as any, prom.config.init)
+      globalThis
+        .fetch(prom.config.input as any, prom.config.init)
         .then(res => prom.resolve(res))
         .catch(err => prom.reject(err));
     }
@@ -50,12 +51,16 @@ const processQueue = (error: any, token: string | null = null) => {
 export const initApiInterceptor = () => {
   const originalFetch = globalThis.fetch;
 
-  globalThis.fetch = async (input: any, init?: RequestInit): Promise<Response> => {
+  globalThis.fetch = async (
+    input: any,
+    init?: RequestInit,
+  ): Promise<Response> => {
     // 1. Convert input to string to check URL
-    const urlString = typeof input === 'string' 
-      ? input 
-      : input instanceof URL 
-        ? input.toString() 
+    const urlString =
+      typeof input === 'string'
+        ? input
+        : input instanceof URL
+        ? input.toString()
         : (input as any).url || '';
 
     // Only intercept requests going to our backend API
@@ -64,7 +69,12 @@ export const initApiInterceptor = () => {
     const isLoginRequest = urlString.includes('/auth/login');
     const isSignupRequest = urlString.includes('/auth/signup');
 
-    if (!isApiRequest || isRefreshRequest || isLoginRequest || isSignupRequest) {
+    if (
+      !isApiRequest ||
+      isRefreshRequest ||
+      isLoginRequest ||
+      isSignupRequest
+    ) {
       return originalFetch(input, init);
     }
 
@@ -73,10 +83,15 @@ export const initApiInterceptor = () => {
 
       // If unauthorized (401), attempt to refresh token
       if (response.status === 401) {
-        console.log('🔄 API Interceptor: Received 401 Unauthorized for:', urlString);
+        console.log(
+          '🔄 API Interceptor: Received 401 Unauthorized for:',
+          urlString,
+        );
 
         if (isRefreshing) {
-          console.log('⏳ API Interceptor: Token refresh already in progress. Queueing request...');
+          console.log(
+            '⏳ API Interceptor: Token refresh already in progress. Queueing request...',
+          );
           return new Promise((resolve, reject) => {
             failedQueue.push({
               resolve,
@@ -90,13 +105,16 @@ export const initApiInterceptor = () => {
         console.log('🔑 API Interceptor: Initiating silent token refresh...');
 
         try {
-          const refreshResponse = await originalFetch(`${API_BASE_URL}/auth/refresh`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
+          const refreshResponse = await originalFetch(
+            `${API_BASE_URL}/auth/refresh`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              credentials: 'include', // Include httpOnly refresh cookie
             },
-            credentials: 'include', // Include httpOnly refresh cookie
-          });
+          );
 
           if (refreshResponse.ok) {
             const refreshData = await refreshResponse.json();
@@ -130,19 +148,24 @@ export const initApiInterceptor = () => {
             return originalFetch(input, updatedInit);
           } else {
             // Refresh response was not OK (refresh token expired)
-            console.log('❌ API Interceptor: Refresh token is invalid/expired. Forcing logout...');
+            console.log(
+              '❌ API Interceptor: Refresh token is invalid/expired. Forcing logout...',
+            );
             isRefreshing = false;
             processQueue(new Error('Session expired'));
-            
+
             // Trigger logout in app
             if (onLogoutRequiredCallback) {
               onLogoutRequiredCallback();
             }
-            
+
             return response; // Return original 401 response
           }
         } catch (refreshError) {
-          console.error('❌ API Interceptor: Network error during token refresh:', refreshError);
+          console.error(
+            '❌ API Interceptor: Network error during token refresh:',
+            refreshError,
+          );
           isRefreshing = false;
           processQueue(refreshError);
           return response;

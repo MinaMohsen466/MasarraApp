@@ -264,13 +264,30 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
         }
 
         const baseDetails: QRCodeCustomDetails = {
-          name1: existingQRCode.customDetails.name1 ?? booking?.customer?.name ?? booking?.customerName ?? '',
+          name1:
+            existingQRCode.customDetails.name1 ??
+            booking?.customer?.name ??
+            booking?.customerName ??
+            '',
           name2: existingQRCode.customDetails.name2 ?? '',
           eventDate: existingQRCode.customDetails.eventDate ?? baseEventDate,
           eventTime: existingQRCode.customDetails.eventTime ?? baseEventTime,
-          location: existingQRCode.customDetails.location ?? booking?.location ?? booking?.venue ?? '',
-          contact: existingQRCode.customDetails.contact ?? booking?.customer?.phone ?? booking?.customer?.email ?? booking?.customerPhone ?? booking?.customerEmail ?? '',
-          guestCount: existingQRCode.customDetails.guestCount ?? booking?.guestLimit?.toString() ?? '',
+          location:
+            existingQRCode.customDetails.location ??
+            booking?.location ??
+            booking?.venue ??
+            '',
+          contact:
+            existingQRCode.customDetails.contact ??
+            booking?.customer?.phone ??
+            booking?.customer?.email ??
+            booking?.customerPhone ??
+            booking?.customerEmail ??
+            '',
+          guestCount:
+            existingQRCode.customDetails.guestCount ??
+            booking?.guestLimit?.toString() ??
+            '',
         };
 
         setFormData(baseDetails);
@@ -314,8 +331,14 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
           } catch (e) {}
         }
 
-        const customerName = booking.customer?.name || booking.customerName || '';
-        const contactDetails = booking.customer?.phone || booking.customer?.email || booking.customerPhone || booking.customerEmail || '';
+        const customerName =
+          booking.customer?.name || booking.customerName || '';
+        const contactDetails =
+          booking.customer?.phone ||
+          booking.customer?.email ||
+          booking.customerPhone ||
+          booking.customerEmail ||
+          '';
         const locationText = booking.location || booking.venue || '';
         const defaultGuestLimit = booking.guestLimit?.toString() || '';
 
@@ -652,7 +675,9 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
                 {showDatePicker && (
                   <DateTimePicker
                     value={(() => {
-                      const [y, m, d] = formData.eventDate.split('-').map(Number);
+                      const [y, m, d] = formData.eventDate
+                        .split('-')
+                        .map(Number);
                       return new Date(y, m - 1, d);
                     })()}
                     mode="date"
@@ -661,7 +686,10 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
                       setShowDatePicker(false);
                       if (date) {
                         const year = date.getFullYear();
-                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const month = String(date.getMonth() + 1).padStart(
+                          2,
+                          '0',
+                        );
                         const day = String(date.getDate()).padStart(2, '0');
                         setFormData(prev => ({
                           ...prev,
@@ -684,7 +712,9 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
                 {showTimePicker && (
                   <DateTimePicker
                     value={(() => {
-                      const [hours, minutes] = formData.eventTime.split(':').map(Number);
+                      const [hours, minutes] = formData.eventTime
+                        .split(':')
+                        .map(Number);
                       const d = new Date();
                       d.setHours(hours, minutes, 0, 0);
                       return d;
@@ -695,7 +725,10 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
                       setShowTimePicker(false);
                       if (time) {
                         const hours = String(time.getHours()).padStart(2, '0');
-                        const minutes = String(time.getMinutes()).padStart(2, '0');
+                        const minutes = String(time.getMinutes()).padStart(
+                          2,
+                          '0',
+                        );
                         setFormData(prev => ({
                           ...prev,
                           eventTime: `${hours}:${minutes}`,
@@ -775,7 +808,7 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
                   <ActivityIndicator size="small" color="#fff" />
                 ) : isUpdated && existingQRCode ? (
                   <Text style={styles.generateButtonText}>
-                     {isRTL ? '✓ تم التحديث' : '✓ Updated'}
+                    {isRTL ? '✓ تم التحديث' : '✓ Updated'}
                   </Text>
                 ) : existingQRCode && !hasChanges ? (
                   <Text style={styles.generateButtonText}>
@@ -820,7 +853,10 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
         onClose={() => {
           setShowResultModal(false);
           if (!isPreviewMode) {
-            onSuccess(generatedQRCode, parseInt(formData.guestCount || '0', 10) || 1);
+            onSuccess(
+              generatedQRCode,
+              parseInt(formData.guestCount || '0', 10) || 1,
+            );
             onClose();
           }
         }}

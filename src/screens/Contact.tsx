@@ -174,11 +174,12 @@ const Contact: React.FC<ContactProps> = ({
         ],
       );
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       showAlert(
         isRTL ? 'خطأ' : 'Error',
         errorMessage ||
-        (isRTL ? 'فشل في إرسال الرسالة' : 'Failed to send message'),
+          (isRTL ? 'فشل في إرسال الرسالة' : 'Failed to send message'),
       );
     } finally {
       setIsSubmitting(false);
@@ -337,11 +338,19 @@ const Contact: React.FC<ContactProps> = ({
           {/* Become a Seller Promo Banner */}
           {(!isLoggedIn || (user && user.role === 'customer')) && (
             <TouchableOpacity
-              style={[contactStyles.vendorBanner, isRTL && contactStyles.vendorBannerRTL]}
+              style={[
+                contactStyles.vendorBanner,
+                isRTL && contactStyles.vendorBannerRTL,
+              ]}
               onPress={() => onNavigate && onNavigate('become-seller')}
               activeOpacity={0.8}
             >
-              <View style={[contactStyles.vendorBannerLeft, isRTL && contactStyles.vendorBannerLeftRTL]}>
+              <View
+                style={[
+                  contactStyles.vendorBannerLeft,
+                  isRTL && contactStyles.vendorBannerLeftRTL,
+                ]}
+              >
                 <View style={contactStyles.vendorIconContainer}>
                   <Svg
                     width={22}
@@ -356,12 +365,29 @@ const Contact: React.FC<ContactProps> = ({
                     <Path d="M3 21h18M3 10h18M5 10V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v5M10 21V14h4v7" />
                   </Svg>
                 </View>
-                <View style={[contactStyles.vendorBannerTextContainer, isRTL && contactStyles.vendorBannerTextContainerRTL]}>
-                  <Text style={[contactStyles.vendorBannerTitle, isRTL && contactStyles.textRTL]}>
+                <View
+                  style={[
+                    contactStyles.vendorBannerTextContainer,
+                    isRTL && contactStyles.vendorBannerTextContainerRTL,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      contactStyles.vendorBannerTitle,
+                      isRTL && contactStyles.textRTL,
+                    ]}
+                  >
                     {isRTL ? 'سجل كمزود خدمة' : 'Register as a Vendor'}
                   </Text>
-                  <Text style={[contactStyles.vendorBannerSubtitle, isRTL && contactStyles.textRTL]}>
-                    {isRTL ? 'ابدأ في تقديم خدماتك وحقق أرباحاً معنا' : 'Start offering your services & earn with us'}
+                  <Text
+                    style={[
+                      contactStyles.vendorBannerSubtitle,
+                      isRTL && contactStyles.textRTL,
+                    ]}
+                  >
+                    {isRTL
+                      ? 'ابدأ في تقديم خدماتك وحقق أرباحاً معنا'
+                      : 'Start offering your services & earn with us'}
                   </Text>
                 </View>
               </View>

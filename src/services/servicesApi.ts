@@ -1,7 +1,4 @@
-import {
-  API_URL,
-  getImageUrl,
-} from '../config/api.config';
+import { API_URL, getImageUrl } from '../config/api.config';
 
 const API_BASE_URL = API_URL;
 

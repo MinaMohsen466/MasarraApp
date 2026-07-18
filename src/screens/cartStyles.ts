@@ -603,8 +603,16 @@ export const styles = StyleSheet.create({
     opacity: 0,
   },
   swipeDeleteBehindRTL: {
-    right: undefined,
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
     left: 0,
+    width: 70,
+    backgroundColor: '#FF4B4B',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    opacity: 0,
   },
   infoDropdown: {
     position: 'absolute',

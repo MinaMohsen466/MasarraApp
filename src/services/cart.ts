@@ -487,7 +487,10 @@ export async function createBookingsFromCart(
     const errors: { item: CartItem; error: string }[] = [];
 
     if (__DEV__) {
-      console.log('[createBookingsFromCart] Cart items count:', cartItems.length);
+      console.log(
+        '[createBookingsFromCart] Cart items count:',
+        cartItems.length,
+      );
       console.log(
         '[createBookingsFromCart] Cart items:',
         cartItems.map(i => ({

@@ -8,7 +8,11 @@ import React, {
   ReactNode,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { setSecureToken, getSecureToken, removeSecureToken } from '../utils/secureStorage';
+import {
+  setSecureToken,
+  getSecureToken,
+  removeSecureToken,
+} from '../utils/secureStorage';
 import {
   User,
   updateUserProfileWithImage,
@@ -75,7 +79,8 @@ export const AuthProvider: React.FC<{
         // Create a new object to ensure React detects the change
         setUser({ ...freshUserData });
       } else if (response.status === 401) {
-        if (__DEV__) console.log('🔄 Token is invalid or expired, forcing logout...');
+        if (__DEV__)
+          console.log('🔄 Token is invalid or expired, forcing logout...');
         await logout();
       }
     } catch (error) {
@@ -172,7 +177,7 @@ export const AuthProvider: React.FC<{
       },
       () => {
         logout();
-      }
+      },
     );
   }, [logout]);
 

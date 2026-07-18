@@ -44,7 +44,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
           <View style={styles.content}>
             <Text style={styles.errorIcon}>⚠️</Text>
-            
+
             <Text style={styles.titleAr}>حدث خطأ غير متوقع</Text>
             <Text style={styles.messageAr}>
               نعتذر عن هذا الخلل، يرجى المحاولة مرة أخرى أو إعادة تشغيل التطبيق.
@@ -52,7 +52,8 @@ export class ErrorBoundary extends Component<Props, State> {
 
             <Text style={styles.titleEn}>An unexpected error occurred</Text>
             <Text style={styles.messageEn}>
-              We apologize for the inconvenience. Please try again or restart the app.
+              We apologize for the inconvenience. Please try again or restart
+              the app.
             </Text>
 
             {__DEV__ && this.state.error && (

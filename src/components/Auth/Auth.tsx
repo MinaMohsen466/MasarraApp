@@ -31,14 +31,20 @@ interface AuthProps {
   initialShowSignup?: boolean;
 }
 
-const Auth: React.FC<AuthProps> = ({ onBack, onNavigate, initialShowSignup }) => {
+const Auth: React.FC<AuthProps> = ({
+  onBack,
+  onNavigate,
+  initialShowSignup,
+}) => {
   const { isRTL, language, setLanguage } = useLanguage();
   const insets = useSafeAreaInsets();
   const { login: saveLogin } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
-  const [showMultiStepSignup, setShowMultiStepSignup] = useState(initialShowSignup || false);
+  const [showMultiStepSignup, setShowMultiStepSignup] = useState(
+    initialShowSignup || false,
+  );
   const [showVerifyEmail, setShowVerifyEmail] = useState(false);
   const [pendingUserId, setPendingUserId] = useState<string>('');
   const [email, setEmail] = useState('');
@@ -169,14 +175,16 @@ const Auth: React.FC<AuthProps> = ({ onBack, onNavigate, initialShowSignup }) =>
                 style: 'default',
                 onPress: async () => {
                   try {
-                    const webUrl = `${getWebUrl()}/${isRTL ? 'ar' : 'en'}/login`;
+                    const webUrl = `${getWebUrl()}/${
+                      isRTL ? 'ar' : 'en'
+                    }/login`;
                     await Linking.openURL(webUrl);
                   } catch (err) {
                     console.error('Failed to open web URL:', err);
                   }
                 },
               },
-            ]
+            ],
           );
           return;
         }
@@ -197,7 +205,9 @@ const Auth: React.FC<AuthProps> = ({ onBack, onNavigate, initialShowSignup }) =>
           } else {
             await AsyncStorage.removeItem('rememberMe_checked');
             await AsyncStorage.removeItem('remembered_email');
-            await Keychain.resetGenericPassword({ service: 'com.masarra.rememberme' });
+            await Keychain.resetGenericPassword({
+              service: 'com.masarra.rememberme',
+            });
           }
         } catch (storageErr) {
           console.error('Error saving remembered credentials:', storageErr);
@@ -405,7 +415,10 @@ const Auth: React.FC<AuthProps> = ({ onBack, onNavigate, initialShowSignup }) =>
                   name="globe-outline"
                   size={16}
                   color={colors.textWhite}
-                  style={{ marginRight: isRTL ? 0 : 6, marginLeft: isRTL ? 6 : 0 }}
+                  style={{
+                    marginRight: isRTL ? 0 : 6,
+                    marginLeft: isRTL ? 6 : 0,
+                  }}
                 />
                 <Text
                   style={{

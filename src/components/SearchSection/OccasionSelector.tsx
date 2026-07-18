@@ -40,19 +40,26 @@ const OccasionSelector: React.FC<OccasionSelectorProps> = ({
 
     return (
       <TouchableOpacity
-        style={[
-          styles.occasionItem,
-          isSelected && styles.occasionItemSelected,
-        ]}
+        style={[styles.occasionItem, isSelected && styles.occasionItemSelected]}
         onPress={() => {
           onSelect(item);
           onClose();
         }}
         activeOpacity={0.7}
       >
-        <View style={[styles.occasionItemContent, isRTL && styles.occasionItemContentRTL]}>
+        <View
+          style={[
+            styles.occasionItemContent,
+            isRTL && styles.occasionItemContentRTL,
+          ]}
+        >
           {/* Occasion Icon/Image Container */}
-          <View style={[styles.iconWrapper, isSelected && styles.iconWrapperSelected]}>
+          <View
+            style={[
+              styles.iconWrapper,
+              isSelected && styles.iconWrapperSelected,
+            ]}
+          >
             {item.image ? (
               item.image.toLowerCase().endsWith('.svg') ? (
                 <SvgUri
@@ -72,7 +79,7 @@ const OccasionSelector: React.FC<OccasionSelectorProps> = ({
               <View style={styles.placeholderIcon} />
             )}
           </View>
-          
+
           {/* Occasion Name */}
           <Text
             style={[

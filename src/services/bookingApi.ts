@@ -208,7 +208,9 @@ export const requestBookingCancellation = async (
     const responseData = await parseJsonResponse(response);
 
     if (!response.ok) {
-      throw new Error(responseData?.error || 'Failed to submit cancellation request');
+      throw new Error(
+        responseData?.error || 'Failed to submit cancellation request',
+      );
     }
 
     return responseData;

@@ -58,12 +58,32 @@ const DateSelector: React.FC<DateSelectorProps> = ({
   };
 
   const monthNamesEn = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
   const monthNamesAr = [
-    'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
-    'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+    'يناير',
+    'فبراير',
+    'مارس',
+    'أبريل',
+    'مايو',
+    'يونيو',
+    'يوليو',
+    'أغسطس',
+    'سبتمبر',
+    'أكتوبر',
+    'نوفمبر',
+    'ديسمبر',
   ];
   const monthNames = isRTL ? monthNamesAr : monthNamesEn;
 
@@ -109,8 +129,7 @@ const DateSelector: React.FC<DateSelectorProps> = ({
     if (allowPastDates) return false;
     const today = new Date();
     return (
-      currentYear <= today.getFullYear() &&
-      currentMonth <= today.getMonth()
+      currentYear <= today.getFullYear() && currentMonth <= today.getMonth()
     );
   };
 
@@ -124,12 +143,24 @@ const DateSelector: React.FC<DateSelectorProps> = ({
   };
 
   const getHeaderDateString = () => {
-    const daysWeekAr = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    const daysWeekAr = [
+      'الأحد',
+      'الاثنين',
+      'الثلاثاء',
+      'الأربعاء',
+      'الخميس',
+      'الجمعة',
+      'السبت',
+    ];
     const daysWeekEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const weekDay = isRTL ? daysWeekAr[tempSelectedDate.getDay()] : daysWeekEn[tempSelectedDate.getDay()];
+    const weekDay = isRTL
+      ? daysWeekAr[tempSelectedDate.getDay()]
+      : daysWeekEn[tempSelectedDate.getDay()];
     const month = monthNames[tempSelectedDate.getMonth()];
     const day = tempSelectedDate.getDate();
-    return isRTL ? `${weekDay}، ${day} ${month}` : `${weekDay}, ${month} ${day}`;
+    return isRTL
+      ? `${weekDay}، ${day} ${month}`
+      : `${weekDay}, ${month} ${day}`;
   };
 
   // Build grid items (offset empty cells + active day cells)
@@ -154,22 +185,34 @@ const DateSelector: React.FC<DateSelectorProps> = ({
         <View style={styles.modalContent}>
           {/* Header */}
           <View style={styles.dateHeader}>
-            <Text style={styles.titleText}>{isRTL ? 'اختر التاريخ' : 'Select Date'}</Text>
+            <Text style={styles.titleText}>
+              {isRTL ? 'اختر التاريخ' : 'Select Date'}
+            </Text>
             <Text style={styles.selectedDateText}>{getHeaderDateString()}</Text>
           </View>
 
           {/* Month Navigator */}
-          <View style={[styles.monthHeader, isRTL && { flexDirection: 'row-reverse' }]}>
+          <View
+            style={[
+              styles.monthHeader,
+              isRTL && { flexDirection: 'row-reverse' },
+            ]}
+          >
             <TouchableOpacity
               onPress={handlePrevMonth}
               disabled={isPrevDisabled()}
-              style={[styles.arrowButton, isPrevDisabled() && styles.disabledArrowButton]}
+              style={[
+                styles.arrowButton,
+                isPrevDisabled() && styles.disabledArrowButton,
+              ]}
               activeOpacity={0.7}
             >
               <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
                 <Path
-                  d={isRTL ? "M9 5l7 7-7 7" : "M15 19l-7-7 7-7"}
-                  stroke={isPrevDisabled() ? "#CBD5E1" : colors.primary || "#00a19c"}
+                  d={isRTL ? 'M9 5l7 7-7 7' : 'M15 19l-7-7 7-7'}
+                  stroke={
+                    isPrevDisabled() ? '#CBD5E1' : colors.primary || '#00a19c'
+                  }
                   strokeWidth={2.5}
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -188,8 +231,8 @@ const DateSelector: React.FC<DateSelectorProps> = ({
             >
               <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
                 <Path
-                  d={isRTL ? "M15 19l-7-7 7-7" : "M9 5l7 7-7 7"}
-                  stroke={colors.primary || "#00a19c"}
+                  d={isRTL ? 'M15 19l-7-7 7-7' : 'M9 5l7 7-7 7'}
+                  stroke={colors.primary || '#00a19c'}
                   strokeWidth={2.5}
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -199,7 +242,12 @@ const DateSelector: React.FC<DateSelectorProps> = ({
           </View>
 
           {/* Weekday Labels */}
-          <View style={[styles.weekdaysRow, isRTL && { flexDirection: 'row-reverse' }]}>
+          <View
+            style={[
+              styles.weekdaysRow,
+              isRTL && { flexDirection: 'row-reverse' },
+            ]}
+          >
             {weekdays.map((wd, i) => (
               <View key={i} style={styles.weekdayCol}>
                 <Text style={styles.weekdayText}>{wd}</Text>
@@ -208,7 +256,9 @@ const DateSelector: React.FC<DateSelectorProps> = ({
           </View>
 
           {/* Days Grid */}
-          <View style={[styles.daysGrid, isRTL && { flexDirection: 'row-reverse' }]}>
+          <View
+            style={[styles.daysGrid, isRTL && { flexDirection: 'row-reverse' }]}
+          >
             {gridCells.map((cell, idx) => {
               if (cell.type === 'empty') {
                 return <View key={`empty-${idx}`} style={styles.dayCell} />;
@@ -252,16 +302,27 @@ const DateSelector: React.FC<DateSelectorProps> = ({
           </View>
 
           {/* Action Buttons */}
-          <View style={[styles.actionButtons, isRTL && { flexDirection: 'row-reverse' }]}>
-            <TouchableOpacity onPress={handleCancel} style={styles.cancelButton} activeOpacity={0.7}>
+          <View
+            style={[
+              styles.actionButtons,
+              isRTL && { flexDirection: 'row-reverse' },
+            ]}
+          >
+            <TouchableOpacity
+              onPress={handleCancel}
+              style={styles.cancelButton}
+              activeOpacity={0.7}
+            >
               <Text style={styles.cancelButtonText}>
                 {isRTL ? 'إلغاء' : 'CANCEL'}
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleOK} style={styles.okButton} activeOpacity={0.8}>
-              <Text style={styles.okButtonText}>
-                {isRTL ? 'موافق' : 'OK'}
-              </Text>
+            <TouchableOpacity
+              onPress={handleOK}
+              style={styles.okButton}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.okButtonText}>{isRTL ? 'موافق' : 'OK'}</Text>
             </TouchableOpacity>
           </View>
         </View>

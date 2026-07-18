@@ -3,7 +3,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSocket } from '../contexts/SocketContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useNotification, renderNotificationText } from '../contexts/NotificationContext';
+import {
+  useNotification,
+  renderNotificationText,
+} from '../contexts/NotificationContext';
 import { CustomAlert } from './CustomAlert/CustomAlert';
 
 export interface AlertButton {
@@ -32,23 +35,28 @@ interface SocketNotificationListenerProps {
   setCurrentRoute: (route: string) => void;
 }
 
-export const SocketNotificationListener: React.FC<SocketNotificationListenerProps> = ({
-  setCurrentRoute,
-}) => {
+export const SocketNotificationListener: React.FC<
+  SocketNotificationListenerProps
+> = ({ setCurrentRoute }) => {
   const { socket } = useSocket();
   const { isRTL } = useLanguage();
   const { addNotification } = useNotification();
   const [notificationVisible, setNotificationVisible] = useState(false);
   const [notificationTitle, setNotificationTitle] = useState('');
   const [notificationMessage, setNotificationMessage] = useState('');
-  const [notificationButtons, setNotificationButtons] = useState<AlertButton[]>([]);
+  const [notificationButtons, setNotificationButtons] = useState<AlertButton[]>(
+    [],
+  );
 
-  const showAlert = useCallback((title: string, message: string, buttons: AlertButton[]) => {
-    setNotificationTitle(title);
-    setNotificationMessage(message);
-    setNotificationButtons(buttons);
-    setNotificationVisible(true);
-  }, []);
+  const showAlert = useCallback(
+    (title: string, message: string, buttons: AlertButton[]) => {
+      setNotificationTitle(title);
+      setNotificationMessage(message);
+      setNotificationButtons(buttons);
+      setNotificationVisible(true);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!socket) {
@@ -58,10 +66,10 @@ export const SocketNotificationListener: React.FC<SocketNotificationListenerProp
     // Legacy booking_notification handler
     const handleBookingNotification = (data: SocketNotificationPayload) => {
       console.log('Received booking notification via socket:', data);
-      
+
       const title = isRTL ? data.title : data.titleEn;
       const message = isRTL ? data.message : data.messageEn;
-      
+
       // Save notification to history and show top banner
       addNotification({
         id: data._id || data.id,
@@ -70,15 +78,17 @@ export const SocketNotificationListener: React.FC<SocketNotificationListenerProp
         message: data.message || '',
         messageEn: data.messageEn || '',
         type: data.type || 'booking_notification',
-        bookingId: data.bookingId || data.id
-      }).catch(err => console.error('Failed to add socket booking notification:', err));
+        bookingId: data.bookingId || data.id,
+      }).catch(err =>
+        console.error('Failed to add socket booking notification:', err),
+      );
 
       const buttons: AlertButton[] = [
         {
           text: isRTL ? 'إغلاق' : 'Close',
           style: 'cancel',
           onPress: () => {},
-        }
+        },
       ];
 
       if (data.type === 'booking_confirmed') {
@@ -92,7 +102,7 @@ export const SocketNotificationListener: React.FC<SocketNotificationListenerProp
             } catch (err) {
               console.error('Error redirecting to order history:', err);
             }
-          }
+          },
         });
       } else if (data.type === 'booking_created') {
         buttons.unshift({
@@ -105,7 +115,7 @@ export const SocketNotificationListener: React.FC<SocketNotificationListenerProp
             } catch (err) {
               console.error('Error redirecting to order history:', err);
             }
-          }
+          },
         });
       }
 
@@ -117,19 +127,24 @@ export const SocketNotificationListener: React.FC<SocketNotificationListenerProp
       console.log('Payment confirmed notification:', data);
       const title = isRTL ? '✅ تم تأكيد الدفع' : '✅ Payment Confirmed';
       const message = isRTL
-        ? (data.messageAr || 'تم تأكيد دفعك بنجاح! حجزك مؤكد الآن.')
-        : (data.messageEn || 'Your payment was confirmed! Your booking is now confirmed.');
-      
+        ? data.messageAr || 'تم تأكيد دفعك بنجاح! حجزك مؤكد الآن.'
+        : data.messageEn ||
+          'Your payment was confirmed! Your booking is now confirmed.';
+
       // Save notification to history and show top banner
       addNotification({
         id: data._id || data.id,
         title: isRTL ? 'تم تأكيد الدفع' : 'Payment Confirmed',
         titleEn: 'Payment Confirmed',
         message: data.messageAr || 'تم تأكيد دفعك بنجاح! حجزك مؤكد الآن.',
-        messageEn: data.messageEn || 'Your payment was confirmed! Your booking is now confirmed.',
+        messageEn:
+          data.messageEn ||
+          'Your payment was confirmed! Your booking is now confirmed.',
         type: 'booking_payment_confirmed',
-        bookingId: data.bookingId || data.id
-      }).catch(err => console.error('Failed to add payment socket notification:', err));
+        bookingId: data.bookingId || data.id,
+      }).catch(err =>
+        console.error('Failed to add payment socket notification:', err),
+      );
 
       showAlert(title, message, [
         {
@@ -142,12 +157,12 @@ export const SocketNotificationListener: React.FC<SocketNotificationListenerProp
             } catch (err) {
               console.error('Error redirecting to order history:', err);
             }
-          }
+          },
         },
         {
           text: isRTL ? 'إغلاق' : 'Close',
           style: 'cancel',
-        }
+        },
       ]);
     };
 
@@ -156,9 +171,9 @@ export const SocketNotificationListener: React.FC<SocketNotificationListenerProp
       console.log('Vendor confirmed notification:', data);
       const title = isRTL ? '🎉 تم قبول الحجز' : '🎉 Booking Confirmed';
       const message = isRTL
-        ? (data.messageAr || 'قبل البائع حجزك!')
-        : (data.messageEn || 'Vendor confirmed your booking!');
-      
+        ? data.messageAr || 'قبل البائع حجزك!'
+        : data.messageEn || 'Vendor confirmed your booking!';
+
       // Save notification to history and show top banner
       addNotification({
         id: data._id || data.id,
@@ -167,14 +182,19 @@ export const SocketNotificationListener: React.FC<SocketNotificationListenerProp
         message: data.messageAr || 'قبل البائع حجزك!',
         messageEn: data.messageEn || 'Vendor confirmed your booking!',
         type: 'booking_confirmed_by_vendor',
-        bookingId: data.bookingId || data.id
-      }).catch(err => console.error('Failed to add vendor confirmation socket notification:', err));
+        bookingId: data.bookingId || data.id,
+      }).catch(err =>
+        console.error(
+          'Failed to add vendor confirmation socket notification:',
+          err,
+        ),
+      );
 
       const buttons: AlertButton[] = [
         {
           text: isRTL ? 'إغلاق' : 'Close',
           style: 'cancel',
-        }
+        },
       ];
 
       if (data.requiresPayment) {
@@ -188,7 +208,7 @@ export const SocketNotificationListener: React.FC<SocketNotificationListenerProp
             } catch (err) {
               console.error('Error redirecting to order history:', err);
             }
-          }
+          },
         });
       } else {
         buttons.unshift({
@@ -201,7 +221,7 @@ export const SocketNotificationListener: React.FC<SocketNotificationListenerProp
             } catch (err) {
               console.error('Error redirecting to order history:', err);
             }
-          }
+          },
         });
       }
 
@@ -214,7 +234,10 @@ export const SocketNotificationListener: React.FC<SocketNotificationListenerProp
       if (!data) return;
 
       const { title, message } = renderNotificationText(data, isRTL);
-      const { title: titleEn, message: messageEn } = renderNotificationText(data, false);
+      const { title: titleEn, message: messageEn } = renderNotificationText(
+        data,
+        false,
+      );
 
       addNotification({
         id: data._id || data.id,
@@ -229,7 +252,11 @@ export const SocketNotificationListener: React.FC<SocketNotificationListenerProp
       }).catch(err => console.error('Failed to add socket notification:', err));
 
       // Do not show popup alert for chat/message notifications, just keep them in notifications list
-      if (data.type === 'new_message' || data.type === 'new_chat' || data.chat) {
+      if (
+        data.type === 'new_message' ||
+        data.type === 'new_chat' ||
+        data.chat
+      ) {
         return;
       }
 
@@ -238,7 +265,7 @@ export const SocketNotificationListener: React.FC<SocketNotificationListenerProp
           text: isRTL ? 'إغلاق' : 'Close',
           style: 'cancel',
           onPress: () => {},
-        }
+        },
       ];
 
       // If it's related to bookings, allow direct navigation to bookings screen
@@ -257,7 +284,7 @@ export const SocketNotificationListener: React.FC<SocketNotificationListenerProp
             } catch (err) {
               console.error('Error redirecting to order history:', err);
             }
-          }
+          },
         });
       } else if (data.type === 'event_reminder') {
         buttons.unshift({
@@ -270,7 +297,7 @@ export const SocketNotificationListener: React.FC<SocketNotificationListenerProp
             } catch (err) {
               console.error('Error redirecting to guest list:', err);
             }
-          }
+          },
         });
       }
 

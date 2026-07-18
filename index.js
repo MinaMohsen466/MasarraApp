@@ -25,22 +25,19 @@ import React from 'react';
 import { StyleSheet } from 'react-native';
 const reactNative = require('react-native');
 
-const ARABIC_REGEX =
-  /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+const SYSTEM_FONTS = ['System', 'Arial', 'sans-serif', 'normal', 'Roboto'];
 
-function hasArabicText(children) {
-  if (typeof children === 'string') return ARABIC_REGEX.test(children);
-  if (typeof children === 'number') return false;
-  if (Array.isArray(children)) return children.some(hasArabicText);
-  if (children?.props?.children) return hasArabicText(children.props.children);
-  return false;
-}
+const isSystemFont = (style) => {
+  const flatStyle = StyleSheet.flatten(style || {});
+  const fontFamily = flatStyle.fontFamily;
+  return !fontFamily || SYSTEM_FONTS.includes(fontFamily);
+};
 
 // 1. Wrap Text Component
 const OriginalText = reactNative.Text;
 const WrappedText = React.forwardRef((props, ref) => {
   const { children, style, ...rest } = props;
-  if (hasArabicText(children)) {
+  if (isSystemFont(style)) {
     const flatStyle = StyleSheet.flatten(style || {});
     const isBold = ['bold', '500', '600', '700', '800', '900'].includes(
       String(flatStyle.fontWeight),
@@ -76,8 +73,7 @@ Object.defineProperty(reactNative, 'Text', {
 const OriginalTextInput = reactNative.TextInput;
 const WrappedTextInput = React.forwardRef((props, ref) => {
   const { value, placeholder, style, ...rest } = props;
-  const val = value || placeholder || '';
-  if (ARABIC_REGEX.test(val)) {
+  if (isSystemFont(style)) {
     const flatStyle = StyleSheet.flatten(style || {});
     const isBold = ['bold', '500', '600', '700', '800', '900'].includes(
       String(flatStyle.fontWeight),

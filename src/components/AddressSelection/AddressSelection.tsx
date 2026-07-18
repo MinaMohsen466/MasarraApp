@@ -22,7 +22,6 @@ import Geolocation from '@react-native-community/geolocation';
 import { MAP_VIEW_HTML } from '../../constants/mapHtml';
 import { styles } from './styles';
 
-
 interface Address {
   _id: string;
   name: string;
@@ -35,8 +34,6 @@ interface Address {
   city: string;
   isDefault?: boolean;
 }
-
-
 
 interface AddressSelectionProps {
   visible: boolean;
@@ -101,7 +98,7 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
           type: 'SHOW_PIN',
           show: showForm,
           autoLocate: true,
-        })
+        }),
       );
     }, 400);
     return () => clearTimeout(timer);
@@ -121,7 +118,7 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
             headers: {
               'User-Agent': 'MasarraApp/1.0',
             },
-          }
+          },
         );
         const result = await response.json();
         setMapLoadingAddress(false);
@@ -143,10 +140,7 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
             city: city || suburb || '',
             street: road || suburb || '',
             block:
-              addr.neighbourhood ||
-              addr.quarter ||
-              addr.city_district ||
-              '',
+              addr.neighbourhood || addr.quarter || addr.city_district || '',
             houseNumber: addr.house_number || '',
           }));
         }
@@ -154,22 +148,25 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
         setMapLoadingAddress(true);
         const getGeoLocation = (highAccuracy: boolean) => {
           Geolocation.getCurrentPosition(
-            (position) => {
+            position => {
               const { latitude, longitude } = position.coords;
               topMapRef.current?.injectJavaScript(
-                `window.receiveLocation(${latitude}, ${longitude}); true;`
+                `window.receiveLocation(${latitude}, ${longitude}); true;`,
               );
             },
-            (error) => {
+            error => {
               // eslint-disable-next-line no-console
-              console.log(`Geolocation error (highAccuracy: ${highAccuracy}):`, error);
+              console.log(
+                `Geolocation error (highAccuracy: ${highAccuracy}):`,
+                error,
+              );
               if (highAccuracy) {
                 // Fallback to low accuracy (WiFi/Cell tower)
                 getGeoLocation(false);
               } else {
                 setMapLoadingAddress(false);
                 topMapRef.current?.injectJavaScript(
-                  `window.receiveLocationError(); true;`
+                  `window.receiveLocationError(); true;`,
                 );
               }
             },
@@ -177,7 +174,7 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
               enableHighAccuracy: highAccuracy,
               timeout: highAccuracy ? 15000 : 25000,
               maximumAge: highAccuracy ? 300000 : 600000, // 5 to 10 minutes cache to prevent indoor timeouts
-            }
+            },
           );
         };
 
@@ -186,10 +183,10 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
             try {
               // First, try to check if we already have permission
               const fineGranted = await PermissionsAndroid.check(
-                PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+                PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
               );
               const coarseGranted = await PermissionsAndroid.check(
-                PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION
+                PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
               );
 
               if (!fineGranted && !coarseGranted) {
@@ -232,7 +229,7 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
         setAlertMessage(
           isRTL
             ? 'تعذر تحديد موقعك الحالي تلقائياً. يرجى التأكد من تفعيل خدمة الموقع (GPS) في جهازك ومنح الإذن للتطبيق.'
-            : 'Could not retrieve your location automatically. Please ensure location services (GPS) are enabled and permissions are granted.'
+            : 'Could not retrieve your location automatically. Please ensure location services (GPS) are enabled and permissions are granted.',
         );
         setAlertVisible(true);
       } else if (data.type === 'MAP_READY') {
@@ -246,7 +243,7 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
               type: 'SHOW_PIN',
               show: true,
               autoLocate: true,
-            })
+            }),
           );
         }
       }
@@ -262,7 +259,7 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
     onChangeText: (text: string) => void,
     fieldKey: string,
     required: boolean = false,
-    placeholder: string = ''
+    placeholder: string = '',
   ) => {
     const isActive = activeField === fieldKey;
     const hasValue =
@@ -299,10 +296,7 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
             }
             value={value}
             onChangeText={onChangeText}
-            style={[
-              styles.modalTextInput,
-              isRTL && styles.modalTextInputRTL,
-            ]}
+            style={[styles.modalTextInput, isRTL && styles.modalTextInputRTL]}
             placeholderTextColor="#94A3B8"
             onFocus={() => setActiveField(fieldKey)}
             onBlur={() => setActiveField(null)}
@@ -311,7 +305,6 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
       </View>
     );
   };
-
 
   const handleSubmit = async () => {
     if (!token) return;
@@ -410,7 +403,11 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
               <ActivityIndicator
                 size="small"
                 color={colors.primary}
-                style={isRTL ? styles.successIconMarginLTR : styles.successIconMarginRTL}
+                style={
+                  isRTL
+                    ? styles.successIconMarginLTR
+                    : styles.successIconMarginRTL
+                }
               />
               <Text style={styles.mapLoadingBannerText}>
                 {isRTL
@@ -428,10 +425,10 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
               source={{
                 html: MAP_VIEW_HTML.replace(
                   '__RTL_CLASS__',
-                  isRTL ? 'rtl' : 'ltr'
+                  isRTL ? 'rtl' : 'ltr',
                 ).replace(
                   '__SEARCH_PLACEHOLDER__',
-                  isRTL ? 'البحث عن موقع...' : 'Search for location...'
+                  isRTL ? 'البحث عن موقع...' : 'Search for location...',
                 ),
               }}
               style={styles.flex1}
@@ -455,7 +452,12 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
                   keyboardShouldPersistTaps="handled"
                 >
                   {/* Row 1: Name */}
-                  <View style={[styles.modalInputRow, isRTL && styles.modalInputRowRTL]}>
+                  <View
+                    style={[
+                      styles.modalInputRow,
+                      isRTL && styles.modalInputRowRTL,
+                    ]}
+                  >
                     {renderInputField(
                       isRTL ? 'اسم العنوان' : 'Address Name',
                       form.name,
@@ -464,19 +466,24 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
                       true,
                       isRTL
                         ? 'اسم العنوان (مثل: المنزل، العمل)'
-                        : 'Address Name (e.g. Home, Work)'
+                        : 'Address Name (e.g. Home, Work)',
                     )}
                   </View>
 
                   {/* Row 2: City & Block */}
-                  <View style={[styles.modalInputRow, isRTL && styles.modalInputRowRTL]}>
+                  <View
+                    style={[
+                      styles.modalInputRow,
+                      isRTL && styles.modalInputRowRTL,
+                    ]}
+                  >
                     {renderInputField(
                       isRTL ? 'المنطقة / المدينة' : 'Area / City',
                       form.city,
                       t => setForm(s => ({ ...s, city: t })),
                       'city',
                       true,
-                      isRTL ? 'المنطقة / المدينة' : 'Area / City'
+                      isRTL ? 'المنطقة / المدينة' : 'Area / City',
                     )}
                     {renderInputField(
                       isRTL ? 'القطعة' : 'Block',
@@ -484,19 +491,24 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
                       t => setForm(s => ({ ...s, block: t })),
                       'block',
                       true,
-                      isRTL ? 'القطعة' : 'Block'
+                      isRTL ? 'القطعة' : 'Block',
                     )}
                   </View>
 
                   {/* Row 3: Street & Lane */}
-                  <View style={[styles.modalInputRow, isRTL && styles.modalInputRowRTL]}>
+                  <View
+                    style={[
+                      styles.modalInputRow,
+                      isRTL && styles.modalInputRowRTL,
+                    ]}
+                  >
                     {renderInputField(
                       isRTL ? 'الشارع' : 'Street',
                       form.street,
                       t => setForm(s => ({ ...s, street: t })),
                       'street',
                       true,
-                      isRTL ? 'الشارع' : 'Street'
+                      isRTL ? 'الشارع' : 'Street',
                     )}
                     {renderInputField(
                       isRTL ? 'الجادة' : 'Lane',
@@ -504,31 +516,43 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
                       t => setForm(s => ({ ...s, lane: t })),
                       'lane',
                       false,
-                      isRTL ? 'الجادة (اختياري)' : 'Lane (Optional)'
+                      isRTL ? 'الجادة (اختياري)' : 'Lane (Optional)',
                     )}
                   </View>
 
                   {/* Row 4: House Number */}
-                  <View style={[styles.modalInputRow, isRTL && styles.modalInputRowRTL]}>
+                  <View
+                    style={[
+                      styles.modalInputRow,
+                      isRTL && styles.modalInputRowRTL,
+                    ]}
+                  >
                     {renderInputField(
                       isRTL ? 'رقم المنزل' : 'House Number',
                       form.houseNumber,
                       t => setForm(s => ({ ...s, houseNumber: t })),
                       'houseNumber',
                       true,
-                      isRTL ? 'رقم المنزل' : 'House Number'
+                      isRTL ? 'رقم المنزل' : 'House Number',
                     )}
                   </View>
 
                   {/* Row 5: Floor & Apartment */}
-                  <View style={[styles.modalInputRow, isRTL && styles.modalInputRowRTL]}>
+                  <View
+                    style={[
+                      styles.modalInputRow,
+                      isRTL && styles.modalInputRowRTL,
+                    ]}
+                  >
                     {renderInputField(
                       isRTL ? 'رقم الطابق' : 'Floor Number',
                       form.floorNumber,
                       t => setForm(s => ({ ...s, floorNumber: t })),
                       'floorNumber',
                       false,
-                      isRTL ? 'رقم الطابق (اختياري)' : 'Floor Number (Optional)'
+                      isRTL
+                        ? 'رقم الطابق (اختياري)'
+                        : 'Floor Number (Optional)',
                     )}
                     {renderInputField(
                       isRTL ? 'رقم الشقة' : 'Apartment Number',
@@ -538,7 +562,7 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
                       false,
                       isRTL
                         ? 'رقم الشقة (اختياري)'
-                        : 'Apartment Number (Optional)'
+                        : 'Apartment Number (Optional)',
                     )}
                   </View>
                 </ScrollView>
@@ -577,9 +601,7 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
     if (addresses.length === 0) {
       return (
         <View style={styles.emptyContainer}>
-          <Text
-            style={[styles.emptyText, isRTL && styles.emptyTextRTL]}
-          >
+          <Text style={[styles.emptyText, isRTL && styles.emptyTextRTL]}>
             {isRTL
               ? 'لا توجد عناوين محفوظة. يرجى إضافة عنوان للبدء.'
               : 'No saved addresses. Please add an address to proceed.'}
@@ -608,8 +630,7 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
               style={[
                 styles.addressCard,
                 isRTL && styles.addressCardRTL,
-                selectedAddressId === address._id &&
-                  styles.addressCardSelected,
+                selectedAddressId === address._id && styles.addressCardSelected,
               ]}
               onPress={() => setSelectedAddressId(address._id)}
             >
@@ -633,16 +654,10 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
               </View>
               <View style={styles.addressDetails}>
                 <View
-                  style={[
-                    styles.nameRow,
-                    isRTL && styles.flexDirectionRTL,
-                  ]}
+                  style={[styles.nameRow, isRTL && styles.flexDirectionRTL]}
                 >
                   <Text
-                    style={[
-                      styles.addressName,
-                      isRTL && styles.addressNameRTL,
-                    ]}
+                    style={[styles.addressName, isRTL && styles.addressNameRTL]}
                   >
                     {address.name}
                   </Text>
@@ -655,50 +670,31 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
                   )}
                 </View>
                 <Text
-                  style={[
-                    styles.addressText,
-                    isRTL && styles.addressTextRTL,
-                  ]}
+                  style={[styles.addressText, isRTL && styles.addressTextRTL]}
                 >
                   {address.block &&
-                    `${isRTL ? 'القطعة' : 'Block'} ${
-                      address.block
-                    }, `}
+                    `${isRTL ? 'القطعة' : 'Block'} ${address.block}, `}
                   {address.street}
                   {address.lane &&
-                    `, ${isRTL ? 'جادة' : 'Lane'} ${
-                      address.lane
-                    }`}
+                    `, ${isRTL ? 'جادة' : 'Lane'} ${address.lane}`}
                   {address.houseNumber &&
-                    `, ${isRTL ? 'منزل' : 'House'} ${
-                      address.houseNumber
-                    }`}
+                    `, ${isRTL ? 'منزل' : 'House'} ${address.houseNumber}`}
                   {address.floorNumber &&
-                    `, ${isRTL ? 'طابق' : 'Floor'} ${
-                      address.floorNumber
-                    }`}
+                    `, ${isRTL ? 'طابق' : 'Floor'} ${address.floorNumber}`}
                   {address.apartmentNumber &&
-                    `, ${isRTL ? 'شقة' : 'Apt'} ${
-                      address.apartmentNumber
-                    }`}
+                    `, ${isRTL ? 'شقة' : 'Apt'} ${address.apartmentNumber}`}
                 </Text>
                 <Text
-                  style={[
-                    styles.addressText,
-                    isRTL && styles.addressTextRTL,
-                  ]}
+                  style={[styles.addressText, isRTL && styles.addressTextRTL]}
                 >
                   {address.city}
                 </Text>
               </View>
             </TouchableOpacity>
           ))}
-          
+
           {/* Add Address button inside the scrollable list */}
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={handleOpenForm}
-          >
+          <TouchableOpacity style={styles.addButton} onPress={handleOpenForm}>
             <Text style={styles.addButtonText}>
               {isRTL ? '+ إضافة عنوان جديد' : '+ Add New Address'}
             </Text>
@@ -735,8 +731,12 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
         <View style={[styles.header, isRTL && styles.headerRTL]}>
           <Text style={[styles.title, isRTL && styles.titleRTL]}>
             {showForm
-              ? isRTL ? 'إضافة عنوان جديد' : 'Add New Address'
-              : isRTL ? 'اختر عنوان التسليم' : 'Select Delivery Address'}
+              ? isRTL
+                ? 'إضافة عنوان جديد'
+                : 'Add New Address'
+              : isRTL
+              ? 'اختر عنوان التسليم'
+              : 'Select Delivery Address'}
           </Text>
           <TouchableOpacity
             onPress={() => {

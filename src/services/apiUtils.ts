@@ -1,14 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import {
-  API_URL,
-} from '../config/api.config';
+import { API_URL } from '../config/api.config';
 
 export const API_BASE_URL = API_URL;
 
 // Service cache for avoiding repeated requests
 export const serviceCache = new Map<string, { data: any; timestamp: number }>();
 // Time slots cache for faster time selection
-export const timeSlotsCache = new Map<string, { data: any[]; timestamp: number }>();
+export const timeSlotsCache = new Map<
+  string,
+  { data: any[]; timestamp: number }
+>();
 
 /**
  * Clear all local memory caches (called on user logout)

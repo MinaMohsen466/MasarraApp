@@ -40,7 +40,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
   const [onSale, setOnSale] = useState<boolean>(false);
   const [minInputActive, setMinInputActive] = useState(false);
   const [maxInputActive, setMaxInputActive] = useState(false);
-  
+
   // Slide width and its ref to avoid stale closures
   const [sliderWidth, setSliderWidth] = useState(280);
 
@@ -50,7 +50,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
   const sliderWidthRef = useRef(280);
   const startMinPrice = useRef(0);
   const startMaxPrice = useRef(0);
-  
+
   const activeThumb = useRef<'min' | 'max' | null>(null);
   const sliderRef = useRef<View>(null);
 
@@ -66,8 +66,10 @@ const FilterModal: React.FC<FilterModalProps> = ({
   };
 
   // Calculate thumb positions (capped at MAX_PRICE so typed values higher than MAX_PRICE sit at the end)
-  const minThumbPosition = (Math.min(minPrice, MAX_PRICE) / MAX_PRICE) * sliderWidth;
-  const maxThumbPosition = (Math.min(maxPrice, MAX_PRICE) / MAX_PRICE) * sliderWidth;
+  const minThumbPosition =
+    (Math.min(minPrice, MAX_PRICE) / MAX_PRICE) * sliderWidth;
+  const maxThumbPosition =
+    (Math.min(maxPrice, MAX_PRICE) / MAX_PRICE) * sliderWidth;
 
   // Single PanResponder for the entire slider container
   const sliderPanResponder = useRef(
@@ -100,7 +102,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
           updateMinPrice(validPrice);
           setMinPriceInput(validPrice.toFixed(0));
           startMinPrice.current = validPrice;
-          
+
           if (validPrice > maxPriceRef.current) {
             updateMaxPrice(validPrice);
             setMaxPriceInput(validPrice.toFixed(0));
@@ -121,13 +123,10 @@ const FilterModal: React.FC<FilterModalProps> = ({
       onPanResponderMove: (_, gestureState) => {
         const currentWidth = sliderWidthRef.current;
         const priceDelta = (gestureState.dx / currentWidth) * MAX_PRICE;
-        
+
         if (activeThumb.current === 'min') {
           const newPrice = Math.round(startMinPrice.current + priceDelta);
-          const validPrice = Math.max(
-            MIN_PRICE,
-            Math.min(MAX_PRICE, newPrice),
-          );
+          const validPrice = Math.max(MIN_PRICE, Math.min(MAX_PRICE, newPrice));
           updateMinPrice(validPrice);
           setMinPriceInput(validPrice.toFixed(0));
 
@@ -138,10 +137,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
           }
         } else if (activeThumb.current === 'max') {
           const newPrice = Math.round(startMaxPrice.current + priceDelta);
-          const validPrice = Math.max(
-            MIN_PRICE,
-            Math.min(MAX_PRICE, newPrice),
-          );
+          const validPrice = Math.max(MIN_PRICE, Math.min(MAX_PRICE, newPrice));
           updateMaxPrice(validPrice);
           setMaxPriceInput(validPrice.toFixed(0));
 
@@ -170,7 +166,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
   const handleApplyFilter = () => {
     const finalMin = parseFloat(minPriceInput) || 0;
     const finalMax = parseFloat(maxPriceInput) || MAX_PRICE;
-    
+
     const actualMin = Math.max(0, Math.min(finalMin, finalMax));
     const actualMax = Math.max(actualMin, finalMax);
 
@@ -256,7 +252,11 @@ const FilterModal: React.FC<FilterModalProps> = ({
           <Text style={[styles.title, isRTL && styles.textRTL]}>
             {isRTL ? 'تصفية' : 'Filter'}
           </Text>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton} activeOpacity={0.7}>
+          <TouchableOpacity
+            onPress={onClose}
+            style={styles.closeButton}
+            activeOpacity={0.7}
+          >
             <Icon name="close" size={20} color="#4B5563" />
           </TouchableOpacity>
         </View>
@@ -449,9 +449,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
             <View style={[styles.checkbox, onSale && styles.checkboxActive]}>
               {onSale && <Icon name="checkmark" size={14} color="#fff" />}
             </View>
-            <Text
-              style={[styles.discountToggleText, isRTL && styles.textRTL]}
-            >
+            <Text style={[styles.discountToggleText, isRTL && styles.textRTL]}>
               {isRTL ? 'الخدمات المخفضة فقط' : 'Discounts Only'}
             </Text>
           </TouchableOpacity>

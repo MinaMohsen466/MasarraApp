@@ -22,7 +22,10 @@ interface FloatingLabelInputProps extends TextInputProps {
   showDivider?: boolean;
 }
 
-export const FloatingLabelInput = forwardRef<TextInput, FloatingLabelInputProps>(
+export const FloatingLabelInput = forwardRef<
+  TextInput,
+  FloatingLabelInputProps
+>(
   (
     {
       label,
@@ -40,7 +43,7 @@ export const FloatingLabelInput = forwardRef<TextInput, FloatingLabelInputProps>
       showDivider = true,
       ...props
     },
-    ref
+    ref,
   ) => {
     const [isFocused, setIsFocused] = useState(false);
     const animatedValue = useRef(new Animated.Value(value ? 1 : 0)).current;
@@ -106,7 +109,9 @@ export const FloatingLabelInput = forwardRef<TextInput, FloatingLabelInputProps>
 
         {leftElement}
 
-        <View style={{ flex: 1, position: 'relative', justifyContent: 'center' }}>
+        <View
+          style={{ flex: 1, position: 'relative', justifyContent: 'center' }}
+        >
           <Animated.Text
             pointerEvents="none"
             numberOfLines={1}
@@ -142,5 +147,5 @@ export const FloatingLabelInput = forwardRef<TextInput, FloatingLabelInputProps>
         {rightElement}
       </View>
     );
-  }
+  },
 );

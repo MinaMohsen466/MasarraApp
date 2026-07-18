@@ -399,7 +399,12 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
                 onPress={onClose}
                 activeOpacity={0.7}
               >
-                <Svg width={closeButtonSize} height={closeButtonSize} viewBox="0 0 24 24" fill="none">
+                <Svg
+                  width={closeButtonSize}
+                  height={closeButtonSize}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
                   <Path
                     d="M18 6L6 18M6 6L18 18"
                     stroke={colors.primary}
@@ -426,7 +431,10 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
                   {menuItems.map(item => {
                     if (item.id === 'policies') {
                       return (
-                        <View key="policies-group" style={styles.languageGroupContainer}>
+                        <View
+                          key="policies-group"
+                          style={styles.languageGroupContainer}
+                        >
                           {/* Main Policies Toggle Item */}
                           <TouchableOpacity
                             style={[
@@ -448,7 +456,11 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
                                 isRTL && styles.menuIconContainerRTL,
                               ]}
                             >
-                              {getMenuItemIcon('policies', colors.primary, iconSize)}
+                              {getMenuItemIcon(
+                                'policies',
+                                colors.primary,
+                                iconSize,
+                              )}
                             </View>
 
                             <Text
@@ -497,7 +509,11 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
                                   isRTL && styles.subMenuItemRTL,
                                 ]}
                                 onPress={() =>
-                                  handleMenuItemPress('Terms', 'termsConditions', 'terms')
+                                  handleMenuItemPress(
+                                    'Terms',
+                                    'termsConditions',
+                                    'terms',
+                                  )
                                 }
                                 activeOpacity={0.6}
                               >
@@ -518,7 +534,11 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
                                   isRTL && styles.subMenuItemRTL,
                                 ]}
                                 onPress={() =>
-                                  handleMenuItemPress('Privacy', 'privacyPolicy', 'privacy')
+                                  handleMenuItemPress(
+                                    'Privacy',
+                                    'privacyPolicy',
+                                    'privacy',
+                                  )
                                 }
                                 activeOpacity={0.6}
                               >
@@ -539,7 +559,11 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
                                   isRTL && styles.subMenuItemRTL,
                                 ]}
                                 onPress={() =>
-                                  handleMenuItemPress('Refund', 'refundPolicy', 'refund')
+                                  handleMenuItemPress(
+                                    'Refund',
+                                    'refundPolicy',
+                                    'refund',
+                                  )
                                 }
                                 activeOpacity={0.6}
                               >
@@ -569,7 +593,10 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
                       const languageItemText = `${languageLabel} (${activeLanguageName})`;
 
                       return (
-                        <View key="language-group" style={styles.languageGroupContainer}>
+                        <View
+                          key="language-group"
+                          style={styles.languageGroupContainer}
+                        >
                           {/* Main Language Toggle Item */}
                           <TouchableOpacity
                             style={[
@@ -591,7 +618,11 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
                                 isRTL && styles.menuIconContainerRTL,
                               ]}
                             >
-                              {getMenuItemIcon('language', colors.primary, iconSize)}
+                              {getMenuItemIcon(
+                                'language',
+                                colors.primary,
+                                iconSize,
+                              )}
                             </View>
 
                             <Text

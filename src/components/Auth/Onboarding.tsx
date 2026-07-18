@@ -29,29 +29,35 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onFinish }) => {
     {
       titleEn: 'Endless Service Diversity',
       titleAr: 'تنوع غير محدود للخدمات',
-      descEn: 'Browse hundreds of carefully selected services and vendors to organize your event details with ease.',
-      descAr: 'تصفح مئات الخدمات ومزودي الخدمة المختارين بعناية لتغطية كافة تفاصيل مناسبتك وتنظيمها بكل يسر وسهولة.',
+      descEn:
+        'Browse hundreds of carefully selected services and vendors to organize your event details with ease.',
+      descAr:
+        'تصفح مئات الخدمات ومزودي الخدمة المختارين بعناية لتغطية كافة تفاصيل مناسبتك وتنظيمها بكل يسر وسهولة.',
       icon: 'sparkles-outline',
     },
     {
       titleEn: 'Exclusive Packages & Prices',
       titleAr: 'باقات وأسعار حصرية',
-      descEn: 'Enjoy customized packages designed for your budget with secure online payment and instant booking confirmation.',
-      descAr: 'استمتع بعروض وباقات مصممة خصيصاً لتناسب ميزانيتك مع إمكانية الدفع الإلكتروني الآمن وتأكيد الحجز الفوري.',
+      descEn:
+        'Enjoy customized packages designed for your budget with secure online payment and instant booking confirmation.',
+      descAr:
+        'استمتع بعروض وباقات مصممة خصيصاً لتناسب ميزانيتك مع إمكانية الدفع الإلكتروني الآمن وتأكيد الحجز الفوري.',
       icon: 'pricetags-outline',
     },
     {
       titleEn: 'Smart & Reliable Booking',
       titleAr: 'إدارة ذكية وحجز موثوق',
-      descEn: 'Chat directly with vendors, track your order statuses and booking updates in real-time from a single place.',
-      descAr: 'تواصل مباشرة مع مزودي الخدمة، وتابع حالة طلباتك وتحديثات حجوزاتك لحظة بلحظة من مكان واحد.',
+      descEn:
+        'Chat directly with vendors, track your order statuses and booking updates in real-time from a single place.',
+      descAr:
+        'تواصل مباشرة مع مزودي الخدمة، وتابع حالة طلباتك وتحديثات حجوزاتك لحظة بلحظة من مكان واحد.',
       icon: 'chatbubbles-outline',
     },
   ];
 
   const handleScroll = Animated.event(
     [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-    { useNativeDriver: false }
+    { useNativeDriver: false },
   );
 
   const handleMomentumScrollEnd = (event: any) => {
@@ -60,7 +66,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onFinish }) => {
     setActiveSlide(index);
   };
 
-  const renderSlideItem = ({ item }: { item: typeof slides[0] }) => {
+  const renderSlideItem = ({ item }: { item: (typeof slides)[0] }) => {
     const title = isRTL ? item.titleAr : item.titleEn;
     const desc = isRTL ? item.descAr : item.descEn;
 
@@ -124,9 +130,16 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onFinish }) => {
       </View>
 
       {/* Footer Area - Indicators & Buttons */}
-      <View style={[styles.footerContainer, { paddingBottom: insets.bottom > 0 ? insets.bottom + 16 : 24 }]}>
+      <View
+        style={[
+          styles.footerContainer,
+          { paddingBottom: insets.bottom > 0 ? insets.bottom + 16 : 24 },
+        ]}
+      >
         {/* Animated Page Dot Indicators */}
-        <View style={[styles.indicatorWrapper, isRTL && styles.indicatorWrapperRTL]}>
+        <View
+          style={[styles.indicatorWrapper, isRTL && styles.indicatorWrapperRTL]}
+        >
           {slides.map((_, index) => {
             const width = scrollX.interpolate({
               inputRange: [

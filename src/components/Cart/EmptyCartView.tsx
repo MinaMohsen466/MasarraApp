@@ -1,5 +1,12 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StatusBar, Image } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StatusBar,
+  Image,
+} from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { colors } from '../../constants/colors';
 import { styles } from '../../screens/cartStyles';
@@ -37,9 +44,7 @@ export const EmptyCartView: React.FC<EmptyCartViewProps> = ({
         translucent={false}
       />
       <View style={{ flex: 1, backgroundColor: colors.primary }}>
-        <View
-          style={{ height: insets.top, backgroundColor: colors.primary }}
-        />
+        <View style={{ height: insets.top, backgroundColor: colors.primary }} />
         <View style={styles.loginFullPageContainer}>
           <ScrollView
             style={styles.loginScrollContainer}
@@ -128,12 +133,7 @@ export const EmptyCartView: React.FC<EmptyCartViewProps> = ({
                       onError={() => setImageError(true)}
                     />
                   ) : (
-                    <Svg
-                      width={22}
-                      height={22}
-                      viewBox="0 0 24 24"
-                      fill="none"
-                    >
+                    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
                       <Path
                         d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"
                         stroke={colors.textWhite}
@@ -208,7 +208,7 @@ export const EmptyCartView: React.FC<EmptyCartViewProps> = ({
 
               <TouchableOpacity
                 style={styles.loginSubmitButton}
-                onPress={() => onNavigate && onNavigate('home')}
+                onPress={() => onNavigate && onNavigate('services')}
                 activeOpacity={0.8}
               >
                 <Text style={styles.loginSubmitButtonText}>
