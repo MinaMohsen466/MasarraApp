@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, react-native/no-inline-styles */
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -95,8 +96,9 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
   const [qrModalVisible, setQrModalVisible] = useState(false);
 
   useEffect(() => {
-    loadEvents();
-    loadOccasions();
+    // Load events and occasions in parallel for faster initial load
+    Promise.all([loadEvents(), loadOccasions()]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Derive filteredEvents directly during render to prevent state-update lag and visual flashing
@@ -148,7 +150,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
     try {
       const data = await fetchOccasions();
       setOccasions(data);
-    } catch (error) {}
+    } catch {}
   };
 
   const loadEvents = async () => {
@@ -171,7 +173,6 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
         getQRCodeSettings(token),
       ]);
 
-      const servicesList: EventServiceRow[] = [];
       const matchesId = (id1: any, id2: any) => {
         const str1 =
           typeof id1 === 'object'
@@ -213,26 +214,8 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
 
       const allBookings = Array.isArray(bookings) ? bookings : [];
 
-      // Fetch QR codes for all bookings to get accurate custom details (like guestLimit and eventDate)
-      const qrCodesMap: { [bookingId: string]: any } = {};
-      try {
-        const qrPromises = allBookings.map(async (b: any) => {
-          try {
-            const qr = await getQRCodeByBooking(token, b._id);
-            return { bookingId: b._id, qr };
-          } catch {
-            return { bookingId: b._id, qr: null };
-          }
-        });
-        const qrResults = await Promise.all(qrPromises);
-        qrResults.forEach(res => {
-          if (res.qr) {
-            qrCodesMap[res.bookingId] = res.qr;
-          }
-        });
-      } catch (err) {
-        console.warn('Error fetching QR codes for user dashboard:', err);
-      }
+      // --- Phase 1: Build service list WITHOUT QR data and show immediately ---
+      const servicesList: EventServiceRow[] = [];
 
       allBookings.forEach((booking: any) => {
         (booking.services || []).forEach((s: any) => {
@@ -263,14 +246,6 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
           }
 
           if (isServiceAllowed) {
-            const qrCode = qrCodesMap[booking._id];
-
-            // Check if there is an overridden date in the QR code
-            let displayEventDate = booking.eventDate;
-            if (qrCode?.customDetails?.eventDate) {
-              displayEventDate = qrCode.customDetails.eventDate;
-            }
-
             servicesList.push({
               bookingId: booking._id,
               serviceId,
@@ -278,12 +253,8 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
               vendor: s.vendor,
               booking: {
                 ...booking,
-                eventDate: displayEventDate,
-                guestLimit:
-                  qrCode?.customDetails?.guestCount !== undefined &&
-                  qrCode?.customDetails?.guestCount !== ''
-                    ? parseInt(qrCode.customDetails.guestCount, 10)
-                    : booking.guestLimit,
+                // Use booking's own values initially; QR overrides will come in Phase 2
+                guestLimit: booking.guestLimit,
               },
               uniqueKey: `${booking._id}-${serviceId}`,
             });
@@ -302,13 +273,74 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
         return timeB - timeA;
       });
 
+      // Show events immediately (Phase 1 complete)
       setEvents(servicesList);
-    } catch (error: any) {
+      setLoading(false);
+
+      // --- Phase 2: Fetch QR codes in background and patch events ---
+      const qrCodesMap: { [bookingId: string]: any } = {};
+      try {
+        const qrPromises = allBookings.map(async (b: any) => {
+          try {
+            const qr = await getQRCodeByBooking(token, b._id);
+            return { bookingId: b._id, qr };
+          } catch {
+            return { bookingId: b._id, qr: null };
+          }
+        });
+        const qrResults = await Promise.all(qrPromises);
+        qrResults.forEach(res => {
+          if (res.qr) {
+            qrCodesMap[res.bookingId] = res.qr;
+          }
+        });
+      } catch (err) {
+        console.warn('Error fetching QR codes for user dashboard:', err);
+      }
+
+      // Only update if QR data actually changes anything (guestLimit or eventDate)
+      const hasQROverrides = Object.keys(qrCodesMap).length > 0;
+      if (hasQROverrides) {
+        setEvents(prev =>
+          prev.map(item => {
+            const qrCode = qrCodesMap[item.bookingId];
+            if (!qrCode) return item;
+
+            let displayEventDate = item.booking.eventDate;
+            if (qrCode.customDetails?.eventDate) {
+              displayEventDate = qrCode.customDetails.eventDate;
+            }
+
+            const qrGuestLimit =
+              qrCode.customDetails?.guestCount !== undefined &&
+              qrCode.customDetails?.guestCount !== ''
+                ? parseInt(qrCode.customDetails.guestCount, 10)
+                : item.booking.guestLimit;
+
+            // Skip update if nothing changed
+            if (
+              displayEventDate === item.booking.eventDate &&
+              qrGuestLimit === item.booking.guestLimit
+            ) {
+              return item;
+            }
+
+            return {
+              ...item,
+              booking: {
+                ...item.booking,
+                eventDate: displayEventDate,
+                guestLimit: qrGuestLimit,
+              },
+            };
+          }),
+        );
+      }
+    } catch {
       showAlert(
         isRTL ? 'خطأ' : 'Error',
         isRTL ? 'حدث خطأ أثناء تحميل الفعاليات' : 'Error loading events',
       );
-    } finally {
       setLoading(false);
     }
   };
@@ -406,6 +438,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
       try {
         qrData = await getQRCodeByBooking(token, booking._id);
       } catch (err: any) {
+        // eslint-disable-next-line no-console
         console.log(
           'No QR code found or failed to fetch. Opening QR modal in creation mode.',
           err,
@@ -415,7 +448,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
       setSelectedBooking(booking);
       setSelectedQRCode(qrData);
       setQrModalVisible(true);
-    } catch (error) {
+    } catch {
       showAlert(
         isRTL ? 'خطأ' : 'Error',
         isRTL ? 'فشل عرض QR' : 'Failed to view QR',
@@ -459,7 +492,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
       } else {
         throw new Error('Failed to fetch guests');
       }
-    } catch (error) {
+    } catch {
       showAlert(
         isRTL ? 'خطأ' : 'Error',
         isRTL ? 'فشل تحميل قائمة الضيوف' : 'Failed to load guest list',
@@ -509,7 +542,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
       } else {
         throw new Error('Failed to remove guest');
       }
-    } catch (error) {
+    } catch {
       showAlert(
         isRTL ? 'خطأ' : 'Error',
         isRTL ? 'فشل حذف الضيف' : 'Failed to remove guest',

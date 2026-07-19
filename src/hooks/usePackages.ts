@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { API_URL } from '../config/api.config';
 

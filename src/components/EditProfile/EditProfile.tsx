@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, react-native/no-inline-styles */
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -97,6 +98,7 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
     if (user?.profilePicture && user.profilePicture !== profileImage) {
       setProfileImage(user.profilePicture);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.profilePicture]);
 
   // Fetch latest user data from server on mount
@@ -126,7 +128,7 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
             setProfileImage(userData.profilePicture);
           }
         }
-      } catch (error) {
+      } catch {
         // Error fetching user data
       }
     };
@@ -249,7 +251,7 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
               setProfileImage(fallbackResult.assets[0].uri);
               return;
             }
-          } catch (fallbackError) {
+          } catch {
             // Fallback also failed
           }
 

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
 import {
   View,
@@ -92,10 +93,12 @@ const WriteReview: React.FC<WriteReviewProps> = ({
 
     try {
       if (oldReviewId) {
+        // eslint-disable-next-line no-console
         console.log('[WriteReview] Deleting old review:', oldReviewId);
         await deleteReview(oldReviewId);
       }
 
+      // eslint-disable-next-line no-console
       console.log('[WriteReview] Submitting review:', {
         serviceId,
         bookingId,

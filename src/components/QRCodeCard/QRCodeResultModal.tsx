@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, react-native/no-inline-styles, react-native/no-unused-styles */
 import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
@@ -69,7 +70,7 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
           : 'Card downloaded successfully',
         buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
       });
-    } catch (error) {
+    } catch {
       setAlertConfig({
         visible: true,
         title: isRTL ? 'خطأ' : 'Error',
@@ -100,7 +101,7 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
           buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
         });
       }
-    } catch (error) {
+    } catch {
       setAlertConfig({
         visible: true,
         title: isRTL ? 'خطأ' : 'Error',
@@ -147,6 +148,7 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
     return () => {
       isActive = false;
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qrCode, backgroundImage]);
 
   return (

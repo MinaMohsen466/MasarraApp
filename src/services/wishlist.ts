@@ -20,7 +20,7 @@ async function getCurrentUserId(): Promise<string | null> {
       return userData._id || userData.id || null;
     }
     return null;
-  } catch (e) {
+  } catch {
     return null;
   }
 }
@@ -41,7 +41,7 @@ export async function getWishlist(): Promise<WishlistItem[]> {
     const raw = await AsyncStorage.getItem(key);
     if (!raw) return [];
     return JSON.parse(raw) as WishlistItem[];
-  } catch (e) {
+  } catch {
     return [];
   }
 }
@@ -50,7 +50,7 @@ async function saveWishlist(items: WishlistItem[]) {
   try {
     const key = await getWishlistKey();
     await AsyncStorage.setItem(key, JSON.stringify(items));
-  } catch (e) {
+  } catch {
     // Error saving wishlist
   }
 }
@@ -90,7 +90,7 @@ export async function clearWishlist() {
   try {
     const key = await getWishlistKey();
     await AsyncStorage.removeItem(key);
-  } catch (e) {
+  } catch {
     // Error clearing wishlist
   }
 }

@@ -18,7 +18,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useServices } from '../../hooks/useServices';
 import { Service, getServiceImageUrl } from '../../services/servicesApi';
 import { getServiceReviews } from '../../services/reviewsApi';
-import { Vendor, fetchVendors } from '../../services/vendorsApi';
+import { useVendors } from '../../hooks/useVendors';
 import { useVendorPackages } from '../../hooks/usePackages';
 import { Package } from '../Packages/Packages';
 import { getImageUrl } from '../../services/api';
@@ -56,8 +56,8 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
   const queryClient = useQueryClient(); // For prefetching
   const { data: services, isLoading, error, refetch } = useServices();
   const { data: packages } = useVendorPackages(vendorId || '');
-  const [vendor, setVendor] = useState<Vendor | null>(null);
-  const [loadingVendor, setLoadingVendor] = useState(!!vendorId);
+  const { data: vendors, isLoading: loadingVendors } = useVendors();
+
   const [showFilter, setShowFilter] = useState(false);
   const [showSort, setShowSort] = useState(false);
   const [sortBy, setSortBy] = useState<string>('newest');
@@ -80,34 +80,77 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
     [key: string]: { rating: number; totalReviews: number };
   }>({});
 
-  // Load ratings for loaded packages
+  // Resolve current vendor from cached vendors query
+  const vendor = useMemo(() => {
+    if (!vendorId || !vendors) return null;
+    return vendors.find(v => v._id === vendorId) || null;
+  }, [vendors, vendorId]);
+
+  const loadingVendor = !!vendorId && loadingVendors;
+
+  // Filter services by vendor or occasion (defined early to use as dependency)
+  const filteredServices = useMemo(() => {
+    let result = services;
+
+    if (vendorId) {
+      result = result?.filter(service => service.vendor?._id === vendorId);
+    }
+
+    if (occasionId) {
+      result = result?.filter(service =>
+        service.occasions.some(occ => occ.occasion._id === occasionId),
+      );
+    }
+
+    return result;
+  }, [services, vendorId, occasionId]);
+
+  // Sync vendor rating with profile data on load immediately
+  useEffect(() => {
+    if (vendor) {
+      setVendorRating({
+        rating: vendor.vendorProfile?.rating || 0,
+        totalReviews: vendor.vendorProfile?.totalReviews || 0,
+      });
+    }
+  }, [vendor]);
+
+  // Load ratings for loaded packages in parallel
   useEffect(() => {
     const loadRatings = async () => {
       if (!packages || packages.length === 0) return;
 
-      const ratingsData: {
-        [key: string]: { rating: number; totalReviews: number };
-      } = {};
+      try {
+        const ratingsData: {
+          [key: string]: { rating: number; totalReviews: number };
+        } = {};
 
-      for (const pkg of packages) {
-        if (packageRatings[pkg._id]) continue;
-
-        if (pkg.service?._id) {
+        const ratingsPromises = packages.map(async pkg => {
+          if (packageRatings[pkg._id]) return null;
+          if (!pkg.service?._id) return null;
           try {
             const reviewsData = await getServiceReviews(pkg.service._id, 1, 1);
-            ratingsData[pkg._id] = {
+            return {
+              pkgId: pkg._id,
               rating: reviewsData.stats.averageRating || 0,
               totalReviews: reviewsData.stats.totalRatings || 0,
             };
           } catch {
-            ratingsData[pkg._id] = { rating: 0, totalReviews: 0 };
+            return { pkgId: pkg._id, rating: 0, totalReviews: 0 };
           }
-        }
-      }
+        });
 
-      if (Object.keys(ratingsData).length > 0) {
-        setPackageRatings(prev => ({ ...prev, ...ratingsData }));
-      }
+        const results = await Promise.all(ratingsPromises);
+        results.forEach(res => {
+          if (res) {
+            ratingsData[res.pkgId] = { rating: res.rating, totalReviews: res.totalReviews };
+          }
+        });
+
+        if (Object.keys(ratingsData).length > 0) {
+          setPackageRatings(prev => ({ ...prev, ...ratingsData }));
+        }
+      } catch {}
     };
 
     loadRatings();
@@ -126,10 +169,11 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
   // Prefetch reviews for visible services - optimized approach
   useEffect(() => {
     const prefetchReviews = async () => {
-      if (!services || services.length === 0) return;
+      const targetServices = filteredServices || [];
+      if (targetServices.length === 0) return;
 
       // Only prefetch first 10 services (visible ones)
-      const visibleServices = services.slice(0, 10);
+      const visibleServices = targetServices.slice(0, 10);
 
       visibleServices.forEach(service => {
         // Prefetch using React Query cache
@@ -144,16 +188,17 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
     // Delay prefetch slightly to not block UI
     const timer = setTimeout(prefetchReviews, 300);
     return () => clearTimeout(timer);
-  }, [services, queryClient]);
+  }, [filteredServices, queryClient]);
 
-  // Load ratings for all services
+  // Load ratings for displayed services only
   useEffect(() => {
     const loadRatings = async () => {
-      if (!services || services.length === 0) return;
+      const targetServices = filteredServices || [];
+      if (targetServices.length === 0) return;
 
       try {
-        // Load all ratings in parallel for better performance
-        const ratingsPromises = services.map(async service => {
+        // Load ratings in parallel
+        const ratingsPromises = targetServices.map(async service => {
           try {
             const reviewsData = await getServiceReviews(service._id, 1, 1);
             return {
@@ -188,19 +233,17 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
     };
 
     loadRatings();
-  }, [services]);
+  }, [filteredServices]);
 
   // Fetch vendor rating from reviews API
   useEffect(() => {
-    if (!services || !vendorId) return;
-
-    const vendorServices = services.filter(s => s.vendor?._id === vendorId);
-    if (vendorServices.length === 0) return;
+    const targetServices = filteredServices || [];
+    if (targetServices.length === 0 || !vendorId) return;
 
     const fetchAllReviews = async () => {
       try {
         // Fetch all reviews in parallel for better performance
-        const reviewsPromises = vendorServices.map(service =>
+        const reviewsPromises = targetServices.map(service =>
           getServiceReviews(service._id, 1, 1000).catch(() => ({
             stats: { averageRating: 0, totalRatings: 0 },
           })),
@@ -232,43 +275,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
     };
 
     fetchAllReviews();
-  }, [services, vendorId]);
-
-  // Fetch vendor details when vendorId is provided
-  useEffect(() => {
-    if (!vendorId) return;
-
-    const fetchVendor = async () => {
-      try {
-        const vendors = await fetchVendors();
-        const found = vendors.find(v => v._id === vendorId);
-        if (found) setVendor(found);
-      } catch {
-        // Silently handle error
-      } finally {
-        setLoadingVendor(false);
-      }
-    };
-
-    fetchVendor();
-  }, [vendorId]);
-
-  // Filter services by vendor or occasion
-  const filteredServices = useMemo(() => {
-    let result = services;
-
-    if (vendorId) {
-      result = result?.filter(service => service.vendor?._id === vendorId);
-    }
-
-    if (occasionId) {
-      result = result?.filter(service =>
-        service.occasions.some(occ => occ.occasion._id === occasionId),
-      );
-    }
-
-    return result;
-  }, [services, vendorId, occasionId]);
+  }, [filteredServices, vendorId]);
 
   // Extract unique occasions from filtered vendor services
   const vendorOccasions = useMemo(() => {
@@ -518,12 +525,18 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
             <View style={[styles.ratingRow, isRTL && styles.ratingRowRTL]}>
               <Text style={styles.rating}>
                 ★{' '}
-                {(serviceRatings[item._id]?.rating || 0) > 0
-                  ? (serviceRatings[item._id]?.rating || 0).toFixed(1)
+                {(serviceRatings[item._id]?.rating !== undefined
+                  ? serviceRatings[item._id]?.rating
+                  : item.rating || 0) > 0
+                  ? (serviceRatings[item._id]?.rating !== undefined
+                      ? serviceRatings[item._id]?.rating
+                      : item.rating || 0).toFixed(1)
                   : '0.0'}
               </Text>
               <Text style={styles.reviews}>
-                ({serviceRatings[item._id]?.totalReviews || 0})
+                ({serviceRatings[item._id]?.totalReviews !== undefined
+                  ? serviceRatings[item._id]?.totalReviews
+                  : item.totalReviews || 0})
               </Text>
             </View>
           </View>
@@ -538,8 +551,12 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
     const displayPrice =
       item.discountPrice > 0 ? item.totalPrice - item.discountPrice : item.totalPrice;
 
-    const rating = packageRatings[item._id]?.rating || 0;
-    const totalReviews = packageRatings[item._id]?.totalReviews || 0;
+    const rating = packageRatings[item._id]?.rating !== undefined
+      ? packageRatings[item._id]?.rating
+      : (item.service?.rating || 0);
+    const totalReviews = packageRatings[item._id]?.totalReviews !== undefined
+      ? packageRatings[item._id]?.totalReviews
+      : (item.service?.totalReviews || 0);
 
     return (
       <TouchableOpacity

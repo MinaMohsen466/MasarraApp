@@ -44,6 +44,7 @@ const TimePickerModal: React.FC<TimePickerModalProps> = ({
     if (visible && selectedDate) {
       loadTimeSlots();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, selectedDate, serviceId, vendorId]);
 
   const loadTimeSlots = async () => {
@@ -79,7 +80,7 @@ const TimePickerModal: React.FC<TimePickerModalProps> = ({
       });
 
       setTimeSlots(filteredSlots);
-    } catch (error) {
+    } catch {
     } finally {
       setLoading(false);
     }

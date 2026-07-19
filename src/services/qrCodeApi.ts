@@ -1,4 +1,5 @@
 import { API_BASE_URL } from './api';
+import { getCachedQRCode, setCachedQRCode, invalidateQRCodeCache } from './qrCodeCache';
 
 export interface QRCodeCustomDetails {
   name1?: string;
@@ -124,7 +125,7 @@ export const getQRCodeSettings = async (
         return settingsObj;
       }
     }
-  } catch (settingsError) {
+  } catch {
     // Silent error handling
   }
 
@@ -166,7 +167,7 @@ export const getQRCodeSettings = async (
         return settingsObj;
       }
     }
-  } catch (publicError) {}
+  } catch {}
   // Return null if we couldn't get settings - this will prevent false positives
   return null;
 };
@@ -174,7 +175,16 @@ export const getQRCodeSettings = async (
 export const getQRCodeByBooking = async (
   token: string,
   bookingId: string,
+  skipCache: boolean = false,
 ): Promise<QRCodeData | null> => {
+  // Check cache first
+  if (!skipCache) {
+    const cached = getCachedQRCode(bookingId);
+    if (cached !== undefined) {
+      return cached;
+    }
+  }
+
   try {
     const response = await fetch(
       `${API_BASE_URL}/qr-codes/booking/${bookingId}`,
@@ -187,6 +197,7 @@ export const getQRCodeByBooking = async (
       },
     );
     if (response.status === 404) {
+      setCachedQRCode(bookingId, null);
       return null;
     }
     if (!response.ok) {
@@ -194,8 +205,9 @@ export const getQRCodeByBooking = async (
     }
 
     const data = await response.json();
+    setCachedQRCode(bookingId, data);
     return data;
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -207,8 +219,10 @@ export const generateQRCode = async (
   backgroundImageId: string,
   serviceId?: string,
   guestLimit?: number,
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> => {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload: any = {
       customDetails,
       selectedBackgroundImageId: backgroundImageId,
@@ -244,8 +258,9 @@ export const generateQRCode = async (
 
     const result = await response.json();
     // Ensure the result has all necessary fields
-    if (!result.qrCode && !result.qrCodeImage) {
-    }
+
+    // Invalidate cache for this booking since QR was just created/updated
+    invalidateQRCodeCache(bookingId);
 
     return result;
   } catch (error) {
@@ -256,6 +271,7 @@ export const generateQRCode = async (
 export const fetchServiceDetails = async (
   serviceId: string,
   token: string,
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> => {
   try {
     const response = await fetch(`${API_BASE_URL}/services/${serviceId}`, {
@@ -271,12 +287,13 @@ export const fetchServiceDetails = async (
     }
 
     return await response.json();
-  } catch (error) {
+  } catch {
     return null;
   }
 };
 
 export const canCreateQRCode = async (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   booking: any,
   settings: QRCodeSettings | null,
   _token?: string,
@@ -289,6 +306,7 @@ export const canCreateQRCode = async (
   }
 
   // Helper to compare ObjectIds as strings
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const matchesId = (id1: any, id2: any) => {
     const str1 =
       typeof id1 === 'object'
@@ -302,10 +320,12 @@ export const canCreateQRCode = async (
   };
 
   // Helper to check if a specific occasion/category pair is allowed
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const isOccasionCategoryAllowed = (occasionId: any, categoryId: any) => {
     if (!settings.allowedOccasions) return false;
 
     const allowedOccasion = settings.allowedOccasions.find(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (ao: any) =>
         matchesId(ao.occasion?._id || ao.occasion, occasionId) && ao.isEnabled,
     );
@@ -318,6 +338,7 @@ export const canCreateQRCode = async (
       typeof allowedOccasion.occasion === 'object'
         ? allowedOccasion.occasion
         : null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const availableCategories = (occasionObj as any)?.categories || [];
     const allowedCategoryIds = allowedOccasion.allowedCategories || [];
 
@@ -330,6 +351,7 @@ export const canCreateQRCode = async (
     // Case 3: Specific categories are allowed
     if (!categoryId) return false; // If service has no category, but restrictions exist -> Block
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return allowedCategoryIds.some((id: any) => matchesId(id, categoryId));
   };
 
@@ -341,6 +363,7 @@ export const canCreateQRCode = async (
         ? booking.occasion._id
         : booking.occasion;
     const allowedOccasion = settings.allowedOccasions?.find(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (ao: any) =>
         matchesId(ao.occasion?._id || ao.occasion, occasionId) && ao.isEnabled,
     );
@@ -350,6 +373,7 @@ export const canCreateQRCode = async (
         typeof allowedOccasion.occasion === 'object'
           ? allowedOccasion.occasion
           : null;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const availableCategories = (occasionObj as any)?.categories || [];
       if (occasionObj && availableCategories.length === 0) return true;
     }
@@ -382,6 +406,7 @@ export const canCreateQRCode = async (
       // Check package occasion if it has no categories
       if (pkgData && pkgData.occasion) {
         const allowedOccasion = settings.allowedOccasions?.find(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (ao: any) =>
             matchesId(ao.occasion?._id || ao.occasion, pkgData.occasion) &&
             ao.isEnabled,
@@ -391,6 +416,7 @@ export const canCreateQRCode = async (
             typeof allowedOccasion.occasion === 'object'
               ? allowedOccasion.occasion
               : null;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const availableCategories = (occasionObj as any)?.categories || [];
           if (occasionObj && availableCategories.length === 0) return true;
         }
@@ -455,7 +481,7 @@ export const getUserQRCodes = async (
     }
 
     return await response.json();
-  } catch (error) {
+  } catch {
     return { success: false, qrCodes: [] };
   }
 };

@@ -72,6 +72,7 @@ Object.defineProperty(reactNative, 'Text', {
 // 2. Wrap TextInput Component
 const OriginalTextInput = reactNative.TextInput;
 const WrappedTextInput = React.forwardRef((props, ref) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { value, placeholder, style, ...rest } = props;
   if (isSystemFont(style)) {
     const flatStyle = StyleSheet.flatten(style || {});

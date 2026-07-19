@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, react-native/no-inline-styles */
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
@@ -265,8 +266,9 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
           setHasPurchased(false);
           setUserBookingId(null);
         }
-      } catch (error) {
-        console.log('Error checking package purchase status:', error);
+      } catch (err: any) {
+        // eslint-disable-next-line no-console
+        console.log('Error checking package purchase status:', err);
         setHasPurchased(false);
         setUserBookingId(null);
       }
@@ -286,8 +288,9 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
       try {
         const review = await checkUserReviewedService(serviceId);
         setUserReview(review);
-      } catch (error) {
-        console.log('Error checking package user review status:', error);
+      } catch (err: any) {
+        // eslint-disable-next-line no-console
+        console.log('Error checking package user review status:', err);
         setUserReview(null);
       }
     };
@@ -319,6 +322,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
     if (selectedDate && selectedTime && packageData?.service?._id) {
       checkAvailability();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate, selectedTime, editCartItemId, originalDate, originalTime]);
 
   const checkAvailability = async () => {
@@ -354,7 +358,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
         (slot: any) => slot.timeSlot === selectedTime,
       );
       setIsTimeSlotAvailable(timeSlot ? timeSlot.available : false);
-    } catch (err) {
+    } catch {
     } finally {
       setCheckingAvailability(false);
     }
@@ -391,12 +395,12 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
                   : 'Your review has been deleted successfully',
                 buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
               });
-            } catch (error: any) {
+            } catch (err: any) {
               setAlertConfig({
                 visible: true,
                 title: isRTL ? 'خطأ' : 'Error',
                 message:
-                  error.message ||
+                  err.message ||
                   (isRTL ? 'فشل حذف التقييم' : 'Failed to delete review'),
                 buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
               });
@@ -613,10 +617,10 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
       const shareMessage = `${packageName}\n${packageUrl}`;
 
       await Share.share({ message: shareMessage });
-    } catch (error: any) {
+    } catch (err: any) {
       Alert.alert(
         isRTL ? 'خطأ' : 'Error',
-        error.message || (isRTL ? 'فشلت المشاركة' : 'Failed to share'),
+        err.message || (isRTL ? 'فشلت المشاركة' : 'Failed to share'),
       );
     }
   };

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable no-console */
 /**
  * Pre-commit validation script
  * Runs linting, formatting, and type checking
@@ -24,7 +25,7 @@ function runCommand(command, description) {
     execSync(command, { stdio: 'inherit' });
     log(`✅ ${description} passed!`, colors.green);
     return true;
-  } catch (error) {
+  } catch {
     log(`❌ ${description} failed!`, colors.red);
     return false;
   }

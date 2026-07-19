@@ -5,16 +5,14 @@ import {
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
-  Image,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { SvgUri } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { styles } from './OccasionSelectorStyles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useOccasions } from '../../hooks/useOccasions';
-import { Occasion, getImageUrl } from '../../services/api';
+import { Occasion } from '../../services/api';
 import { BottomSheet } from '../common/BottomSheet';
 
 interface OccasionSelectorProps {
@@ -53,33 +51,6 @@ const OccasionSelector: React.FC<OccasionSelectorProps> = ({
             isRTL && styles.occasionItemContentRTL,
           ]}
         >
-          {/* Occasion Icon/Image Container */}
-          <View
-            style={[
-              styles.iconWrapper,
-              isSelected && styles.iconWrapperSelected,
-            ]}
-          >
-            {item.image ? (
-              item.image.toLowerCase().endsWith('.svg') ? (
-                <SvgUri
-                  uri={getImageUrl(item.image)}
-                  width={24}
-                  height={24}
-                  fill={isSelected ? colors.primary : '#475569'}
-                />
-              ) : (
-                <Image
-                  source={{ uri: getImageUrl(item.image) }}
-                  style={styles.occasionImage}
-                  resizeMode="cover"
-                />
-              )
-            ) : (
-              <View style={styles.placeholderIcon} />
-            )}
-          </View>
-
           {/* Occasion Name */}
           <Text
             style={[

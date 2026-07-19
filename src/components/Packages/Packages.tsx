@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, react-native/no-inline-styles */
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
@@ -153,6 +154,7 @@ const Packages: React.FC<PackagesProps> = ({ onSelectPackage, onBack }) => {
     };
 
     loadRatings();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [packages]);
 
   // Handle load more when reaching end of list

@@ -67,34 +67,6 @@ export const styles = StyleSheet.create({
   occasionItemContentRTL: {
     flexDirection: 'row-reverse',
   },
-  iconWrapper: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#FFFFFF', // Clean white background reverted
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  iconWrapperSelected: {
-    borderColor: colors.primary,
-    borderWidth: 1.5,
-  },
-  occasionImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 22,
-  },
-  placeholderIcon: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: '#E2E8F0',
-  },
   occasionItemText: {
     fontSize: 14.5,
     fontWeight: '700',

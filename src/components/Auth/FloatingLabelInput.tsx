@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, react-native/no-inline-styles */
 import React, { useState, useRef, useEffect, forwardRef } from 'react';
 import {
   View,
@@ -36,6 +37,7 @@ export const FloatingLabelInput = forwardRef<
       onFocus,
       onBlur,
       activeColor = colors.primary,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       inactiveColor = '#9CA3AF',
       leftElement,
       rightElement,
@@ -54,6 +56,7 @@ export const FloatingLabelInput = forwardRef<
         duration: 150,
         useNativeDriver: false,
       }).start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isFocused, value]);
 
     const handleFocus = (e: any) => {

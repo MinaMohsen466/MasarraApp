@@ -104,7 +104,8 @@ const Search: React.FC<SearchProps> = ({
       try {
         const saved = await AsyncStorage.getItem('recent_searches');
         if (saved) {
-          setRecentSearches(JSON.parse(saved));
+          const parsed = JSON.parse(saved);
+          setRecentSearches(Array.isArray(parsed) ? parsed.slice(0, 6) : []);
         }
       } catch (error) {
         console.error('Failed to load recent searches', error);
@@ -120,7 +121,7 @@ const Search: React.FC<SearchProps> = ({
     const updated = [
       trimmed,
       ...recentSearches.filter(q => q.toLowerCase() !== trimmed.toLowerCase()),
-    ].slice(0, 8);
+    ].slice(0, 6);
 
     setRecentSearches(updated);
     try {
@@ -774,7 +775,6 @@ const Search: React.FC<SearchProps> = ({
                         showsHorizontalScrollIndicator={false}
                         contentContainerStyle={[
                           styles.recentChipsScroll,
-                          isRTL && styles.recentChipsScrollRTL,
                         ]}
                       >
                         {recentSearches.map((item, index) => (
@@ -1189,6 +1189,7 @@ const styles = StyleSheet.create({
   recentSearchesContainer: {
     paddingTop: 10,
     paddingBottom: 16,
+    alignSelf: 'stretch',
   },
   recentHeaderRow: {
     flexDirection: 'row',
@@ -1196,6 +1197,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 4,
     marginBottom: 8,
+    alignSelf: 'stretch',
   },
   recentHeaderRowRTL: {
     flexDirection: 'row-reverse',
@@ -1212,9 +1214,6 @@ const styles = StyleSheet.create({
   },
   recentChipsScroll: {
     paddingVertical: 4,
-  },
-  recentChipsScrollRTL: {
-    flexDirection: 'row-reverse',
   },
   recentChip: {
     flexDirection: 'row',

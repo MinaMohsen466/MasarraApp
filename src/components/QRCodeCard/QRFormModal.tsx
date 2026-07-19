@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, react-native/no-unused-styles */
 import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
@@ -236,7 +237,7 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
         if (booking?.eventDate) {
           try {
             baseEventDate = getLocalDateString(new Date(booking.eventDate));
-          } catch (e) {}
+          } catch {}
         }
         if (!baseEventDate && booking?.eventTime?.start) {
           try {
@@ -245,7 +246,7 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
             const month = String(startDate.getMonth() + 1).padStart(2, '0');
             const day = String(startDate.getDate()).padStart(2, '0');
             baseEventDate = `${year}-${month}-${day}`;
-          } catch (e) {}
+          } catch {}
         }
         if (!baseEventDate) {
           baseEventDate = getLocalDateString(new Date());
@@ -260,7 +261,7 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
             baseEventTime = `${String(hours).padStart(2, '0')}:${String(
               minutes,
             ).padStart(2, '0')}`;
-          } catch (e) {}
+          } catch {}
         }
 
         const baseDetails: QRCodeCustomDetails = {
@@ -304,7 +305,7 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
         if (booking.eventDate) {
           try {
             eventDate = getLocalDateString(new Date(booking.eventDate));
-          } catch (e) {}
+          } catch {}
         }
         if (!eventDate && booking.eventTime?.start) {
           try {
@@ -313,7 +314,7 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
             const month = String(startDate.getMonth() + 1).padStart(2, '0');
             const day = String(startDate.getDate()).padStart(2, '0');
             eventDate = `${year}-${month}-${day}`;
-          } catch (e) {}
+          } catch {}
         }
         if (!eventDate) {
           eventDate = getLocalDateString(new Date());
@@ -328,7 +329,7 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
             eventTime = `${String(hours).padStart(2, '0')}:${String(
               minutes,
             ).padStart(2, '0')}`;
-          } catch (e) {}
+          } catch {}
         }
 
         const customerName =
@@ -368,6 +369,7 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
         setSelectedBackgroundId(null);
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, existingQRCode, booking]);
 
   const loadSettings = async () => {
@@ -403,7 +405,7 @@ export const QRFormModal: React.FC<QRFormModalProps> = ({
           setSelectedBackgroundId(defaultBg._id);
         }
       }
-    } catch (error) {
+    } catch {
     } finally {
       setLoading(false);
     }

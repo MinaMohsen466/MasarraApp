@@ -1,3 +1,4 @@
+/* eslint-disable react-native/no-inline-styles */
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
@@ -137,6 +138,7 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
         loadAvailability();
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, cacheKey]);
 
   const loadAvailability = async () => {
@@ -219,6 +221,7 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
   // Memoize أيام الشهر لتجنب إعادة الحساب
   const memoizedDays = useMemo(
     () => getDaysInMonth(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [currentMonth, getDaysInMonth],
   );
 

@@ -218,12 +218,13 @@ export const validateCoupon = async (
     }
 
     return data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (__DEV__) {
     }
+    const errorMessage = error instanceof Error ? error.message : '';
     return {
       valid: false,
-      message: error.message?.includes('Network')
+      message: errorMessage?.includes('Network')
         ? 'تعذر الاتصال بالسيرفر'
         : 'حدث خطأ. حاول مرة أخرى.',
     };
@@ -267,7 +268,7 @@ export const applyCouponToBooking = async (
       success: true,
       message: data.message || 'Coupon applied successfully',
     };
-  } catch (error) {
+  } catch {
     return {
       success: false,
       message: 'Network error. Please try again.',

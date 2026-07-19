@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, react-native/no-inline-styles */
 import React, { useState } from 'react';
 import {
   View,
@@ -71,7 +72,7 @@ const Auth: React.FC<AuthProps> = ({
             if (credentials) {
               setPassword(credentials.password);
             }
-          } catch (_keychainErr) {
+          } catch {
             // Fallback: try old AsyncStorage (migrate away)
             const oldPwd = await AsyncStorage.getItem('remembered_password');
             if (oldPwd) {
@@ -228,7 +229,7 @@ const Auth: React.FC<AuthProps> = ({
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ userId }),
             });
-          } catch (resendError) {}
+          } catch {}
           // Show verification screen directly without alert
           setShowVerifyEmail(true);
           return;

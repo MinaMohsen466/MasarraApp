@@ -98,12 +98,6 @@ export async function createReview(
     }
 
     const url = `${API_BASE_URL}/reviews/service/${serviceId}`;
-    console.log('[createReview] Sending to URL:', url);
-    console.log('[createReview] Data:', {
-      rating,
-      comment: comment.substring(0, 50),
-      bookingId,
-    });
 
     const response = await fetch(url, {
       method: 'POST',
@@ -118,16 +112,12 @@ export async function createReview(
       }),
     });
 
-    console.log('[createReview] Response status:', response.status);
-
     // Check content type before parsing
     const contentType = response.headers.get('content-type');
-    console.log('[createReview] Content-Type:', contentType);
 
     if (!contentType || !contentType.includes('application/json')) {
-      // Try to get the text to see what was returned
-      const text = await response.text();
-      console.log('[createReview] Non-JSON response:', text.substring(0, 200));
+      // Consume response body for non-JSON responses
+      await response.text();
       throw new Error('Server error - please try again later');
     }
 
@@ -166,7 +156,7 @@ export async function checkUserReviewedService(
       review => review.user?._id === userId,
     );
     return userReview || null;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -180,7 +170,6 @@ export async function deleteReview(reviewId: string): Promise<void> {
     }
 
     const url = `${API_BASE_URL}/reviews/${reviewId}`;
-    console.log('[deleteReview] Sending to URL:', url);
 
     const response = await fetch(url, {
       method: 'DELETE',
@@ -189,8 +178,6 @@ export async function deleteReview(reviewId: string): Promise<void> {
         Authorization: `Bearer ${token}`,
       },
     });
-
-    console.log('[deleteReview] Response status:', response.status);
 
     if (!response.ok) {
       const contentType = response.headers.get('content-type');

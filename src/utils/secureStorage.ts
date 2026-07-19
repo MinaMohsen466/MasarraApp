@@ -25,16 +25,12 @@ export const setSecureUserData = async (
     });
     await originalRemoveItem(USER_DATA_KEY);
     return true;
-  } catch (error) {
-    console.warn(
-      'Keychain secure user data storage failed, falling back to AsyncStorage:',
-      error,
-    );
+  } catch {
+    // Keychain secure user data storage failed, falling back to AsyncStorage
     try {
       await originalSetItem(USER_DATA_KEY, userDataJson);
       return true;
-    } catch (fsError) {
-      console.error('AsyncStorage fallback failed:', fsError);
+    } catch {
       return false;
     }
   }
@@ -51,12 +47,8 @@ export const getSecureUserData = async (): Promise<string | null> => {
     if (credentials) {
       return credentials.password;
     }
-  } catch (error: any) {
-    const errorMsg = error?.message || String(error);
-    console.warn(
-      'Reading user data from Keychain failed, checking AsyncStorage fallback:',
-      errorMsg,
-    );
+  } catch (error: unknown) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
 
     if (
       errorMsg.includes('permanently invalidated') ||
@@ -64,17 +56,13 @@ export const getSecureUserData = async (): Promise<string | null> => {
     ) {
       try {
         await Keychain.resetGenericPassword({ service: USER_DATA_SERVICE });
-        console.log(
-          '🔒 Android Keystore healed for User Data: Invalidated key has been reset.',
-        );
-      } catch (resetErr) {}
+      } catch {}
     }
   }
 
   try {
     return await originalGetItem(USER_DATA_KEY);
-  } catch (fsError) {
-    console.error('AsyncStorage read failed:', fsError);
+  } catch {
     return null;
   }
 };
@@ -89,12 +77,11 @@ export const removeSecureUserData = async (): Promise<boolean> => {
     });
     await originalRemoveItem(USER_DATA_KEY);
     return true;
-  } catch (error) {
-    console.error('Error resetting secure user data:', error);
+  } catch {
     try {
       await originalRemoveItem(USER_DATA_KEY);
       return true;
-    } catch (fsError) {
+    } catch {
       return false;
     }
   }
@@ -113,16 +100,12 @@ export const setSecureToken = async (token: string): Promise<boolean> => {
     // Clean up standard plain-text AsyncStorage to prevent leakage
     await originalRemoveItem(TOKEN_KEY);
     return true;
-  } catch (error) {
-    console.warn(
-      'Keychain secure storage failed, falling back to AsyncStorage:',
-      error,
-    );
+  } catch {
+    // Keychain secure storage failed, falling back to AsyncStorage
     try {
       await originalSetItem(TOKEN_KEY, token);
       return true;
-    } catch (fsError) {
-      console.error('AsyncStorage fallback failed:', fsError);
+    } catch {
       return false;
     }
   }
@@ -140,12 +123,8 @@ export const getSecureToken = async (): Promise<string | null> => {
     if (credentials) {
       return credentials.password;
     }
-  } catch (error: any) {
-    const errorMsg = error?.message || String(error);
-    console.warn(
-      'Reading from Keychain failed, checking AsyncStorage fallback:',
-      errorMsg,
-    );
+  } catch (error: unknown) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
 
     // Self-healing: if the Android Keystore key is permanently invalidated, reset it to allow clean regeneration
     if (
@@ -154,18 +133,14 @@ export const getSecureToken = async (): Promise<string | null> => {
     ) {
       try {
         await Keychain.resetGenericPassword({ service: SERVICE_NAME });
-        console.log(
-          '🔒 Android Keystore healed: Invalidated key has been reset.',
-        );
-      } catch (resetErr) {}
+      } catch {}
     }
   }
 
   // Fallback check
   try {
     return await originalGetItem(TOKEN_KEY);
-  } catch (fsError) {
-    console.error('AsyncStorage read failed:', fsError);
+  } catch {
     return null;
   }
 };
@@ -180,12 +155,11 @@ export const removeSecureToken = async (): Promise<boolean> => {
     });
     await originalRemoveItem(TOKEN_KEY);
     return true;
-  } catch (error) {
-    console.error('Error resetting secure token:', error);
+  } catch {
     try {
       await originalRemoveItem(TOKEN_KEY);
       return true;
-    } catch (fsError) {
+    } catch {
       return false;
     }
   }
@@ -197,6 +171,7 @@ export const removeSecureToken = async (): Promise<boolean> => {
  * without requiring refactoring across dozens of source files.
  */
 export const initSecureStorage = () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   AsyncStorage.getItem = async (key: string, ...args: any[]) => {
     if (key === TOKEN_KEY) {
       return await getSecureToken();
@@ -207,6 +182,7 @@ export const initSecureStorage = () => {
     return await originalGetItem(key, ...args);
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   AsyncStorage.setItem = async (key: string, value: string, ...args: any[]) => {
     if (key === TOKEN_KEY) {
       const success = await setSecureToken(value);
@@ -219,6 +195,7 @@ export const initSecureStorage = () => {
     return await originalSetItem(key, value, ...args);
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   AsyncStorage.removeItem = async (key: string, ...args: any[]) => {
     if (key === TOKEN_KEY) {
       const success = await removeSecureToken();
@@ -230,6 +207,4 @@ export const initSecureStorage = () => {
     }
     return await originalRemoveItem(key, ...args);
   };
-
-  console.log('🔒 Secure Storage transparent proxy initialized.');
 };
