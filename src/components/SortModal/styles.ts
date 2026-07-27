@@ -7,8 +7,8 @@ export const styles = StyleSheet.create({
   },
   container: {
     paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 16,
+    paddingTop: 4,
+    paddingBottom: 10,
   },
   containerRTL: {
     // RTL adjustments handled dynamically
@@ -17,13 +17,13 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 10,
   },
   headerRTL: {
     flexDirection: 'row-reverse',
   },
   title: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '800',
     color: '#0F172A',
   },
@@ -31,28 +31,28 @@ export const styles = StyleSheet.create({
     textAlign: 'right',
   },
   closeButton: {
-    width: 32,
-    height: 32,
+    width: 28,
+    height: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 16,
+    borderRadius: 14,
     backgroundColor: '#F1F5F9',
   },
   closeButtonText: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#475569',
     fontWeight: 'bold',
   },
   optionsContainer: {
-    gap: 10,
+    gap: 6,
   },
   optionItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#F1F5F9',
@@ -62,7 +62,7 @@ export const styles = StyleSheet.create({
     borderColor: colors.primary,
   },
   optionLabel: {
-    fontSize: 14.5,
+    fontSize: 13,
     color: '#475569',
     fontWeight: '700',
   },
@@ -70,9 +70,9 @@ export const styles = StyleSheet.create({
     color: colors.primary,
   },
   radio: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 17,
+    height: 17,
+    borderRadius: 8.5,
     borderWidth: 2,
     borderColor: '#CBD5E1',
     justifyContent: 'center',
@@ -84,9 +84,9 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   radioDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
     backgroundColor: '#FFFFFF',
   },
 });

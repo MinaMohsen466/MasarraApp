@@ -25,6 +25,7 @@ import { getImageUrl } from '../../services/api';
 import VendorHeader from '../VendorHeader/VendorHeader';
 import SortModal from '../SortModal/SortModal';
 import FilterModal from '../FilterModal/FilterModal';
+import { VendorReviewsModal, ExtendedReview } from '../VendorReviewsModal/VendorReviewsModal';
 
 interface ServicesPageProps {
   onSelectService?: (service: Service) => void;
@@ -79,6 +80,10 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
   const [packageRatings, setPackageRatings] = useState<{
     [key: string]: { rating: number; totalReviews: number };
   }>({});
+  const [showVendorReviews, setShowVendorReviews] = useState(false);
+  const [vendorReviewsList, setVendorReviewsList] = useState<ExtendedReview[]>([]);
+  const [vendorDistribution, setVendorDistribution] = useState<{ [key: number]: number }>({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 });
+  const [loadingVendorReviews, setLoadingVendorReviews] = useState(false);
 
   // Resolve current vendor from cached vendors query
   const vendor = useMemo(() => {
@@ -242,9 +247,11 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
 
     const fetchAllReviews = async () => {
       try {
+        setLoadingVendorReviews(true);
         // Fetch all reviews in parallel for better performance
         const reviewsPromises = targetServices.map(service =>
           getServiceReviews(service._id, 1, 1000).catch(() => ({
+            reviews: [],
             stats: { averageRating: 0, totalRatings: 0 },
           })),
         );
@@ -253,9 +260,25 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
 
         let totalRating = 0;
         let totalReviewsCount = 0;
+        const combinedReviews: ExtendedReview[] = [];
+        const dist: { [key: number]: number } = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
 
-        reviewsResults.forEach(reviewsData => {
-          if (reviewsData.stats.totalRatings > 0) {
+        reviewsResults.forEach((reviewsData, idx) => {
+          const sObj = targetServices[idx];
+          if (reviewsData && reviewsData.reviews) {
+            reviewsData.reviews.forEach((r: any) => {
+              combinedReviews.push({
+                ...r,
+                serviceName: sObj?.name || '',
+                serviceNameAr: sObj?.nameAr || '',
+              });
+              const rounded = Math.round(r.rating || 0);
+              if (rounded >= 1 && rounded <= 5) {
+                dist[rounded] = (dist[rounded] || 0) + 1;
+              }
+            });
+          }
+          if (reviewsData.stats && reviewsData.stats.totalRatings > 0) {
             totalRating +=
               reviewsData.stats.averageRating * reviewsData.stats.totalRatings;
             totalReviewsCount += reviewsData.stats.totalRatings;
@@ -271,7 +294,12 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
           rating: averageRating,
           totalReviews: totalReviewsCount,
         });
-      } catch {}
+        setVendorReviewsList(combinedReviews);
+        setVendorDistribution(dist);
+      } catch {
+      } finally {
+        setLoadingVendorReviews(false);
+      }
     };
 
     fetchAllReviews();
@@ -713,6 +741,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
             occasions={vendorOccasions}
             onFilterPress={() => {}}
             onSortPress={() => {}}
+            onRatingPress={() => setShowVendorReviews(true)}
             overrideRating={vendorRating.rating}
             overrideTotalReviews={vendorRating.totalReviews}
           />
@@ -876,6 +905,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
                 occasions={vendorOccasions}
                 onFilterPress={() => setShowFilter(true)}
                 onSortPress={() => setShowSort(true)}
+                onRatingPress={() => setShowVendorReviews(true)}
                 overrideRating={vendorRating.rating}
                 overrideTotalReviews={vendorRating.totalReviews}
               />
@@ -944,6 +974,18 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
         visible={showFilter}
         onClose={() => setShowFilter(false)}
         onApplyFilter={setFilters}
+      />
+
+      {/* Vendor Reviews Bottom Sheet Modal */}
+      <VendorReviewsModal
+        visible={showVendorReviews}
+        onClose={() => setShowVendorReviews(false)}
+        vendorName={vendor?.vendorProfile?.businessName || vendor?.name || vendorName || ''}
+        rating={vendorRating.rating}
+        totalReviews={vendorRating.totalReviews}
+        reviews={vendorReviewsList}
+        ratingDistribution={vendorDistribution}
+        isLoading={loadingVendorReviews}
       />
     </View>
   );

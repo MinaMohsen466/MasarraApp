@@ -16,6 +16,7 @@ interface VendorHeaderProps {
   occasions?: Occasion[];
   onFilterPress?: () => void;
   onSortPress?: () => void;
+  onRatingPress?: () => void;
   overrideRating?: number;
   overrideTotalReviews?: number;
 }
@@ -25,6 +26,7 @@ const VendorHeader: React.FC<VendorHeaderProps> = ({
   occasions = [],
   onFilterPress,
   onSortPress,
+  onRatingPress,
   overrideRating,
   overrideTotalReviews,
 }) => {
@@ -128,12 +130,14 @@ const VendorHeader: React.FC<VendorHeaderProps> = ({
               </View>
             )}
 
-            {/* Rating and Reviews */}
-            <View
+            {/* Rating and Reviews - Clickable to open bottom sheet */}
+            <TouchableOpacity
               style={[
                 styles.ratingContainer,
                 isRTL && styles.ratingContainerRTL,
               ]}
+              activeOpacity={onRatingPress ? 0.7 : 1}
+              onPress={onRatingPress}
             >
               <Text
                 style={[
@@ -153,7 +157,7 @@ const VendorHeader: React.FC<VendorHeaderProps> = ({
                   ? 'لا توجد تقييمات'
                   : 'No reviews yet'}
               </Text>
-            </View>
+            </TouchableOpacity>
           </View>
         </View>
       </View>

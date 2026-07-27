@@ -7,7 +7,7 @@ export const styles = StyleSheet.create({
   },
   modalContent: {
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 4,
   },
   modalContentRTL: {
     // Handled dynamically
@@ -16,16 +16,16 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingBottom: 16,
+    paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
-    marginBottom: 16,
+    marginBottom: 10,
   },
   modalHeaderRTL: {
     flexDirection: 'row-reverse',
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '800',
     color: '#0F172A',
   },
@@ -33,24 +33,55 @@ export const styles = StyleSheet.create({
     textAlign: 'right',
   },
   closeButton: {
-    width: 32,
-    height: 32,
+    width: 28,
+    height: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 16,
+    borderRadius: 14,
     backgroundColor: '#F1F5F9',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 12,
+    height: 44,
+    marginBottom: 12,
+    gap: 8,
+  },
+  searchContainerRTL: {
+    flexDirection: 'row-reverse',
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#0F172A',
+    paddingVertical: 0,
+    textAlign: 'left',
+  },
+  searchInputRTL: {
+    textAlign: 'right',
+  },
+  clearSearchButton: {
+    padding: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   flatListStyle: {
     maxHeight: 380, // Cap vertical height so it fits beautifully inside bottom sheet
   },
   occasionsList: {
-    paddingBottom: 16,
-    gap: 8,
+    paddingBottom: 10,
+    gap: 6,
   },
   occasionItem: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#F1F5F9',
@@ -62,13 +93,13 @@ export const styles = StyleSheet.create({
   occasionItemContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
   occasionItemContentRTL: {
     flexDirection: 'row-reverse',
   },
   occasionItemText: {
-    fontSize: 14.5,
+    fontSize: 13,
     fontWeight: '700',
     color: '#475569',
     flex: 1,
@@ -84,5 +115,16 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     minHeight: 150,
+  },
+  emptyContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 120,
+    paddingVertical: 20,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#94A3B8',
+    fontWeight: '600',
   },
 });

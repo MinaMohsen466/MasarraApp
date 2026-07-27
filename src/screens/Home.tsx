@@ -66,6 +66,9 @@ const Home: React.FC<HomeProps> = ({
   const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Animated value for scroll offset (collapses header on scroll)
+  const scrollY = useRef(new Animated.Value(0)).current;
+
   // Animated value for the initial loading logo pulse
   const fadeAnim = useRef(new Animated.Value(0.3)).current;
 
@@ -204,91 +207,99 @@ const Home: React.FC<HomeProps> = ({
   // ── Main render ──────────────────────────────────────────────────
 
   return (
-    <Animated.ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.scrollContent}
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor={colors.primary}
-          colors={[colors.primary]}
-          progressBackgroundColor="#ffffff"
-        />
-      }
-      scrollEventThrottle={16}
-    >
+    <View style={styles.container}>
+      {/* Fixed Header — collapses smoothly on scroll */}
       <Header
         onNavigate={onNavigate}
         isBannerDismissed={isBannerDismissed}
         setIsBannerDismissed={setIsBannerDismissed}
+        scrollY={scrollY}
       />
 
-      {hasFeaturedServices ? (
-        <>
-          <FeaturedServicesCarousel
-            onSelectService={service =>
-              onSelectService && onSelectService(service._id)
-            }
+      <Animated.ScrollView
+        style={{flex: 1}}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false },
+        )}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+            progressBackgroundColor="#ffffff"
           />
-          <SearchSection
-            onSelectOccasion={(occasion, selectedDate) =>
-              onSelectOccasion && onSelectOccasion(occasion, selectedDate)
-            }
-          />
-        </>
-      ) : (
-        <MasarraWelcome
-          onBrowseServices={() => onNavigate && onNavigate('occasions')}
-          onGetStarted={() => onNavigate && onNavigate('auth')}
-        />
-      )}
-
-      <Services
-        onSelectService={service =>
-          onSelectService && onSelectService(service._id)
         }
-        onViewAll={() => onNavigate && onNavigate('services')}
-      />
-
-      {/* Occasions Section */}
-      <View style={styles.occasionsSection}>
-        <View style={[styles.sectionHeader, isRTL && styles.sectionHeaderRTL]}>
-          <Text style={[styles.sectionTitle, isRTL && styles.sectionTitleRTL]}>
-            {t('occasions').toUpperCase()}
-          </Text>
-          <TouchableOpacity
-            onPress={() => onNavigate && onNavigate('occasions')}
-          >
-            <Text
-              style={[styles.viewAllButton, isRTL && styles.viewAllButtonRTL]}
-            >
-              {isRTL ? 'عرض الكل' : 'View All'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {error ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{t('failedToLoad')}</Text>
-          </View>
+        scrollEventThrottle={16}
+      >
+        {hasFeaturedServices ? (
+          <>
+            <FeaturedServicesCarousel
+              onSelectService={service =>
+                onSelectService && onSelectService(service._id)
+              }
+            />
+            <SearchSection
+              onSelectOccasion={(occasion, selectedDate) =>
+                onSelectOccasion && onSelectOccasion(occasion, selectedDate)
+              }
+            />
+          </>
         ) : (
-          <FlatList
-            data={occasions}
-            renderItem={renderOccasionCard}
-            keyExtractor={item => item._id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={[
-              styles.horizontalList,
-              isRTL && styles.horizontalListRTL,
-            ]}
-            inverted={isRTL}
+          <MasarraWelcome
+            onBrowseServices={() => onNavigate && onNavigate('occasions')}
+            onGetStarted={() => onNavigate && onNavigate('auth')}
           />
         )}
-      </View>
-    </Animated.ScrollView>
+
+        <Services
+          onSelectService={service =>
+            onSelectService && onSelectService(service._id)
+          }
+          onViewAll={() => onNavigate && onNavigate('services')}
+        />
+
+        {/* Occasions Section */}
+        <View style={styles.occasionsSection}>
+          <View style={[styles.sectionHeader, isRTL && styles.sectionHeaderRTL]}>
+            <Text style={[styles.sectionTitle, isRTL && styles.sectionTitleRTL]}>
+              {t('occasions').toUpperCase()}
+            </Text>
+            <TouchableOpacity
+              onPress={() => onNavigate && onNavigate('occasions')}
+            >
+              <Text
+                style={[styles.viewAllButton, isRTL && styles.viewAllButtonRTL]}
+              >
+                {isRTL ? 'عرض الكل' : 'View All'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {error ? (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{t('failedToLoad')}</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={occasions}
+              renderItem={renderOccasionCard}
+              keyExtractor={item => item._id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={[
+                styles.horizontalList,
+                isRTL && styles.horizontalListRTL,
+              ]}
+              inverted={isRTL}
+            />
+          )}
+        </View>
+      </Animated.ScrollView>
+    </View>
   );
 };
 

@@ -7,14 +7,14 @@ export const createStyles = (SCREEN_WIDTH: number) => {
   return StyleSheet.create({
     carouselContainer: {
       width: SCREEN_WIDTH,
-      height: isTablet ? 340 : 240,
+      height: isTablet ? 340 : 234,
       position: 'relative',
-      paddingTop: isTablet ? 12 : 8,
-      paddingBottom: isTablet ? 25 : 20,
+      paddingTop: isTablet ? 14 : 10,
+      paddingBottom: isTablet ? 20 : 14,
     },
     loadingContainer: {
       width: SCREEN_WIDTH,
-      height: isTablet ? 300 : 240,
+      height: isTablet ? 300 : 225,
       justifyContent: 'center',
       alignItems: 'center',
       backgroundColor: colors.backgroundHome,
@@ -48,7 +48,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
     },
     pagination: {
       position: 'absolute',
-      bottom: isTablet ? 8 : 4,
+      bottom: isTablet ? 6 : 2,
       left: 0,
       right: 0,
       flexDirection: 'row',
