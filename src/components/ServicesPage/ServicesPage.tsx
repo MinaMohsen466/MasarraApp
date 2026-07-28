@@ -155,7 +155,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
         if (Object.keys(ratingsData).length > 0) {
           setPackageRatings(prev => ({ ...prev, ...ratingsData }));
         }
-      } catch {}
+      } catch { }
     };
 
     loadRatings();
@@ -234,7 +234,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
         });
 
         setServiceRatings(ratingsData);
-      } catch {}
+      } catch { }
     };
 
     loadRatings();
@@ -266,6 +266,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
         reviewsResults.forEach((reviewsData, idx) => {
           const sObj = targetServices[idx];
           if (reviewsData && reviewsData.reviews) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             reviewsData.reviews.forEach((r: any) => {
               combinedReviews.push({
                 ...r,
@@ -557,8 +558,8 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
                   ? serviceRatings[item._id]?.rating
                   : item.rating || 0) > 0
                   ? (serviceRatings[item._id]?.rating !== undefined
-                      ? serviceRatings[item._id]?.rating
-                      : item.rating || 0).toFixed(1)
+                    ? serviceRatings[item._id]?.rating
+                    : item.rating || 0).toFixed(1)
                   : '0.0'}
               </Text>
               <Text style={styles.reviews}>
@@ -739,8 +740,8 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
           <VendorHeader
             vendor={vendor}
             occasions={vendorOccasions}
-            onFilterPress={() => {}}
-            onSortPress={() => {}}
+            onFilterPress={() => { }}
+            onSortPress={() => { }}
             onRatingPress={() => setShowVendorReviews(true)}
             overrideRating={vendorRating.rating}
             overrideTotalReviews={vendorRating.totalReviews}
@@ -954,8 +955,8 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
                   ? 'لا توجد خدمات أو باقات لهذا المورد'
                   : 'No services or packages for this vendor'
                 : isRTL
-                ? 'لا توجد خدمات متاحة'
-                : 'No services available'}
+                  ? 'لا توجد خدمات متاحة'
+                  : 'No services available'}
             </Text>
           </View>
         }

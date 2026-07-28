@@ -15,6 +15,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { Review } from '../../services/reviewsApi';
 import { getImageUrl } from '../../services/api';
 
+
 export interface ExtendedReview extends Review {
   serviceName?: string;
   serviceNameAr?: string;

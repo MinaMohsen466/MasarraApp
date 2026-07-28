@@ -217,7 +217,8 @@ const Home: React.FC<HomeProps> = ({
       />
 
       <Animated.ScrollView
-        style={{flex: 1}}
+        // eslint-disable-next-line react-native/no-inline-styles
+        style={{ flex: 1 }}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         onScroll={Animated.event(

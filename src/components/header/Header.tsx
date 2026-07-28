@@ -26,67 +26,67 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, scrollY }) => {
   // Scroll animations
   const logoSize = scrollY
     ? scrollY.interpolate({
-        inputRange: [0, 80],
-        outputRange: [60, 42],
-        extrapolate: 'clamp',
-      })
+      inputRange: [0, 80],
+      outputRange: [60, 42],
+      extrapolate: 'clamp',
+    })
     : 60;
 
   const paddingTop = scrollY
     ? scrollY.interpolate({
-        inputRange: [0, 80],
-        outputRange: [6, 2],
-        extrapolate: 'clamp',
-      })
+      inputRange: [0, 80],
+      outputRange: [6, 2],
+      extrapolate: 'clamp',
+    })
     : 6;
 
   const paddingBottom = scrollY
     ? scrollY.interpolate({
-        inputRange: [0, 80],
-        outputRange: [10, 4],
-        extrapolate: 'clamp',
-      })
+      inputRange: [0, 80],
+      outputRange: [10, 4],
+      extrapolate: 'clamp',
+    })
     : 10;
 
   const profileRingSize = scrollY
     ? scrollY.interpolate({
-        inputRange: [0, 80],
-        outputRange: [44, 36],
-        extrapolate: 'clamp',
-      })
+      inputRange: [0, 80],
+      outputRange: [44, 36],
+      extrapolate: 'clamp',
+    })
     : 44;
 
   const profileInnerSize = scrollY
     ? scrollY.interpolate({
-        inputRange: [0, 80],
-        outputRange: [39, 31],
-        extrapolate: 'clamp',
-      })
+      inputRange: [0, 80],
+      outputRange: [39, 31],
+      extrapolate: 'clamp',
+    })
     : 39;
 
   const menuScale = scrollY
     ? scrollY.interpolate({
-        inputRange: [0, 80],
-        outputRange: [1, 0.8],
-        extrapolate: 'clamp',
-      })
+      inputRange: [0, 80],
+      outputRange: [1, 0.8],
+      extrapolate: 'clamp',
+    })
     : 1;
 
   // Text below logo opacity and height fade-out on scroll
   const textOpacity = scrollY
     ? scrollY.interpolate({
-        inputRange: [0, 45],
-        outputRange: [1, 0],
-        extrapolate: 'clamp',
-      })
+      inputRange: [0, 45],
+      outputRange: [1, 0],
+      extrapolate: 'clamp',
+    })
     : 1;
 
   const textMarginTop = scrollY
     ? scrollY.interpolate({
-        inputRange: [0, 45],
-        outputRange: [3, -10],
-        extrapolate: 'clamp',
-      })
+      inputRange: [0, 45],
+      outputRange: [3, -10],
+      extrapolate: 'clamp',
+    })
     : 3;
 
   const handleOpenDrawer = () => setIsDrawerVisible(true);
@@ -117,8 +117,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, scrollY }) => {
       <Animated.View
         style={[
           styles.actionIconButton,
-          { transform: [{ scale: menuScale }] },
-        ]}
+          { transform: [{ scale: menuScale }, { scaleX: isRTL ? 1 : -1 }] }]}
       >
         <Svg width={34} height={34} viewBox="0 0 24 24" fill="none">
           <Path
@@ -143,6 +142,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, scrollY }) => {
       <Animated.View
         style={[
           styles.profileRing,
+          // eslint-disable-next-line react-native/no-inline-styles
           {
             width: profileRingSize,
             height: profileRingSize,
@@ -153,6 +153,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, scrollY }) => {
         <Animated.View
           style={[
             styles.profileInner,
+            // eslint-disable-next-line react-native/no-inline-styles
             {
               width: profileInnerSize,
               height: profileInnerSize,
