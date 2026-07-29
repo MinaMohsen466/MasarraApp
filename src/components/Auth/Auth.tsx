@@ -51,40 +51,33 @@ const Auth: React.FC<AuthProps> = ({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const passwordInputRef = React.useRef<TextInput>(null);
-  const [rememberMe, setRememberMe] = useState(false);
 
-  // Load saved credentials on mount if Remember Me was checked
+  // Load saved credentials automatically on mount
   React.useEffect(() => {
     const loadCredentials = async () => {
       try {
-        const savedRememberMe = await AsyncStorage.getItem(
-          'rememberMe_checked',
-        );
-        if (savedRememberMe === 'true') {
-          const savedEmail = await AsyncStorage.getItem('remembered_email');
-          if (savedEmail) setEmail(savedEmail);
+        const savedEmail = await AsyncStorage.getItem('remembered_email');
+        if (savedEmail) setEmail(savedEmail);
 
-          // Load password from secure Keychain
-          try {
-            const credentials = await Keychain.getGenericPassword({
+        // Load password from secure Keychain
+        try {
+          const credentials = await Keychain.getGenericPassword({
+            service: 'com.masarra.rememberme',
+          });
+          if (credentials) {
+            setPassword(credentials.password);
+          }
+        } catch {
+          // Fallback: try old AsyncStorage (migrate away)
+          const oldPwd = await AsyncStorage.getItem('remembered_password');
+          if (oldPwd) {
+            setPassword(oldPwd);
+            // Migrate to Keychain and remove plain-text copy
+            await Keychain.setGenericPassword('rememberme', oldPwd, {
               service: 'com.masarra.rememberme',
             });
-            if (credentials) {
-              setPassword(credentials.password);
-            }
-          } catch {
-            // Fallback: try old AsyncStorage (migrate away)
-            const oldPwd = await AsyncStorage.getItem('remembered_password');
-            if (oldPwd) {
-              setPassword(oldPwd);
-              // Migrate to Keychain and remove plain-text copy
-              await Keychain.setGenericPassword('rememberme', oldPwd, {
-                service: 'com.masarra.rememberme',
-              });
-              await AsyncStorage.removeItem('remembered_password');
-            }
+            await AsyncStorage.removeItem('remembered_password');
           }
-          setRememberMe(true);
         }
       } catch (error) {
         console.error('Error loading remembered credentials:', error);
@@ -193,25 +186,16 @@ const Auth: React.FC<AuthProps> = ({
         // Store user data in AuthContext
         await saveLogin(response.user, response.token);
 
-        // Save or clear credentials based on rememberMe checkbox
+        // Automatically save credentials for next time
         try {
-          if (rememberMe) {
-            await AsyncStorage.setItem('rememberMe_checked', 'true');
-            await AsyncStorage.setItem('remembered_email', email);
-            // Store password securely in Keychain instead of plain-text AsyncStorage
-            await Keychain.setGenericPassword('rememberme', password, {
-              service: 'com.masarra.rememberme',
-              accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
-            });
-          } else {
-            await AsyncStorage.removeItem('rememberMe_checked');
-            await AsyncStorage.removeItem('remembered_email');
-            await Keychain.resetGenericPassword({
-              service: 'com.masarra.rememberme',
-            });
-          }
+          await AsyncStorage.setItem('remembered_email', email);
+          // Store password securely in Keychain
+          await Keychain.setGenericPassword('rememberme', password, {
+            service: 'com.masarra.rememberme',
+            accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+          });
         } catch (storageErr) {
-          console.error('Error saving remembered credentials:', storageErr);
+          console.error('Error saving credentials:', storageErr);
         }
 
         // Navigate based on user role
@@ -511,37 +495,13 @@ const Auth: React.FC<AuthProps> = ({
               }
             />
 
-            {/* Remember me & Forgot Password */}
+            {/* Forgot Password */}
             <View
               style={[
-                styles.rememberContainer,
-                isRTL && styles.rememberContainerRTL,
+                styles.forgotPasswordContainer,
+                isRTL && styles.forgotPasswordContainerRTL,
               ]}
             >
-              <TouchableOpacity
-                style={[
-                  styles.rememberCheckboxRow,
-                  isRTL && styles.rememberCheckboxRowRTL,
-                ]}
-                onPress={() => setRememberMe(!rememberMe)}
-                activeOpacity={0.7}
-              >
-                <Icon
-                  name={rememberMe ? 'checkbox' : 'square-outline'}
-                  size={18}
-                  color={rememberMe ? colors.primary : '#9CA3AF'}
-                />
-                <Text
-                  style={[
-                    styles.rememberText,
-                    isRTL && styles.rememberTextRTL,
-                    { marginLeft: isRTL ? 0 : 4, marginRight: isRTL ? 4 : 0 },
-                  ]}
-                >
-                  {isRTL ? 'تذكرني' : 'Remember Me'}
-                </Text>
-              </TouchableOpacity>
-
               <TouchableOpacity
                 onPress={() => setShowForgotPasswordModal(true)}
                 activeOpacity={0.7}

@@ -282,6 +282,16 @@ export const styles = StyleSheet.create({
   rememberContainerRTL: {
     flexDirection: 'row-reverse',
   },
+  forgotPasswordContainer: {
+    alignItems: 'flex-end',
+    marginVertical: 4,
+    marginBottom: 24,
+    width: '100%',
+  },
+  forgotPasswordContainerRTL: {
+    alignItems: 'flex-start',
+  },
+
   rememberCheckboxRow: {
     flexDirection: 'row',
     alignItems: 'center',
