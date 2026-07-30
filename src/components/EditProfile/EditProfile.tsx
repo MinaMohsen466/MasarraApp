@@ -12,7 +12,6 @@ import {
   Linking,
   StatusBar,
 } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -455,92 +454,106 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
   return (
     <>
       <StatusBar
-        backgroundColor="#00a19c"
-        barStyle="light-content"
+        backgroundColor={colors.backgroundCard}
+        barStyle="dark-content"
         translucent={false}
       />
-      <View style={{ flex: 1, backgroundColor: colors.primary }}>
-        <View style={{ height: insets.top, backgroundColor: colors.primary }} />
+      <View style={{ flex: 1, backgroundColor: colors.backgroundCard }}>
+        <View style={{ height: insets.top, backgroundColor: colors.backgroundCard }} />
         <View
-          style={[styles.container, { backgroundColor: colors.background }]}
+          style={[styles.container, { backgroundColor: colors.backgroundCard }]}
         >
+          {/* Clean Top Navigation Bar */}
+          <View
+            style={[
+              styles.cleanHeaderBar,
+              isRTL && styles.cleanHeaderBarRTL,
+            ]}
+          >
+            {onBack ? (
+              <TouchableOpacity
+                style={styles.headerBackButtonCircle}
+                onPress={onBack}
+                activeOpacity={0.8}
+              >
+                <Icon
+                  name={isRTL ? 'chevron-forward' : 'chevron-back'}
+                  size={20}
+                  color={colors.textDark}
+                />
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.headerSpacer} />
+            )}
+
+            <Text
+              style={[
+                styles.headerBarTitle,
+                isRTL && styles.headerBarTitleRTL,
+              ]}
+            >
+              {isRTL ? 'تعديل الملف الشخصي' : 'Edit Profile'}
+            </Text>
+
+            <View style={styles.headerSpacer} />
+          </View>
+
           <ScrollView
             style={styles.scrollView}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            {/* Curved Header Background Block with topographic waves & integrated navigation */}
-            <View style={styles.profileHeaderBlock}>
-              <Svg
-                width="100%"
-                height="100%"
-                viewBox="0 0 375 110"
-                preserveAspectRatio="none"
-                style={styles.topographicSvg}
-              >
-                <Path
-                  d="M-20 20 C80 55 180 12 300 45 T400 35"
-                  stroke="rgba(255,255,255,0.08)"
-                  strokeWidth={1.5}
-                  fill="none"
-                />
-                <Path
-                  d="M-20 35 C80 70 180 20 300 60 T400 50"
-                  stroke="rgba(255,255,255,0.12)"
-                  strokeWidth={1.5}
-                  fill="none"
-                />
-                <Path
-                  d="M-20 50 C80 85 180 28 300 75 T400 65"
-                  stroke="rgba(255,255,255,0.15)"
-                  strokeWidth={2}
-                  fill="none"
-                />
-              </Svg>
+            {/* Top Avatar Photo Uploader */}
+            <View style={styles.centeredPhotoContainer}>
+              <View style={styles.photoCircleWrapper}>
+                <TouchableOpacity
+                  style={styles.photoCircle}
+                  onPress={handleChoosePhoto}
+                  activeOpacity={0.8}
+                >
+                  {profileImage || user?.profilePicture ? (
+                    <Image
+                      source={{
+                        uri: getImageUri(profileImage || user?.profilePicture) || undefined,
+                      }}
+                      style={styles.photoImage}
+                    />
+                  ) : (
+                    <Text style={styles.photoInitials}>
+                      {getInitials()}
+                    </Text>
+                  )}
+                </TouchableOpacity>
 
-              {/* Overlay Navigation Bar */}
-              <View
-                style={[
-                  styles.headerOverlayBar,
-                  isRTL && styles.headerOverlayBarRTL,
-                ]}
-              >
-                {onBack && (
+                {/* Camera badge */}
+                <TouchableOpacity
+                  style={styles.cameraBadge}
+                  onPress={handleChoosePhoto}
+                  activeOpacity={0.8}
+                >
+                  <Icon
+                    name="camera"
+                    size={16}
+                    color={colors.textWhite}
+                  />
+                </TouchableOpacity>
+
+                {/* Remove photo icon */}
+                {profileImage && (
                   <TouchableOpacity
-                    style={styles.headerBackButtonCircle}
-                    onPress={onBack}
+                    style={styles.removePhotoIcon}
+                    onPress={handleRemovePhoto}
                     activeOpacity={0.8}
                   >
                     <Icon
-                      name={isRTL ? 'chevron-forward' : 'chevron-back'}
-                      size={20}
+                      name="close"
+                      size={12}
                       color={colors.textWhite}
                     />
                   </TouchableOpacity>
                 )}
               </View>
             </View>
-
-            {/* Curved Wave Divider (Transitions header to page background colors.background) */}
-            <View style={styles.profileCurveDivider}>
-              <Svg
-                height="30"
-                width="100%"
-                viewBox="0 0 375 30"
-                preserveAspectRatio="none"
-              >
-                <Path
-                  d="M0,20 C100,40 250,0 375,20 L375,30 L0,30 Z"
-                  fill={colors.background}
-                />
-              </Svg>
-            </View>
-
-            <Text
-              style={[styles.pageBodyTitle, isRTL && styles.pageBodyTitleRTL]}
-            >
-              {isRTL ? 'تعديل الملف الشخصي' : 'Edit Profile'}
-            </Text>
             {/* Personal Information Section */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
@@ -560,6 +573,7 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
                     onPress={() => setIsEditing(true)}
                     activeOpacity={0.7}
                   >
+                    <Icon name="create-outline" size={14} color={colors.primary} />
                     <Text
                       style={[
                         styles.editButtonText,
@@ -695,66 +709,6 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
               ) : (
                 // Edit Mode
                 <View style={styles.editMode}>
-                  {/* Profile Photo Area (Centered, Clean, No nested background) */}
-                  <View style={styles.centeredPhotoContainer}>
-                    <View style={styles.photoCircleWrapper}>
-                      <TouchableOpacity
-                        style={styles.photoCircle}
-                        onPress={handleChoosePhoto}
-                        activeOpacity={0.8}
-                      >
-                        {profileImage ? (
-                          <Image
-                            source={{
-                              uri: getImageUri(profileImage) || undefined,
-                            }}
-                            style={styles.photoImage}
-                          />
-                        ) : (
-                          <Text style={styles.photoInitials}>
-                            {getInitials()}
-                          </Text>
-                        )}
-                      </TouchableOpacity>
-
-                      {/* Camera upload overlay badge at bottom-right */}
-                      <TouchableOpacity
-                        style={styles.cameraBadge}
-                        onPress={handleChoosePhoto}
-                        activeOpacity={0.8}
-                      >
-                        <Icon
-                          name="camera"
-                          size={16}
-                          color={colors.textWhite}
-                        />
-                      </TouchableOpacity>
-
-                      {/* Remove photo icon at top-left */}
-                      {profileImage && (
-                        <TouchableOpacity
-                          style={styles.removePhotoIcon}
-                          onPress={handleRemovePhoto}
-                          activeOpacity={0.8}
-                        >
-                          <Icon
-                            name="close"
-                            size={12}
-                            color={colors.textWhite}
-                          />
-                        </TouchableOpacity>
-                      )}
-                    </View>
-
-                    <Text
-                      style={[styles.photoHint, isRTL && styles.photoHintRTL]}
-                    >
-                      {isRTL
-                        ? 'انقر على الصورة لتغييرها (JPG, PNG حتى 10 ميجابايت)'
-                        : 'Tap photo to change (JPG, PNG up to 10MB)'}
-                    </Text>
-                  </View>
-
                   {/* Form Fields */}
                   <View style={styles.formFieldsContainer}>
                     <View style={styles.formColumn}>
@@ -922,114 +876,124 @@ const EditProfile: React.FC<EditProfileProps> = ({ onBack }) => {
               )}
             </View>
 
-            {/* Change Password Section */}
-            <TouchableOpacity
-              style={styles.settingsCard}
-              onPress={handleChangePassword}
-              activeOpacity={0.7}
-            >
-              <View
-                style={[
-                  styles.settingsCardInner,
-                  isRTL && styles.settingsCardInnerRTL,
-                ]}
-              >
-                <View
-                  style={[
-                    styles.settingsIconContainer,
-                    styles.passwordIconBg,
-                    isRTL && styles.settingsIconContainerRTL,
-                  ]}
-                >
-                  <Icon name="key-outline" size={20} color={colors.primary} />
-                </View>
-                <View
-                  style={[
-                    styles.settingsTextContainer,
-                    isRTL && styles.settingsTextContainerRTL,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.settingsTitle,
-                      isRTL && styles.settingsTitleRTL,
-                    ]}
-                  >
-                    {isRTL ? 'تغيير كلمة المرور' : 'Change Password'}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.settingsSubtitle,
-                      isRTL && styles.settingsSubtitleRTL,
-                    ]}
-                  >
-                    {isRTL
-                      ? 'كلمة المرور الخاصة بك آمنة ومشفرة.'
-                      : 'Your password is secure and encrypted.'}
-                  </Text>
-                </View>
-                <Icon
-                  name={isRTL ? 'chevron-back' : 'chevron-forward'}
-                  size={20}
-                  color="#94A3B8"
-                />
-              </View>
-            </TouchableOpacity>
+            {/* Security & Account Section Title */}
+            <Text style={[styles.subSectionTitle, isRTL && styles.subSectionTitleRTL]}>
+              {isRTL ? 'الأمان والحساب' : 'Security & Account'}
+            </Text>
 
-            {/* Delete Account Section */}
-            <TouchableOpacity
-              style={styles.settingsCard}
-              onPress={handleDeleteAccount}
-              activeOpacity={0.7}
-            >
-              <View
-                style={[
-                  styles.settingsCardInner,
-                  isRTL && styles.settingsCardInnerRTL,
-                ]}
+            {/* Unified Security & Account Card Group */}
+            <View style={styles.securityGroupCard}>
+              {/* Change Password */}
+              <TouchableOpacity
+                style={styles.settingsCardRow}
+                onPress={handleChangePassword}
+                activeOpacity={0.7}
               >
                 <View
                   style={[
-                    styles.settingsIconContainer,
-                    styles.deleteIconBg,
-                    isRTL && styles.settingsIconContainerRTL,
+                    styles.settingsCardInner,
+                    isRTL && styles.settingsCardInnerRTL,
                   ]}
                 >
-                  <Icon name="trash-outline" size={20} color={colors.error} />
+                  <View
+                    style={[
+                      styles.settingsIconContainer,
+                      styles.passwordIconBg,
+                      isRTL && styles.settingsIconContainerRTL,
+                    ]}
+                  >
+                    <Icon name="key-outline" size={20} color={colors.primary} />
+                  </View>
+                  <View
+                    style={[
+                      styles.settingsTextContainer,
+                      isRTL && styles.settingsTextContainerRTL,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.settingsTitle,
+                        isRTL && styles.settingsTitleRTL,
+                      ]}
+                    >
+                      {isRTL ? 'تغيير كلمة المرور' : 'Change Password'}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.settingsSubtitle,
+                        isRTL && styles.settingsSubtitleRTL,
+                      ]}
+                    >
+                      {isRTL
+                        ? 'كلمة المرور الخاصة بك آمنة ومشفرة'
+                        : 'Your password is secure and encrypted.'}
+                    </Text>
+                  </View>
+                  <Icon
+                    name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                    size={18}
+                    color="#94A3B8"
+                  />
                 </View>
+              </TouchableOpacity>
+
+              <View style={styles.settingsCardDivider} />
+
+              {/* Delete Account */}
+              <TouchableOpacity
+                style={styles.settingsCardRow}
+                onPress={handleDeleteAccount}
+                activeOpacity={0.7}
+              >
                 <View
                   style={[
-                    styles.settingsTextContainer,
-                    isRTL && styles.settingsTextContainerRTL,
+                    styles.settingsCardInner,
+                    isRTL && styles.settingsCardInnerRTL,
                   ]}
                 >
-                  <Text
+                  <View
                     style={[
-                      styles.settingsTitle,
-                      styles.deleteTitleText,
-                      isRTL && styles.settingsTitleRTL,
+                      styles.settingsIconContainer,
+                      styles.deleteIconBg,
+                      isRTL && styles.settingsIconContainerRTL,
                     ]}
                   >
-                    {isRTL ? 'حذف الحساب' : 'Delete Account'}
-                  </Text>
-                  <Text
+                    <Icon name="trash-outline" size={20} color="#EF4444" />
+                  </View>
+                  <View
                     style={[
-                      styles.settingsSubtitle,
-                      isRTL && styles.settingsSubtitleRTL,
+                      styles.settingsTextContainer,
+                      isRTL && styles.settingsTextContainerRTL,
                     ]}
                   >
-                    {isRTL
-                      ? 'حذف حسابك بشكل دائم. هذا الإجراء لا يمكن التراجع عنه'
-                      : 'Permanently delete your account. This action cannot be undone'}
-                  </Text>
+                    <Text
+                      style={[
+                        styles.settingsTitle,
+                        styles.deleteTitleText,
+                        isRTL && styles.settingsTitleRTL,
+                      ]}
+                    >
+                      {isRTL ? 'حذف الحساب' : 'Delete Account'}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.settingsSubtitle,
+                        isRTL && styles.settingsSubtitleRTL,
+                      ]}
+                    >
+                      {isRTL
+                        ? 'حذف حسابك نهائياً. لا يمكن التراجع عن هذا الإجراء'
+                        : 'Permanently delete your account. This action cannot be undone'}
+                    </Text>
+                  </View>
+                  <Icon
+                    name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                    size={18}
+                    color="#94A3B8"
+                  />
                 </View>
-                <Icon
-                  name={isRTL ? 'chevron-back' : 'chevron-forward'}
-                  size={20}
-                  color="#94A3B8"
-                />
-              </View>
-            </TouchableOpacity>
+              </TouchableOpacity>
+            </View>
           </ScrollView>
 
           {/* Change Password Modal */}

@@ -67,6 +67,7 @@ interface Address {
 interface CartProps {
   onBack?: () => void;
   onViewDetails?: (serviceId: string) => void;
+  onSelectService?: (serviceId: string) => void;
   onViewPackageDetails?: (packageId: string) => void;
   onNavigate?: (route: string) => void;
   onEditService?: (serviceId: string, cartItemId: string) => void;
@@ -74,6 +75,9 @@ interface CartProps {
 }
 
 const Cart: React.FC<CartProps> = ({
+  onBack,
+  onViewDetails,
+  onSelectService,
   onNavigate,
   onEditService,
   onEditPackage,
@@ -255,7 +259,9 @@ const Cart: React.FC<CartProps> = ({
   };
 
   const handleBack = () => {
-    if (onNavigate) {
+    if (onBack) {
+      onBack();
+    } else if (onNavigate) {
       onNavigate('home');
     }
   };
@@ -1110,6 +1116,7 @@ const Cart: React.FC<CartProps> = ({
         handleBack={handleBack}
         handleUserIconPress={handleUserIconPress}
         onNavigate={onNavigate}
+        onViewDetails={onViewDetails || onSelectService}
         user={user}
         imageError={imageError}
         setImageError={setImageError}

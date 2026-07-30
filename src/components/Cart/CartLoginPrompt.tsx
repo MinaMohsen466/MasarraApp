@@ -8,8 +8,8 @@ import {
   StatusBar,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { colors } from '../../constants/colors';
-import { styles } from '../../screens/cartStyles';
 
 interface CartLoginPromptProps {
   isRTL: boolean;
@@ -29,146 +29,164 @@ export const CartLoginPrompt: React.FC<CartLoginPromptProps> = ({
   return (
     <>
       <StatusBar
-        backgroundColor="#00a19c"
-        barStyle="light-content"
+        backgroundColor={colors.backgroundCard}
+        barStyle="dark-content"
         translucent={false}
       />
-      <View style={{ flex: 1, backgroundColor: colors.primary }}>
-        <View style={{ height: insets.top, backgroundColor: colors.primary }} />
-        <View style={styles.loginFullPageContainer}>
-          <ScrollView
-            style={styles.loginScrollContainer}
-            contentContainerStyle={styles.loginContentContainer}
-            showsVerticalScrollIndicator={false}
+      <View style={{ flex: 1, backgroundColor: colors.backgroundCard }}>
+        <View style={{ height: insets.top, backgroundColor: colors.backgroundCard }} />
+
+        {/* Clean Header Bar */}
+        <View
+          style={{
+            flexDirection: isRTL ? 'row-reverse' : 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingHorizontal: 16,
+            paddingVertical: 10,
+          }}
+        >
+          <TouchableOpacity
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 21,
+              backgroundColor: '#FFFFFF',
+              justifyContent: 'center',
+              alignItems: 'center',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.05,
+              shadowRadius: 5,
+              elevation: 2,
+              borderWidth: 1,
+              borderColor: 'rgba(44, 95, 93, 0.15)',
+            }}
+            onPress={handleBack}
+            activeOpacity={0.8}
           >
-            {/* Curved Header Background Block with topographic waves & integrated navigation */}
-            <View style={styles.loginHeaderBlock}>
-              <Svg
-                width="100%"
-                height="100%"
-                viewBox="0 0 375 130"
-                preserveAspectRatio="none"
-                style={styles.loginTopographicSvg}
-              >
-                <Path
-                  d="M-20 25 C80 70 180 15 300 60 T400 40"
-                  stroke="rgba(255,255,255,0.08)"
-                  strokeWidth={1.5}
-                  fill="none"
-                />
-                <Path
-                  d="M-20 45 C80 90 180 25 300 80 T400 60"
-                  stroke="rgba(255,255,255,0.12)"
-                  strokeWidth={1.5}
-                  fill="none"
-                />
-                <Path
-                  d="M-20 65 C80 110 180 35 300 100 T400 80"
-                  stroke="rgba(255,255,255,0.15)"
-                  strokeWidth={2}
-                  fill="none"
-                />
-              </Svg>
+            <Icon
+              name={isRTL ? 'chevron-forward' : 'chevron-back'}
+              size={20}
+              color="#0F172A"
+            />
+          </TouchableOpacity>
 
-              {/* Overlay Navigation Bar */}
-              <View
-                style={[
-                  styles.loginOverlayBar,
-                  isRTL && styles.loginOverlayBarRTL,
-                ]}
-              >
-                <TouchableOpacity
-                  style={styles.loginBackButtonCircle}
-                  onPress={handleBack}
-                  activeOpacity={0.8}
-                >
-                  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-                    <Path
-                      d={isRTL ? 'M9 5l7 7-7 7' : 'M15 19l-7-7 7-7'}
-                      stroke={colors.textWhite}
-                      strokeWidth={2.5}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </Svg>
-                </TouchableOpacity>
+          <Text
+            style={{
+              fontSize: 18,
+              fontWeight: '700',
+              color: '#0F172A',
+              textAlign: 'center',
+              flex: 1,
+            }}
+          >
+            {t('myCart')}
+          </Text>
 
-                <Text
-                  style={[
-                    styles.headerTitle,
-                    { color: colors.textWhite },
-                    isRTL && styles.headerTitleRTL,
-                  ]}
-                >
-                  {t('myCart')}
-                </Text>
-
-                <View style={styles.loginHeaderSpacer} />
-              </View>
-            </View>
-
-            {/* Curved Wave Divider (Transitions header to card background) */}
-            <View style={styles.loginCurveDivider}>
-              <Svg
-                height="40"
-                width="100%"
-                viewBox="0 0 375 40"
-                preserveAspectRatio="none"
-              >
-                <Path
-                  d="M0,25 C100,55 250,0 375,25 L375,40 L0,40 Z"
-                  fill={colors.backgroundCard}
-                />
-              </Svg>
-            </View>
-
-            {/* Login Prompt Section */}
-            <View style={styles.loginPromptContainer}>
-              {/* Circular Container with Shopping Basket Icon */}
-              <View style={styles.loginPlaceholderCircle}>
-                <Svg width={44} height={44} viewBox="0 0 24 24" fill="none">
-                  <Path
-                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
-                    stroke={colors.primary}
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </Svg>
-              </View>
-
-              <Text
-                style={[
-                  styles.loginPromptTitle,
-                  isRTL && styles.loginPromptTitleRTL,
-                ]}
-              >
-                {isRTL ? 'سلة التسوق' : 'My Cart'}
-              </Text>
-
-              <Text
-                style={[
-                  styles.loginPromptText,
-                  isRTL && styles.loginPromptTextRTL,
-                ]}
-              >
-                {isRTL
-                  ? 'الرجاء تسجيل الدخول لعرض سلة التسوق الخاصة بك'
-                  : 'Please log in to view your shopping cart'}
-              </Text>
-
-              <TouchableOpacity
-                style={styles.loginSubmitButton}
-                onPress={() => onNavigate && onNavigate('auth')}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.loginSubmitButtonText}>
-                  {isRTL ? 'تسجيل الدخول' : 'Sign In'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
+          <View style={{ width: 42 }} />
         </View>
+
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: 60 }}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Login Prompt Card */}
+          <View
+            style={{
+              backgroundColor: '#FFFFFF',
+              marginHorizontal: 16,
+              marginTop: 20,
+              borderRadius: 24,
+              padding: 24,
+              alignItems: 'center',
+              borderWidth: 1,
+              borderColor: 'rgba(44, 95, 93, 0.12)',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.04,
+              shadowRadius: 10,
+              elevation: 2,
+            }}
+          >
+            <View
+              style={{
+                width: 72,
+                height: 72,
+                borderRadius: 36,
+                backgroundColor: 'rgba(0, 161, 156, 0.08)',
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginBottom: 16,
+              }}
+            >
+              <Svg width={36} height={36} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                  stroke={colors.primary}
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
+            </View>
+
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: '700',
+                color: '#0F172A',
+                marginBottom: 8,
+                textAlign: 'center',
+              }}
+            >
+              {isRTL ? 'سلة التسوق' : 'My Cart'}
+            </Text>
+
+            <Text
+              style={{
+                fontSize: 13,
+                color: '#64748B',
+                textAlign: 'center',
+                lineHeight: 20,
+                marginBottom: 20,
+                paddingHorizontal: 8,
+              }}
+            >
+              {isRTL
+                ? 'الرجاء تسجيل الدخول لعرض سلة التسوق الخاصة بك وإضافة الخدمات.'
+                : 'Please log in to view your shopping cart and add services.'}
+            </Text>
+
+            <TouchableOpacity
+              style={{
+                backgroundColor: colors.primary,
+                paddingVertical: 13,
+                paddingHorizontal: 36,
+                borderRadius: 20,
+                shadowColor: colors.primary,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.25,
+                shadowRadius: 8,
+                elevation: 4,
+              }}
+              onPress={() => onNavigate && onNavigate('auth')}
+              activeOpacity={0.8}
+            >
+              <Text
+                style={{
+                  color: '#FFFFFF',
+                  fontSize: 14,
+                  fontWeight: '700',
+                  letterSpacing: 0.5,
+                }}
+              >
+                {isRTL ? 'تسجيل الدخول' : 'Sign In'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
       </View>
     </>
   );

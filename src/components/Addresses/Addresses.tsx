@@ -579,9 +579,6 @@ const Addresses: React.FC<{
 
       {/* Bottom Addresses Sheet Container (62% height of screen) */}
       <View style={styles.bottomSheetContainer}>
-        {/* Drag handle / grab bar */}
-        <View style={styles.bottomSheetIndicator} />
-
         {showForm ? (
           // Add/Edit Address Form inside the bottom sheet
           <View style={styles.flex1}>

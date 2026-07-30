@@ -77,7 +77,7 @@ const PaymentReceiptModal: React.FC<PaymentReceiptModalProps> = ({
   const renderIcon = () => {
     if (isSuccess) {
       return (
-        <Svg width={56} height={56} viewBox="0 0 24 24" fill="none">
+        <Svg width={36} height={36} viewBox="0 0 24 24" fill="none">
           <Circle
             cx="12"
             cy="12"
@@ -97,7 +97,7 @@ const PaymentReceiptModal: React.FC<PaymentReceiptModalProps> = ({
     }
     if (isPending) {
       return (
-        <Svg width={56} height={56} viewBox="0 0 24 24" fill="none">
+        <Svg width={36} height={36} viewBox="0 0 24 24" fill="none">
           <Circle cx="12" cy="12" r="10" stroke="#f59e0b" strokeWidth="2" />
           <Line
             x1="12"
@@ -121,7 +121,7 @@ const PaymentReceiptModal: React.FC<PaymentReceiptModalProps> = ({
       );
     }
     return (
-      <Svg width={56} height={56} viewBox="0 0 24 24" fill="none">
+      <Svg width={36} height={36} viewBox="0 0 24 24" fill="none">
         <Circle cx="12" cy="12" r="10" stroke="#ef4444" strokeWidth="2" />
         <Line
           x1="15"
@@ -487,7 +487,7 @@ ${
                     style={styles.shareButton}
                     onPress={handleShare}
                   >
-                    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
                       <Path
                         d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"
                         stroke={colors.primary}

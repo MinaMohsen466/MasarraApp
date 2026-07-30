@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, react-native/no-inline-styles */
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,19 @@ import {
   TouchableOpacity,
   StatusBar,
   Image,
+  ActivityIndicator,
+  Modal,
+  useWindowDimensions,
 } from 'react-native';
-import Svg, { Path, Circle } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { colors } from '../../constants/colors';
-import { styles } from '../../screens/cartStyles';
+import {
+  fetchServices,
+  Service,
+  getServiceImageUrl,
+} from '../../services/servicesApi';
+import ServiceDetails from '../ServiceDetails/ServiceDetails';
 
 interface EmptyCartViewProps {
   isRTL: boolean;
@@ -19,6 +28,7 @@ interface EmptyCartViewProps {
   handleBack: () => void;
   handleUserIconPress: () => void;
   onNavigate?: (route: string) => void;
+  onViewDetails?: (serviceId: string) => void;
   user: any;
   imageError: boolean;
   setImageError: (value: boolean) => void;
@@ -32,151 +42,187 @@ export const EmptyCartView: React.FC<EmptyCartViewProps> = ({
   handleBack,
   handleUserIconPress,
   onNavigate,
+  onViewDetails,
   user,
   imageError,
   setImageError,
   getImageUri,
 }) => {
+  const { width: screenWidth } = useWindowDimensions();
+  const [recommendedServices, setRecommendedServices] = useState<Service[]>([]);
+  const [loadingServices, setLoadingServices] = useState<boolean>(true);
+  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
+
+  // Calculate card width so exactly 2 full cards + ~30% of 3rd card are visible
+  const cardWidth = Math.max(142, Math.floor((screenWidth - 44) / 2.3));
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadRecommendations = async () => {
+      try {
+        setLoadingServices(true);
+        const data = await fetchServices();
+        if (isMounted && Array.isArray(data)) {
+          const featured = data.filter(s => s.isFeatured || s.isOnSale);
+          const list = featured.length >= 3 ? featured : data;
+          setRecommendedServices(list.slice(0, 10));
+        }
+      } catch {
+        // Fallback silently if service fetching fails
+      } finally {
+        if (isMounted) setLoadingServices(false);
+      }
+    };
+    loadRecommendations();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleServiceClick = (serviceId: string) => {
+    if (onViewDetails) {
+      onViewDetails(serviceId);
+    }
+    // Also set local state to ensure opening ServiceDetails modal
+    setSelectedServiceId(serviceId);
+  };
+
   return (
     <>
       <StatusBar
-        backgroundColor="#00a19c"
-        barStyle="light-content"
+        backgroundColor={colors.backgroundCard}
+        barStyle="dark-content"
         translucent={false}
       />
-      <View style={{ flex: 1, backgroundColor: colors.primary }}>
-        <View style={{ height: insets.top, backgroundColor: colors.primary }} />
-        <View style={styles.loginFullPageContainer}>
-          <ScrollView
-            style={styles.loginScrollContainer}
-            contentContainerStyle={styles.loginContentContainer}
-            showsVerticalScrollIndicator={false}
+      <View style={{ flex: 1, backgroundColor: colors.backgroundCard }}>
+        <View style={{ height: insets.top, backgroundColor: colors.backgroundCard }} />
+
+        {/* Clean Header Bar */}
+        <View
+          style={{
+            flexDirection: isRTL ? 'row-reverse' : 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingHorizontal: 16,
+            paddingVertical: 10,
+          }}
+        >
+          <TouchableOpacity
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 21,
+              backgroundColor: '#FFFFFF',
+              justifyContent: 'center',
+              alignItems: 'center',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.05,
+              shadowRadius: 5,
+              elevation: 2,
+              borderWidth: 1,
+              borderColor: 'rgba(44, 95, 93, 0.15)',
+            }}
+            onPress={handleBack}
+            activeOpacity={0.8}
           >
-            {/* Curved Header Background Block with topographic waves & integrated navigation */}
-            <View style={styles.loginHeaderBlock}>
-              <Svg
-                width="100%"
-                height="100%"
-                viewBox="0 0 375 130"
-                preserveAspectRatio="none"
-                style={styles.loginTopographicSvg}
-              >
-                <Path
-                  d="M-20 25 C80 70 180 15 300 60 T400 40"
-                  stroke="rgba(255,255,255,0.08)"
-                  strokeWidth={1.5}
-                  fill="none"
-                />
-                <Path
-                  d="M-20 45 C80 90 180 25 300 80 T400 60"
-                  stroke="rgba(255,255,255,0.12)"
-                  strokeWidth={1.5}
-                  fill="none"
-                />
-                <Path
-                  d="M-20 65 C80 110 180 35 300 100 T400 80"
-                  stroke="rgba(255,255,255,0.15)"
-                  strokeWidth={2}
-                  fill="none"
-                />
-              </Svg>
+            <Icon
+              name={isRTL ? 'chevron-forward' : 'chevron-back'}
+              size={20}
+              color="#0F172A"
+            />
+          </TouchableOpacity>
 
-              {/* Overlay Navigation Bar */}
+          <Text
+            style={{
+              fontSize: 18,
+              fontWeight: '700',
+              color: '#0F172A',
+              textAlign: 'center',
+              flex: 1,
+            }}
+          >
+            {t('myCart')}
+          </Text>
+
+          <TouchableOpacity
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 21,
+              backgroundColor: '#FFFFFF',
+              justifyContent: 'center',
+              alignItems: 'center',
+              borderWidth: 1,
+              borderColor: 'rgba(44, 95, 93, 0.15)',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.05,
+              shadowRadius: 5,
+              elevation: 2,
+              overflow: 'hidden',
+            }}
+            onPress={handleUserIconPress}
+            activeOpacity={0.8}
+          >
+            {user?.profilePicture && !imageError ? (
+              <Image
+                source={{
+                  uri: getImageUri(user.profilePicture) || undefined,
+                }}
+                style={{ width: '100%', height: '100%' }}
+                resizeMode="cover"
+                onError={() => setImageError(true)}
+              />
+            ) : (
+              <Icon name="person-outline" size={20} color={colors.primary} />
+            )}
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: 60 }}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* New Compact Empty Cart Hero Card */}
+          <View
+            style={{
+              backgroundColor: '#FFFFFF',
+              marginHorizontal: 16,
+              marginTop: 10,
+              borderRadius: 20,
+              padding: 18,
+              borderWidth: 1,
+              borderColor: 'rgba(44, 95, 93, 0.12)',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.04,
+              shadowRadius: 10,
+              elevation: 2,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: isRTL ? 'row-reverse' : 'row',
+                alignItems: 'center',
+                gap: 14,
+              }}
+            >
               <View
-                style={[
-                  styles.loginOverlayBar,
-                  isRTL && styles.loginOverlayBarRTL,
-                ]}
+                style={{
+                  width: 58,
+                  height: 58,
+                  borderRadius: 29,
+                  backgroundColor: '#F0FDFA',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  borderWidth: 1,
+                  borderColor: 'rgba(0, 161, 156, 0.18)',
+                  flexShrink: 0,
+                }}
               >
-                <TouchableOpacity
-                  style={styles.loginBackButtonCircle}
-                  onPress={handleBack}
-                  activeOpacity={0.8}
-                >
-                  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-                    <Path
-                      d={isRTL ? 'M9 5l7 7-7 7' : 'M15 19l-7-7 7-7'}
-                      stroke={colors.textWhite}
-                      strokeWidth={2.5}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </Svg>
-                </TouchableOpacity>
-
-                <Text
-                  style={[
-                    styles.headerTitle,
-                    { color: colors.textWhite },
-                    isRTL && styles.headerTitleRTL,
-                  ]}
-                >
-                  {t('myCart')}
-                </Text>
-
-                {/* Profile Button on the right for logged in user */}
-                <TouchableOpacity
-                  style={[
-                    styles.profileButton,
-                    { borderColor: colors.textWhite },
-                  ]}
-                  onPress={handleUserIconPress}
-                  activeOpacity={0.6}
-                  hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-                >
-                  {user?.profilePicture && !imageError ? (
-                    <Image
-                      source={{
-                        uri: getImageUri(user.profilePicture) || undefined,
-                      }}
-                      style={styles.profileIcon}
-                      resizeMode="cover"
-                      onError={() => setImageError(true)}
-                    />
-                  ) : (
-                    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-                      <Path
-                        d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"
-                        stroke={colors.textWhite}
-                        strokeWidth={2.2}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <Circle
-                        cx="12"
-                        cy="7"
-                        r="4"
-                        stroke={colors.textWhite}
-                        strokeWidth={2.2}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </Svg>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Curved Wave Divider (Transitions header to card background) */}
-            <View style={styles.loginCurveDivider}>
-              <Svg
-                height="40"
-                width="100%"
-                viewBox="0 0 375 40"
-                preserveAspectRatio="none"
-              >
-                <Path
-                  d="M0,25 C100,55 250,0 375,25 L375,40 L0,40 Z"
-                  fill={colors.backgroundCard}
-                />
-              </Svg>
-            </View>
-
-            {/* Empty Prompt Section */}
-            <View style={styles.loginPromptContainer}>
-              {/* Circular Container with Shopping Basket Icon */}
-              <View style={styles.loginPlaceholderCircle}>
-                <Svg width={44} height={44} viewBox="0 0 24 24" fill="none">
+                <Svg width={30} height={30} viewBox="0 0 24 24" fill="none">
                   <Path
                     d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
                     stroke={colors.primary}
@@ -187,38 +233,378 @@ export const EmptyCartView: React.FC<EmptyCartViewProps> = ({
                 </Svg>
               </View>
 
-              <Text
-                style={[
-                  styles.loginPromptTitle,
-                  isRTL && styles.loginPromptTitleRTL,
-                ]}
-              >
-                {isRTL ? 'سلتك فارغة' : 'Your Cart is Empty'}
-              </Text>
+              <View style={{ flex: 1, alignItems: isRTL ? 'flex-end' : 'flex-start' }}>
+                <Text
+                  style={{
+                    fontSize: 17,
+                    fontWeight: '700',
+                    color: '#0F172A',
+                    marginBottom: 3,
+                    textAlign: isRTL ? 'right' : 'left',
+                  }}
+                >
+                  {isRTL ? 'سلتك فارغة' : 'Your Cart is Empty'}
+                </Text>
 
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: '#64748B',
+                    lineHeight: 17,
+                    textAlign: isRTL ? 'right' : 'left',
+                  }}
+                >
+                  {isRTL
+                    ? 'اكتشف أفضل الخدمات والباقات الفاخرة لمناسبتك.'
+                    : 'Discover premium services & packages for your occasion.'}
+                </Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={{
+                backgroundColor: colors.primary,
+                paddingVertical: 11,
+                paddingHorizontal: 20,
+                borderRadius: 16,
+                flexDirection: isRTL ? 'row-reverse' : 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                marginTop: 14,
+                shadowColor: colors.primary,
+                shadowOffset: { width: 0, height: 3 },
+                shadowOpacity: 0.22,
+                shadowRadius: 6,
+                elevation: 3,
+              }}
+              onPress={() => onNavigate && onNavigate('services')}
+              activeOpacity={0.85}
+            >
+              <Icon name="compass-outline" size={17} color="#FFFFFF" />
               <Text
-                style={[
-                  styles.loginPromptText,
-                  isRTL && styles.loginPromptTextRTL,
-                ]}
+                style={{
+                  color: '#FFFFFF',
+                  fontSize: 13,
+                  fontWeight: '700',
+                  letterSpacing: 0.3,
+                }}
               >
-                {isRTL
-                  ? 'اكتشف خدماتنا وباقاتنا المميزة لجعل مناسبتك فريدة ومميزة.'
-                  : 'Explore our premium services and packages to make your occasion special.'}
+                {isRTL ? 'ابدأ التسوق' : 'EXPLORE SERVICES'}
               </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Recommended Services Section */}
+          <View style={{ marginTop: 20, paddingHorizontal: 16 }}>
+            <View
+              style={{
+                flexDirection: isRTL ? 'row-reverse' : 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 12,
+              }}
+            >
+              <View
+                style={{
+                  flexDirection: isRTL ? 'row-reverse' : 'row',
+                  alignItems: 'center',
+                  gap: 8,
+                }}
+              >
+                <View
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 14,
+                    backgroundColor: 'rgba(0, 161, 156, 0.1)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Icon name="sparkles" size={15} color={colors.primary} />
+                </View>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: '700',
+                    color: '#0F172A',
+                  }}
+                >
+                  {isRTL ? 'مقترحات قد تعجبك' : 'Recommended Services'}
+                </Text>
+              </View>
 
               <TouchableOpacity
-                style={styles.loginSubmitButton}
                 onPress={() => onNavigate && onNavigate('services')}
-                activeOpacity={0.8}
+                activeOpacity={0.7}
               >
-                <Text style={styles.loginSubmitButtonText}>
-                  {isRTL ? 'اكتشف الخدمات' : 'EXPLORE SERVICES'}
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: '600',
+                    color: colors.primary,
+                  }}
+                >
+                  {isRTL ? 'عرض الكل' : 'See All'}
                 </Text>
               </TouchableOpacity>
             </View>
-          </ScrollView>
-        </View>
+
+            {loadingServices ? (
+              <View style={{ paddingVertical: 35, alignItems: 'center' }}>
+                <ActivityIndicator size="small" color={colors.primary} />
+              </View>
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{
+                  paddingRight: isRTL ? 4 : 16,
+                  paddingLeft: isRTL ? 16 : 4,
+                  paddingVertical: 6,
+                }}
+              >
+                {recommendedServices.map(service => {
+                  const imageUrl =
+                    service.images && service.images.length > 0
+                      ? getServiceImageUrl(service.images[0])
+                      : '';
+                  const serviceName = isRTL
+                    ? service.nameAr || service.name
+                    : service.name;
+                  const vendorName = service.vendor?.name || '';
+
+                  // Price calculation (Original vs Discounted Sale Price)
+                  const hasDiscount =
+                    service.isOnSale &&
+                    service.salePrice !== undefined &&
+                    service.salePrice < service.price;
+                  const mainPrice = hasDiscount
+                    ? service.salePrice!
+                    : service.price;
+                  const originalPrice = hasDiscount ? service.price : null;
+                  const discountPercent =
+                    service.discountPercentage ||
+                    (hasDiscount
+                      ? Math.round(
+                          ((service.price - service.salePrice!) /
+                            service.price) *
+                            100,
+                        )
+                      : 0);
+
+                  return (
+                    <TouchableOpacity
+                      key={service._id}
+                      style={{
+                        width: cardWidth,
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: 18,
+                        overflow: 'hidden',
+                        borderWidth: 1,
+                        borderColor: 'rgba(44, 95, 93, 0.12)',
+                        marginRight: isRTL ? 0 : 12,
+                        marginLeft: isRTL ? 12 : 0,
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.05,
+                        shadowRadius: 8,
+                        elevation: 3,
+                      }}
+                      activeOpacity={0.88}
+                      onPress={() => handleServiceClick(service._id)}
+                    >
+                      <View style={{ position: 'relative' }}>
+                        <Image
+                          source={
+                            imageUrl
+                              ? { uri: imageUrl }
+                              : require('../../imgs/user.png')
+                          }
+                          style={{
+                            width: '100%',
+                            height: 110,
+                            backgroundColor: '#F1F5F9',
+                          }}
+                          resizeMode="cover"
+                        />
+
+                        {/* Rating Badge */}
+                        {service.rating ? (
+                          <View
+                            style={{
+                              position: 'absolute',
+                              top: 6,
+                              left: isRTL ? undefined : 6,
+                              right: isRTL ? 6 : undefined,
+                              backgroundColor: 'rgba(255, 255, 255, 0.92)',
+                              paddingHorizontal: 6,
+                              paddingVertical: 2,
+                              borderRadius: 10,
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              gap: 2,
+                            }}
+                          >
+                            <Icon name="star" size={11} color="#F59E0B" />
+                            <Text
+                              style={{
+                                fontSize: 10,
+                                fontWeight: '700',
+                                color: '#0F172A',
+                              }}
+                            >
+                              {service.rating.toFixed(1)}
+                            </Text>
+                          </View>
+                        ) : null}
+
+                        {/* Sale / Discount Badge */}
+                        {hasDiscount && (
+                          <View
+                            style={{
+                              position: 'absolute',
+                              top: 6,
+                              right: isRTL ? undefined : 6,
+                              left: isRTL ? 6 : undefined,
+                              backgroundColor: '#EF4444',
+                              paddingHorizontal: 6,
+                              paddingVertical: 2,
+                              borderRadius: 8,
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 9,
+                                fontWeight: '700',
+                                color: '#FFFFFF',
+                              }}
+                            >
+                              {discountPercent}% {isRTL ? 'خصم' : 'OFF'}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+
+                      <View style={{ padding: 10 }}>
+                        <Text
+                          style={{
+                            fontSize: 13,
+                            fontWeight: '700',
+                            color: '#0F172A',
+                            marginBottom: 2,
+                            textAlign: isRTL ? 'right' : 'left',
+                          }}
+                          numberOfLines={1}
+                        >
+                          {serviceName}
+                        </Text>
+
+                        {vendorName ? (
+                          <Text
+                            style={{
+                              fontSize: 10,
+                              color: '#64748B',
+                              marginBottom: 6,
+                              textAlign: isRTL ? 'right' : 'left',
+                            }}
+                            numberOfLines={1}
+                          >
+                            {vendorName}
+                          </Text>
+                        ) : null}
+
+                        {/* Pricing section with Sale Price and Original Price crossed out */}
+                        <View
+                          style={{
+                            flexDirection: isRTL ? 'row-reverse' : 'row',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginTop: 2,
+                          }}
+                        >
+                          <View
+                            style={{
+                              flexDirection: 'column',
+                              alignItems: isRTL ? 'flex-end' : 'flex-start',
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 13,
+                                fontWeight: '800',
+                                color: colors.primary,
+                              }}
+                            >
+                              {mainPrice.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
+                            </Text>
+
+                            {hasDiscount && originalPrice ? (
+                              <Text
+                                style={{
+                                  fontSize: 10,
+                                  color: '#94A3B8',
+                                  textDecorationLine: 'line-through',
+                                  fontWeight: '500',
+                                  marginTop: -1,
+                                }}
+                              >
+                                {originalPrice.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
+                              </Text>
+                            ) : null}
+                          </View>
+
+                          <View
+                            style={{
+                              width: 28,
+                              height: 28,
+                              borderRadius: 14,
+                              backgroundColor: colors.primary,
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              shadowColor: colors.primary,
+                              shadowOffset: { width: 0, height: 2 },
+                              shadowOpacity: 0.2,
+                              shadowRadius: 3,
+                              elevation: 2,
+                            }}
+                          >
+                            <Icon
+                              name={isRTL ? 'arrow-back' : 'arrow-forward'}
+                              size={14}
+                              color="#FFFFFF"
+                            />
+                          </View>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            )}
+          </View>
+        </ScrollView>
+
+        {/* Modal for Service Details Fallback */}
+        {selectedServiceId && (
+          <Modal
+            visible={!!selectedServiceId}
+            animationType="slide"
+            transparent={false}
+            statusBarTranslucent={true}
+            onRequestClose={() => setSelectedServiceId(null)}
+          >
+            <ServiceDetails
+              serviceId={selectedServiceId}
+              onBack={() => setSelectedServiceId(null)}
+              onNavigate={route => {
+                setSelectedServiceId(null);
+                if (onNavigate) onNavigate(route);
+              }}
+            />
+          </Modal>
+        )}
       </View>
     </>
   );

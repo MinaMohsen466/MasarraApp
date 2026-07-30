@@ -24,6 +24,8 @@ import { useNotification } from '../../contexts/NotificationContext';
 
 import { API_URL } from '../../config/api.config';
 import { fetchAddresses } from '../../services/api';
+import { getWishlist } from '../../services/wishlist';
+import { getUserBookings } from '../../services/bookingApi';
 
 interface Address {
   _id: string;
@@ -63,6 +65,10 @@ const UserProfile: React.FC<UserProfileProps> = ({
   const [showOrderHistory, setShowOrderHistory] = useState(false);
   const [showMyEvents, setShowMyEvents] = useState(false);
   const [defaultAddress, setDefaultAddress] = useState<string | null>(null);
+
+  const [wishlistCount, setWishlistCount] = useState(0);
+  const [ordersCount, setOrdersCount] = useState(0);
+  const [eventsCount, setEventsCount] = useState(0);
 
   const [showNotifications, setShowNotifications] = useState(false);
   const {
@@ -149,6 +155,45 @@ const UserProfile: React.FC<UserProfileProps> = ({
 
     loadDefaultAddress();
   }, [token]);
+
+  useEffect(() => {
+    const loadUserStats = async () => {
+      try {
+        const wishlistItems = await getWishlist();
+        setWishlistCount(wishlistItems ? wishlistItems.length : 0);
+      } catch {}
+
+      if (token) {
+        try {
+          const bookings = await getUserBookings(token);
+          if (Array.isArray(bookings)) {
+            setOrdersCount(bookings.length);
+            const now = new Date();
+            const activeEvents = bookings.filter(b => {
+              if (b.status === 'cancelled') return false;
+              const services = b.services || [];
+              if (services.length === 0) {
+                if (!b.eventDate) return true;
+                const eventDay = new Date(b.eventDate);
+                eventDay.setHours(23, 59, 59, 999);
+                return eventDay >= now;
+              }
+              return services.some((s: any) => {
+                if (s.status === 'cancelled') return false;
+                const svcDate = s.eventDate || b.eventDate;
+                if (!svcDate) return true;
+                const eventDay = new Date(svcDate);
+                eventDay.setHours(23, 59, 59, 999);
+                return eventDay >= now;
+              });
+            });
+            setEventsCount(activeEvents.length);
+          }
+        } catch {}
+      }
+    };
+    loadUserStats();
+  }, [token, navigationKey, showWishlist, showOrderHistory, showMyEvents]);
 
   const handleEditProfile = () => {
     setShowEditProfile(true);
@@ -240,125 +285,90 @@ const UserProfile: React.FC<UserProfileProps> = ({
     return (
       <>
         <StatusBar
-          backgroundColor="#00a19c"
-          barStyle="light-content"
+          backgroundColor={colors.backgroundCard}
+          barStyle="dark-content"
           translucent={false}
         />
         <View style={styles.primaryFlexContainer}>
           <View
-            style={{ height: insets.top, backgroundColor: colors.primary }}
+            style={{ height: insets.top, backgroundColor: colors.backgroundCard }}
           />
           <View style={styles.fullPageContainer}>
+            {/* Clean Header Bar */}
+            <View
+              style={[
+                styles.cleanHeaderBar,
+                isRTL && styles.cleanHeaderBarRTL,
+              ]}
+            >
+              {onBack ? (
+                <TouchableOpacity
+                  style={styles.headerBackButtonCircle}
+                  onPress={onBack}
+                  activeOpacity={0.8}
+                >
+                  <Icon
+                    name={isRTL ? 'chevron-forward' : 'chevron-back'}
+                    size={20}
+                    color="#0F172A"
+                  />
+                </TouchableOpacity>
+              ) : (
+                <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
+                  {isRTL ? 'الملف الشخصي' : 'Profile'}
+                </Text>
+              )}
+            </View>
+
             <ScrollView
               style={styles.scrollContainer}
               contentContainerStyle={styles.contentContainer}
               showsVerticalScrollIndicator={false}
             >
-              {/* Curved Header Background Block with topographic waves & integrated navigation */}
-              <View style={styles.profileHeaderBlock}>
-                <Svg
-                  width="100%"
-                  height="100%"
-                  viewBox="0 0 375 130"
-                  preserveAspectRatio="none"
-                  style={styles.topographicSvg}
-                >
-                  <Path
-                    d="M-20 25 C80 70 180 15 300 60 T400 40"
-                    stroke="rgba(255,255,255,0.08)"
-                    strokeWidth={1.5}
-                    fill="none"
-                  />
-                  <Path
-                    d="M-20 45 C80 90 180 25 300 80 T400 60"
-                    stroke="rgba(255,255,255,0.12)"
-                    strokeWidth={1.5}
-                    fill="none"
-                  />
-                  <Path
-                    d="M-20 65 C80 110 180 35 300 100 T400 80"
-                    stroke="rgba(255,255,255,0.15)"
-                    strokeWidth={2}
-                    fill="none"
-                  />
-                </Svg>
+              {/* Login Prompt Card */}
+              <View style={styles.userInfoSection}>
+                <View style={styles.profileCardFloating}>
+                  <View style={styles.avatarWrapperAbsolute}>
+                    <View style={styles.avatarOuterRing}>
+                      <View style={styles.profilePlaceholderLogin}>
+                        <Image
+                          source={require('../../imgs/user.png')}
+                          style={styles.profileIcon}
+                        />
+                      </View>
+                    </View>
+                  </View>
 
-                {/* Overlay Navigation Bar */}
-                <View
-                  style={[
-                    styles.headerOverlayBar,
-                    isRTL && styles.headerOverlayBarRTL,
-                  ]}
-                >
-                  {onBack && (
-                    <TouchableOpacity
-                      style={styles.headerBackButtonCircle}
-                      onPress={onBack}
-                      activeOpacity={0.8}
-                    >
-                      <Icon
-                        name={isRTL ? 'chevron-forward' : 'chevron-back'}
-                        size={20}
-                        color={colors.textWhite}
-                      />
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-
-              {/* Curved Wave Divider (Transitions header to card background) */}
-              <View style={styles.profileCurveDivider}>
-                <Svg
-                  height="40"
-                  width="100%"
-                  viewBox="0 0 375 40"
-                  preserveAspectRatio="none"
-                >
-                  <Path
-                    d="M0,25 C100,55 250,0 375,25 L375,40 L0,40 Z"
-                    fill={colors.backgroundCard}
-                  />
-                </Svg>
-              </View>
-
-              {/* Login Prompt Section */}
-              <View style={[styles.loginPromptContainer, styles.paddingTop0]}>
-                <View style={styles.profilePlaceholderLogin}>
-                  <Image
-                    source={require('../../imgs/user.png')}
-                    style={styles.profileIcon}
-                  />
-                </View>
-
-                <Text
-                  style={[
-                    styles.loginPromptTitleBold,
-                    isRTL && styles.loginPromptTitleRTL,
-                  ]}
-                >
-                  {isRTL ? 'مرحباً بك!' : 'Welcome!'}
-                </Text>
-
-                <Text
-                  style={[
-                    styles.loginPromptText,
-                    isRTL && styles.loginPromptTextRTL,
-                  ]}
-                >
-                  {isRTL
-                    ? 'الرجاء تسجيل الدخول للوصول إلى لوحة التحكم الخاصة بك'
-                    : 'Please log in to access your dashboard'}
-                </Text>
-
-                <TouchableOpacity
-                  style={styles.loginButtonRounded}
-                  onPress={handleLogin}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.loginButtonText}>
-                    {isRTL ? 'تسجيل الدخول' : 'Sign In'}
+                  <Text
+                    style={[
+                      styles.loginPromptTitleBold,
+                      isRTL && styles.loginPromptTitleRTL,
+                    ]}
+                  >
+                    {isRTL ? 'مرحباً بك في مسرة!' : 'Welcome to Masarra!'}
                   </Text>
-                </TouchableOpacity>
+
+                  <Text
+                    style={[
+                      styles.loginPromptText,
+                      isRTL && styles.loginPromptTextRTL,
+                    ]}
+                  >
+                    {isRTL
+                      ? 'سجل الدخول لاستكشاف حجز الفعاليات وإدارة طلباتك بسهولة'
+                      : 'Log in to book events and manage your orders seamlessly'}
+                  </Text>
+
+                  <TouchableOpacity
+                    style={styles.loginButtonRounded}
+                    onPress={handleLogin}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={styles.loginButtonText}>
+                      {isRTL ? 'تسجيل الدخول' : 'Sign In'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </ScrollView>
           </View>
@@ -370,188 +380,220 @@ const UserProfile: React.FC<UserProfileProps> = ({
   return (
     <>
       <StatusBar
-        backgroundColor="#00a19c"
-        barStyle="light-content"
+        backgroundColor={colors.backgroundCard}
+        barStyle="dark-content"
         translucent={false}
       />
       <View style={styles.primaryFlexContainer}>
-        <View style={{ height: insets.top, backgroundColor: colors.primary }} />
+        <View style={{ height: insets.top, backgroundColor: colors.backgroundCard }} />
         <View style={styles.fullPageContainer}>
+          {/* Top Clean Navigation Header Bar */}
+          <View
+            style={[
+              styles.cleanHeaderBar,
+              isRTL && styles.cleanHeaderBarRTL,
+            ]}
+          >
+            {onBack ? (
+              <TouchableOpacity
+                style={styles.headerBackButtonCircle}
+                onPress={onBack}
+                activeOpacity={0.8}
+              >
+                <Icon
+                  name={isRTL ? 'chevron-forward' : 'chevron-back'}
+                  size={20}
+                  color="#0F172A"
+                />
+              </TouchableOpacity>
+            ) : (
+              <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
+                {isRTL ? 'الملف الشخصي' : 'Profile'}
+              </Text>
+            )}
+
+            <TouchableOpacity
+              style={[
+                styles.headerBackButtonCircle,
+                styles.positionRelative,
+              ]}
+              onPress={handleOpenNotifications}
+              activeOpacity={0.8}
+            >
+              <Icon
+                name="notifications-outline"
+                size={20}
+                color="#0F172A"
+              />
+              {unreadCount > 0 && <View style={styles.notificationBadge} />}
+            </TouchableOpacity>
+          </View>
+
           {/* Scrollable Content */}
           <ScrollView
             style={styles.scrollContainer}
             contentContainerStyle={styles.contentContainer}
             showsVerticalScrollIndicator={false}
           >
-            {/* Curved Header Background Block with topographic waves & integrated navigation */}
-            <View style={styles.profileHeaderBlock}>
-              <Svg
-                width="100%"
-                height="100%"
-                viewBox="0 0 375 130"
-                preserveAspectRatio="none"
-                style={styles.topographicSvg}
-              >
-                <Path
-                  d="M-20 25 C80 70 180 15 300 60 T400 40"
-                  stroke="rgba(255,255,255,0.08)"
-                  strokeWidth={1.5}
-                  fill="none"
-                />
-                <Path
-                  d="M-20 45 C80 90 180 25 300 80 T400 60"
-                  stroke="rgba(255,255,255,0.12)"
-                  strokeWidth={1.5}
-                  fill="none"
-                />
-                <Path
-                  d="M-20 65 C80 110 180 35 300 100 T400 80"
-                  stroke="rgba(255,255,255,0.15)"
-                  strokeWidth={2}
-                  fill="none"
-                />
-              </Svg>
-
-              {/* Overlay Navigation Bar */}
-              <View
-                style={[
-                  styles.headerOverlayBar,
-                  isRTL && styles.headerOverlayBarRTL,
-                ]}
-              >
-                {onBack ? (
-                  <TouchableOpacity
-                    style={styles.headerBackButtonCircle}
-                    onPress={onBack}
-                    activeOpacity={0.8}
-                  >
-                    <Icon
-                      name={isRTL ? 'chevron-forward' : 'chevron-back'}
-                      size={20}
-                      color={colors.textWhite}
-                    />
-                  </TouchableOpacity>
-                ) : (
-                  <View style={styles.headerSpacer} />
-                )}
-
-                <TouchableOpacity
-                  style={[
-                    styles.headerBackButtonCircle,
-                    styles.positionRelative,
-                  ]}
-                  onPress={handleOpenNotifications}
-                  activeOpacity={0.8}
-                >
-                  <Icon
-                    name="notifications-outline"
-                    size={20}
-                    color={colors.textWhite}
-                  />
-                  {unreadCount > 0 && <View style={styles.notificationBadge} />}
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Curved Wave Divider (Transitions header to card background) */}
-            <View style={styles.profileCurveDivider}>
-              <Svg
-                height="40"
-                width="100%"
-                viewBox="0 0 375 40"
-                preserveAspectRatio="none"
-              >
-                <Path
-                  d="M0,25 C100,55 250,0 375,25 L375,40 L0,40 Z"
-                  fill={colors.backgroundCard}
-                />
-              </Svg>
-            </View>
-
-            {/* User Info Section (centered: avatar, name, email, address) */}
+            {/* Modern Floating Profile Card */}
             <View style={styles.userInfoSection}>
-              <View style={styles.profileImageContainer}>
-                {user.profilePicture || profilePicture ? (
-                  <Image
-                    source={{
-                      uri:
-                        getImageUri(user.profilePicture || profilePicture) ||
-                        undefined,
-                    }}
-                    style={styles.profileImage}
-                    resizeMode="cover"
-                    onError={e => {
-                      // eslint-disable-next-line no-console
-                      console.log('Image load error:', e.nativeEvent.error);
-                    }}
-                  />
-                ) : (
-                  <View style={styles.profileImagePlaceholder}>
-                    <Text style={styles.profileImagePlaceholderText}>
-                      {(user.name || userName || 'U').charAt(0).toUpperCase()}
-                    </Text>
+              <View style={styles.profileCardFloating}>
+                {/* Double Concentric Ring Avatar */}
+                <View style={styles.avatarWrapperAbsolute}>
+                  <View style={styles.avatarOuterRing}>
+                    <View style={styles.avatarInnerRing}>
+                      {user.profilePicture || profilePicture ? (
+                        <Image
+                          source={{
+                            uri:
+                              getImageUri(user.profilePicture || profilePicture) ||
+                              undefined,
+                          }}
+                          style={styles.profileImage}
+                          resizeMode="cover"
+                          onError={e => {
+                            // eslint-disable-next-line no-console
+                            console.log('Image load error:', e.nativeEvent.error);
+                          }}
+                        />
+                      ) : (
+                        <View style={styles.profileImagePlaceholder}>
+                          <Text style={styles.profileImagePlaceholderText}>
+                            {(user.name || userName || 'U')
+                              .charAt(0)
+                              .toUpperCase()}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
                   </View>
-                )}
-              </View>
+                </View>
 
-              <Text
-                style={[
-                  styles.userNameCentered,
-                  isRTL && styles.userNameCenteredRTL,
-                ]}
-              >
-                {user.name || userName}
-              </Text>
-
-              <Text
-                style={[
-                  styles.userEmailCentered,
-                  isRTL && styles.userEmailCenteredRTL,
-                ]}
-              >
-                {user.email ||
-                  _userEmail ||
-                  (isRTL ? 'لا يوجد بريد إلكتروني' : 'No email address')}
-              </Text>
-
-              {/* Location row */}
-              <View
-                style={[
-                  styles.userLocationRow,
-                  isRTL && styles.userLocationRowRTL,
-                ]}
-              >
-                <Svg
-                  width={14}
-                  height={14}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#666666"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                  <Circle cx={12} cy={10} r={3} />
-                </Svg>
+                {/* Name */}
                 <Text
                   style={[
-                    styles.userLocationText,
-                    isRTL && styles.userLocationTextRTL,
+                    styles.userNameCentered,
+                    isRTL && styles.userNameCenteredRTL,
                   ]}
                 >
-                  {defaultAddress || (isRTL ? 'الكويت' : 'Kuwait')}
+                  {user.name || userName}
                 </Text>
+
+                {/* Email / Handle */}
+                <Text
+                  style={[
+                    styles.userEmailCentered,
+                    isRTL && styles.userEmailCenteredRTL,
+                  ]}
+                >
+                  {user.email ||
+                    _userEmail ||
+                    (isRTL ? 'عميل مسرة المميز' : 'Masarra Member')}
+                </Text>
+
+                {/* Location Badge */}
+                <View
+                  style={[
+                    styles.userLocationBadge,
+                    isRTL && styles.userLocationBadgeRTL,
+                  ]}
+                >
+                  <Svg
+                    width={14}
+                    height={14}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke={colors.primary}
+                    strokeWidth={2.2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                    <Circle cx={12} cy={10} r={3} />
+                  </Svg>
+                  <Text
+                    style={[
+                      styles.userLocationText,
+                      isRTL && styles.userLocationTextRTL,
+                    ]}
+                  >
+                    {defaultAddress || (isRTL ? 'الكويت' : 'Kuwait')}
+                  </Text>
+                </View>
+
+                {/* Interactive Stats Row */}
+                <View
+                  style={[
+                    styles.statsContainer,
+                    isRTL && styles.statsContainerRTL,
+                  ]}
+                >
+                  <TouchableOpacity
+                    style={styles.statBox}
+                    onPress={handleOrderHistory}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.statNumber}>{ordersCount}</Text>
+                    <Text
+                      style={[
+                        styles.statLabel,
+                        isRTL && styles.statLabelRTL,
+                      ]}
+                    >
+                      {isRTL ? 'الطلبات' : 'Orders'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.statBox}
+                    onPress={handleMyEvents}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.statNumber}>{eventsCount}</Text>
+                    <Text
+                      style={[
+                        styles.statLabel,
+                        isRTL && styles.statLabelRTL,
+                      ]}
+                    >
+                      {isRTL ? 'الفعاليات' : 'Events'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.statBox}
+                    onPress={handleWishlist}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.statNumber}>{wishlistCount}</Text>
+                    <Text
+                      style={[
+                        styles.statLabel,
+                        isRTL && styles.statLabelRTL,
+                      ]}
+                    >
+                      {isRTL ? 'المفضلة' : 'Wishlist'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
 
-            <Text
-              style={[styles.pageBodyTitle, isRTL && styles.pageBodyTitleRTL]}
+            {/* Section Title */}
+            <View
+              style={[
+                styles.sectionHeaderRow,
+                isRTL && styles.sectionHeaderRowRTL,
+              ]}
             >
-              {isRTL ? 'الملف الشخصي' : 'Profile'}
-            </Text>
+              <Text
+                style={[styles.pageBodyTitle, isRTL && styles.pageBodyTitleRTL]}
+              >
+                {isRTL ? 'الملف الشخصي' : 'Profile'}
+              </Text>
+            </View>
 
-            {/* Menu Options */}
+            {/* Floating Menu Card Container */}
             <View style={styles.menuSection}>
               <View style={styles.menuContainer}>
                 {/* Edit Profile */}
@@ -566,19 +608,21 @@ const UserProfile: React.FC<UserProfileProps> = ({
                       isRTL && styles.menuItemLeftRTL,
                     ]}
                   >
-                    <Svg
-                      width={20}
-                      height={20}
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#4B5563"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <Path d="M12 20h9" />
-                      <Path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                    </Svg>
+                    <View style={styles.menuIconWrapper}>
+                      <Svg
+                        width={18}
+                        height={18}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke={colors.primary}
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <Path d="M12 20h9" />
+                        <Path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                      </Svg>
+                    </View>
                     <Text
                       style={[
                         styles.menuItemText,
@@ -593,7 +637,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
                     height={14}
                     viewBox="0 0 24 24"
                     fill="none"
-                    stroke="#A0AEC0"
+                    stroke="#94A3B8"
                     strokeWidth={2.5}
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -616,19 +660,21 @@ const UserProfile: React.FC<UserProfileProps> = ({
                       isRTL && styles.menuItemLeftRTL,
                     ]}
                   >
-                    <Svg
-                      width={20}
-                      height={20}
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#4B5563"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                      <Circle cx={12} cy={10} r={3} />
-                    </Svg>
+                    <View style={styles.menuIconWrapper}>
+                      <Svg
+                        width={18}
+                        height={18}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke={colors.primary}
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                        <Circle cx={12} cy={10} r={3} />
+                      </Svg>
+                    </View>
                     <Text
                       style={[
                         styles.menuItemText,
@@ -643,7 +689,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
                     height={14}
                     viewBox="0 0 24 24"
                     fill="none"
-                    stroke="#A0AEC0"
+                    stroke="#94A3B8"
                     strokeWidth={2.5}
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -666,19 +712,21 @@ const UserProfile: React.FC<UserProfileProps> = ({
                       isRTL && styles.menuItemLeftRTL,
                     ]}
                   >
-                    <Svg
-                      width={20}
-                      height={20}
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#4B5563"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <Rect x={4} y={4} width={16} height={16} rx={2} />
-                      <Path d="M9 9h6M9 13h6M9 17h4" />
-                    </Svg>
+                    <View style={styles.menuIconWrapper}>
+                      <Svg
+                        width={18}
+                        height={18}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke={colors.primary}
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <Rect x={4} y={4} width={16} height={16} rx={2} />
+                        <Path d="M9 9h6M9 13h6M9 17h4" />
+                      </Svg>
+                    </View>
                     <Text
                       style={[
                         styles.menuItemText,
@@ -693,7 +741,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
                     height={14}
                     viewBox="0 0 24 24"
                     fill="none"
-                    stroke="#A0AEC0"
+                    stroke="#94A3B8"
                     strokeWidth={2.5}
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -716,21 +764,23 @@ const UserProfile: React.FC<UserProfileProps> = ({
                       isRTL && styles.menuItemLeftRTL,
                     ]}
                   >
-                    <Svg
-                      width={20}
-                      height={20}
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#4B5563"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <Rect x={3} y={4} width={18} height={18} rx={2} ry={2} />
-                      <Line x1={16} y1={2} x2={16} y2={6} />
-                      <Line x1={8} y1={2} x2={8} y2={6} />
-                      <Line x1={3} y1={10} x2={21} y2={10} />
-                    </Svg>
+                    <View style={styles.menuIconWrapper}>
+                      <Svg
+                        width={18}
+                        height={18}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke={colors.primary}
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <Rect x={3} y={4} width={18} height={18} rx={2} ry={2} />
+                        <Line x1={16} y1={2} x2={16} y2={6} />
+                        <Line x1={8} y1={2} x2={8} y2={6} />
+                        <Line x1={3} y1={10} x2={21} y2={10} />
+                      </Svg>
+                    </View>
                     <Text
                       style={[
                         styles.menuItemText,
@@ -745,7 +795,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
                     height={14}
                     viewBox="0 0 24 24"
                     fill="none"
-                    stroke="#A0AEC0"
+                    stroke="#94A3B8"
                     strokeWidth={2.5}
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -768,18 +818,20 @@ const UserProfile: React.FC<UserProfileProps> = ({
                       isRTL && styles.menuItemLeftRTL,
                     ]}
                   >
-                    <Svg
-                      width={20}
-                      height={20}
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#4B5563"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <Path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                    </Svg>
+                    <View style={styles.menuIconWrapper}>
+                      <Svg
+                        width={18}
+                        height={18}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke={colors.primary}
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <Path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                      </Svg>
+                    </View>
                     <Text
                       style={[
                         styles.menuItemText,
@@ -794,7 +846,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
                     height={14}
                     viewBox="0 0 24 24"
                     fill="none"
-                    stroke="#A0AEC0"
+                    stroke="#94A3B8"
                     strokeWidth={2.5}
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -804,7 +856,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
                 </TouchableOpacity>
               </View>
 
-              {/* Logout Separate Card Container */}
+              {/* Separate Logout Card Container */}
               <View style={styles.logoutCardContainer}>
                 <TouchableOpacity
                   style={[styles.menuItemRow, isRTL && styles.menuItemRowRTL]}
@@ -817,20 +869,22 @@ const UserProfile: React.FC<UserProfileProps> = ({
                       isRTL && styles.menuItemLeftRTL,
                     ]}
                   >
-                    <Svg
-                      width={20}
-                      height={20}
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#E53935"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <Path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                      <Polyline points="16 17 21 12 16 7" />
-                      <Line x1={21} y1={12} x2={9} y2={12} />
-                    </Svg>
+                    <View style={styles.logoutIconWrapper}>
+                      <Svg
+                        width={18}
+                        height={18}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#EF4444"
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <Path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                        <Polyline points="16 17 21 12 16 7" />
+                        <Line x1={21} y1={12} x2={9} y2={12} />
+                      </Svg>
+                    </View>
                     <Text
                       style={[
                         styles.menuItemTextLogout,
@@ -845,7 +899,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
                     height={14}
                     viewBox="0 0 24 24"
                     fill="none"
-                    stroke="#E53935"
+                    stroke="#EF4444"
                     strokeWidth={2.5}
                     strokeLinecap="round"
                     strokeLinejoin="round"

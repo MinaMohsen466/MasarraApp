@@ -350,16 +350,22 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
   };
 
   const getReceiptServices = (booking: Booking) => {
-    return (booking.services || [])
-      .filter((s: any) => s.paymentStatus === 'paid')
-      .map((s: any) => ({
-        name:
-          s.service?.name ||
-          s.service?.nameAr ||
-          (isRTL ? 'Ø®Ø¯Ù…Ø©' : 'Service'),
-        quantity: s.quantity || 1,
-        total: s.price * (s.quantity || 1),
-      }));
+    const paidServices = (booking.services || []).filter(
+      (s: any) => s.paymentStatus === 'paid',
+    );
+    const targetList =
+      paidServices.length > 0 ? paidServices : booking.services || [];
+
+    return targetList.map((s: any) => ({
+      name:
+        s.service?.name ||
+        s.service?.nameAr ||
+        s.name ||
+        s.nameAr ||
+        (isRTL ? 'خدمة' : 'Service'),
+      quantity: s.quantity || 1,
+      total: (s.price || 0) * (s.quantity || 1),
+    }));
   };
 
   // Cancel booking
@@ -813,87 +819,50 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
     return (
       <>
         <StatusBar
-          backgroundColor="#00a19c"
-          barStyle="light-content"
+          backgroundColor={colors.backgroundCard}
+          barStyle="dark-content"
           translucent={false}
         />
-        <View style={{ flex: 1, backgroundColor: colors.primary }}>
+        <View style={{ flex: 1, backgroundColor: colors.backgroundCard }}>
           <View
-            style={{ height: insets.top, backgroundColor: colors.primary }}
+            style={{ height: insets.top, backgroundColor: colors.backgroundCard }}
           />
           <View style={[styles.container, { position: 'relative' }]}>
-            {/* Curved Header Background Block with topographic waves & integrated navigation */}
-            <View style={styles.profileHeaderBlock}>
-              <Svg
-                width="100%"
-                height="100%"
-                viewBox="0 0 375 110"
-                preserveAspectRatio="none"
-                style={styles.topographicSvg}
-              >
-                <Path
-                  d="M-20 20 C80 55 180 12 300 45 T400 35"
-                  stroke="rgba(255,255,255,0.08)"
-                  strokeWidth={1.5}
-                  fill="none"
-                />
-                <Path
-                  d="M-20 35 C80 70 180 20 300 60 T400 50"
-                  stroke="rgba(255,255,255,0.12)"
-                  strokeWidth={1.5}
-                  fill="none"
-                />
-                <Path
-                  d="M-20 50 C80 85 180 28 300 75 T400 65"
-                  stroke="rgba(255,255,255,0.15)"
-                  strokeWidth={2}
-                  fill="none"
-                />
-              </Svg>
+            {/* Clean Header Bar */}
+            <View
+              style={[
+                styles.cleanHeaderBar,
+                isRTL && styles.cleanHeaderBarRTL,
+              ]}
+            >
+              {onBack ? (
+                <TouchableOpacity
+                  style={styles.headerBackButtonCircle}
+                  onPress={onBack}
+                  activeOpacity={0.8}
+                >
+                  <Icon
+                    name={isRTL ? 'chevron-forward' : 'chevron-back'}
+                    size={20}
+                    color="#0F172A"
+                  />
+                </TouchableOpacity>
+              ) : (
+                <View style={styles.headerSpacer} />
+              )}
 
-              {/* Overlay Navigation Bar */}
-              <View
+              <Text
                 style={[
-                  styles.headerOverlayBar,
-                  isRTL && styles.headerOverlayBarRTL,
+                  styles.headerBarTitle,
+                  isRTL && styles.headerBarTitleRTL,
                 ]}
               >
-                {onBack && (
-                  <TouchableOpacity
-                    style={styles.headerBackButtonCircle}
-                    onPress={onBack}
-                    activeOpacity={0.8}
-                  >
-                    <Icon
-                      name={isRTL ? 'chevron-forward' : 'chevron-back'}
-                      size={20}
-                      color={colors.textWhite}
-                    />
-                  </TouchableOpacity>
-                )}
-              </View>
+                {isRTL ? 'سجل الطلبات' : 'Order History'}
+              </Text>
+
+              <View style={styles.headerSpacer} />
             </View>
 
-            {/* Curved Wave Divider (Transitions header to card background) */}
-            <View style={styles.profileCurveDivider}>
-              <Svg
-                height="30"
-                width="100%"
-                viewBox="0 0 375 30"
-                preserveAspectRatio="none"
-              >
-                <Path
-                  d="M0,20 C100,40 250,0 375,20 L375,30 L0,30 Z"
-                  fill={colors.background}
-                />
-              </Svg>
-            </View>
-
-            <Text
-              style={[styles.pageBodyTitle, isRTL && styles.pageBodyTitleRTL]}
-            >
-              {isRTL ? 'سجل الطلبات' : 'Order History'}
-            </Text>
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.primary} />
             </View>
@@ -906,89 +875,47 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
   return (
     <>
       <StatusBar
-        backgroundColor="#00a19c"
-        barStyle="light-content"
+        backgroundColor={colors.backgroundCard}
+        barStyle="dark-content"
         translucent={false}
       />
-      <View style={{ flex: 1, backgroundColor: colors.primary }}>
-        <View style={{ height: insets.top, backgroundColor: colors.primary }} />
+      <View style={{ flex: 1, backgroundColor: colors.backgroundCard }}>
+        <View style={{ height: insets.top, backgroundColor: colors.backgroundCard }} />
         <View style={[styles.container, { position: 'relative' }]}>
-          {/* Curved Header Background Block with topographic waves & integrated navigation */}
-          <View style={styles.profileHeaderBlock}>
-            <Svg
-              width="100%"
-              height="100%"
-              viewBox="0 0 375 110"
-              preserveAspectRatio="none"
-              style={styles.topographicSvg}
-            >
-              <Path
-                d="M-20 20 C80 55 180 12 300 45 T400 35"
-                stroke="rgba(255,255,255,0.08)"
-                strokeWidth={1.5}
-                fill="none"
-              />
-              <Path
-                d="M-20 35 C80 70 180 20 300 60 T400 50"
-                stroke="rgba(255,255,255,0.12)"
-                strokeWidth={1.5}
-                fill="none"
-              />
-              <Path
-                d="M-20 50 C80 85 180 28 300 75 T400 65"
-                stroke="rgba(255,255,255,0.15)"
-                strokeWidth={2}
-                fill="none"
-              />
-            </Svg>
+          {/* Clean Navigation Header Bar */}
+          <View
+            style={[
+              styles.cleanHeaderBar,
+              isRTL && styles.cleanHeaderBarRTL,
+            ]}
+          >
+            {onBack ? (
+              <TouchableOpacity
+                style={styles.headerBackButtonCircle}
+                onPress={onBack}
+                activeOpacity={0.8}
+              >
+                <Icon
+                  name={isRTL ? 'chevron-forward' : 'chevron-back'}
+                  size={20}
+                  color="#0F172A"
+                />
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.headerSpacer} />
+            )}
 
-            {/* Overlay Navigation Bar */}
-            <View
+            <Text
               style={[
-                styles.headerOverlayBar,
-                isRTL && styles.headerOverlayBarRTL,
+                styles.headerBarTitle,
+                isRTL && styles.headerBarTitleRTL,
               ]}
             >
-              {onBack ? (
-                <TouchableOpacity
-                  style={styles.headerBackButtonCircle}
-                  onPress={onBack}
-                  activeOpacity={0.8}
-                >
-                  <Icon
-                    name={isRTL ? 'chevron-forward' : 'chevron-back'}
-                    size={20}
-                    color={colors.textWhite}
-                  />
-                </TouchableOpacity>
-              ) : (
-                <View style={styles.headerSpacer} />
-              )}
+              {isRTL ? 'سجل الطلبات' : 'Order History'}
+            </Text>
 
-              <View style={styles.headerSpacer} />
-            </View>
+            <View style={styles.headerSpacer} />
           </View>
-
-          {/* Curved Wave Divider (Transitions header to card background) */}
-          <View style={styles.profileCurveDivider}>
-            <Svg
-              height="30"
-              width="100%"
-              viewBox="0 0 375 30"
-              preserveAspectRatio="none"
-            >
-              <Path
-                d="M0,20 C100,40 250,0 375,20 L375,30 L0,30 Z"
-                fill={colors.background}
-              />
-            </Svg>
-          </View>
-
-          <Text
-            style={[styles.pageBodyTitle, isRTL && styles.pageBodyTitleRTL]}
-          >
-            {isRTL ? 'سجل الطلبات' : 'Order History'}
-          </Text>
 
           {/* Filter Buttons */}
           <View style={styles.filterContainer}>
@@ -1660,17 +1587,26 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
                           !eventDateHasPassed) ||
                         showPayButton;
 
+                      const isPaid =
+                        booking.paymentStatus === 'paid' ||
+                        booking.paymentStatus === 'partial' ||
+                        (booking.services &&
+                          booking.services.some(
+                            (s: any) => s.paymentStatus === 'paid',
+                          ));
+
                       const showReceiptButton =
-                        booking.paymentStatus === 'paid';
+                        isPaid ||
+                        booking.paymentStatus === 'paid' ||
+                        booking.status === 'confirmed' ||
+                        booking.status === 'completed';
+
                       const hasQR =
                         (booking.status === 'confirmed' ||
                           booking.status === 'completed') &&
-                        (booking.paymentStatus === 'paid' || isFree) &&
+                        (isPaid || isFree) &&
                         qrAllowedBookings.has(booking._id);
 
-                      const isPaid =
-                        booking.paymentStatus === 'paid' ||
-                        booking.paymentStatus === 'partial';
                       const cancelRequestStatus = booking.cancellationRequest?.status;
                       const hasPendingCancelRequest = cancelRequestStatus === 'requested';
                       const canRequestCancellation =
