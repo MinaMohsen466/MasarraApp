@@ -14,6 +14,7 @@ import {
   Platform,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  StatusBar,
 } from 'react-native';
 import {
   SafeAreaView,
@@ -24,6 +25,7 @@ import Svg, { Path } from 'react-native-svg';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useSocket } from '../contexts/SocketContext';
 import { API_URL } from '../config/api.config';
+import { LogoLoader } from '../components/LogoLoader';
 
 interface Message {
   _id: string;
@@ -67,7 +69,10 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
             'Content-Type': 'application/json',
           },
         });
-      } catch {}
+      } catch (error) {
+        // Non-fatal, but the unread badge stays until the next successful call.
+        console.error('[Chat] Failed to mark messages as read:', error);
+      }
     },
     [],
   );
@@ -494,12 +499,18 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
 
   const renderHeader = () => (
     <View style={styles.header}>
-      <TouchableOpacity onPress={onBack} style={styles.backButton}>
-        <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
+        <Svg
+          width={24}
+          height={24}
+          viewBox="0 0 24 24"
+          fill="none"
+          style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined}
+        >
           <Path
             d="M15 18l-6-6 6-6"
             stroke="#00695C"
-            strokeWidth={2}
+            strokeWidth={2.2}
             strokeLinecap="round"
             strokeLinejoin="round"
           />
@@ -507,11 +518,35 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
       </TouchableOpacity>
       <View style={styles.headerContent}>
         <View style={styles.headerAvatarPlaceholder}>
-          <Text style={styles.headerAvatarText}>S</Text>
+          <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+            <Path
+              d="M12 2C6.477 2 2 6.03 2 11c0 2.12.83 4.07 2.22 5.57L3 21l4.83-1.42C9.28 20.08 10.6 20.4 12 20.4c5.523 0 10-4.03 10-9.4S17.523 2 12 2z"
+              fill="rgba(255,255,255,0.2)"
+              stroke="#ffffff"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <Path
+              d="M8 11.5h.01M12 11.5h.01M16 11.5h.01"
+              stroke="#ffffff"
+              strokeWidth={2.8}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </Svg>
         </View>
-        <Text style={styles.headerTitle}>
-          {isRTL ? 'الدعم الفني' : 'Support'}
-        </Text>
+        <View style={styles.headerTitleWrap}>
+          <Text style={styles.headerTitle}>
+            {isRTL ? 'الدعم الفني' : 'Support'}
+          </Text>
+          <View style={styles.onlineRow}>
+            <View style={styles.onlineDot} />
+            <Text style={styles.onlineText}>
+              {isRTL ? 'متصل الآن' : 'Online'}
+            </Text>
+          </View>
+        </View>
       </View>
       <View style={styles.placeholder} />
     </View>
@@ -520,9 +555,10 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <StatusBar backgroundColor="#ffffff" barStyle="dark-content" translucent={false} />
         {renderHeader()}
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#00695C" />
+          <LogoLoader />
         </View>
       </SafeAreaView>
     );
@@ -530,6 +566,7 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
 
   return (
     <View style={styles.container}>
+      <StatusBar backgroundColor="#ffffff" barStyle="dark-content" translucent={false} />
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
         {renderHeader()}
 
@@ -644,10 +681,11 @@ const ChatConversation: React.FC<ChatConversationProps> = ({ onBack }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#ffffff',
   },
   safeArea: {
     flex: 1,
+    backgroundColor: '#ffffff',
   },
   inputWrapper: {
     position: 'absolute',
@@ -678,23 +716,38 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   headerAvatarPlaceholder: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: '#00695C',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 10,
   },
-  headerAvatarText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#fff',
+  headerTitleWrap: {
+    flex: 1,
+  },
+  onlineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 1,
+  },
+  onlineDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: '#10B981',
+    marginRight: 4,
+  },
+  onlineText: {
+    fontSize: 11,
+    color: '#10B981',
+    fontWeight: '500',
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#212121',
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#111827',
     flex: 1,
   },
   placeholder: {

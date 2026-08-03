@@ -5,9 +5,7 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
-  ActivityIndicator,
   useWindowDimensions,
-  RefreshControl,
   StatusBar,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -26,6 +24,8 @@ import VendorHeader from '../VendorHeader/VendorHeader';
 import SortModal from '../SortModal/SortModal';
 import FilterModal from '../FilterModal/FilterModal';
 import { VendorReviewsModal, ExtendedReview } from '../VendorReviewsModal/VendorReviewsModal';
+import { useLogoRefresh, PullToRefresh } from '../LogoRefreshControl';
+import { LogoLoader } from '../LogoLoader';
 
 interface ServicesPageProps {
   onSelectService?: (service: Service) => void;
@@ -56,13 +56,20 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
   const backIconSize = isTablet ? 18 : 20;
   const queryClient = useQueryClient(); // For prefetching
   const { data: services, isLoading, error, refetch } = useServices();
-  const { data: packages } = useVendorPackages(vendorId || '');
-  const { data: vendors, isLoading: loadingVendors } = useVendors();
+  const { data: packages, refetch: refetchPackages } = useVendorPackages(
+    vendorId || '',
+  );
+  const {
+    data: vendors,
+    isLoading: loadingVendors,
+    refetch: refetchVendors,
+  } = useVendors();
 
   const [showFilter, setShowFilter] = useState(false);
   const [showSort, setShowSort] = useState(false);
   const [sortBy, setSortBy] = useState<string>('newest');
-  const [refreshing, setRefreshing] = useState(false);
+  // Bumped on pull-to-refresh to re-run the rating effects (see `reload`).
+  const [refreshTick, setRefreshTick] = useState(0);
 
   const [filters, setFilters] = useState<{
     minPrice?: number;
@@ -131,7 +138,8 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
         } = {};
 
         const ratingsPromises = packages.map(async pkg => {
-          if (packageRatings[pkg._id]) return null;
+          // No "already loaded" skip: on a pull-to-refresh the cached rating is
+          // exactly the value the user is asking us to re-check.
           if (!pkg.service?._id) return null;
           try {
             const reviewsData = await getServiceReviews(pkg.service._id, 1, 1);
@@ -155,21 +163,34 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
         if (Object.keys(ratingsData).length > 0) {
           setPackageRatings(prev => ({ ...prev, ...ratingsData }));
         }
-      } catch { }
+      } catch (ratingsError) {
+        // Package ratings silently disappear from the list.
+        console.error(
+          '[ServicesPage] Failed to load package ratings:',
+          ratingsError,
+        );
+      }
     };
 
     loadRatings();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [packages]);
+  }, [packages, refreshTick]);
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    try {
-      await refetch();
-    } finally {
-      setRefreshing(false);
-    }
-  }, [refetch]);
+  // This screen renders services, the vendor's packages and the vendor header —
+  // refetching only the services left the packages and the vendor's rating
+  // showing whatever they were when the screen mounted.
+  const reload = useCallback(async () => {
+    // Ratings are loaded by effects, not queries. React Query's structural
+    // sharing hands back the *same* array when nothing changed, so the effects
+    // would not re-run on their data deps alone — this tick is what forces them.
+    setRefreshTick(tick => tick + 1);
+    await Promise.all([
+      refetch(),
+      vendorId ? refetchPackages() : Promise.resolve(),
+      vendorId ? refetchVendors() : Promise.resolve(),
+    ]);
+  }, [refetch, refetchPackages, refetchVendors, vendorId]);
+
+  const { refreshing, onRefresh } = useLogoRefresh(reload);
 
   // Prefetch reviews for visible services - optimized approach
   useEffect(() => {
@@ -234,11 +255,17 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
         });
 
         setServiceRatings(ratingsData);
-      } catch { }
+      } catch (ratingsError) {
+        // Same for service ratings — reads as "no reviews" rather than a fault.
+        console.error(
+          '[ServicesPage] Failed to load service ratings:',
+          ratingsError,
+        );
+      }
     };
 
     loadRatings();
-  }, [filteredServices]);
+  }, [filteredServices, refreshTick]);
 
   // Fetch vendor rating from reviews API
   useEffect(() => {
@@ -297,7 +324,12 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
         });
         setVendorReviewsList(combinedReviews);
         setVendorDistribution(dist);
-      } catch {
+      } catch (reviewsError) {
+        // The vendor reviews panel renders empty with no explanation.
+        console.error(
+          '[ServicesPage] Failed to load vendor reviews:',
+          reviewsError,
+        );
       } finally {
         setLoadingVendorReviews(false);
       }
@@ -749,7 +781,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
         )}
 
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <LogoLoader />
           <Text style={[styles.loadingText, isRTL && styles.textRTL]}>
             {isRTL ? 'جاري تحميل الخدمات...' : 'Loading services...'}
           </Text>
@@ -762,7 +794,7 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <LogoLoader />
         <Text style={[styles.loadingText, isRTL && styles.textRTL]}>
           {isRTL ? 'جاري تحميل الخدمات...' : 'Loading services...'}
         </Text>
@@ -880,16 +912,10 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
       )}
 
       {/* Services Grid */}
+      <PullToRefresh refreshing={refreshing} onRefresh={onRefresh}>
+        {scrollProps => (
       <FlatList
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
-            progressBackgroundColor="#ffffff"
-          />
-        }
+        {...scrollProps}
         data={sortedAndFilteredServices}
         renderItem={renderServiceCard}
         keyExtractor={item => item._id}
@@ -961,6 +987,8 @@ const ServicesPage: React.FC<ServicesPageProps> = ({
           </View>
         }
       />
+        )}
+      </PullToRefresh>
 
       {/* Sort Modal */}
       <SortModal

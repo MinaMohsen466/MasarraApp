@@ -104,56 +104,23 @@ export interface Booking {
 }
 
 /**
- * Fetch all bookings (for availability checking)
- */
-export const fetchBookings = async (token?: string): Promise<Booking[]> => {
-  try {
-    const headers: any = {
-      'Content-Type': 'application/json',
-    };
-
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
-
-    const response = await fetch(`${API_BASE_URL}/bookings`, {
-      method: 'GET',
-      headers,
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch bookings: ${response.statusText}`);
-    }
-
-    const data: Booking[] = await response.json();
-    return data;
-  } catch (error) {
-    throw error;
-  }
-};
-
-/**
  * Fetch user bookings (for customer order history)
  */
 export const getUserBookings = async (token: string): Promise<Booking[]> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/bookings`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-    });
+  const response = await fetch(`${API_BASE_URL}/bookings`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch user bookings: ${response.statusText}`);
-    }
-
-    const data: Booking[] = await response.json();
-    return data;
-  } catch (error) {
-    throw error;
+  if (!response.ok) {
+    throw new Error(`Failed to fetch user bookings: ${response.statusText}`);
   }
+
+  const data: Booking[] = await response.json();
+  return data;
 };
 
 /**
@@ -162,26 +129,22 @@ export const getUserBookings = async (token: string): Promise<Booking[]> => {
 export const getUserDashboardBookings = async (
   token: string,
 ): Promise<Booking[]> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/dashboard/user`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-    });
+  const response = await fetch(`${API_BASE_URL}/dashboard/user`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
-    if (!response.ok) {
-      throw new Error(
-        `Failed to fetch user dashboard bookings: ${response.statusText}`,
-      );
-    }
-
-    const data = await response.json();
-    return Array.isArray(data?.myBookings) ? data.myBookings : [];
-  } catch (error) {
-    throw error;
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch user dashboard bookings: ${response.statusText}`,
+    );
   }
+
+  const data = await response.json();
+  return Array.isArray(data?.myBookings) ? data.myBookings : [];
 };
 
 /**
@@ -192,29 +155,25 @@ export const requestBookingCancellation = async (
   bookingId: string,
   reason: string,
 ): Promise<{ success: boolean; eligibility?: any; error?: string }> => {
-  try {
-    const response = await fetch(
-      `${API_BASE_URL}/bookings/${bookingId}/cancellation-request`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ reason }),
+  const response = await fetch(
+    `${API_BASE_URL}/bookings/${bookingId}/cancellation-request`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify({ reason }),
+    },
+  );
+
+  const responseData = await parseJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(
+      responseData?.error || 'Failed to submit cancellation request',
     );
-
-    const responseData = await parseJsonResponse(response);
-
-    if (!response.ok) {
-      throw new Error(
-        responseData?.error || 'Failed to submit cancellation request',
-      );
-    }
-
-    return responseData;
-  } catch (error: any) {
-    throw error;
   }
+
+  return responseData;
 };

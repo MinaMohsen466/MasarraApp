@@ -5,13 +5,13 @@ import {
   TouchableOpacity,
   Modal,
   ScrollView,
-  ActivityIndicator,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { styles } from './styles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { checkTimeSlotAvailability } from '../../services/api';
+import { LogoLoader } from '../LogoLoader';
 
 interface TimePickerModalProps {
   visible: boolean;
@@ -80,7 +80,11 @@ const TimePickerModal: React.FC<TimePickerModalProps> = ({
       });
 
       setTimeSlots(filteredSlots);
-    } catch {
+    } catch (error) {
+      // NOTE: timeSlots is left untouched, so a failed load keeps the slots
+      // fetched for the previously selected date on screen as if they applied
+      // to the new one.
+      console.error('[TimePicker] Failed to load time slots:', error);
     } finally {
       setLoading(false);
     }
@@ -155,7 +159,7 @@ const TimePickerModal: React.FC<TimePickerModalProps> = ({
           >
             {loading ? (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={colors.primary} />
+                <LogoLoader />
                 <Text style={styles.loadingText}>
                   {isRTL ? 'جاري التحميل...' : 'Loading...'}
                 </Text>

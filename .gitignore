@@ -33,6 +33,11 @@ local.properties
 .cxx/
 *.keystore
 !debug.keystore
+*.jks
+
+# Signing credentials. These belong in ~/.gradle/gradle.properties, but ignore
+# the project copy too so a stray password never reaches the repository.
+android/gradle.properties
 .kotlin/
 
 # node.js

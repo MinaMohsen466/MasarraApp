@@ -25,7 +25,7 @@ import { useNotification } from '../../contexts/NotificationContext';
 import { API_URL } from '../../config/api.config';
 import { fetchAddresses } from '../../services/api';
 import { getWishlist } from '../../services/wishlist';
-import { getUserBookings } from '../../services/bookingApi';
+import { getUserDashboardBookings } from '../../services/bookingApi';
 
 interface Address {
   _id: string;
@@ -161,35 +161,54 @@ const UserProfile: React.FC<UserProfileProps> = ({
       try {
         const wishlistItems = await getWishlist();
         setWishlistCount(wishlistItems ? wishlistItems.length : 0);
-      } catch {}
+      } catch (error) {
+        // Leaves the counter at 0, which reads as an empty wishlist rather than
+        // a load failure.
+        console.error('[Profile] Failed to load wishlist count:', error);
+      }
 
       if (token) {
         try {
-          const bookings = await getUserBookings(token);
+          // Same endpoint the Orders and Events screens read. `/bookings`
+          // returns a different set — it skips the dashboard's pruning of
+          // bookings whose slot was lost — so the two counters disagreed with
+          // the lists they link to.
+          const bookings = await getUserDashboardBookings(token);
           if (Array.isArray(bookings)) {
             setOrdersCount(bookings.length);
+
+            // One per upcoming, non-cancelled service — the exact row MyEvents
+            // renders. Counting bookings instead made a two-service booking
+            // read as "1 event" next to a list showing two.
             const now = new Date();
-            const activeEvents = bookings.filter(b => {
-              if (b.status === 'cancelled') return false;
+            const isUpcoming = (date?: string) => {
+              if (!date) return true;
+              const eventDay = new Date(date);
+              eventDay.setHours(23, 59, 59, 999);
+              return eventDay >= now;
+            };
+
+            const activeEvents = bookings.reduce((count, b) => {
+              if (b.status === 'cancelled') return count;
               const services = b.services || [];
               if (services.length === 0) {
-                if (!b.eventDate) return true;
-                const eventDay = new Date(b.eventDate);
-                eventDay.setHours(23, 59, 59, 999);
-                return eventDay >= now;
+                return count + (isUpcoming(b.eventDate) ? 1 : 0);
               }
-              return services.some((s: any) => {
-                if (s.status === 'cancelled') return false;
-                const svcDate = s.eventDate || b.eventDate;
-                if (!svcDate) return true;
-                const eventDay = new Date(svcDate);
-                eventDay.setHours(23, 59, 59, 999);
-                return eventDay >= now;
-              });
-            });
-            setEventsCount(activeEvents.length);
+              return (
+                count +
+                services.filter(
+                  s =>
+                    s.status !== 'cancelled' &&
+                    isUpcoming(s.eventDate || b.eventDate),
+                ).length
+              );
+            }, 0);
+            setEventsCount(activeEvents);
           }
-        } catch {}
+        } catch (error) {
+          // Same here: order and event counts stay at 0 and look genuine.
+          console.error('[Profile] Failed to load booking stats:', error);
+        }
       }
     };
     loadUserStats();

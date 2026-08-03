@@ -17,7 +17,7 @@ import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { login, User } from '../../services/api';
-import { API_URL, getWebUrl } from '../../config/api.config';
+import { ADMIN_URL, API_URL, getWebUrl } from '../../config/api.config';
 import VerifyEmail from '../../screens/VerifyEmail';
 import ForgotPasswordModal from './ForgotPasswordModal';
 import MultiStepSignup from './MultiStepSignup';
@@ -120,7 +120,7 @@ const Auth: React.FC<AuthProps> = ({
   const handleRoleBasedNavigation = async (role: string) => {
     if (role === 'admin') {
       try {
-        await Linking.openURL('http://localhost:5173/admin');
+        await Linking.openURL(ADMIN_URL);
       } catch {
         showAlert(
           isRTL ? 'خطأ' : 'Error',
@@ -213,7 +213,14 @@ const Auth: React.FC<AuthProps> = ({
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ userId }),
             });
-          } catch {}
+          } catch (resendError) {
+            // The verification screen opens either way, so a failure here left
+            // the user waiting for a code that was never sent.
+            console.error(
+              '[Auth] Failed to resend verification code:',
+              resendError,
+            );
+          }
           // Show verification screen directly without alert
           setShowVerifyEmail(true);
           return;

@@ -6,7 +6,6 @@ import {
   FlatList,
   TouchableOpacity,
   Image,
-  ActivityIndicator,
   StyleSheet,
   Dimensions,
   StatusBar,
@@ -23,6 +22,7 @@ import { getServiceImageUrl, Service } from '../services/servicesApi';
 import { getImageUrl, Occasion } from '../services/api';
 import { usePackages } from '../hooks/usePackages';
 import { colors } from '../constants/colors';
+import { LogoLoader } from '../components/LogoLoader';
 
 interface SearchProps {
   onBack?: () => void;
@@ -727,7 +727,7 @@ const Search: React.FC<SearchProps> = ({
         <View style={styles.resultsContainer}>
           {isLoading ? (
             <View style={styles.centerContent}>
-              <ActivityIndicator size="large" color={colors.primary} />
+              <LogoLoader />
               <Text style={styles.loadingText}>
                 {isRTL ? 'جاري التحميل...' : 'Loading...'}
               </Text>

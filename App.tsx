@@ -13,6 +13,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import colors from './src/constants/colors';
 import { AppState, AppStateStatus } from 'react-native';
 import { ErrorBoundary } from "./src/components/common/ErrorBoundary";
+import { ScreenTransition } from "./src/components/ScreenTransition";
 
 // Set up AppState listener for React Query to refetch on app foreground
 focusManager.setEventListener((handleFocus) => {
@@ -85,6 +86,11 @@ function AppContent() {
   const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
   const [initialShowSignup, setInitialShowSignup] = useState<boolean>(false);
   const [currentRoute, setCurrentRoute] = useState<string>('home');
+  // Which way the next screen swap should slide. Set by whoever changes the
+  // route, read by ScreenTransition.
+  const [transitionDirection, setTransitionDirection] = useState<
+    'forward' | 'back'
+  >('forward');
   const [profileNavigationKey, setProfileNavigationKey] = useState<number>(0);
   const [showBottomNav, setShowBottomNav] = useState<boolean>(true);
   const [selectedVendorId, setSelectedVendorId] = useState<string | undefined>(undefined);
@@ -121,6 +127,8 @@ function AppContent() {
 
   useEffect(() => {
     if (prevUserRef.current && !user) {
+      // Being dropped back to home on logout is a pop, not a push.
+      setTransitionDirection('back');
       setCurrentRoute('home');
     }
     // Check if the user just logged in (transitioned from null to object)
@@ -128,6 +136,7 @@ function AppContent() {
       AsyncStorage.getItem('redirectToRoute').then((route) => {
         if (route) {
           AsyncStorage.removeItem('redirectToRoute');
+          setTransitionDirection('forward');
           setCurrentRoute(route);
         }
       }).catch(err => console.error('Failed to get redirect route', err));
@@ -142,6 +151,7 @@ function AppContent() {
     if (route === 'profile') {
       setProfileNavigationKey(Date.now());
     }
+    setTransitionDirection('forward');
     setCurrentRoute(route);
   }, [currentRoute]);
 
@@ -175,6 +185,10 @@ function AppContent() {
   }, [token, isLoading, checkBookingsStatusChanges]);
 
   const handleBack = useCallback(() => {
+    // Every way back — the header button, the hardware button and the edge
+    // swipe — funnels through here, so this is the one place that knows a route
+    // change is a pop rather than a push.
+    setTransitionDirection('back');
     // Handle back navigation based on current route
     if (currentRoute === 'service-details') {
       // Route back based on where the service was opened from
@@ -307,18 +321,21 @@ function AppContent() {
   const handleVendorSelect = (vendorId: string, vendorName: string) => {
     setSelectedVendorId(vendorId);
     setSelectedVendorName(vendorName);
+    setTransitionDirection('forward');
     setCurrentRoute('vendor-services');
   };
 
   const handleServiceSelect = (serviceId: string, origin?: 'home' | 'services' | 'vendor-services' | 'occasion-services') => {
     setSelectedServiceId(serviceId);
     setSelectedServiceOrigin(origin);
+    setTransitionDirection('forward');
     setCurrentRoute('service-details');
   };
 
   const handlePackageSelect = (packageId: string, origin?: 'packages' | 'vendor-services') => {
     setSelectedPackageId(packageId);
     setSelectedPackageOrigin(origin);
+    setTransitionDirection('forward');
     setCurrentRoute('package-details');
   };
 
@@ -328,6 +345,7 @@ function AppContent() {
     setSelectedOccasionName(occasionName);
     setSelectedOccasionOrigin(origin);
     setSelectedSearchDate(searchDate);
+    setTransitionDirection('forward');
     setCurrentRoute('occasion-services');
   };
 
@@ -476,6 +494,12 @@ function AppContent() {
   const routesWithoutSafeArea = ['about', 'terms', 'privacy', 'refund', 'contact', 'service-details', 'package-details', 'cart', 'profile', 'search', 'addresses', 'auth', 'become-seller'];
   const shouldRenderWithoutSafeArea = routesWithoutSafeArea.includes(currentRoute);
 
+  // The full-bleed layout hides the tab bar on a few more routes than the
+  // safe-area one does; kept as data so both live in one shell.
+  const hiddenBottomNavRoutes = shouldRenderWithoutSafeArea
+    ? ['cart', 'auth', 'service-details', 'package-details']
+    : ['auth'];
+
   const isBannerVisible = siteSettings?.bannerEnabled && !isBannerDismissed;
   const isBannerShownOnScreen = isBannerVisible && (currentRoute === 'home' || shouldShowHeader);
   const dynamicBgColor = isBannerShownOnScreen
@@ -510,37 +534,49 @@ function AppContent() {
             }
           }}
         />
-      ) : shouldRenderWithoutSafeArea ? (
-        <View style={{ flex: 1 }} {...panResponder.panHandlers}>
-          {renderScreen()}
-          {showBottomNav &&
-            currentRoute !== 'cart' &&
-            currentRoute !== 'auth' &&
-            currentRoute !== 'service-details' &&
-            currentRoute !== 'package-details' && (
-              <>
-                <BottomNavigation
-                  activeRoute={currentRoute}
-                  onNavigate={handleNavigation}
-                />
-                <View style={{ height: 20, backgroundColor: colors.backgroundHome }} />
-              </>
-            )}
-        </View>
       ) : (
-        <SafeAreaView style={{ flex: 1, backgroundColor: dynamicBgColor }}>
-          <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
+        // One shell for both layouts, not two branches. Switching between a
+        // plain View and a SafeAreaView unmounted everything under it, which
+        // meant the screen transition was destroyed on exactly the navigations
+        // that cross the safe-area list (home -> service-details and friends)
+        // and never got to play. `edges={[]}` is what the plain View used to do.
+        <SafeAreaView
+          style={{
+            flex: 1,
+            backgroundColor: shouldRenderWithoutSafeArea
+              ? undefined
+              : dynamicBgColor,
+          }}
+          edges={shouldRenderWithoutSafeArea ? [] : undefined}
+        >
+          {!shouldRenderWithoutSafeArea && (
+            <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
+          )}
           {shouldShowHeader && <Header onNavigate={handleNavigation} />}
-          <View style={{ flex: 1 }} {...panResponder.panHandlers}>
-            {renderScreen()}
+          {/* Keyed so it is matched across renders by identity rather than by
+              position — the conditional siblings above it come and go. */}
+          <View key="screen-layer" style={{ flex: 1 }} {...panResponder.panHandlers}>
+            <ScreenTransition
+              routeKey={currentRoute}
+              direction={transitionDirection}
+            >
+              {renderScreen()}
+            </ScreenTransition>
           </View>
-          {showBottomNav && currentRoute !== 'auth' && (
+          {showBottomNav && !hiddenBottomNavRoutes.includes(currentRoute) && (
             <>
               <BottomNavigation
                 activeRoute={currentRoute}
                 onNavigate={handleNavigation}
               />
-              <View style={{ height: 20, backgroundColor: '#ffffff' }} />
+              <View
+                style={{
+                  height: 20,
+                  backgroundColor: shouldRenderWithoutSafeArea
+                    ? colors.backgroundHome
+                    : '#ffffff',
+                }}
+              />
             </>
           )}
         </SafeAreaView>

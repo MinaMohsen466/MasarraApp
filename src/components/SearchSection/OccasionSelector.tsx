@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   FlatList,
-  ActivityIndicator,
   TextInput,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -15,6 +14,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useOccasions } from '../../hooks/useOccasions';
 import { Occasion } from '../../services/api';
 import { BottomSheet } from '../common/BottomSheet';
+import { LogoLoader } from '../LogoLoader';
 
 interface OccasionSelectorProps {
   visible: boolean;
@@ -178,7 +178,7 @@ const OccasionSelector: React.FC<OccasionSelectorProps> = ({
         {/* Occasions List */}
         {isLoading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.primary} />
+            <LogoLoader />
           </View>
         ) : filteredOccasions.length === 0 ? (
           <View style={styles.emptyContainer}>

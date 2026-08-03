@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   StatusBar,
   Dimensions,
-  RefreshControl,
   FlatList,
   Platform,
 } from 'react-native';
@@ -39,6 +38,12 @@ import {
   canCreateQRCode,
   getQRCodeSettings,
 } from '../services/qrCodeApi';
+import { clearQRCodeCache } from '../services/qrCodeCache';
+import {
+  useLogoRefresh,
+  PullToRefresh,
+} from '../components/LogoRefreshControl';
+import { LogoLoader } from '../components/LogoLoader';
 
 interface OrderHistoryProps {
   onBack?: () => void;
@@ -49,7 +54,6 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
   const insets = useSafeAreaInsets();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const { checkBookingsStatusChanges } = useNotification();
-  const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [qrModalVisible, setQrModalVisible] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
@@ -88,6 +92,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
   // PaymentWebView state
   const [showPaymentWebView, setShowPaymentWebView] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState('');
+  const [gatewayOrigin, setGatewayOrigin] = useState<string | undefined>();
   const [currentPayingBooking, setCurrentPayingBooking] = useState<
     string | null
   >(null);
@@ -118,15 +123,15 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    try {
-      await loadBookings(true);
-    } finally {
-      setRefreshing(false);
-    }
+  const reload = useCallback(async () => {
+    // Booking QR codes are cached for 3 minutes; an explicit refresh is the one
+    // moment the user is asking us to ignore that.
+    clearQRCodeCache();
+    await loadBookings(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const { refreshing, onRefresh } = useLogoRefresh(reload);
 
   // Derive filteredBookings directly during render to prevent state-update lag and visual flashing
   const filteredBookings = React.useMemo(() => {
@@ -137,7 +142,10 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
     forceRefresh: boolean = false,
   ): Promise<Booking[] | undefined> => {
     try {
-      setLoading(true);
+      // A pull-to-refresh must not raise the full-screen loader: it replaces the
+      // list the user is holding on to, so the pull appears to throw them out of
+      // the screen and back. The refresh indicator is the feedback there.
+      if (!forceRefresh) setLoading(true);
       const token = await AsyncStorage.getItem('userToken');
 
       if (!token) {
@@ -568,6 +576,9 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
       if (response.success && response.data?.invoiceURL) {
         // Open payment in WebView instead of external browser
         setPaymentUrl(response.data.invoiceURL);
+        // Keeps the WebView's document origin on the same MyFatoorah
+        // environment that issued this session.
+        setGatewayOrigin(response.data.gatewayOrigin);
         setCurrentPayingBooking(booking._id);
         setShowPaymentWebView(true);
       } else {
@@ -864,7 +875,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
             </View>
 
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={colors.primary} />
+              <LogoLoader />
             </View>
           </View>
         </View>
@@ -1011,7 +1022,10 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
             </ScrollView>
           </View>
 
+          <PullToRefresh refreshing={refreshing} onRefresh={onRefresh}>
+            {scrollProps => (
           <FlatList
+            {...scrollProps}
             data={filteredBookings}
             keyExtractor={item => item._id}
             renderItem={({ item: booking }) => (
@@ -1825,14 +1839,6 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
               filteredBookings.length === 0 && { flex: 1, justifyContent: 'center' },
             ]}
             showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                tintColor={colors.primary}
-                colors={[colors.primary]}
-              />
-            }
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
                 <Text style={styles.emptyText}>
@@ -1851,6 +1857,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
             windowSize={5}
             removeClippedSubviews={Platform.OS === 'android'}
           />
+            )}
+          </PullToRefresh>
 
           {selectedBooking && (
             <QRFormModal
@@ -1906,6 +1914,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
           <PaymentWebView
             visible={showPaymentWebView}
             paymentUrl={paymentUrl}
+            gatewayOrigin={gatewayOrigin}
             onClose={handlePaymentClose}
             onPaymentSuccess={handlePaymentSuccess}
             onPaymentError={handlePaymentError}

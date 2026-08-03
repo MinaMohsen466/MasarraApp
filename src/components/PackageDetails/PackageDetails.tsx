@@ -22,6 +22,7 @@ import { useQuery } from '@tanstack/react-query';
 import { usePackageDetails } from '../../hooks/usePackages';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getImageUrl } from '../../services/api';
+import { PRODUCTION_URL } from '../../config/api.config';
 import {
   toggleWishlist,
   isWishlisted,
@@ -44,6 +45,8 @@ import {
 } from '../../services/reviewsApi';
 import { Package } from '../../hooks/usePackages';
 import { CustomAlert } from '../CustomAlert/CustomAlert';
+import { AddToCartToast } from '../Cart/AddToCartToast';
+import { LogoLoader } from '../LogoLoader';
 
 interface PackageDetailsProps {
   packageId: string;
@@ -123,6 +126,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isDeletingReview, setIsDeletingReview] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [showCartToast, setShowCartToast] = useState(false);
 
   // CustomAlert state
   const [alertConfig, setAlertConfig] = useState<{
@@ -358,7 +362,15 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
         (slot: any) => slot.timeSlot === selectedTime,
       );
       setIsTimeSlotAvailable(timeSlot ? timeSlot.available : false);
-    } catch {
+    } catch (availabilityError) {
+      // NOTE: isTimeSlotAvailable keeps its previous value here, so a failed
+      // check can leave the screen still showing the slot as available when
+      // availability is actually unknown. The server re-validates on booking,
+      // so this is a confusing-error path rather than a double-booking one.
+      console.error(
+        '[PackageDetails] Time slot availability check failed:',
+        availabilityError,
+      );
     } finally {
       setCheckingAvailability(false);
     }
@@ -544,6 +556,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 
         // Trigger success button state and reset after 2 seconds
         setIsSuccessState(true);
+        setShowCartToast(true);
         setTimeout(() => {
           setIsSuccessState(false);
         }, 2000);
@@ -568,7 +581,7 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <LogoLoader />
       </View>
     );
   }
@@ -606,8 +619,9 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
   const handleShare = async () => {
     if (!packageData) return;
     try {
-      // Create package URL
-      const packageUrl = `https://masarrakw.com/packages/${packageData._id}`;
+      // Always the public site — a shared link has to work on someone else's
+      // device, so this must not follow the dev/local base URL.
+      const packageUrl = `${PRODUCTION_URL}/packages/${packageData._id}`;
 
       // Copy link to clipboard
       await Clipboard.setString(packageUrl);
@@ -2065,6 +2079,17 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
         message={alertConfig.message}
         buttons={alertConfig.buttons}
         onClose={() => setAlertConfig({ ...alertConfig, visible: false })}
+      />
+
+      {/* Floating Add to Cart Toast */}
+      <AddToCartToast
+        visible={showCartToast}
+        isRTL={isRTL}
+        onViewCart={() => {
+          setShowCartToast(false);
+          if (onNavigate) onNavigate('cart');
+        }}
+        onDismiss={() => setShowCartToast(false)}
       />
     </View>
   );

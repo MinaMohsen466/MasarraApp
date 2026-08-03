@@ -375,24 +375,43 @@ export const EmptyCartView: React.FC<EmptyCartViewProps> = ({
                     : service.name;
                   const vendorName = service.vendor?.name || '';
 
-                  // Price calculation (Original vs Discounted Sale Price)
+                  // Robust discount & sale price calculation
                   const hasDiscount =
-                    service.isOnSale &&
-                    service.salePrice !== undefined &&
-                    service.salePrice < service.price;
-                  const mainPrice = hasDiscount
-                    ? service.salePrice!
-                    : service.price;
-                  const originalPrice = hasDiscount ? service.price : null;
-                  const discountPercent =
-                    service.discountPercentage ||
-                    (hasDiscount
-                      ? Math.round(
-                          ((service.price - service.salePrice!) /
-                            service.price) *
-                            100,
-                        )
-                      : 0);
+                    Boolean(service.isOnSale) &&
+                    ((Boolean(service.salePrice) &&
+                      service.salePrice! > 0 &&
+                      service.salePrice! < service.price) ||
+                      (Boolean(service.discountPercentage) &&
+                        service.discountPercentage! > 0));
+
+                  let finalSalePrice = service.price;
+                  let discountPercent = 0;
+
+                  if (hasDiscount) {
+                    if (
+                      service.salePrice &&
+                      service.salePrice > 0 &&
+                      service.salePrice < service.price
+                    ) {
+                      finalSalePrice = service.salePrice;
+                      discountPercent = Math.round(
+                        ((service.price - service.salePrice) / service.price) *
+                          100,
+                      );
+                    } else if (
+                      service.discountPercentage &&
+                      service.discountPercentage > 0
+                    ) {
+                      discountPercent = service.discountPercentage;
+                      finalSalePrice =
+                        service.price * (1 - service.discountPercentage / 100);
+                    }
+                  }
+
+                  const isDiscountValid =
+                    hasDiscount &&
+                    finalSalePrice > 0 &&
+                    finalSalePrice < service.price;
 
                   return (
                     <TouchableOpacity
@@ -430,7 +449,7 @@ export const EmptyCartView: React.FC<EmptyCartViewProps> = ({
                           resizeMode="cover"
                         />
 
-                        {/* Rating Badge */}
+                        {/* App Theme Styled Rating Badge */}
                         {service.rating ? (
                           <View
                             style={{
@@ -438,21 +457,23 @@ export const EmptyCartView: React.FC<EmptyCartViewProps> = ({
                               top: 6,
                               left: isRTL ? undefined : 6,
                               right: isRTL ? 6 : undefined,
-                              backgroundColor: 'rgba(255, 255, 255, 0.92)',
+                              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                              borderWidth: 1,
+                              borderColor: 'rgba(44, 95, 93, 0.15)',
                               paddingHorizontal: 6,
                               paddingVertical: 2,
                               borderRadius: 10,
                               flexDirection: 'row',
                               alignItems: 'center',
-                              gap: 2,
+                              gap: 3,
                             }}
                           >
-                            <Icon name="star" size={11} color="#F59E0B" />
+                            <Icon name="star" size={11} color={colors.primary} />
                             <Text
                               style={{
                                 fontSize: 10,
                                 fontWeight: '700',
-                                color: '#0F172A',
+                                color: colors.primaryDark,
                               }}
                             >
                               {service.rating.toFixed(1)}
@@ -460,24 +481,29 @@ export const EmptyCartView: React.FC<EmptyCartViewProps> = ({
                           </View>
                         ) : null}
 
-                        {/* Sale / Discount Badge */}
-                        {hasDiscount && (
+                        {/* App Theme Styled Sale / Discount Badge */}
+                        {isDiscountValid && (
                           <View
                             style={{
                               position: 'absolute',
                               top: 6,
                               right: isRTL ? undefined : 6,
                               left: isRTL ? 6 : undefined,
-                              backgroundColor: '#EF4444',
-                              paddingHorizontal: 6,
-                              paddingVertical: 2,
-                              borderRadius: 8,
+                              backgroundColor: colors.primary,
+                              paddingHorizontal: 7,
+                              paddingVertical: 3,
+                              borderRadius: 10,
+                              shadowColor: colors.primary,
+                              shadowOffset: { width: 0, height: 2 },
+                              shadowOpacity: 0.2,
+                              shadowRadius: 4,
+                              elevation: 2,
                             }}
                           >
                             <Text
                               style={{
                                 fontSize: 9,
-                                fontWeight: '700',
+                                fontWeight: '800',
                                 color: '#FFFFFF',
                               }}
                             >
@@ -537,10 +563,11 @@ export const EmptyCartView: React.FC<EmptyCartViewProps> = ({
                                 color: colors.primary,
                               }}
                             >
-                              {mainPrice.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
+                              {(isDiscountValid ? finalSalePrice : service.price).toFixed(3)}{' '}
+                              {isRTL ? 'د.ك' : 'KD'}
                             </Text>
 
-                            {hasDiscount && originalPrice ? (
+                            {isDiscountValid ? (
                               <Text
                                 style={{
                                   fontSize: 10,
@@ -550,7 +577,7 @@ export const EmptyCartView: React.FC<EmptyCartViewProps> = ({
                                   marginTop: -1,
                                 }}
                               >
-                                {originalPrice.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
+                                {service.price.toFixed(3)} {isRTL ? 'د.ك' : 'KD'}
                               </Text>
                             ) : null}
                           </View>

@@ -10,7 +10,16 @@
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "paths": {
+      // Its package exports map the "react-native" condition to raw src/*.tsx,
+      // so tsc pulls the library's own source into our program and then reports
+      // *its* code against our noUnusedLocals. Metro still bundles the RN
+      // source; this only points type-checking at the published declarations.
+      "react-native-view-shot": [
+        "./node_modules/react-native-view-shot/lib/index.d.ts"
+      ]
+    }
   },
   "include": ["**/*.ts", "**/*.tsx"],
   "exclude": [

@@ -14,29 +14,25 @@ export const fetchServerNotifications = async (
   total: number;
   hasMore: boolean;
 }> => {
-  try {
-    const response = await fetch(
-      `${API_BASE_URL}/notifications?page=${page}&limit=${limit}`,
-      {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+  const response = await fetch(
+    `${API_BASE_URL}/notifications?page=${page}&limit=${limit}`,
+    {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
+    },
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(
+      errorData.error || errorData.message || 'Failed to fetch notifications',
     );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(
-        errorData.error || errorData.message || 'Failed to fetch notifications',
-      );
-    }
-
-    return await response.json();
-  } catch (error) {
-    throw error;
   }
+
+  return await response.json();
 };
 
 /**
@@ -46,31 +42,27 @@ export const markServerNotificationRead = async (
   token: string,
   notificationId: string,
 ): Promise<any> => {
-  try {
-    const response = await fetch(
-      `${API_BASE_URL}/notifications/${notificationId}/read`,
-      {
-        method: 'PATCH',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+  const response = await fetch(
+    `${API_BASE_URL}/notifications/${notificationId}/read`,
+    {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
+    },
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(
+      errorData.error ||
+        errorData.message ||
+        'Failed to mark notification as read',
     );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(
-        errorData.error ||
-          errorData.message ||
-          'Failed to mark notification as read',
-      );
-    }
-
-    return await response.json();
-  } catch (error) {
-    throw error;
   }
+
+  return await response.json();
 };
 
 /**
@@ -79,28 +71,24 @@ export const markServerNotificationRead = async (
 export const markAllServerNotificationsRead = async (
   token: string,
 ): Promise<any> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/notifications/read-all`, {
-      method: 'PATCH',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
+  const response = await fetch(`${API_BASE_URL}/notifications/read-all`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(
-        errorData.error ||
-          errorData.message ||
-          'Failed to mark all notifications as read',
-      );
-    }
-
-    return await response.json();
-  } catch (error) {
-    throw error;
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(
+      errorData.error ||
+        errorData.message ||
+        'Failed to mark all notifications as read',
+    );
   }
+
+  return await response.json();
 };
 
 /**
@@ -110,27 +98,23 @@ export const deleteServerNotification = async (
   token: string,
   notificationId: string,
 ): Promise<any> => {
-  try {
-    const response = await fetch(
-      `${API_BASE_URL}/notifications/${notificationId}`,
-      {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+  const response = await fetch(
+    `${API_BASE_URL}/notifications/${notificationId}`,
+    {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
+    },
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(
+      errorData.error || errorData.message || 'Failed to delete notification',
     );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(
-        errorData.error || errorData.message || 'Failed to delete notification',
-      );
-    }
-
-    return await response.json();
-  } catch (error) {
-    throw error;
   }
+
+  return await response.json();
 };

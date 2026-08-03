@@ -5,7 +5,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   FlatList,
   Clipboard,
   StatusBar,
@@ -29,6 +28,7 @@ import { getQRCodeByBooking, getQRCodeSettings } from '../services/qrCodeApi';
 import { useAuth } from '../contexts/AuthContext';
 import { QRFormModal } from '../components/QRCodeCard/QRFormModal';
 import { GuestListModal } from '../components/MyEvents/GuestListModal';
+import { LogoLoader } from '../components/LogoLoader';
 
 interface MyEventsProps {
   onBack?: () => void;
@@ -50,7 +50,17 @@ interface EventServiceRow {
   vendor: any;
   booking: any;
   uniqueKey: string;
+  /**
+   * Whether this service's occasion+category is enabled in the admin's QR
+   * settings. It gates the QR actions only — it used to gate the row itself,
+   * so a booking the profile counted as an event was missing from this screen
+   * entirely, with "No events found" as the only explanation.
+   */
+  qrAllowed: boolean;
 }
+
+/** Why the list is empty, so the screen can say something true. */
+type EmptyReason = 'none' | 'no-events' | 'load-failed' | 'not-signed-in';
 
 const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
   const { isRTL } = useLanguage();
@@ -65,6 +75,10 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
   const insets = useSafeAreaInsets();
   const [events, setEvents] = useState<EventServiceRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [emptyReason, setEmptyReason] = useState<EmptyReason>('none');
+  // QR settings are optional for showing events, but without them no QR action
+  // can be offered — worth saying so rather than silently hiding the buttons.
+  const [qrSettingsUnavailable, setQrSettingsUnavailable] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
   const [alertVisible, setAlertVisible] = useState(false);
@@ -97,8 +111,30 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
   useEffect(() => {
     // Load events and occasions in parallel for faster initial load
     Promise.all([loadEvents(), loadOccasions()]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // "No events found" used to cover a load failure, a signed-out session and a
+  // genuinely empty list alike — three different problems with one answer.
+  const emptyMessage = React.useMemo(() => {
+    if (emptyReason === 'load-failed') {
+      return isRTL
+        ? 'تعذّر تحميل الفعاليات. تحقّق من الاتصال وحاول مرة أخرى.'
+        : 'Could not load your events. Check your connection and try again.';
+    }
+    if (emptyReason === 'not-signed-in') {
+      return isRTL
+        ? 'سجّل الدخول لعرض فعالياتك.'
+        : 'Sign in to see your events.';
+    }
+    if (events.length > 0) {
+      return isRTL
+        ? 'لا توجد فعاليات مطابقة للفلاتر المحددة.'
+        : 'No events match the selected filters.';
+    }
+    return isRTL
+      ? 'لا توجد فعاليات قادمة. الحجوزات المؤكدة تظهر هنا قبل موعدها.'
+      : 'No upcoming events. Confirmed bookings appear here before their date.';
+  }, [emptyReason, events.length, isRTL]);
 
   // Derive filteredEvents directly during render to prevent state-update lag and visual flashing
   const filteredEvents = React.useMemo(() => {
@@ -149,7 +185,10 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
     try {
       const data = await fetchOccasions();
       setOccasions(data);
-    } catch {}
+    } catch (error) {
+      // The occasion filter silently renders empty when this fails.
+      console.error('[MyEvents] Failed to load occasions:', error);
+    }
   };
 
   const loadEvents = async () => {
@@ -158,19 +197,20 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
       const token = await AsyncStorage.getItem('userToken');
 
       if (!token) {
-        showAlert(
-          isRTL ? 'خطأ' : 'Error',
-          isRTL ? 'يرجى تسجيل الدخول أولاً' : 'Please login first',
-        );
+        setEmptyReason('not-signed-in');
         setLoading(false);
         return;
       }
 
-      // Fetch user's own dashboard bookings and QR settings in parallel
+      // Bookings decide what is on screen; QR settings only decide which rows
+      // can offer a card. A settings failure must not empty the list, so it is
+      // caught separately instead of rejecting the pair.
       const [bookings, settings] = await Promise.all([
         getUserDashboardBookings(token),
-        getQRCodeSettings(token),
+        getQRCodeSettings(token).catch(() => null),
       ]);
+
+      setQrSettingsUnavailable(!settings?.isEnabled);
 
       const matchesId = (id1: any, id2: any) => {
         const str1 =
@@ -234,30 +274,31 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
               ? String(s.service._id)
               : String(s.service || '');
 
-          let isServiceAllowed = false;
+          let qrAllowed = false;
           if (s.service && Array.isArray(s.service.occasions)) {
             for (const occ of s.service.occasions) {
               if (isOccasionCategoryAllowed(occ.occasion, occ.categoryId)) {
-                isServiceAllowed = true;
+                qrAllowed = true;
                 break;
               }
             }
           }
 
-          if (isServiceAllowed) {
-            servicesList.push({
-              bookingId: booking._id,
-              serviceId,
-              service: s.service,
-              vendor: s.vendor,
-              booking: {
-                ...booking,
-                // Use booking's own values initially; QR overrides will come in Phase 2
-                guestLimit: booking.guestLimit,
-              },
-              uniqueKey: `${booking._id}-${serviceId}`,
-            });
-          }
+          // Every active, upcoming service is an event. QR eligibility rides
+          // along on the row rather than deciding whether it exists.
+          servicesList.push({
+            bookingId: booking._id,
+            serviceId,
+            service: s.service,
+            vendor: s.vendor,
+            booking: {
+              ...booking,
+              // Use booking's own values initially; QR overrides will come in Phase 2
+              guestLimit: booking.guestLimit,
+            },
+            uniqueKey: `${booking._id}-${serviceId}`,
+            qrAllowed,
+          });
         });
       });
 
@@ -274,6 +315,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
 
       // Show events immediately (Phase 1 complete)
       setEvents(servicesList);
+      setEmptyReason(servicesList.length === 0 ? 'no-events' : 'none');
       setLoading(false);
 
       // --- Phase 2: Fetch QR codes in background and patch events ---
@@ -336,10 +378,9 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
         );
       }
     } catch {
-      showAlert(
-        isRTL ? 'خطأ' : 'Error',
-        isRTL ? 'حدث خطأ أثناء تحميل الفعاليات' : 'Error loading events',
-      );
+      // The screen says what happened; an alert on top of it would just be a
+      // second copy of the same news.
+      setEmptyReason('load-failed');
       setLoading(false);
     }
   };
@@ -727,7 +768,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
               isRTL ? { left: 16 } : { right: 16 },
             ]}
           >
-            {item.booking?.status !== 'cancelled' && (
+            {item.booking?.status !== 'cancelled' && item.qrAllowed && (
               <>
                 <TouchableOpacity
                   style={styles.menuItem}
@@ -879,7 +920,7 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
             </View>
 
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={colors.primary} />
+              <LogoLoader />
             </View>
           </View>
         </View>
@@ -1034,12 +1075,39 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
             </Text>
           </View>
 
+          {/* The QR actions are missing from every row in this case; say why
+              instead of leaving the menu mysteriously short. */}
+          {qrSettingsUnavailable && filteredEvents.length > 0 && (
+            <View style={styles.noticeBanner}>
+              <Icon
+                name="information-circle-outline"
+                size={16}
+                color={colors.primary}
+                style={isRTL ? { marginLeft: 6 } : { marginRight: 6 }}
+              />
+              <Text style={styles.noticeText}>
+                {isRTL
+                  ? 'بطاقات QR غير متاحة حالياً.'
+                  : 'QR cards are currently unavailable.'}
+              </Text>
+            </View>
+          )}
+
           {/* Events List */}
           {filteredEvents.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>
-                {isRTL ? 'لا توجد فعاليات' : 'No events found'}
-              </Text>
+              <Text style={styles.emptyText}>{emptyMessage}</Text>
+              {emptyReason === 'load-failed' && (
+                <TouchableOpacity
+                  style={styles.retryButton}
+                  onPress={loadEvents}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.retryButtonText}>
+                    {isRTL ? 'إعادة المحاولة' : 'Try again'}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           ) : (
             <FlatList

@@ -119,51 +119,52 @@ export const AuthProvider: React.FC<{
       } else {
         if (__DEV__) console.log('❌ No cached user data found');
       }
-    } catch {
+    } catch (error) {
+      // Restoring the session failed — corrupt cached user data, or a keychain
+      // read error. Swallowing this made it look like an ordinary signed-out
+      // launch, leaving nothing to explain why the user was logged out.
+      console.error('[Auth] Failed to restore stored session:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
   const login = async (userData: User, authToken: string) => {
-    try {
-      await setSecureToken(authToken);
-      await AsyncStorage.setItem('userData', JSON.stringify(userData));
-      // Save userId for user-specific cart
-      if (userData._id) {
-        await AsyncStorage.setItem('userId', userData._id);
-      }
-      setToken(authToken);
-      setUser(userData);
-    } catch (error) {
-      throw error;
+    // setSecureToken reports failure by returning false. Ignoring it left the
+    // session live in memory while nothing was stored, so the user was signed
+    // out again on the next launch with no explanation.
+    if (!(await setSecureToken(authToken))) {
+      throw new Error('Failed to persist auth token');
     }
+    await AsyncStorage.setItem('userData', JSON.stringify(userData));
+    // Save userId for user-specific cart
+    if (userData._id) {
+      await AsyncStorage.setItem('userId', userData._id);
+    }
+    setToken(authToken);
+    setUser(userData);
   };
 
   const logout = useCallback(async () => {
+    // Clear memory API caches
+    clearApiCaches();
+
+    // Clear user cart data first (before clearing user session)
+    await clearUserCart();
+
+    // Clear wishlist data
+    await clearWishlist();
+
+    await removeSecureToken();
+    await AsyncStorage.removeItem('userData');
+    await AsyncStorage.removeItem('userId');
+    setToken(null);
+    setUser(null);
+
+    // call optional onLogout callback (e.g. to navigate to home)
     try {
-      // Clear memory API caches
-      clearApiCaches();
-
-      // Clear user cart data first (before clearing user session)
-      await clearUserCart();
-
-      // Clear wishlist data
-      await clearWishlist();
-
-      await removeSecureToken();
-      await AsyncStorage.removeItem('userData');
-      await AsyncStorage.removeItem('userId');
-      setToken(null);
-      setUser(null);
-
-      // call optional onLogout callback (e.g. to navigate to home)
-      try {
-        if (onLogout) onLogout();
-      } catch {}
-    } catch (error) {
-      throw error;
-    }
+      if (onLogout) onLogout();
+    } catch {}
   }, [onLogout]);
 
   // Register API Interceptor callbacks
@@ -187,78 +188,70 @@ export const AuthProvider: React.FC<{
     profilePicture?: string,
     removeProfilePicture?: boolean,
   ) => {
-    try {
-      if (!user || !token) {
-        throw new Error('No user logged in');
-      }
-
-      // Call the API to update profile on the server
-      const response = await updateUserProfileWithImage(
-        token,
-        name,
-        phone,
-        profilePicture,
-        removeProfilePicture,
-      );
-
-      // Update with the returned user data from server
-      const updatedUser = response.user;
-
-      // Save to AsyncStorage
-      await AsyncStorage.setItem('userData', JSON.stringify(updatedUser));
-
-      // Update state - create new object to ensure React detects the change
-      setUser({ ...updatedUser });
-    } catch (error) {
-      throw error;
+    if (!user || !token) {
+      throw new Error('No user logged in');
     }
+
+    // Call the API to update profile on the server
+    const response = await updateUserProfileWithImage(
+      token,
+      name,
+      phone,
+      profilePicture,
+      removeProfilePicture,
+    );
+
+    // Update with the returned user data from server
+    const updatedUser = response.user;
+
+    // Save to AsyncStorage
+    await AsyncStorage.setItem('userData', JSON.stringify(updatedUser));
+
+    // Update state - create new object to ensure React detects the change
+    setUser({ ...updatedUser });
   };
 
   const changeUserPassword = async (
     currentPassword: string,
     newPassword: string,
   ) => {
-    try {
-      if (!token) {
-        throw new Error('No user logged in');
-      }
-
-      // Call the API to change password
-      await apiChangePassword(token, currentPassword, newPassword);
-
-      // After changing password, log out locally so user must re-authenticate
-      try {
-        // Attempt to call server logout to clear any refresh cookie
-        await fetch(`${API_BASE_URL}/auth/logout`, {
-          method: 'POST',
-          credentials: 'include',
-        });
-      } catch {
-        // non-fatal: server logout may fail if running on a different host in dev
-        // Silent error handling
-      }
-
-      // Clear client state
-      clearApiCaches();
-
-      await removeSecureToken();
-      await AsyncStorage.removeItem('userData');
-      setToken(null);
-      setUser(null);
-
-      // Clear cart cache
-      clearCartCache();
-
-      // Clear wishlist
-      await clearWishlist();
-
-      // navigate to home if provided
-      try {
-        if (onLogout) onLogout();
-      } catch {}
-    } catch (error) {
-      throw error;
+    if (!token) {
+      throw new Error('No user logged in');
     }
+
+    // Call the API to change password
+    await apiChangePassword(token, currentPassword, newPassword);
+
+    // After changing password, log out locally so user must re-authenticate
+    try {
+      // Attempt to call server logout to clear any refresh cookie
+      await fetch(`${API_BASE_URL}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch {
+      // non-fatal: server logout may fail if running on a different host in dev
+      // Silent error handling
+    }
+
+    // Clear client state
+    clearApiCaches();
+
+    await removeSecureToken();
+    await AsyncStorage.removeItem('userData');
+    setToken(null);
+    setUser(null);
+
+    // Clear cart cache
+    clearCartCache();
+
+    // Clear wishlist
+    await clearWishlist();
+
+    // navigate to home if provided
+    try {
+      if (onLogout) onLogout();
+    } catch {}
   };
 
   const value = {

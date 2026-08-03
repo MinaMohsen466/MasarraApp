@@ -3,6 +3,13 @@ import { setSecureToken } from './secureStorage';
 import { API_BASE_URL } from '../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// The pre-patch fetch, captured when the interceptor is installed. Retries must
+// go through this rather than globalThis.fetch: a retry that 401s again would
+// otherwise re-enter the interceptor and kick off a second refresh cycle.
+// Doubles as the "already installed" flag — installing twice would capture the
+// patched fetch as the original and recurse forever.
+let originalFetch: typeof globalThis.fetch | null = null;
+
 let isRefreshing = false;
 let failedQueue: Array<{
   resolve: (value: any) => void;
@@ -32,24 +39,30 @@ const processQueue = (error: any, token: string | null = null) => {
   failedQueue.forEach(prom => {
     if (error) {
       prom.reject(error);
-    } else if (token) {
-      // Update Authorization header with the new token
-      const headers = new Headers(prom.config.init?.headers || {});
-      headers.set('Authorization', `Bearer ${token}`);
-      if (prom.config.init) {
-        prom.config.init.headers = headers;
-      }
-      globalThis
-        .fetch(prom.config.input as any, prom.config.init)
-        .then(res => prom.resolve(res))
-        .catch(err => prom.reject(err));
+      return;
     }
+    if (!token) return;
+
+    // Build a fresh init every time. Guarding this on `init` being defined
+    // dropped the refreshed Authorization header whenever the caller used the
+    // bare `fetch(url)` form, so the retry went out unauthenticated and 401'd
+    // straight back.
+    const headers = new Headers(prom.config.init?.headers || {});
+    headers.set('Authorization', `Bearer ${token}`);
+    const retryInit: RequestInit = { ...(prom.config.init || {}), headers };
+
+    const doFetch = originalFetch ?? globalThis.fetch;
+    doFetch(prom.config.input as any, retryInit)
+      .then(res => prom.resolve(res))
+      .catch(err => prom.reject(err));
   });
   failedQueue = [];
 };
 
 export const initApiInterceptor = () => {
-  const originalFetch = globalThis.fetch;
+  if (originalFetch) return;
+  originalFetch = globalThis.fetch;
+  const baseFetch = originalFetch;
 
   globalThis.fetch = async (
     input: any,
@@ -69,112 +82,88 @@ export const initApiInterceptor = () => {
     const isLoginRequest = urlString.includes('/auth/login');
     const isSignupRequest = urlString.includes('/auth/signup');
 
-    if (
-      !isApiRequest ||
-      isRefreshRequest ||
-      isLoginRequest ||
-      isSignupRequest
-    ) {
-      return originalFetch(input, init);
+    if (!isApiRequest || isRefreshRequest || isLoginRequest || isSignupRequest) {
+      return baseFetch(input, init);
     }
 
+    const response = await baseFetch(input, init);
+
+    // Not a 401 — nothing for the interceptor to do.
+    if (response.status !== 401) {
+      return response;
+    }
+
+    if (__DEV__)
+      console.log('🔄 API Interceptor: 401 for:', urlString.split('?')[0]);
+
+    if (isRefreshing) {
+      if (__DEV__)
+        console.log('⏳ API Interceptor: refresh in progress, queueing...');
+      return new Promise((resolve, reject) => {
+        failedQueue.push({ resolve, reject, config: { input, init } });
+      });
+    }
+
+    isRefreshing = true;
+    if (__DEV__)
+      console.log('🔑 API Interceptor: initiating silent token refresh...');
+
     try {
-      const response = await originalFetch(input, init);
+      const refreshResponse = await baseFetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Include httpOnly refresh cookie
+      });
 
-      // If unauthorized (401), attempt to refresh token
-      if (response.status === 401) {
-        console.log(
-          '🔄 API Interceptor: Received 401 Unauthorized for:',
-          urlString,
-        );
+      if (!refreshResponse.ok) {
+        // Refresh token expired or invalid — drop the session.
+        if (__DEV__)
+          console.log('❌ API Interceptor: refresh rejected, forcing logout...');
+        isRefreshing = false;
+        processQueue(new Error('Session expired'));
 
-        if (isRefreshing) {
-          console.log(
-            '⏳ API Interceptor: Token refresh already in progress. Queueing request...',
-          );
-          return new Promise((resolve, reject) => {
-            failedQueue.push({
-              resolve,
-              reject,
-              config: { input, init },
-            });
-          });
+        if (onLogoutRequiredCallback) {
+          onLogoutRequiredCallback();
         }
 
-        isRefreshing = true;
-        console.log('🔑 API Interceptor: Initiating silent token refresh...');
-
-        try {
-          const refreshResponse = await originalFetch(
-            `${API_BASE_URL}/auth/refresh`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              credentials: 'include', // Include httpOnly refresh cookie
-            },
-          );
-
-          if (refreshResponse.ok) {
-            const refreshData = await refreshResponse.json();
-            const newAccessToken = refreshData.token;
-            const userData = refreshData.user;
-
-            console.log('✅ API Interceptor: Token refreshed successfully!');
-
-            // Save new token securely
-            await setSecureToken(newAccessToken);
-            if (userData) {
-              await AsyncStorage.setItem('userData', JSON.stringify(userData));
-            }
-
-            // Notify AuthContext to update state
-            if (onTokenRefreshedCallback) {
-              onTokenRefreshedCallback(newAccessToken, userData);
-            }
-
-            isRefreshing = false;
-            processQueue(null, newAccessToken);
-
-            // Retry the original request with the new token
-            const headers = new Headers(init?.headers || {});
-            headers.set('Authorization', `Bearer ${newAccessToken}`);
-            const updatedInit = {
-              ...init,
-              headers,
-            };
-
-            return originalFetch(input, updatedInit);
-          } else {
-            // Refresh response was not OK (refresh token expired)
-            console.log(
-              '❌ API Interceptor: Refresh token is invalid/expired. Forcing logout...',
-            );
-            isRefreshing = false;
-            processQueue(new Error('Session expired'));
-
-            // Trigger logout in app
-            if (onLogoutRequiredCallback) {
-              onLogoutRequiredCallback();
-            }
-
-            return response; // Return original 401 response
-          }
-        } catch (refreshError) {
-          console.error(
-            '❌ API Interceptor: Network error during token refresh:',
-            refreshError,
-          );
-          isRefreshing = false;
-          processQueue(refreshError);
-          return response;
-        }
+        return response; // Return original 401 response
       }
 
+      const refreshData = await refreshResponse.json();
+      const newAccessToken = refreshData.token;
+      const userData = refreshData.user;
+
+      if (__DEV__)
+        console.log('✅ API Interceptor: token refreshed successfully!');
+
+      // Save new token securely
+      await setSecureToken(newAccessToken);
+      if (userData) {
+        await AsyncStorage.setItem('userData', JSON.stringify(userData));
+      }
+
+      // Notify AuthContext to update state
+      if (onTokenRefreshedCallback) {
+        onTokenRefreshedCallback(newAccessToken, userData);
+      }
+
+      isRefreshing = false;
+      processQueue(null, newAccessToken);
+
+      // Retry the original request with the new token
+      const headers = new Headers(init?.headers || {});
+      headers.set('Authorization', `Bearer ${newAccessToken}`);
+      return baseFetch(input, { ...init, headers });
+    } catch (refreshError) {
+      console.error(
+        '❌ API Interceptor: network error during token refresh:',
+        refreshError,
+      );
+      isRefreshing = false;
+      processQueue(refreshError);
       return response;
-    } catch (error) {
-      throw error;
     }
   };
 };

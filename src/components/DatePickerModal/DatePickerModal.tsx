@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Modal,
   ScrollView,
-  ActivityIndicator,
   useWindowDimensions,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -14,6 +13,12 @@ import { createStyles } from './styles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { checkBatchDateAvailability } from '../../services/api';
+import {
+  getCachedAvailability,
+  setCachedAvailability,
+  clearAvailabilityForService,
+} from '../../services/availabilityCache';
+import { LogoLoader } from '../LogoLoader';
 
 interface DatePickerModalProps {
   visible: boolean;
@@ -25,40 +30,9 @@ interface DatePickerModalProps {
   token?: string;
 }
 
-// Cache للبيانات المحملة بالفعل
-const availabilityCache = new Map<
-  string,
-  Map<string, { available: boolean; slots: number }>
->();
-
-// دالة لحذف الـ cache - تُستدعى بعد تأكيد الحجز
-export const clearDatePickerCache = () => {
-  availabilityCache.clear();
-};
-
-// دالة لحذف cache لخدمة معينة
-export const clearDatePickerCacheForService = (
-  serviceId: string,
-  vendorId: string,
-) => {
-  const keys = Array.from(availabilityCache.keys()).filter(key =>
-    key.startsWith(`${serviceId}-${vendorId}`),
-  );
-  keys.forEach(key => availabilityCache.delete(key));
-};
-
-// دالة لحذف cache لشهر معين من خدمة معينة (تستخدم عند الرجوع لنفس الخدمة)
-export const clearDatePickerCacheForMonth = (
-  serviceId: string,
-  vendorId: string,
-  year: number,
-  month: number,
-) => {
-  const cacheKey = `${serviceId}-${vendorId}-${year}-${month}`;
-  if (availabilityCache.has(cacheKey)) {
-    availabilityCache.delete(cacheKey);
-  }
-};
+// Cache البيانات المحملة يعيش في services/availabilityCache حتى تنتهي صلاحيته
+// ويُمسح عند تسجيل الخروج. هذا إعادة تصدير للمستدعين الحاليين.
+export const clearDatePickerCacheForService = clearAvailabilityForService;
 
 const DatePickerModal: React.FC<DatePickerModalProps> = ({
   visible,
@@ -130,9 +104,10 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
 
   useEffect(() => {
     if (visible) {
-      // تحقق من الـ cache أولاً
-      if (availabilityCache.has(cacheKey)) {
-        setAvailability(availabilityCache.get(cacheKey)!);
+      // تحقق من الـ cache أولاً (يتجاهل المنتهي صلاحيته تلقائياً)
+      const cached = getCachedAvailability(cacheKey);
+      if (cached) {
+        setAvailability(cached);
         setLoading(false);
       } else {
         loadAvailability();
@@ -189,7 +164,7 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
 
       // حدّث UI مرة واحدة فقط بعد تحميل كل البيانات
       setAvailability(new Map(availabilityMap));
-      availabilityCache.set(cacheKey, availabilityMap);
+      setCachedAvailability(cacheKey, availabilityMap);
     } finally {
       setLoading(false);
       loadingRef.current = false;
@@ -361,7 +336,7 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({
           >
             {loading ? (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={colors.primary} />
+                <LogoLoader />
                 <Text style={styles.loadingText}>
                   {isRTL ? 'جاري التحميل...' : 'Loading...'}
                 </Text>

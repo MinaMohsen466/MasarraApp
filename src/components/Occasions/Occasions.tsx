@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
-  ActivityIndicator,
   useWindowDimensions,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -16,6 +15,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useOccasions } from '../../hooks/useOccasions';
 import { Occasion } from '../../services/api';
 import { getImageUrl } from '../../services/api';
+import { LogoLoader } from '../LogoLoader';
 
 interface OccasionsProps {
   onSelectOccasion?: (occasion: Occasion) => void;
@@ -80,7 +80,7 @@ const Occasions: React.FC<OccasionsProps> = ({ onSelectOccasion, onBack }) => {
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <LogoLoader />
         <Text style={[styles.loadingText, isRTL && styles.textRTL]}>
           {t('loadingOccasions')}
         </Text>

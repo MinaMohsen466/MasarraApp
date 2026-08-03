@@ -3,7 +3,9 @@
  * Prevents redundant network calls when navigating back to MyEvents or OrderHistory.
  */
 
-import { QRCodeData } from './qrCodeApi';
+// Type-only import: qrCodeApi -> api (barrel) -> apiUtils -> qrCodeCache would be
+// a runtime require cycle, and Metro resolves the loser of a cycle to undefined.
+import type { QRCodeData } from './qrCodeApi';
 
 interface CacheEntry {
   data: QRCodeData | null;
@@ -46,7 +48,8 @@ export const invalidateQRCodeCache = (bookingId: string): void => {
 };
 
 /**
- * Clear the entire QR code cache.
+ * Drop every cached QR code — these are the signed-in user's own booking passes,
+ * so this runs on logout (via clearApiCaches) rather than waiting out the TTL.
  */
 export const clearQRCodeCache = (): void => {
   qrCodeCache.clear();

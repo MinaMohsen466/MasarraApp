@@ -4,7 +4,6 @@ import {
   View,
   Text,
   ScrollView,
-  ActivityIndicator,
   TouchableOpacity,
   StatusBar,
 } from 'react-native';
@@ -14,6 +13,7 @@ import { styles } from './styles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useRefundSettings } from '../../hooks/useSiteSettings';
+import { LogoLoader } from '../LogoLoader';
 
 interface RefundPolicyProps {
   onBack?: () => void;
@@ -33,7 +33,7 @@ const RefundPolicy: React.FC<RefundPolicyProps> = ({ onBack }) => {
           barStyle="light-content"
           translucent={false}
         />
-        <ActivityIndicator size="large" color={colors.primary} />
+        <LogoLoader />
         <Text style={[styles.loadingText, isRTL && styles.textRTL]}>
           {isRTL ? 'جاري التحميل...' : 'Loading...'}
         </Text>

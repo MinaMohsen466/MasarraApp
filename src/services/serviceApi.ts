@@ -1,5 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { API_BASE_URL, parseJsonResponse, timeSlotsCache } from './apiUtils';
+import {
+  API_BASE_URL,
+  parseJsonResponse,
+  timeSlotsCache,
+  TIME_SLOTS_CACHE_TTL,
+} from './apiUtils';
 import { getImageUrl as getImageUrlFromConfig } from '../config/api.config';
 
 export interface SiteSettings {
@@ -39,7 +44,8 @@ export interface Occasion {
 }
 
 export interface ContactRequestData {
-  title: string;
+  title?: string;
+  subject?: string;
   name: string;
   email: string;
   phone: string;
@@ -50,36 +56,28 @@ export interface ContactRequestData {
  * Fetch site settings including logos and titles
  */
 export const fetchSiteSettings = async (): Promise<SiteSettings> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/settings/site`);
+  const response = await fetch(`${API_BASE_URL}/settings/site`);
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch site settings: ${response.statusText}`);
-    }
-
-    const data: SiteSettings = await response.json();
-    return data;
-  } catch (error) {
-    throw error;
+  if (!response.ok) {
+    throw new Error(`Failed to fetch site settings: ${response.statusText}`);
   }
+
+  const data: SiteSettings = await response.json();
+  return data;
 };
 
 /**
  * Fetch all occasions
  */
 export const fetchOccasions = async (): Promise<Occasion[]> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/occasions`);
+  const response = await fetch(`${API_BASE_URL}/occasions`);
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch occasions: ${response.statusText}`);
-    }
-
-    const data: Occasion[] = await response.json();
-    return data.filter(occasion => occasion.isActive); // Only return active occasions
-  } catch (error) {
-    throw error;
+  if (!response.ok) {
+    throw new Error(`Failed to fetch occasions: ${response.statusText}`);
   }
+
+  const data: Occasion[] = await response.json();
+  return data.filter(occasion => occasion.isActive); // Only return active occasions
 };
 
 /**
@@ -88,103 +86,17 @@ export const fetchOccasions = async (): Promise<Occasion[]> => {
 export const getImageUrl = getImageUrlFromConfig;
 
 /**
- * Fetch all active packages
- */
-export const fetchPackages = async (): Promise<any[]> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/packages`);
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch packages: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return Array.isArray(data) ? data.filter(p => p.isActive !== false) : [];
-  } catch (error) {
-    throw error;
-  }
-};
-
-/**
- * Fetch services for a specific vendor
- */
-export const fetchVendorServices = async (vendorId: string): Promise<any[]> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/services/vendor/${vendorId}`);
-
-    if (!response.ok) {
-      throw new Error(
-        `Failed to fetch vendor services: ${response.statusText}`,
-      );
-    }
-
-    const data = await response.json();
-    return Array.isArray(data) ? data : [];
-  } catch (error) {
-    throw error;
-  }
-};
-
-/**
  * Fetch single service details
  */
 export const fetchServiceDetails = async (serviceId: string): Promise<any> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/services/${serviceId}`);
+  const response = await fetch(`${API_BASE_URL}/services/${serviceId}`);
 
-    if (!response.ok) {
-      throw new Error(
-        `Failed to fetch service details: ${response.statusText}`,
-      );
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    throw error;
+  if (!response.ok) {
+    throw new Error(`Failed to fetch service details: ${response.statusText}`);
   }
-};
 
-/**
- * Fetch single vendor details
- */
-export const fetchVendorDetails = async (vendorId: string): Promise<any> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/vendors/${vendorId}`);
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch vendor details: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    throw error;
-  }
-};
-
-/**
- * Fetch services by occasion ID
- */
-export const fetchOccasionServices = async (
-  occasionId: string,
-): Promise<any[]> => {
-  try {
-    const response = await fetch(
-      `${API_BASE_URL}/services/occasion/${occasionId}`,
-    );
-
-    if (!response.ok) {
-      throw new Error(
-        `Failed to fetch occasion services: ${response.statusText}`,
-      );
-    }
-
-    const data = await response.json();
-    return Array.isArray(data) ? data : [];
-  } catch (error) {
-    throw error;
-  }
+  const data = await response.json();
+  return data;
 };
 
 /**
@@ -289,8 +201,10 @@ export const checkTimeSlotAvailability = async (
     // Check cache first
     const cacheKey = `timeslots-${serviceId}-${dateStr}`;
     const cachedData = timeSlotsCache.get(cacheKey);
-    if (cachedData && Date.now() - cachedData.timestamp < 2 * 60 * 1000) {
-      // 2 minutes cache
+    if (
+      cachedData &&
+      Date.now() - cachedData.timestamp < TIME_SLOTS_CACHE_TTL
+    ) {
       return cachedData.data;
     }
 
@@ -500,31 +414,27 @@ export const submitContactRequest = async (
   data: ContactRequestData,
   token?: string,
 ): Promise<{ success: boolean; message?: string }> => {
-  try {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
 
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
-
-    const response = await fetch(`${API_BASE_URL}/contact`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to submit contact request');
-    }
-
-    const responseData = await response.json();
-    return responseData;
-  } catch (error) {
-    throw error;
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
   }
+
+  const response = await fetch(`${API_BASE_URL}/contact`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to submit contact request');
+  }
+
+  const responseData = await response.json();
+  return responseData;
 };
 
 /**
@@ -536,38 +446,34 @@ export const submitVendorApplication = async (
   phone: string,
   businessLicenseUri: string,
 ): Promise<{ success: boolean; data?: any; message?: string }> => {
-  try {
-    const formData = new FormData();
-    formData.append('name', name);
-    formData.append('email', email);
-    formData.append('phone', phone);
+  const formData = new FormData();
+  formData.append('name', name);
+  formData.append('email', email);
+  formData.append('phone', phone);
 
-    const filename = businessLicenseUri.split('/').pop() || 'license.jpg';
-    const match = /\.(\w+)$/.exec(filename);
-    const type = match ? `image/${match[1]}` : 'image/jpeg';
+  const filename = businessLicenseUri.split('/').pop() || 'license.jpg';
+  const match = /\.(\w+)$/.exec(filename);
+  const type = match ? `image/${match[1]}` : 'image/jpeg';
 
-    formData.append('businessLicense', {
-      uri: businessLicenseUri,
-      name: filename,
-      type,
-    } as any);
+  formData.append('businessLicense', {
+    uri: businessLicenseUri,
+    name: filename,
+    type,
+  } as any);
 
-    const response = await fetch(`${API_BASE_URL}/vendor-applications`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-      body: formData,
-    });
+  const response = await fetch(`${API_BASE_URL}/vendor-applications`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+    body: formData,
+  });
 
-    const responseData = await parseJsonResponse(response);
+  const responseData = await parseJsonResponse(response);
 
-    if (!response.ok) {
-      throw new Error(responseData?.message || 'Failed to submit application');
-    }
-
-    return responseData;
-  } catch (error) {
-    throw error;
+  if (!response.ok) {
+    throw new Error(responseData?.message || 'Failed to submit application');
   }
+
+  return responseData;
 };

@@ -77,9 +77,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.clientside"
+    namespace "com.masarrakw.app"
     defaultConfig {
-        applicationId "com.clientside"
+        applicationId "com.masarrakw.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -93,11 +93,15 @@ android {
             keyPassword 'android'
         }
         release {
-            if (project.hasProperty('MYAPP_UPLOAD_STORE_FILE')) {
-                storeFile file(MYAPP_UPLOAD_STORE_FILE)
-                storePassword MYAPP_UPLOAD_STORE_PASSWORD
-                keyAlias MYAPP_UPLOAD_KEY_ALIAS
-                keyPassword MYAPP_UPLOAD_KEY_PASSWORD
+            // Credentials come from MASARRA_UPLOAD_* properties. Keep them in
+            // the user-level gradle.properties (~/.gradle/gradle.properties),
+            // NOT in this project — android/gradle.properties is not ignored by
+            // git, so passwords placed there get committed.
+            if (project.hasProperty('MASARRA_UPLOAD_STORE_FILE')) {
+                storeFile file(MASARRA_UPLOAD_STORE_FILE)
+                storePassword MASARRA_UPLOAD_STORE_PASSWORD
+                keyAlias MASARRA_UPLOAD_KEY_ALIAS
+                keyPassword MASARRA_UPLOAD_KEY_PASSWORD
             }
         }
     }
@@ -106,9 +110,23 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            // Play rejects uploads signed with the debug key, and the debug
+            // keystore is shared and public — anyone could sign updates with it.
+            // Fail loudly rather than silently falling back to it.
+            if (!project.hasProperty('MASARRA_UPLOAD_STORE_FILE')) {
+                throw new GradleException(
+                    "Release signing is not configured. Define MASARRA_UPLOAD_STORE_FILE, " +
+                    "MASARRA_UPLOAD_KEY_ALIAS, MASARRA_UPLOAD_STORE_PASSWORD and " +
+                    "MASARRA_UPLOAD_KEY_PASSWORD in ~/.gradle/gradle.properties, and place " +
+                    "the keystore in android/app/."
+                )
+            }
+            signingConfig signingConfigs.release
+            // Left off deliberately. proguard-rules.pro is empty, and this app
+            // loads fonts and images by name from JavaScript — resource
+            // shrinking cannot see those references and would strip them. Turn
+            // both on only alongside a release build that has actually been
+            // installed and exercised on a device.
             minifyEnabled false
             shrinkResources false
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
@@ -126,5 +144,17 @@ dependencies {
         implementation jscFlavor
     }
 }
+
+// Ship only the icon font the app actually imports. Left unset, fonts.gradle
+// copies all 21 families (~3.9MB) into the APK; the code uses Ionicons alone,
+// so the other 3.4MB were downloaded by every user and never drawn.
+// Adding an icon family to the code means adding its .ttf here too, or the
+// glyphs render as empty boxes.
+// The key is all-lowercase: fonts.gradle reads project.hasProperty("vectoricons"),
+// and Gradle property lookup is case-sensitive, so a camelCase name is silently
+// ignored and every font ships anyway.
+project.ext.vectoricons = [
+    iconFontNames: [ 'Ionicons.ttf' ]
+]
 
 apply from: file("../../node_modules/react-native-vector-icons/fonts.gradle")

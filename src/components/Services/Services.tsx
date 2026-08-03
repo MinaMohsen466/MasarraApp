@@ -5,15 +5,14 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
-  ActivityIndicator,
   useWindowDimensions,
 } from 'react-native';
 import { createStyles } from './styles';
-import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useServices } from '../../hooks/useServices';
 import { Service, getServiceImageUrl } from '../../services/servicesApi';
 import { getServiceReviews } from '../../services/reviewsApi';
+import { LogoLoader } from '../LogoLoader';
 
 interface ServicesProps {
   onSelectService?: (service: Service) => void;
@@ -67,7 +66,13 @@ const Services: React.FC<ServicesProps> = ({ onSelectService, onViewAll }) => {
         });
 
         setServiceRatings(ratingsData);
-      } catch {}
+      } catch (ratingsError) {
+        // Ratings just do not render — indistinguishable from "no reviews yet".
+        console.error(
+          '[Services] Failed to load service ratings:',
+          ratingsError,
+        );
+      }
     };
 
     loadRatings();
@@ -251,7 +256,7 @@ const Services: React.FC<ServicesProps> = ({ onSelectService, onViewAll }) => {
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <LogoLoader />
         <Text style={[styles.loadingText, isRTL && styles.textRTL]}>
           {isRTL ? 'جاري تحميل الخدمات...' : 'Loading services...'}
         </Text>

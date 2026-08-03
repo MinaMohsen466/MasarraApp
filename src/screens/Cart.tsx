@@ -113,6 +113,7 @@ const Cart: React.FC<CartProps> = ({
   // Payment state
   const [showPaymentWebView, setShowPaymentWebView] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState('');
+  const [gatewayOrigin, setGatewayOrigin] = useState<string | undefined>();
   const [createdBookingIds, setCreatedBookingIds] = useState<string[]>([]);
   const [successfullyBookedItemIds, setSuccessfullyBookedItemIds] = useState<
     string[]
@@ -128,6 +129,7 @@ const Cart: React.FC<CartProps> = ({
   const [couponMessage, setCouponMessage] = useState('');
   const [couponError, setCouponError] = useState('');
   const [summaryHeight, setSummaryHeight] = useState(360);
+  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
 
   const loadCart = useCallback(async () => {
     const items = await getCart();
@@ -291,15 +293,18 @@ const Cart: React.FC<CartProps> = ({
   );
 
   const confirmAndDelete = useCallback(
-    (itemId: string) => {
-      // Snap to revealed position first (always swipe left to delete)
+    (itemId: string, isFromSwipe: boolean = false) => {
       const translateX = getSwipeAnim(itemId);
-      Animated.spring(translateX, {
-        toValue: -80,
-        useNativeDriver: true,
-        tension: 100,
-        friction: 10,
-      }).start();
+
+      // Only reveal swipe background if triggered by swipe gesture
+      if (isFromSwipe) {
+        Animated.spring(translateX, {
+          toValue: -80,
+          useNativeDriver: true,
+          tension: 100,
+          friction: 10,
+        }).start();
+      }
 
       // Show confirmation dialog
       const buttons = [
@@ -307,7 +312,8 @@ const Cart: React.FC<CartProps> = ({
           text: t('remove'),
           style: 'destructive' as const,
           onPress: async () => {
-            // Animate card off-screen then delete
+            // Hide swipe delete background immediately and animate card off-screen
+            setDeletingItemId(itemId);
             Animated.timing(translateX, {
               toValue: -500,
               duration: 200,
@@ -315,6 +321,7 @@ const Cart: React.FC<CartProps> = ({
             }).start(async () => {
               await removeFromCart(itemId);
               await loadCart();
+              setDeletingItemId(null);
               delete swipeAnims[itemId];
               if (panResponders.current[itemId]) {
                 delete panResponders.current[itemId];
@@ -326,7 +333,7 @@ const Cart: React.FC<CartProps> = ({
           text: t('cancel'),
           style: 'cancel' as const,
           onPress: () => {
-            // Reset card position
+            // Reset card position smoothly
             resetSwipe(itemId);
           },
         },
@@ -366,17 +373,18 @@ const Cart: React.FC<CartProps> = ({
         },
         onPanResponderRelease: (_, gestureState) => {
           const absX = Math.abs(gestureState.dx);
-          // If swiped beyond REVEAL_THRESHOLD, trigger delete confirmation
+          // If swiped beyond REVEAL_THRESHOLD, trigger delete confirmation with isFromSwipe = true
           if (absX > REVEAL_THRESHOLD) {
-            confirmAndDeleteRef.current(itemId);
+            confirmAndDeleteRef.current(itemId, true);
+          } else {
+            // Always snap the card back to the 0 position
+            Animated.spring(translateX, {
+              toValue: 0,
+              useNativeDriver: true,
+              tension: 100,
+              friction: 10,
+            }).start();
           }
-          // Always snap the card back to the 0 position
-          Animated.spring(translateX, {
-            toValue: 0,
-            useNativeDriver: true,
-            tension: 100,
-            friction: 10,
-          }).start();
         },
       });
     },
@@ -720,6 +728,9 @@ const Cart: React.FC<CartProps> = ({
       const payUrl = paymentResponse.data.invoiceURL;
       if (payUrl) {
         setPaymentUrl(payUrl);
+        // Carry the gateway origin through so the WebView serves the document
+        // under the same environment that issued the session.
+        setGatewayOrigin(paymentResponse.data.gatewayOrigin);
         setShowPaymentWebView(true);
       } else {
         throw new Error('No payment URL received');
@@ -1248,11 +1259,14 @@ const Cart: React.FC<CartProps> = ({
 
               const panHandler = getPanResponder(item._id);
               const translateX = getSwipeAnim(item._id);
-              const swipeOpacity = translateX.interpolate({
-                inputRange: [-20, -5, 0],
-                outputRange: [1, 0, 0],
-                extrapolate: 'clamp',
-              });
+              const isThisItemDeleting = deletingItemId === item._id;
+              const swipeOpacity = isThisItemDeleting
+                ? 0
+                : translateX.interpolate({
+                    inputRange: [-60, -25, -10, 0],
+                    outputRange: [1, 0.6, 0, 0],
+                    extrapolate: 'clamp',
+                  });
               return (
                 <View
                   key={item._id}
@@ -2448,6 +2462,7 @@ const Cart: React.FC<CartProps> = ({
       <PaymentWebView
         visible={showPaymentWebView}
         paymentUrl={paymentUrl}
+        gatewayOrigin={gatewayOrigin}
         onClose={handlePaymentClose}
         onPaymentSuccess={handlePaymentSuccess}
         onPaymentError={handlePaymentError}

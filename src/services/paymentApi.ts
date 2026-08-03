@@ -7,6 +7,28 @@ import { API_URL } from '../config/api.config';
  * Handles MyFatoorah payment integration for React Native
  */
 
+/**
+ * The single place that decides which MyFatoorah environment is in play.
+ *
+ * Everything downstream — the SDK script tag *and* the WebView's document
+ * origin — must agree, because the gateway rejects a session minted on the
+ * other environment ("SessionId is not valid!"). Splitting this decision across
+ * call sites is what broke checkout before.
+ *
+ * The server owns the answer through MYFATOORAH_TEST_MODE and reports it as
+ * `isTestMode` on the session response. Note that "deployed to production" does
+ * NOT imply live payments: the production backend runs in test mode while the
+ * app is still being tested.
+ *
+ * When the server does not report it, this defaults to the TEST gateway. That
+ * direction is deliberate — guessing "live" would put real cards in front of
+ * testers, while guessing "test" merely fails safe.
+ */
+export const resolveGatewayOrigin = (isTestMode?: boolean): string =>
+  isTestMode === false
+    ? 'https://portal.myfatoorah.com'
+    : 'https://demo.myfatoorah.com';
+
 // Helper to get auth token
 async function getAuthToken(): Promise<string | null> {
   try {
@@ -15,134 +37,6 @@ async function getAuthToken(): Promise<string | null> {
     return null;
   }
 }
-
-/**
- * Initialize MyFatoorah payment session
- * @param customerIdentifier - Customer identifier (email or phone)
- */
-export const initiatePaymentSession = async (
-  customerIdentifier: string,
-): Promise<{
-  success: boolean;
-  data?: {
-    SessionId: string;
-    CountryCode: string;
-  };
-  message?: string;
-}> => {
-  try {
-    const token = await getAuthToken();
-    if (!token) {
-      throw new Error('Authentication required');
-    }
-
-    if (__DEV__)
-      console.log('Initiating payment session for:', customerIdentifier);
-
-    const response = await fetch(`${API_URL}/payment/initiate-session`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ customerIdentifier }),
-    });
-
-    const data = await response.json();
-    if (__DEV__)
-      console.log('Initiate session response:', JSON.stringify(data, null, 2));
-
-    if (!response.ok) {
-      console.error('Initiate session failed:', data);
-      throw new Error(data.message || 'Failed to initiate payment session');
-    }
-
-    return data;
-  } catch (error: any) {
-    console.error('Error initiating payment session:', error);
-    throw error;
-  }
-};
-
-/**
- * Execute payment with MyFatoorah
- */
-export interface ExecutePaymentParams {
-  sessionId: string;
-  bookingId: string;
-  invoiceValue: number;
-  customerName: string;
-  customerEmail: string;
-  customerMobile: string;
-  mobileCountryCode?: string;
-  displayCurrencyIso?: string;
-  language?: string;
-  customerAddress?: {
-    Block?: string;
-    Street?: string;
-    HouseBuildingNo?: string;
-    AddressInstructions?: string;
-  };
-  invoiceItems?: Array<{
-    ItemName: string;
-    Quantity: number;
-    UnitPrice: number;
-  }>;
-  suppliers?: Array<{
-    SupplierCode: string;
-    InvoiceShare: number;
-    ProposedShare: number | null;
-  }>;
-}
-
-export const executePayment = async (
-  paymentData: ExecutePaymentParams,
-): Promise<{
-  success: boolean;
-  data?: {
-    invoiceId: string;
-    paymentURL: string;
-    isDirectPayment?: boolean;
-  };
-  message?: string;
-}> => {
-  try {
-    const token = await getAuthToken();
-    if (!token) {
-      throw new Error('Authentication required');
-    }
-
-    if (__DEV__) {
-      console.log(
-        'Executing payment with data:',
-        JSON.stringify(paymentData, null, 2),
-      );
-    }
-
-    const response = await fetch(`${API_URL}/payment/execute`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(paymentData),
-    });
-
-    const data = await response.json();
-    if (__DEV__)
-      console.log('Payment execute response:', JSON.stringify(data, null, 2));
-
-    if (!response.ok) {
-      console.error('Payment execute failed:', data);
-      throw new Error(data.message || 'Failed to execute payment');
-    }
-
-    return data;
-  } catch (error: any) {
-    console.error('Error executing payment:', error);
-    throw error;
-  }
-};
 
 /**
  * Send payment link (Invoice Link) via SMS/Email or just get link
@@ -187,6 +81,7 @@ export const sendPayment = async (
     customerReference?: string;
     sessionId?: string;
     encryptionKey?: string;
+    gatewayOrigin?: string;
   };
   message?: string;
 }> => {
@@ -241,13 +136,17 @@ export const sendPayment = async (
     const sessionId = data.data.sessionId;
     const encryptionKey = data.data.encryptionKey;
     const language = paymentData.language || 'en';
-    const isTestMode = __DEV__;
+    // Which MyFatoorah environment issued this session is the server's call
+    // (MYFATOORAH_TEST_MODE), and the session id only resolves on that same
+    // environment's SDK. Undefined here means the deployed server predates the
+    // field, and resolveGatewayOrigin falls back to the test gateway.
+    const gatewayOrigin = resolveGatewayOrigin(data.data?.isTestMode);
 
     // Create HTML content for embedded payment
     const htmlContent = createEmbeddedPaymentHTML(
       sessionId,
       language,
-      isTestMode,
+      gatewayOrigin,
     );
 
     return {
@@ -259,6 +158,9 @@ export const sendPayment = async (
         customerReference: paymentData.bookingId,
         sessionId: sessionId,
         encryptionKey: encryptionKey,
+        // Passed to PaymentWebView so the document origin matches the SDK it
+        // loads. These drifting apart is what produced "SessionId is not valid!".
+        gatewayOrigin,
       },
       message: 'Payment session created successfully',
     };
@@ -339,11 +241,10 @@ export const getPendingServicesForPayment = async (
 function createEmbeddedPaymentHTML(
   sessionId: string,
   language: string,
-  isTestMode: boolean,
+  gatewayOrigin: string,
 ): string {
-  const scriptSrc = isTestMode
-    ? 'https://demo.myfatoorah.com/sessions/v1/session.js'
-    : 'https://portal.myfatoorah.com/sessions/v1/session.js';
+  // Same origin the WebView is given as baseUrl — see resolveGatewayOrigin.
+  const scriptSrc = `${gatewayOrigin}/sessions/v1/session.js`;
   const dir = language === 'ar' ? 'rtl' : 'ltr';
   const headerText = language === 'ar' ? 'الدفع الآمن' : 'Secure Payment';
   const loadingText =
@@ -360,70 +261,90 @@ function createEmbeddedPaymentHTML(
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Payment</title>
   <style>
+    /* Mirrors src/constants/colors.ts so the sheet reads as part of the app. */
+    :root {
+      --brand: #00a19c;
+      --brand-dark: #1F4644;
+      --page-bg: #e5eeec;
+      --panel-bg: #ffffff;
+      --border: #dde9e4;
+      --text: #2C5F5D;
+      --text-muted: #666666;
+      --danger: #F44336;
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background-color: #ffffff; /* Match colors.background */
-      min-height: 100vh;
+      background-color: var(--page-bg);
+      color: var(--text);
+      /* The sheet is already sized by the native modal. Filling the height here
+         and pushing content to the top is what left the large empty band under
+         the pay button. */
+      min-height: 100%;
       display: flex;
       justify-content: center;
       align-items: flex-start;
-      padding: 16px;
+      padding: 12px 12px 20px;
     }
+
     .container {
       width: 100%;
-      max-width: 450px;
-      background: #ffffff;
-      border-radius: 0;
-      padding: 0;
-      box-shadow: none;
-      border: none;
+      max-width: 460px;
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 12px;
+      box-shadow: 0 2px 10px rgba(44, 95, 93, 0.06);
     }
-    .header {
-      display: none;
-    }
-    .header::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 40px;
-      height: 3px;
-      background-color: #00a19c;
-      border-radius: 2px;
-    }
-    #embedded-sessions {
-      min-height: 360px;
-    }
+
+    /* The native modal already renders a title bar. */
+    .header { display: none; }
+
     .loading {
       text-align: center;
-      padding: 60px 20px;
-      color: #666666;
+      padding: 48px 20px;
+      color: var(--text-muted);
+      font-size: 14px;
     }
     .spinner {
-      width: 44px;
-      height: 44px;
-      border: 3.5px solid #e5eeec;
-      border-top: 3.5px solid #00a19c;
+      width: 40px;
+      height: 40px;
+      border: 3.5px solid var(--border);
+      border-top: 3.5px solid var(--brand);
       border-radius: 50%;
       animation: spin 1s linear infinite;
-      margin: 0 auto 20px;
+      margin: 0 auto 16px;
     }
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+
     .error {
       text-align: center;
       padding: 40px 20px;
-      color: #F44336;
+      color: var(--danger);
+      font-size: 14px;
+      font-weight: 600;
       display: none;
     }
-    /* Style adjustments for embedded MyFatoorah components */
-    #embedded-sessions button {
-      border-radius: 10px !important;
-      font-weight: 600 !important;
+
+    /* --- Gateway-rendered markup -------------------------------------------
+       Selectors reach into MyFatoorah's own DOM, so they stay defensive: any
+       element these miss simply keeps the gateway's default styling. */
+
+    /* NOTE: the gateway renders everything — payment networks, card fields and
+       the pay button — inside one cross-origin iframe (#MFEmbeddedIframe), and
+       leaves nothing else in this document. No rule here can reach those
+       controls; they only style the wrapper around the iframe. Restyling the
+       pay button needs the SDK's useCustomButton option plus our own button
+       calling submitCardPayment(). */
+    #embedded-sessions iframe {
+      display: block;
+      width: 100%;
+      border: 0;
     }
   </style>
 </head>
@@ -440,8 +361,53 @@ function createEmbeddedPaymentHTML(
       var loadingEl = document.getElementById('loading');
       var errorEl = document.getElementById('error');
       var paymentStarted = false;
+      var waitedMs = 0;
+      function post(payload) {
+        window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify(payload));
+      }
+      function reportFailure(message) {
+        loadingEl.style.display = 'none';
+        errorEl.style.display = 'block';
+        post({ type: 'PAYMENT_ERROR', message: message });
+      }
+
+      /* The gateway renders its card fields inside cross-origin iframes, so the
+         stylesheet above cannot reach them. The pay button does live in this
+         document, but under obfuscated class names that change between
+         releases. Pick it structurally instead — it is the widest button in the
+         container — and tag it for the stylesheet. */
+
+
+      /* Reports how tall the content actually is so the native sheet can shrink
+         to fit instead of leaving a band of empty space below the gateway. */
+      var lastHeight = 0;
+      function reportHeight() {
+        var h = Math.ceil(document.body.scrollHeight);
+        if (h && Math.abs(h - lastHeight) > 8) {
+          lastHeight = h;
+          post({ type: 'CONTENT_HEIGHT', height: h });
+        }
+      }
+
+      /* The gateway mounts asynchronously and resizes its iframes afterwards. */
+      function watchGateway() {
+        reportHeight();
+      }
+      if (window.MutationObserver) {
+        new MutationObserver(watchGateway).observe(document.body, {
+          childList: true, subtree: true, attributes: true, attributeFilter: ['style'],
+        });
+      }
+      setInterval(watchGateway, 500);
       function initPayment() {
-        if (typeof window.myfatoorah === 'undefined') { setTimeout(initPayment, 100); return; }
+        if (typeof window.myfatoorah === 'undefined') {
+          // Bounded wait. This used to retry every 100ms with no limit, so a
+          // gateway script that never loaded left the user on a spinner
+          // indefinitely with nothing reported back to the app.
+          waitedMs += 100;
+          if (waitedMs >= 15000) { reportFailure('${errorText}'); return; }
+          setTimeout(initPayment, 100); return;
+        }
         loadingEl.style.display = 'none';
         try {
           window.myfatoorah.init({
@@ -450,14 +416,17 @@ function createEmbeddedPaymentHTML(
             shouldHandlePaymentUrl: true,
             language: '${language}',
             style: {
-              cardHeight: 280,
+              // Reserved height for the card-fields area. At 280 it was taller
+              // than the fields actually need, which is what showed up as the
+              // empty band between the pay button and the gateway's footer.
+              cardHeight: 235,
               input: {
-                color: '#000000',
+                color: '#2C5F5D',
                 fontSize: '15px',
                 fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                inputHeight: '46px',
+                inputHeight: '48px',
                 borderColor: '#dde9e4',
-                borderRadius: '10px',
+                borderRadius: '12px',
                 borderWidth: '1px',
                 errorColor: '#F44336',
                 label: {
@@ -469,7 +438,6 @@ function createEmbeddedPaymentHTML(
               }
             },
             callback: function(response) {
-              console.log('Payment callback:', JSON.stringify(response));
               if (response.paymentType) { paymentStarted = true; }
               if (response.isSuccess) {
                 if (response.redirectionUrl) { window.location.href = response.redirectionUrl; }
@@ -481,7 +449,11 @@ function createEmbeddedPaymentHTML(
               }
             }
           });
-        } catch (err) { console.error('Init error:', err); loadingEl.style.display = 'none'; errorEl.style.display = 'block'; }
+        } catch (err) {
+          // Previously this only painted the error panel inside the WebView; the
+          // app was never told, so the payment screen just sat there.
+          reportFailure('${errorText}');
+        }
       }
       setTimeout(initPayment, 500);
     });
@@ -489,103 +461,6 @@ function createEmbeddedPaymentHTML(
 </body>
 </html>`;
 }
-
-/**
- * Get payment status by payment ID
- */
-export const getPaymentStatus = async (
-  paymentId: string,
-): Promise<{
-  success: boolean;
-  data?: {
-    InvoiceStatus: string;
-    InvoiceId: string;
-    InvoiceValue: number;
-    CustomerName: string;
-    PaidCurrency?: string;
-    PaidCurrencyValue?: number;
-    TransactionId?: string;
-    PaymentGateway?: string;
-    PaymentDate?: string;
-  };
-  message?: string;
-}> => {
-  try {
-    const token = await getAuthToken();
-    if (!token) {
-      throw new Error('Authentication required');
-    }
-
-    const response = await fetch(`${API_URL}/payment/status/${paymentId}`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to get payment status');
-    }
-
-    return data;
-  } catch (error: any) {
-    console.error('Error getting payment status:', error);
-    throw error;
-  }
-};
-
-/**
- * Get payment status by session ID
- */
-export const getPaymentStatusBySession = async (
-  sessionId: string,
-): Promise<{
-  success: boolean;
-  data?: {
-    InvoiceStatus: string;
-    InvoiceId: string;
-    InvoiceValue: number;
-    CustomerName: string;
-    PaidCurrency?: string;
-    PaidCurrencyValue?: number;
-    TransactionId?: string;
-    PaymentGateway?: string;
-    PaymentDate?: string;
-  };
-  message?: string;
-}> => {
-  try {
-    const token = await getAuthToken();
-    if (!token) {
-      throw new Error('Authentication required');
-    }
-
-    const response = await fetch(
-      `${API_URL}/payment/status/session/${sessionId}`,
-      {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      },
-    );
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to get payment status');
-    }
-
-    return data;
-  } catch (error: any) {
-    console.error('Error getting payment status by session:', error);
-    throw error;
-  }
-};
 
 /**
  * Get active suppliers for commission calculation
@@ -703,19 +578,4 @@ export const calculateSupplierShares = (
   });
 
   return shares;
-};
-
-/**
- * Check if cart has multiple vendors
- */
-export const isMultiVendorCart = (cartItems: CartItemForPayment[]): boolean => {
-  const vendorIds = new Set(cartItems.map(item => item.vendorId));
-  return vendorIds.size > 1;
-};
-
-/**
- * Get unique vendor IDs from cart
- */
-export const getCartVendorIds = (cartItems: CartItemForPayment[]): string[] => {
-  return [...new Set(cartItems.map(item => item.vendorId))];
 };

@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   Image,
-  ActivityIndicator,
   FlatList,
   StatusBar,
   Dimensions,
@@ -16,6 +15,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useVendors } from '../../hooks/useVendors';
 import { Vendor } from '../../services/vendorsApi';
 import { API_BASE_URL } from '../../config/api.config';
+import { LogoLoader } from '../LogoLoader';
 
 interface VendorsProps {
   onSelectVendor?: (vendorId: string, vendorName: string) => void;
@@ -104,7 +104,7 @@ const Vendors: React.FC<VendorsProps> = ({ onSelectVendor, onBack }) => {
 
       {isLoading && (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <LogoLoader />
         </View>
       )}
       {error && (

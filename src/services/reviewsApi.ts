@@ -57,26 +57,22 @@ export async function getServiceReviews(
   page: number = 1,
   limit: number = 10,
 ): Promise<ReviewsResponse> {
-  try {
-    const response = await fetch(
-      `${API_BASE_URL}/reviews/service/${serviceId}?page=${page}&limit=${limit}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+  const response = await fetch(
+    `${API_BASE_URL}/reviews/service/${serviceId}?page=${page}&limit=${limit}`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
       },
-    );
+    },
+  );
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to fetch reviews');
-    }
-
-    return await response.json();
-  } catch (error) {
-    throw error;
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to fetch reviews');
   }
+
+  return await response.json();
 }
 
 // Create a new review
@@ -86,53 +82,47 @@ export async function createReview(
   comment: string,
   bookingId?: string,
 ): Promise<Review> {
-  try {
-    const token = await getSecureToken();
-    if (!token) {
-      throw new Error('Authentication required');
-    }
-
-    // Validate serviceId
-    if (!serviceId || serviceId === 'undefined') {
-      throw new Error('Invalid service ID');
-    }
-
-    const url = `${API_BASE_URL}/reviews/service/${serviceId}`;
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        rating,
-        comment,
-        bookingId,
-      }),
-    });
-
-    // Check content type before parsing
-    const contentType = response.headers.get('content-type');
-
-    if (!contentType || !contentType.includes('application/json')) {
-      // Consume response body for non-JSON responses
-      await response.text();
-      throw new Error('Server error - please try again later');
-    }
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(
-        error.error || error.message || 'Failed to create review',
-      );
-    }
-
-    const result = await response.json();
-    return result;
-  } catch (error) {
-    throw error;
+  const token = await getSecureToken();
+  if (!token) {
+    throw new Error('Authentication required');
   }
+
+  // Validate serviceId
+  if (!serviceId || serviceId === 'undefined') {
+    throw new Error('Invalid service ID');
+  }
+
+  const url = `${API_BASE_URL}/reviews/service/${serviceId}`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      rating,
+      comment,
+      bookingId,
+    }),
+  });
+
+  // Check content type before parsing
+  const contentType = response.headers.get('content-type');
+
+  if (!contentType || !contentType.includes('application/json')) {
+    // Consume response body for non-JSON responses
+    await response.text();
+    throw new Error('Server error - please try again later');
+  }
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || error.message || 'Failed to create review');
+  }
+
+  const result = await response.json();
+  return result;
 }
 
 // Check if user already reviewed a service
@@ -163,33 +153,29 @@ export async function checkUserReviewedService(
 
 // Delete a review
 export async function deleteReview(reviewId: string): Promise<void> {
-  try {
-    const token = await getSecureToken();
-    if (!token) {
-      throw new Error('Authentication required');
+  const token = await getSecureToken();
+  if (!token) {
+    throw new Error('Authentication required');
+  }
+
+  const url = `${API_BASE_URL}/reviews/${reviewId}`;
+
+  const response = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      const error = await response.json();
+      throw new Error(
+        error.error || error.message || 'Failed to delete review',
+      );
     }
-
-    const url = `${API_BASE_URL}/reviews/${reviewId}`;
-
-    const response = await fetch(url, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        const error = await response.json();
-        throw new Error(
-          error.error || error.message || 'Failed to delete review',
-        );
-      }
-      throw new Error('Failed to delete review');
-    }
-  } catch (error) {
-    throw error;
+    throw new Error('Failed to delete review');
   }
 }

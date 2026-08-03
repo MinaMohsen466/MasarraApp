@@ -90,13 +90,21 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
           setIsConnected(false);
         });
 
-        newSocket.on('reconnect_failed', () => {});
+        newSocket.on('reconnect_failed', () => {
+          console.error('[Socket] Reconnection failed, giving up');
+        });
 
-        newSocket.on('error', _error => {});
+        newSocket.on('error', error => {
+          console.error('[Socket] Error:', error);
+        });
 
         socketRef.current = newSocket;
         setSocket(newSocket);
-      } catch {}
+      } catch (error) {
+        // Chat and live notifications are dead without this, and previously
+        // failed with no indication at all.
+        console.error('[Socket] Failed to initialise connection:', error);
+      }
     };
 
     initSocket();

@@ -1,10 +1,22 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
+
+    <!-- Picking a profile / vendor-application photo. READ_MEDIA_IMAGES on
+         Android 13+, READ_EXTERNAL_STORAGE on older releases. CAMERA and
+         WRITE_EXTERNAL_STORAGE were declared here but never requested by any
+         code path: the app only ever opens the gallery (launchImageLibrary),
+         never the camera, and never writes to shared storage. Declaring
+         permissions the app does not use makes Play ask why, and shows users a
+         request that has no purpose. -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <!-- Saving the QR invitation card to the gallery. Capped at 28: from
+         Android 10 the MediaStore insert needs no permission, and asking for
+         legacy write there would be flagged by Play as unjustified. -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
+
+    <!-- Locating the pin when a customer adds a delivery address. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 

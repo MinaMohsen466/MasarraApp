@@ -7,12 +7,16 @@ import {
   Image,
   FlatList,
   Animated,
-  RefreshControl,
 } from 'react-native';
 import { SvgUri } from 'react-native-svg';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useOccasions } from '../hooks/useOccasions';
 import { useServices } from '../hooks/useServices';
+import { useSiteSettings } from '../hooks/useSiteSettings';
+import {
+  useLogoRefresh,
+  PullToRefresh,
+} from '../components/LogoRefreshControl';
 import { Occasion, getImageUrl } from '../services/api';
 import MasarraWelcome from '../components/MasarraWelcome';
 import FeaturedServicesCarousel from '../components/FeaturedServicesCarousel';
@@ -22,7 +26,6 @@ import Auth from '../components/Auth';
 import UserProfile from '../components/UserProfile';
 import { useAuth } from '../contexts/AuthContext';
 import { styles } from './styles';
-import { colors } from '../constants/colors';
 import Header from '../components/header/Header';
 
 interface HomeProps {
@@ -59,12 +62,12 @@ const Home: React.FC<HomeProps> = ({
     isLoading: servicesLoading,
     refetch: refetchServices,
   } = useServices();
+  const { refetch: refetchSettings } = useSiteSettings();
 
   const showAuth = currentRoute === 'auth';
   const showUserProfile = currentRoute === 'profile';
 
   const [initialLoading, setInitialLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
 
   // Animated value for scroll offset (collapses header on scroll)
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -108,14 +111,15 @@ const Home: React.FC<HomeProps> = ({
     return undefined;
   }, [isLoading, initialLoading]);
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    try {
-      await Promise.all([refetchOccasions(), refetchServices()]);
-    } finally {
-      setRefreshing(false);
-    }
-  }, [refetchOccasions, refetchServices]);
+  // Everything the screen renders, not just the two lists: the header banner is
+  // driven by site settings, so leaving it out made a pull look like a no-op
+  // whenever only the banner had changed.
+  const reload = useCallback(
+    () =>
+      Promise.all([refetchOccasions(), refetchServices(), refetchSettings()]),
+    [refetchOccasions, refetchServices, refetchSettings],
+  );
+  const { refreshing, onRefresh } = useLogoRefresh(reload);
 
   const renderOccasionCard = useCallback(
     ({ item }: { item: Occasion }) => {
@@ -216,90 +220,93 @@ const Home: React.FC<HomeProps> = ({
         scrollY={scrollY}
       />
 
-      <Animated.ScrollView
-        // eslint-disable-next-line react-native/no-inline-styles
-        style={{ flex: 1 }}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false },
-        )}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
-            progressBackgroundColor="#ffffff"
-          />
-        }
-        scrollEventThrottle={16}
-      >
-        {hasFeaturedServices ? (
-          <>
-            <FeaturedServicesCarousel
+      <PullToRefresh refreshing={refreshing} onRefresh={onRefresh}>
+        {scrollProps => (
+          <Animated.ScrollView
+            {...scrollProps}
+            // eslint-disable-next-line react-native/no-inline-styles
+            style={{ flex: 1 }}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            onScroll={Animated.event(
+              [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+              { useNativeDriver: false },
+            )}
+            scrollEventThrottle={16}
+          >
+            {hasFeaturedServices ? (
+              <>
+                <FeaturedServicesCarousel
+                  onSelectService={service =>
+                    onSelectService && onSelectService(service._id)
+                  }
+                />
+                <SearchSection
+                  onSelectOccasion={(occasion, selectedDate) =>
+                    onSelectOccasion && onSelectOccasion(occasion, selectedDate)
+                  }
+                />
+              </>
+            ) : (
+              <MasarraWelcome
+                onBrowseServices={() => onNavigate && onNavigate('occasions')}
+                onGetStarted={() => onNavigate && onNavigate('auth')}
+              />
+            )}
+
+            <Services
               onSelectService={service =>
                 onSelectService && onSelectService(service._id)
               }
+              onViewAll={() => onNavigate && onNavigate('services')}
             />
-            <SearchSection
-              onSelectOccasion={(occasion, selectedDate) =>
-                onSelectOccasion && onSelectOccasion(occasion, selectedDate)
-              }
-            />
-          </>
-        ) : (
-          <MasarraWelcome
-            onBrowseServices={() => onNavigate && onNavigate('occasions')}
-            onGetStarted={() => onNavigate && onNavigate('auth')}
-          />
-        )}
 
-        <Services
-          onSelectService={service =>
-            onSelectService && onSelectService(service._id)
-          }
-          onViewAll={() => onNavigate && onNavigate('services')}
-        />
-
-        {/* Occasions Section */}
-        <View style={styles.occasionsSection}>
-          <View style={[styles.sectionHeader, isRTL && styles.sectionHeaderRTL]}>
-            <Text style={[styles.sectionTitle, isRTL && styles.sectionTitleRTL]}>
-              {t('occasions').toUpperCase()}
-            </Text>
-            <TouchableOpacity
-              onPress={() => onNavigate && onNavigate('occasions')}
-            >
-              <Text
-                style={[styles.viewAllButton, isRTL && styles.viewAllButtonRTL]}
+            {/* Occasions Section */}
+            <View style={styles.occasionsSection}>
+              <View
+                style={[styles.sectionHeader, isRTL && styles.sectionHeaderRTL]}
               >
-                {isRTL ? 'عرض الكل' : 'View All'}
-              </Text>
-            </TouchableOpacity>
-          </View>
+                <Text
+                  style={[styles.sectionTitle, isRTL && styles.sectionTitleRTL]}
+                >
+                  {t('occasions').toUpperCase()}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => onNavigate && onNavigate('occasions')}
+                >
+                  <Text
+                    style={[
+                      styles.viewAllButton,
+                      isRTL && styles.viewAllButtonRTL,
+                    ]}
+                  >
+                    {isRTL ? 'عرض الكل' : 'View All'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
 
-          {error ? (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{t('failedToLoad')}</Text>
+              {error ? (
+                <View style={styles.errorContainer}>
+                  <Text style={styles.errorText}>{t('failedToLoad')}</Text>
+                </View>
+              ) : (
+                <FlatList
+                  data={occasions}
+                  renderItem={renderOccasionCard}
+                  keyExtractor={item => item._id}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={[
+                    styles.horizontalList,
+                    isRTL && styles.horizontalListRTL,
+                  ]}
+                  inverted={isRTL}
+                />
+              )}
             </View>
-          ) : (
-            <FlatList
-              data={occasions}
-              renderItem={renderOccasionCard}
-              keyExtractor={item => item._id}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={[
-                styles.horizontalList,
-                isRTL && styles.horizontalListRTL,
-              ]}
-              inverted={isRTL}
-            />
-          )}
-        </View>
-      </Animated.ScrollView>
+          </Animated.ScrollView>
+        )}
+      </PullToRefresh>
     </View>
   );
 };

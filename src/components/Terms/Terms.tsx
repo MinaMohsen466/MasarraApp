@@ -4,7 +4,6 @@ import {
   View,
   Text,
   ScrollView,
-  ActivityIndicator,
   TouchableOpacity,
   StatusBar,
 } from 'react-native';
@@ -14,6 +13,7 @@ import { styles } from './styles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTermsSettings } from '../../hooks/useSiteSettings';
+import { LogoLoader } from '../LogoLoader';
 
 interface TermsProps {
   onBack?: () => void;
@@ -33,7 +33,7 @@ const Terms: React.FC<TermsProps> = ({ onBack }) => {
           barStyle="light-content"
           translucent={false}
         />
-        <ActivityIndicator size="large" color={colors.primary} />
+        <LogoLoader />
         <Text style={[styles.loadingText, isRTL && styles.textRTL]}>
           {isRTL ? 'جاري التحميل...' : 'Loading...'}
         </Text>

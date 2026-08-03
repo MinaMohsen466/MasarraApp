@@ -25,6 +25,7 @@ import { createStyles } from './styles';
 import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useGlobalDate } from '../../contexts/DateContext';
+import { PRODUCTION_URL } from '../../config/api.config';
 import {
   getServiceImageUrl,
   fetchServiceById,
@@ -53,6 +54,8 @@ import {
   checkUserReviewedService,
 } from '../../services/reviewsApi';
 import { CustomAlert } from '../../screens/../components/CustomAlert/CustomAlert';
+import { AddToCartToast } from '../Cart/AddToCartToast';
+import { LogoLoader } from '../LogoLoader';
 
 interface ServiceDetailsProps {
   serviceId: string;
@@ -81,6 +84,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
   const threshold = carouselHeight - fixedHeight - 20;
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
+  const [showCartToast, setShowCartToast] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const dotAnimations = useRef<Animated.Value[]>([]).current;
   const scrollRef = useRef<any>(null);
@@ -789,7 +793,7 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
           { justifyContent: 'center', alignItems: 'center' },
         ]}
       >
-        <ActivityIndicator size="large" color={colors.primary} />
+        <LogoLoader />
       </View>
     );
   }
@@ -1007,8 +1011,9 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
   const handleShare = async () => {
     if (!service) return;
     try {
-      // Create service URL
-      const serviceUrl = `https://masarrakw.com/services/${service._id}`;
+      // Always the public site — a shared link has to work on someone else's
+      // device, so this must not follow the dev/local base URL.
+      const serviceUrl = `${PRODUCTION_URL}/services/${service._id}`;
 
       // Copy link to clipboard
       await Clipboard.setString(serviceUrl);
@@ -3046,6 +3051,9 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
                 // Add to local storage cart
                 await addToCart(cartItem);
 
+                // Trigger smooth AddToCartToast
+                setShowCartToast(true);
+
                 // Trigger success button state and reset after 2 seconds
                 setIsSuccessState(true);
                 setTimeout(() => {
@@ -3250,6 +3258,17 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
           </View>
         </View>
       )}
+
+      {/* Floating Add to Cart Success Toast */}
+      <AddToCartToast
+        visible={showCartToast}
+        isRTL={isRTL}
+        onViewCart={() => {
+          setShowCartToast(false);
+          if (onNavigate) onNavigate('cart');
+        }}
+        onDismiss={() => setShowCartToast(false)}
+      />
     </View>
   );
 };

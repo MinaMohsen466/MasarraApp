@@ -31,6 +31,7 @@ import { WebView } from 'react-native-webview';
 import Geolocation from '@react-native-community/geolocation';
 
 import { MAP_VIEW_HTML } from '../../constants/mapHtml';
+import { LogoLoader } from '../LogoLoader';
 
 interface Address {
   _id: string;
@@ -538,7 +539,7 @@ const Addresses: React.FC<{
 
       {/* Top Map Section (38% of screen height) */}
       <View style={styles.mapContainer}>
-        <WebView
+        <WebView<{}>
           ref={topMapRef}
           originWhitelist={['*']}
           source={{
@@ -829,7 +830,7 @@ const Addresses: React.FC<{
                 >
                   {loading ? (
                     <View style={styles.emptyListContainer}>
-                      <ActivityIndicator size="large" color={colors.primary} />
+                      <LogoLoader />
                     </View>
                   ) : !addresses || addresses.length === 0 ? (
                     <View style={styles.emptyBox}>

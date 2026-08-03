@@ -51,7 +51,10 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({
         ) {
           setLanguageState(savedLanguage);
         }
-      } catch {
+      } catch (error) {
+        // Falls back to the default language, but the user sees their choice
+        // silently reset on every launch unless this is recorded.
+        console.error('[Language] Failed to load saved language:', error);
       } finally {
         setIsInitialized(true);
       }
@@ -65,7 +68,10 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({
       setLanguageState(lang);
       await AsyncStorage.setItem('appLanguage', lang);
       // Note: For full RTL support, you may need to restart the app
-    } catch {}
+    } catch (error) {
+      // The switch still applies in memory; it just will not survive a restart.
+      console.error('[Language] Failed to persist language choice:', error);
+    }
   };
 
   const t = (key: string): string => {

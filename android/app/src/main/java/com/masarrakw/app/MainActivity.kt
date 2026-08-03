@@ -1,4 +1,4 @@
-package com.clientside
+package com.masarrakw.app
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate

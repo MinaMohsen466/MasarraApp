@@ -1,13 +1,14 @@
 /* eslint-disable no-console, @typescript-eslint/no-explicit-any */
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   View,
   StyleSheet,
-  ActivityIndicator,
   TouchableOpacity,
   Text,
   Modal,
   Platform,
+  Dimensions,
+  LayoutAnimation,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,10 +17,19 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../constants/colors';
 import { useLanguage } from '../contexts/LanguageContext';
 import { API_URL } from '../config/api.config';
+import { resolveGatewayOrigin } from '../services/paymentApi';
+import { LogoLoader } from './LogoLoader';
 
 interface PaymentWebViewProps {
   visible: boolean;
   paymentUrl: string;
+  /**
+   * Origin the embedded payment document is served under. It has to match the
+   * environment that issued the session, otherwise the gateway rejects it with
+   * "SessionId is not valid!". Comes from sendPayment(); defaults to the test
+   * gateway, matching resolveGatewayOrigin.
+   */
+  gatewayOrigin?: string;
   onClose: () => void;
   onPaymentSuccess: () => void;
   onPaymentError: (error: string) => void;
@@ -32,6 +42,7 @@ interface PaymentWebViewProps {
 const PaymentWebView: React.FC<PaymentWebViewProps> = ({
   visible,
   paymentUrl,
+  gatewayOrigin,
   onClose,
   onPaymentSuccess,
   onPaymentError,
@@ -43,6 +54,53 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
   const [verifyingPayment, setVerifyingPayment] = useState(false);
   const webViewRef = useRef<WebView>(null);
   const verifyingRef = useRef(false);
+  // Reported by the payment page once the gateway has mounted.
+  const [contentHeight, setContentHeight] = useState<number | null>(null);
+  const heightSettleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleared once the gateway has finished mounting and settled on a size.
+  const [gatewayReady, setGatewayReady] = useState(false);
+
+  /**
+   * The gateway iframe mounts at ~150px and grows in steps as it loads. Acting
+   * on each reported height made the sheet open large, collapse, then expand
+   * again. Commit only once the value has held still, and keep the loading
+   * cover up until then so the growing is never on screen.
+   */
+  const settleHeight = useCallback((height: number) => {
+    if (heightSettleTimer.current) clearTimeout(heightSettleTimer.current);
+    heightSettleTimer.current = setTimeout(() => {
+      LayoutAnimation.configureNext(
+        LayoutAnimation.create(
+          220,
+          LayoutAnimation.Types.easeInEaseOut,
+          LayoutAnimation.Properties.scaleY,
+        ),
+      );
+      setContentHeight(height);
+      setGatewayReady(true);
+    }, 500);
+  }, []);
+
+  useEffect(() => {
+    if (!visible) return undefined;
+    // The component stays mounted between attempts, so a reopened sheet would
+    // otherwise start at the previous session's size with the cover already
+    // lifted.
+    setGatewayReady(false);
+    setContentHeight(null);
+    // Safety net: if the gateway never reports a size, reveal anyway rather
+    // than leaving the user staring at a spinner over a working page.
+    const reveal = setTimeout(() => setGatewayReady(true), 8000);
+    return () => clearTimeout(reveal);
+  }, [visible]);
+
+  useEffect(
+    () => () => {
+      if (heightSettleTimer.current) clearTimeout(heightSettleTimer.current);
+    },
+    [],
+  );
 
   // Shared helper function to verify payment status on the server
   // Uses the /payment/callback endpoint which supports both v2 and v3 PaymentIds
@@ -75,23 +133,30 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
       );
 
       const result = await response.json();
-      console.log('Payment callback verification result:', result);
+      // Only the status — the full response carries invoice and customer details
+      // that must not reach the device log.
+      if (__DEV__)
+        console.log(
+          'Payment verification status:',
+          result?.invoiceStatus ?? result?.data?.InvoiceStatus,
+        );
 
       if (result.success && result.invoiceStatus === 'Paid') {
-        console.log('Payment verified as PAID via callback!');
+        if (__DEV__) console.log('Payment verified as PAID via callback!');
         onPaymentSuccess();
       } else if (result.success && result.data?.InvoiceStatus === 'Paid') {
-        console.log('Payment verified as PAID!');
+        if (__DEV__) console.log('Payment verified as PAID!');
         onPaymentSuccess();
       } else {
         const status =
           result.invoiceStatus || result.data?.InvoiceStatus || 'Unknown';
-        console.log('Payment not confirmed. Status:', status);
+        if (__DEV__) console.log('Payment not confirmed. Status:', status);
         if (status === 'Pending') {
           // Payment might still be processing - treat as success and let server reconcile
-          console.log(
-            'Payment Pending - treating as potential success, user should check orders',
-          );
+          if (__DEV__)
+            console.log(
+              'Payment Pending - treating as potential success, user should check orders',
+            );
           onPaymentError(
             'Payment is being processed. Please check your order history for confirmation.',
           );
@@ -115,18 +180,21 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
   // Handle navigation state changes to detect payment completion
   const handleNavigationStateChange = async (navState: any) => {
     const { url } = navState;
-    console.log('WebView navigating to:', url);
+    // Path only — the query string of a payment callback carries the payment id.
+    if (__DEV__) console.log('WebView navigating to:', url.split('?')[0]);
 
     // Check if redirected to success/callback URL
     if (url.includes('/payment/callback') || url.includes('/payment/success')) {
       if (verifyingRef.current) {
-        console.log(
-          'Payment verification already in progress, ignoring duplicate event',
-        );
+        if (__DEV__)
+          console.log(
+            'Payment verification already in progress, ignoring duplicate event',
+          );
         return;
       }
       verifyingRef.current = true;
-      console.log('Payment callback detected! Verifying payment status...');
+      if (__DEV__)
+        console.log('Payment callback detected! Verifying payment status...');
 
       // Extract paymentId from URL query parameters (manual parsing for React Native compatibility)
       try {
@@ -140,10 +208,10 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
         const paymentId = params.paymentId || params.Id || null;
 
         if (paymentId) {
-          console.log('Payment ID extracted:', paymentId);
+          if (__DEV__) console.log('Payment ID extracted:', paymentId);
           await verifyPayment(paymentId);
         } else {
-          console.log('No payment ID found in URL');
+          if (__DEV__) console.log('No payment ID found in URL');
           onPaymentError('No payment identifier found in callback URL.');
         }
       } catch (err) {
@@ -155,7 +223,7 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
 
     // Check if redirected to error URL
     if (url.includes('/payment/error') || url.includes('/payment/failed')) {
-      console.log('Payment error detected!');
+      if (__DEV__) console.log('Payment error detected!');
       onPaymentError('Payment was not completed');
       return;
     }
@@ -181,6 +249,19 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
 
   if (!visible) return null;
 
+  // Header + a little breathing room, capped so a tall gateway page still
+  // leaves the cart visible behind the sheet. Falls back to the original fixed
+  // share of the screen until the page reports its size.
+  const screenHeight = Dimensions.get('window').height;
+  const sheetHeightStyle = contentHeight
+    ? {
+        height: Math.min(
+          contentHeight + 64 + insets.bottom,
+          screenHeight * 0.9,
+        ),
+      }
+    : styles.sheetFallbackHeight;
+
   return (
     <Modal
       visible={visible}
@@ -189,7 +270,7 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
       onRequestClose={onClose}
     >
       <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
+        <View style={[styles.modalContent, sheetHeightStyle]}>
           {/* Header */}
           <View style={[styles.simpleHeader, isRTL && styles.simpleHeaderRTL]}>
             <TouchableOpacity
@@ -224,6 +305,8 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
                   onPress={() => {
                     setError(false);
                     setLoading(true);
+                    setGatewayReady(false);
+                    setContentHeight(null);
                     webViewRef.current?.reload();
                   }}
                 >
@@ -241,7 +324,7 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
               </View>
             ) : (
               <>
-                <WebView
+                <WebView<{}>
                   ref={webViewRef}
                   // Check if paymentUrl is HTML content or a URL
                   source={
@@ -249,7 +332,7 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
                     paymentUrl.startsWith('<html')
                       ? {
                           html: paymentUrl,
-                          baseUrl: 'https://demo.myfatoorah.com',
+                          baseUrl: gatewayOrigin ?? resolveGatewayOrigin(),
                         }
                       : { uri: paymentUrl }
                   }
@@ -263,7 +346,10 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
                     // Handle messages from embedded payment form
                     try {
                       const message = JSON.parse(event.nativeEvent.data);
-                      console.log('WebView message:', message);
+                      // Type only — the payload holds the gateway's invoice and
+                      // payer details.
+                      if (__DEV__)
+                        console.log('WebView message type:', message?.type);
                       if (message.type === 'PAYMENT_SUCCESS') {
                         // Extract payment ID if it is passed in the postMessage payload
                         const paymentId =
@@ -274,27 +360,32 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
                           message.data?.invoiceId;
 
                         if (paymentId) {
-                          console.log(
-                            'Extracted payment ID from onMessage:',
-                            paymentId,
-                          );
+                          if (__DEV__)
+                            console.log(
+                              'Extracted payment ID from onMessage:',
+                              paymentId,
+                            );
                           await verifyPayment(String(paymentId));
                         } else {
-                          console.log(
-                            'No payment ID found in message payload, calling error',
-                          );
+                          if (__DEV__)
+                            console.log(
+                              'No payment ID found in message payload, calling error',
+                            );
                           onPaymentError(
                             'Failed to verify payment status: Missing payment identifier.',
                           );
                         }
                       } else if (message.type === 'PAYMENT_ERROR') {
                         onPaymentError(message.message || 'Payment failed');
+                      } else if (message.type === 'CONTENT_HEIGHT') {
+                        // Lets the sheet shrink to the gateway's actual height
+                        // rather than always occupying a fixed slice of screen.
+                        settleHeight(message.height);
                       }
                     } catch {
-                      console.log(
-                        'Non-JSON message from WebView:',
-                        event.nativeEvent.data,
-                      );
+                      // The raw payload is not logged: anything the gateway page
+                      // posts that fails to parse may still contain payer data.
+                      if (__DEV__) console.log('Non-JSON message from WebView');
                     }
                   }}
                   javaScriptEnabled={true}
@@ -330,9 +421,9 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
                     ios: 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.5 Mobile/15E148 Safari/604.1',
                   })}
                 />
-                {(loading || verifyingPayment) && (
+                {(loading || !gatewayReady || verifyingPayment) && (
                   <View style={styles.loadingOverlay}>
-                    <ActivityIndicator size="large" color={colors.primary} />
+                    <LogoLoader />
                     <Text style={[styles.loadingText, isRTL && styles.rtlText]}>
                       {verifyingPayment
                         ? isRTL
@@ -369,8 +460,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
     justifyContent: 'flex-end',
   },
+  sheetFallbackHeight: {
+    // Close to what the gateway settles at, so the first paint is roughly the
+    // final size. Opening at 80% made the sheet visibly collapse once the real
+    // height arrived.
+    height: '62%',
+  },
   modalContent: {
-    height: '80%',
     backgroundColor: colors.textWhite,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,

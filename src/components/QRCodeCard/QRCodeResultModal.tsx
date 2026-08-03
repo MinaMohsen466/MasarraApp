@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, react-native/no-inline-styles, react-native/no-unused-styles */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -12,7 +12,11 @@ import {
   Image,
   useWindowDimensions,
   Clipboard,
+  Platform,
+  PermissionsAndroid,
 } from 'react-native';
+import { captureRef } from 'react-native-view-shot';
+import { CameraRoll } from '@react-native-camera-roll/camera-roll';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { colors } from '../../constants/colors';
 import { CustomAlert } from '../CustomAlert/CustomAlert';
@@ -36,6 +40,9 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
   const { isRTL } = useLanguage();
   const [downloadingCard, setDownloadingCard] = useState(false);
   const [copyingLink, setCopyingLink] = useState(false);
+  // The node handed to captureRef — the card itself, not its wrapper, so the
+  // saved image has no surrounding modal chrome.
+  const cardRef = useRef<View>(null);
 
   const { width: winWidth, height: winHeight } = useWindowDimensions();
   const [cardAspectRatio, setCardAspectRatio] = useState<number | null>(null);
@@ -59,22 +66,63 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
     Math.floor(cardWidth / (cardAspectRatio || 0.7)),
   );
 
+  // Android 9 and below still write through the legacy external storage API;
+  // from Android 10 the MediaStore insert needs no permission at all.
+  const ensureGalleryPermission = async () => {
+    if (Platform.OS !== 'android' || Number(Platform.Version) >= 29) return true;
+    const granted = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+      {
+        title: isRTL ? 'حفظ البطاقة' : 'Save card',
+        message: isRTL
+          ? 'يحتاج التطبيق إذن الوصول للصور لحفظ البطاقة'
+          : 'Storage access is needed to save the card',
+        buttonPositive: isRTL ? 'موافق' : 'OK',
+      },
+    );
+    return granted === PermissionsAndroid.RESULTS.GRANTED;
+  };
+
   const handleDownloadCard = async () => {
     setDownloadingCard(true);
     try {
+      if (!cardRef.current) throw new Error('card not rendered');
+
+      if (!(await ensureGalleryPermission())) {
+        setAlertConfig({
+          visible: true,
+          title: isRTL ? 'الإذن مرفوض' : 'Permission denied',
+          message: isRTL
+            ? 'لا يمكن حفظ البطاقة بدون إذن الوصول للصور'
+            : 'The card cannot be saved without storage access',
+          buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
+        });
+        return;
+      }
+
+      // Capture the card exactly as it is on screen, then hand the file to the
+      // gallery. Rendering a second copy off-screen would drift from what the
+      // user is looking at.
+      const uri = await captureRef(cardRef, {
+        format: 'png',
+        quality: 1,
+        result: 'tmpfile',
+      });
+      await CameraRoll.saveAsset(uri, { type: 'photo', album: 'Masarra' });
+
       setAlertConfig({
         visible: true,
         title: isRTL ? 'نجح' : 'Success',
         message: isRTL
-          ? 'تم تنزيل البطاقة بنجاح'
-          : 'Card downloaded successfully',
+          ? 'تم حفظ البطاقة في معرض الصور'
+          : 'Card saved to your gallery',
         buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
       });
     } catch {
       setAlertConfig({
         visible: true,
         title: isRTL ? 'خطأ' : 'Error',
-        message: isRTL ? 'فشل التنزيل' : 'Download failed',
+        message: isRTL ? 'فشل حفظ البطاقة' : 'Could not save the card',
         buttons: [{ text: isRTL ? 'حسناً' : 'OK', style: 'default' }],
       });
     } finally {
@@ -169,7 +217,7 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
             </Text>
 
             {/* QR Card Preview with Background Image */}
-            <View style={styles.cardContainer}>
+            <View style={styles.cardContainer} ref={cardRef} collapsable={false}>
               {getBackgroundImageUri() && backgroundImage ? (
                 <ImageBackground
                   source={{ uri: getBackgroundImageUri() }}
@@ -182,8 +230,26 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                   ]}
                   resizeMode="cover"
                 >
-                  {/* Semi-transparent overlay for better text visibility */}
+                  {/* Legibility scrim. A single flat wash either greys out a
+                      light photo or leaves text unreadable on a busy one, so it
+                      is layered: a light overall tint plus a darker band under
+                      the QR panel where the small print sits. */}
                   <View style={styles.cardOverlay} />
+                  <View style={styles.cardScrimBottom} />
+
+                  {/* Inset hairline frame — the one invitation motif that reads
+                      the same over any background the admin uploads. */}
+                  <View
+                    style={[
+                      styles.cardFrame,
+                      {
+                        borderColor:
+                          backgroundImage?.font?.color ||
+                          'rgba(255, 255, 255, 0.45)',
+                      },
+                    ]}
+                    pointerEvents="none"
+                  />
 
                   {/* Card Content - Centered Layout */}
                   <View style={styles.cardContentWrapper}>
@@ -280,6 +346,10 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                       </Text>
                     )}
 
+                    {/* Time, place and phone read as one block rather than
+                        three loose lines, on a faint panel so the small print
+                        survives a busy photo. */}
+                    <View style={styles.detailsPanel}>
                     {/* Event Time */}
                     {customDetails.eventTime && (
                       <Text
@@ -343,6 +413,7 @@ export const QRCodeResultModal: React.FC<QRCodeResultModalProps> = ({
                         {customDetails.contact}
                       </Text>
                     )}
+                    </View>
                   </View>
 
                   {/* QR Code Box - Below content */}
@@ -535,7 +606,36 @@ const styles = StyleSheet.create({
   },
   cardOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.10)',
+    backgroundColor: 'rgba(0, 0, 0, 0.18)',
+  },
+  // Bottom half only — where the small print and the QR panel sit.
+  cardScrimBottom: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '55%',
+    backgroundColor: 'rgba(0, 0, 0, 0.16)',
+  },
+  cardFrame: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    right: 12,
+    bottom: 12,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderRadius: 6,
+    opacity: 0.55,
+  },
+  detailsPanel: {
+    marginTop: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.22)',
+    alignItems: 'center',
+    alignSelf: 'center',
+    maxWidth: '92%',
   },
   cardContentWrapper: {
     alignItems: 'center',
@@ -564,7 +664,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     marginVertical: 6,
-    letterSpacing: 2,
+    letterSpacing: 3.5,
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
     textShadowOffset: { width: 0.5, height: 1 },
     textShadowRadius: 2,
@@ -589,19 +689,17 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   qrCodeBox: {
-    width: 125,
-    height: 125,
+    width: 132,
+    height: 132,
     backgroundColor: '#ffffff',
-    borderRadius: 8,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    elevation: 6,
+    elevation: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 9,
     zIndex: 2,
   },
   qrCodePlaceholder: {
@@ -612,10 +710,11 @@ const styles = StyleSheet.create({
     lineHeight: 40,
   },
   scanText: {
-    fontSize: 11,
+    fontSize: 10,
     textAlign: 'center',
-    marginTop: 6,
-    fontStyle: 'italic',
+    marginTop: 9,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
     textShadowOffset: { width: 0.5, height: 1 },
     textShadowRadius: 2,
@@ -630,13 +729,18 @@ const styles = StyleSheet.create({
   button: {
     flex: 1,
     minWidth: '30%',
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: 13,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   downloadButton: {
     backgroundColor: colors.primary,
+    elevation: 2,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
   },
   downloadButtonText: {
     color: '#fff',

@@ -1,9 +1,15 @@
 /* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_BASE_URL, checkTimeSlotAvailability } from './api';
+import {
+  API_BASE_URL,
+  checkTimeSlotAvailability,
+  clearTimeSlotsForService,
+} from './api';
 import { getSecureToken } from '../utils/secureStorage';
-import { clearDatePickerCacheForService } from '../components/DatePickerModal/DatePickerModal';
+// Straight from the cache module rather than through DatePickerModal's re-export,
+// so a service file doesn't drag a React component into its import graph.
+import { clearAvailabilityForService as clearDatePickerCacheForService } from './availabilityCache';
 
 const CART_STORAGE_PREFIX = '@masarra_cart_';
 
@@ -258,53 +264,49 @@ export async function updateCartItemQuantity(
   cartItemId: string,
   quantity: number,
 ): Promise<CartItem[]> {
-  try {
-    if (quantity <= 0) {
-      return removeFromCart(cartItemId);
-    }
-
-    const currentCart = await getCart();
-    const itemIndex = currentCart.findIndex(item => item._id === cartItemId);
-
-    if (itemIndex !== -1) {
-      const item = currentCart[itemIndex];
-
-      // Recalculate totalPrice: (quantity × basePrice) + (quantity × optionsTotal)
-      let optionsTotal = 0;
-      if (item.customInputs && Array.isArray(item.customInputs)) {
-        item.customInputs.forEach(input => {
-          if (Array.isArray(input)) {
-            // radio-multiple selection
-            input.forEach(opt => {
-              if (opt.price) optionsTotal += opt.price;
-            });
-          } else if (input.price) {
-            // single input
-            optionsTotal += input.price;
-          }
-        });
-      }
-
-      // Formula: quantity × (basePrice + options)
-      const newTotalPrice = (item.price + optionsTotal) * quantity;
-
-      // Create a new item object to ensure React detects the change
-      currentCart[itemIndex] = {
-        ...item,
-        quantity: quantity,
-        totalPrice: newTotalPrice,
-      };
-
-      await saveCart(currentCart);
-
-      // Return a new array with new item references
-      return currentCart.map(cartItem => ({ ...cartItem }));
-    }
-
-    return currentCart;
-  } catch (e) {
-    throw e;
+  if (quantity <= 0) {
+    return removeFromCart(cartItemId);
   }
+
+  const currentCart = await getCart();
+  const itemIndex = currentCart.findIndex(item => item._id === cartItemId);
+
+  if (itemIndex !== -1) {
+    const item = currentCart[itemIndex];
+
+    // Recalculate totalPrice: (quantity × basePrice) + (quantity × optionsTotal)
+    let optionsTotal = 0;
+    if (item.customInputs && Array.isArray(item.customInputs)) {
+      item.customInputs.forEach(input => {
+        if (Array.isArray(input)) {
+          // radio-multiple selection
+          input.forEach(opt => {
+            if (opt.price) optionsTotal += opt.price;
+          });
+        } else if (input.price) {
+          // single input
+          optionsTotal += input.price;
+        }
+      });
+    }
+
+    // Formula: quantity × (basePrice + options)
+    const newTotalPrice = (item.price + optionsTotal) * quantity;
+
+    // Create a new item object to ensure React detects the change
+    currentCart[itemIndex] = {
+      ...item,
+      quantity: quantity,
+      totalPrice: newTotalPrice,
+    };
+
+    await saveCart(currentCart);
+
+    // Return a new array with new item references
+    return currentCart.map(cartItem => ({ ...cartItem }));
+  }
+
+  return currentCart;
 }
 
 // Update cart item (for edit functionality)
@@ -697,9 +699,12 @@ export async function createBookingsFromCart(
         booking._hasItemsNeedingConfirmation = hasItemsNeedingConfirmation;
         bookings.push(booking);
 
-        // Clear cache for all services
+        // Clear cache for all services. Both caches describe the availability
+        // this booking just consumed — dropping only the calendar left the slot
+        // list serving the taken slot as free for up to its TTL.
         cartItems.forEach(item => {
           clearDatePickerCacheForService(item.serviceId, item.vendorId);
+          clearTimeSlotsForService(item.serviceId);
         });
       }
     } catch (error: unknown) {

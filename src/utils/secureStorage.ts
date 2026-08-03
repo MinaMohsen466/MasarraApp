@@ -56,7 +56,14 @@ export const getSecureUserData = async (): Promise<string | null> => {
     ) {
       try {
         await Keychain.resetGenericPassword({ service: USER_DATA_SERVICE });
-      } catch {}
+      } catch (resetError) {
+        // The entry stays unreadable if the reset fails too, so every later
+        // read repeats the same failure with nothing recorded.
+        console.error(
+          '[secureStorage] User-data keychain reset failed:',
+          resetError,
+        );
+      }
     }
   }
 
@@ -133,7 +140,14 @@ export const getSecureToken = async (): Promise<string | null> => {
     ) {
       try {
         await Keychain.resetGenericPassword({ service: SERVICE_NAME });
-      } catch {}
+      } catch (resetError) {
+        // Same as above: a failed reset leaves the token permanently
+        // unreadable, which presents as an unexplained forced sign-out.
+        console.error(
+          '[secureStorage] Token keychain reset failed:',
+          resetError,
+        );
+      }
     }
   }
 
@@ -185,25 +199,40 @@ export const initSecureStorage = () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   AsyncStorage.setItem = async (key: string, value: string, ...args: any[]) => {
     if (key === TOKEN_KEY) {
-      const success = await setSecureToken(value);
-      return success ? undefined : undefined;
+      // Both Keychain and the AsyncStorage fallback failed. Resolving quietly
+      // here would leave the user looking signed in with nothing persisted —
+      // they would be signed out again on the next launch with no explanation.
+      if (!(await setSecureToken(value))) {
+        throw new Error('Failed to persist auth token');
+      }
+      return;
     }
     if (key === USER_DATA_KEY) {
-      const success = await setSecureUserData(value);
-      return success ? undefined : undefined;
+      if (!(await setSecureUserData(value))) {
+        throw new Error('Failed to persist user data');
+      }
+      return;
     }
     return await originalSetItem(key, value, ...args);
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   AsyncStorage.removeItem = async (key: string, ...args: any[]) => {
+    // Deliberately does not throw: sign-out has to run to completion. Callers
+    // clear their in-memory session *after* these calls, so raising here would
+    // leave the user still signed in on screen. A failure is reported instead,
+    // since it means credentials survived on the device.
     if (key === TOKEN_KEY) {
-      const success = await removeSecureToken();
-      return success ? undefined : undefined;
+      if (!(await removeSecureToken())) {
+        console.error('[secureStorage] Failed to clear auth token');
+      }
+      return;
     }
     if (key === USER_DATA_KEY) {
-      const success = await removeSecureUserData();
-      return success ? undefined : undefined;
+      if (!(await removeSecureUserData())) {
+        console.error('[secureStorage] Failed to clear user data');
+      }
+      return;
     }
     return await originalRemoveItem(key, ...args);
   };

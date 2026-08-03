@@ -4,13 +4,13 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   Modal,
   StyleSheet,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { colors } from '../../constants/colors';
 import { myEventsStyles as styles } from '../../screens/myEventsStyles';
+import { LogoLoader } from '../LogoLoader';
 
 interface EventGuest {
   _id: string;
@@ -101,7 +101,7 @@ export const GuestListModal: React.FC<GuestListModalProps> = ({
               <>
                 {loadingGuests[selectedBookingForGuests._id] ? (
                   <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={colors.primary} />
+                    <LogoLoader />
                     <Text style={styles.loadingText}>
                       {isRTL ? 'جاري التحميل...' : 'Loading...'}
                     </Text>

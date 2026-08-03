@@ -6,14 +6,13 @@ import {
   useWindowDimensions,
   FlatList,
   TouchableOpacity,
-  ActivityIndicator,
   Animated,
 } from 'react-native';
 import { createStyles } from './styles';
-import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useServices } from '../../hooks/useServices';
 import { Service, getServiceImageUrl } from '../../services/servicesApi';
+import { LogoLoader } from '../LogoLoader';
 
 interface FeaturedServicesCarouselProps {
   onSelectService?: (service: Service) => void;
@@ -76,7 +75,7 @@ const FeaturedServicesCarousel: React.FC<FeaturedServicesCarouselProps> = ({
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <LogoLoader />
       </View>
     );
   }

@@ -1,4 +1,4 @@
-package com.clientside
+package com.masarrakw.app
 
 import android.app.Application
 import com.facebook.react.PackageList

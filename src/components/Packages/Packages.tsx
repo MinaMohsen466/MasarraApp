@@ -1,5 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, react-native/no-inline-styles */
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, {
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+} from 'react';
 import {
   View,
   Text,
@@ -8,7 +14,6 @@ import {
   Image,
   ActivityIndicator,
   useWindowDimensions,
-  RefreshControl,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { createStyles } from './styles';
@@ -23,6 +28,8 @@ import { getImageUrl } from '../../services/api';
 import { getServiceReviews } from '../../services/reviewsApi';
 import SortModal from '../SortModal/SortModal';
 import FilterModal from '../FilterModal/FilterModal';
+import { useLogoRefresh, PullToRefresh } from '../LogoRefreshControl';
+import { LogoLoader } from '../LogoLoader';
 export type { Package };
 
 interface PackagesProps {
@@ -49,7 +56,9 @@ const Packages: React.FC<PackagesProps> = ({ onSelectPackage, onBack }) => {
     onSale?: boolean;
   }>({});
 
-  const [refreshing, setRefreshing] = useState(false);
+  // Bumped on pull-to-refresh so cached package ratings are re-fetched too.
+  const [refreshTick, setRefreshTick] = useState(0);
+  const lastRatedTickRef = useRef(0);
 
   // Memoized query filters to pass to backend
   const queryFilters = useMemo(() => {
@@ -70,14 +79,15 @@ const Packages: React.FC<PackagesProps> = ({ onSelectPackage, onBack }) => {
     refetch,
   } = useInfinitePackages(queryFilters);
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    try {
-      await refetch();
-    } finally {
-      setRefreshing(false);
-    }
+  // The tick forces the rating effect to re-run: React Query's structural
+  // sharing returns the same `packages` reference when nothing changed, so the
+  // effect's data dep alone would not fire.
+  const reload = useCallback(async () => {
+    setRefreshTick(tick => tick + 1);
+    await refetch();
   }, [refetch]);
+
+  const { refreshing, onRefresh } = useLogoRefresh(reload);
 
   // Flatten paginated data
   const packages = flattenPackages(data);
@@ -132,8 +142,14 @@ const Packages: React.FC<PackagesProps> = ({ onSelectPackage, onBack }) => {
       } = {};
 
       for (const pkg of packages) {
-        // Skip if already loaded
-        if (packageRatings[pkg._id]) continue;
+        // Skip already-loaded ratings while paginating, but never on a refresh —
+        // there the cached rating is the value the user asked us to re-check.
+        if (
+          packageRatings[pkg._id] &&
+          refreshTick === lastRatedTickRef.current
+        ) {
+          continue;
+        }
 
         if (pkg.service?._id) {
           try {
@@ -148,14 +164,15 @@ const Packages: React.FC<PackagesProps> = ({ onSelectPackage, onBack }) => {
         }
       }
 
+      lastRatedTickRef.current = refreshTick;
       if (Object.keys(ratingsData).length > 0) {
         setPackageRatings(prev => ({ ...prev, ...ratingsData }));
       }
     };
 
     loadRatings();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [packages]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [packages, refreshTick]);
 
   // Handle load more when reaching end of list
   const handleLoadMore = useCallback(() => {
@@ -202,7 +219,9 @@ const Packages: React.FC<PackagesProps> = ({ onSelectPackage, onBack }) => {
             />
           ) : (
             <View style={styles.placeholderImage}>
-              <Text style={{ color: colors.textSecondary, fontSize: 12 }}>No Image</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                No Image
+              </Text>
             </View>
           )}
           {item.discountPrice > 0 && (
@@ -310,7 +329,7 @@ const Packages: React.FC<PackagesProps> = ({ onSelectPackage, onBack }) => {
           <View style={styles.headerSpacer} />
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <LogoLoader />
         </View>
       </View>
     );
@@ -428,29 +447,25 @@ const Packages: React.FC<PackagesProps> = ({ onSelectPackage, onBack }) => {
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
-            progressBackgroundColor="#ffffff"
+      <PullToRefresh refreshing={refreshing} onRefresh={onRefresh}>
+        {scrollProps => (
+          <FlatList
+            {...scrollProps}
+            data={sortedAndFilteredPackages}
+            renderItem={renderPackageCard}
+            keyExtractor={item => item._id}
+            contentContainerStyle={styles.listContainer}
+            key={numColumns}
+            numColumns={numColumns}
+            columnWrapperStyle={styles.row}
+            showsVerticalScrollIndicator={false}
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.5}
+            ListHeaderComponent={<View style={{ width: '100%' }} />}
+            ListFooterComponent={renderFooter}
           />
-        }
-        data={sortedAndFilteredPackages}
-        renderItem={renderPackageCard}
-        keyExtractor={item => item._id}
-        contentContainerStyle={styles.listContainer}
-        key={numColumns}
-        numColumns={numColumns}
-        columnWrapperStyle={styles.row}
-        showsVerticalScrollIndicator={false}
-        onEndReached={handleLoadMore}
-        onEndReachedThreshold={0.5}
-        ListHeaderComponent={<View style={{ width: '100%' }} />}
-        ListFooterComponent={renderFooter}
-      />
+        )}
+      </PullToRefresh>
 
       {/* Sort Modal */}
       <SortModal

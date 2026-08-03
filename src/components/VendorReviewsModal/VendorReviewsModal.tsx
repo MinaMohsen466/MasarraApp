@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -14,6 +13,7 @@ import { styles } from './styles';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Review } from '../../services/reviewsApi';
 import { getImageUrl } from '../../services/api';
+import { LogoLoader } from '../LogoLoader';
 
 
 export interface ExtendedReview extends Review {
@@ -199,7 +199,7 @@ export const VendorReviewsModal: React.FC<VendorReviewsModalProps> = ({
           {/* List of Reviews */}
           {isLoading ? (
             <View style={s.emptyContainer}>
-              <ActivityIndicator size="large" color="#00a19c" />
+              <LogoLoader />
             </View>
           ) : (
             <FlatList

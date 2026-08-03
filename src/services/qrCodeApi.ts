@@ -1,5 +1,9 @@
 import { API_BASE_URL } from './api';
-import { getCachedQRCode, setCachedQRCode, invalidateQRCodeCache } from './qrCodeCache';
+import {
+  getCachedQRCode,
+  setCachedQRCode,
+  invalidateQRCodeCache,
+} from './qrCodeCache';
 
 export interface QRCodeCustomDetails {
   name1?: string;
@@ -219,59 +223,55 @@ export const generateQRCode = async (
   backgroundImageId: string,
   serviceId?: string,
   guestLimit?: number,
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> => {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const payload: any = {
-      customDetails,
-      selectedBackgroundImageId: backgroundImageId,
-    };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const payload: any = {
+    customDetails,
+    selectedBackgroundImageId: backgroundImageId,
+  };
 
-    // Add service ID if available (helps with validation)
-    if (serviceId) {
-      payload.serviceId = serviceId;
-    }
-
-    // Add guestLimit if available
-    if (typeof guestLimit !== 'undefined') {
-      payload.guestLimit = guestLimit;
-    }
-
-    const response = await fetch(
-      `${API_BASE_URL}/qr-codes/generate/${bookingId}`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      },
-    );
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(
-        error.error || error.message || 'Failed to generate QR code',
-      );
-    }
-
-    const result = await response.json();
-    // Ensure the result has all necessary fields
-
-    // Invalidate cache for this booking since QR was just created/updated
-    invalidateQRCodeCache(bookingId);
-
-    return result;
-  } catch (error) {
-    throw error;
+  // Add service ID if available (helps with validation)
+  if (serviceId) {
+    payload.serviceId = serviceId;
   }
+
+  // Add guestLimit if available
+  if (typeof guestLimit !== 'undefined') {
+    payload.guestLimit = guestLimit;
+  }
+
+  const response = await fetch(
+    `${API_BASE_URL}/qr-codes/generate/${bookingId}`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    },
+  );
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(
+      error.error || error.message || 'Failed to generate QR code',
+    );
+  }
+
+  const result = await response.json();
+  // Ensure the result has all necessary fields
+
+  // Invalidate cache for this booking since QR was just created/updated
+  invalidateQRCodeCache(bookingId);
+
+  return result;
 };
 
 export const fetchServiceDetails = async (
   serviceId: string,
   token: string,
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> => {
   try {
     const response = await fetch(`${API_BASE_URL}/services/${serviceId}`, {
@@ -442,46 +442,4 @@ export const canCreateQRCode = async (
   }
 
   return false;
-};
-
-export const getDefaultBackgroundImage = (settings: QRCodeSettings) => {
-  return (
-    settings?.backgroundImages?.find(img => img.isDefault && img.isActive) ||
-    settings?.backgroundImages?.[0]
-  );
-};
-
-export const getQRImageUrl = (qrToken: string): string => {
-  // Generate QR code image URL using the token
-  return `${API_BASE_URL}/qr-codes/${qrToken}`;
-};
-
-export const getBackgroundImageUrl = (imagePath: string): string => {
-  // Backend provides direct S3 URLs in path field
-  if (!imagePath) {
-    return '';
-  }
-  return imagePath;
-};
-
-export const getUserQRCodes = async (
-  token: string,
-): Promise<{ success: boolean; qrCodes: QRCodeData[] }> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/qr-codes/my-codes`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      return { success: false, qrCodes: [] };
-    }
-
-    return await response.json();
-  } catch {
-    return { success: false, qrCodes: [] };
-  }
 };

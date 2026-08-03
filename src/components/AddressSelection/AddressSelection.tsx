@@ -21,6 +21,7 @@ import { WebView } from 'react-native-webview';
 import Geolocation from '@react-native-community/geolocation';
 import { MAP_VIEW_HTML } from '../../constants/mapHtml';
 import { styles } from './styles';
+import { LogoLoader } from '../LogoLoader';
 
 interface Address {
   _id: string;
@@ -389,7 +390,7 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
     if (loading) {
       return (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <LogoLoader />
         </View>
       );
     }
@@ -419,7 +420,7 @@ const AddressSelection: React.FC<AddressSelectionProps> = ({
 
           {/* Form Map Section */}
           <View style={styles.formMapWrapper}>
-            <WebView
+            <WebView<{}>
               ref={topMapRef}
               originWhitelist={['*']}
               source={{

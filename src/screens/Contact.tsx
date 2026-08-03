@@ -1,3 +1,4 @@
+/* eslint-disable react-native/no-inline-styles */
 import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -11,6 +12,7 @@ import {
   StatusBar,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -36,7 +38,7 @@ const Contact: React.FC<ContactProps> = ({
 }) => {
   const { isRTL } = useLanguage();
   const insets = useSafeAreaInsets();
-  const { user, token, isLoggedIn } = useAuth();
+  const { user, isLoggedIn } = useAuth();
   const { data: siteSettings, isLoading: loadingSettings } = useSiteSettings();
   const [showChat, setShowChat] = useState(false);
 
@@ -98,15 +100,27 @@ const Contact: React.FC<ContactProps> = ({
     if (!name.trim()) {
       showAlert(
         isRTL ? 'خطأ' : 'Error',
-        isRTL ? 'الرجاء إدخال اسمك' : 'Please enter your name',
+        isRTL ? 'يرجى إدخال الاسم' : 'Please enter your name',
       );
       return;
     }
-
     if (!email.trim()) {
       showAlert(
         isRTL ? 'خطأ' : 'Error',
-        isRTL ? 'الرجاء إدخال بريدك الإلكتروني' : 'Please enter your email',
+        isRTL
+          ? 'يرجى إدخال البريد الإلكتروني'
+          : 'Please enter your email',
+      );
+      return;
+    }
+    // Basic email format check
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      showAlert(
+        isRTL ? 'خطأ' : 'Error',
+        isRTL
+          ? 'يرجى إدخال بريد إلكتروني صحيح'
+          : 'Please enter a valid email address',
       );
       return;
     }
@@ -114,7 +128,7 @@ const Contact: React.FC<ContactProps> = ({
     if (!phone.trim()) {
       showAlert(
         isRTL ? 'خطأ' : 'Error',
-        isRTL ? 'الرجاء إدخال رقم هاتفك' : 'Please enter your phone number',
+        isRTL ? 'يرجى إدخال رقم الهاتف' : 'Please enter your phone number',
       );
       return;
     }
@@ -122,64 +136,47 @@ const Contact: React.FC<ContactProps> = ({
     if (!message.trim()) {
       showAlert(
         isRTL ? 'خطأ' : 'Error',
-        isRTL ? 'الرجاء إدخال نص الرسالة' : 'Please enter message content',
+        isRTL ? 'يرجى إدخال الرسالة' : 'Please enter your message',
       );
       return;
     }
-
-    if (message.length < 10) {
-      showAlert(
-        isRTL ? 'خطأ' : 'Error',
-        isRTL
-          ? 'الرجاء كتابة رسالة لا تقل عن 10 أحرف'
-          : 'Please write a message with at least 10 characters',
-      );
-      return;
-    }
-
-    setIsSubmitting(true);
 
     try {
-      await submitContactRequest(
-        {
-          title: subject.trim() || (isRTL ? 'استفسار عام' : 'General Inquiry'),
-          name: name.trim(),
-          email: email.trim(),
-          phone: phone.trim(),
-          message: message.trim(),
-        },
-        token || undefined,
-      );
+      setIsSubmitting(true);
+      const res = await submitContactRequest({
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        subject: subject.trim(),
+        message: message.trim(),
+      });
 
-      showAlert(
-        isRTL ? 'نجح!' : 'Success!',
-        isRTL
-          ? 'تم إرسال رسالتك بنجاح'
-          : 'Your message has been sent successfully',
-        [
-          {
-            text: isRTL ? 'حسناً' : 'OK',
-            onPress: () => {
-              // Clear form
-              setSubject('');
-              setMessage('');
-              if (!user) {
-                setName('');
-                setEmail('');
-                setPhone('');
-              }
-              setAlertVisible(false);
-            },
-          },
-        ],
-      );
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
+      if (res && res.success) {
+        showAlert(
+          isRTL ? 'تم الإرسال' : 'Success',
+          isRTL
+            ? 'تم إرسال رسالتك بنجاح. سنتواصل معك في أقرب وقت.'
+            : 'Your message has been sent successfully. We will contact you soon.',
+        );
+        setName('');
+        setEmail('');
+        setPhone('');
+        setSubject('');
+        setMessage('');
+      } else {
+        showAlert(
+          isRTL ? 'خطأ' : 'Error',
+          (res && res.message) ||
+            (isRTL
+              ? 'حدث خطأ أثناء إرسال الرسالة'
+              : 'An error occurred while sending the message'),
+        );
+      }
+    } catch (err) {
       showAlert(
         isRTL ? 'خطأ' : 'Error',
-        errorMessage ||
-          (isRTL ? 'فشل في إرسال الرسالة' : 'Failed to send message'),
+        (err instanceof Error ? err.message : undefined) ||
+          (isRTL ? 'حدث خطأ في الاتصال بالسيرفر' : 'Server connection error'),
       );
     } finally {
       setIsSubmitting(false);
@@ -189,8 +186,8 @@ const Contact: React.FC<ContactProps> = ({
   return (
     <>
       <StatusBar
-        backgroundColor="#00a19c"
-        barStyle="light-content"
+        backgroundColor={colors.backgroundCard}
+        barStyle="dark-content"
         translucent={false}
       />
       <CustomAlert
@@ -202,46 +199,39 @@ const Contact: React.FC<ContactProps> = ({
       />
       <View style={contactStyles.container}>
         <View
-          style={[
-            contactStyles.headerBar,
-            { height: insets.top + 56, paddingTop: insets.top },
-          ]}
-        >
+          style={{
+            height: insets.top,
+            backgroundColor: colors.backgroundCard,
+          }}
+        />
+
+        {/* Clean Header Bar */}
+        <View style={contactStyles.cleanHeaderBar}>
           <TouchableOpacity
+            style={contactStyles.headerBackButtonCircle}
             onPress={() => onBack && onBack()}
-            style={[
-              contactStyles.backButton,
-              isRTL ? contactStyles.backButtonRTL : contactStyles.backButtonLTR,
-              { top: insets.top + 11 },
-            ]}
             activeOpacity={0.8}
           >
-            <Svg
-              width={20}
-              height={20}
-              viewBox="0 0 24 24"
-              fill="none"
-              style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined}
-            >
-              <Path
-                d="M15 18L9 12L15 6"
-                stroke={colors.textWhite}
-                strokeWidth={2.5}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </Svg>
+            <Icon
+              name={isRTL ? 'chevron-forward' : 'chevron-back'}
+              size={20}
+              color="#0F172A"
+            />
           </TouchableOpacity>
-          <Text style={contactStyles.headerTitle}>
+
+          <Text style={contactStyles.headerBarTitle}>
             {isRTL ? 'اتصل بنا' : 'Contact Us'}
           </Text>
+
+          <View style={{ width: 42 }} />
         </View>
 
         <ScrollView
           style={contactStyles.content}
+          contentContainerStyle={{ paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
         >
-          {/* Description Text */}
+          {/* Description Subtitle */}
           <Text
             style={[
               contactStyles.descriptionText,
@@ -249,11 +239,11 @@ const Contact: React.FC<ContactProps> = ({
             ]}
           >
             {isRTL
-              ? 'نحن هنا لمساعدتك. تواصل معنا عبر البريد الإلكتروني أو الهاتف'
-              : 'We are here to help you. Contact us via email or phone'}
+              ? 'نحن هنا لمساعدتك. تواصل معنا عبر البريد الإلكتروني، الهاتف أو النموذج أدناه'
+              : 'We are here to help you. Contact us via email, phone, or the form below'}
           </Text>
 
-          {/* Contact Cards */}
+          {/* Contact Information Cards */}
           {loadingSettings ? (
             <View style={contactStyles.contactCard}>
               <ActivityIndicator size="small" color={colors.primary} />
@@ -271,8 +261,16 @@ const Contact: React.FC<ContactProps> = ({
                   onPress={() =>
                     Linking.openURL(`mailto:${siteSettings.contactEmail}`)
                   }
-                  activeOpacity={0.7}
+                  activeOpacity={0.75}
                 >
+                  <View
+                    style={[
+                      contactStyles.contactIconContainer,
+                      isRTL && contactStyles.contactIconContainerRTL,
+                    ]}
+                  >
+                    <Icon name="mail-outline" size={20} color={colors.primary} />
+                  </View>
                   <View style={contactStyles.contactTextContainer}>
                     <Text
                       style={[
@@ -291,9 +289,13 @@ const Contact: React.FC<ContactProps> = ({
                       {siteSettings.contactEmail}
                     </Text>
                   </View>
-                  <Text style={contactStyles.arrowText}>
-                    {isRTL ? '‹' : '›'}
-                  </Text>
+                  <View style={contactStyles.arrowCircle}>
+                    <Icon
+                      name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                      size={16}
+                      color={colors.primary}
+                    />
+                  </View>
                 </TouchableOpacity>
               )}
 
@@ -307,8 +309,16 @@ const Contact: React.FC<ContactProps> = ({
                   onPress={() =>
                     Linking.openURL(`tel:${siteSettings.contactPhone}`)
                   }
-                  activeOpacity={0.7}
+                  activeOpacity={0.75}
                 >
+                  <View
+                    style={[
+                      contactStyles.contactIconContainer,
+                      isRTL && contactStyles.contactIconContainerRTL,
+                    ]}
+                  >
+                    <Icon name="call-outline" size={20} color={colors.primary} />
+                  </View>
                   <View style={contactStyles.contactTextContainer}>
                     <Text
                       style={[
@@ -327,9 +337,13 @@ const Contact: React.FC<ContactProps> = ({
                       {siteSettings.contactPhone}
                     </Text>
                   </View>
-                  <Text style={contactStyles.arrowText}>
-                    {isRTL ? '‹' : '›'}
-                  </Text>
+                  <View style={contactStyles.arrowCircle}>
+                    <Icon
+                      name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                      size={16}
+                      color={colors.primary}
+                    />
+                  </View>
                 </TouchableOpacity>
               )}
             </View>
@@ -352,18 +366,7 @@ const Contact: React.FC<ContactProps> = ({
                 ]}
               >
                 <View style={contactStyles.vendorIconContainer}>
-                  <Svg
-                    width={22}
-                    height={22}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke={colors.primary}
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <Path d="M3 21h18M3 10h18M5 10V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v5M10 21V14h4v7" />
-                  </Svg>
+                  <Icon name="storefront-outline" size={22} color={colors.primary} />
                 </View>
                 <View
                   style={[
@@ -391,22 +394,15 @@ const Contact: React.FC<ContactProps> = ({
                   </Text>
                 </View>
               </View>
-              <Svg
-                width={16}
-                height={16}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke={colors.primary}
-                strokeWidth={2.5}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <Path d={isRTL ? 'M15 18l-6-6 6-6' : 'M9 18l6-6-6-6'} />
-              </Svg>
+              <Icon
+                name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                size={18}
+                color={colors.primary}
+              />
             </TouchableOpacity>
           )}
 
-          {/* Additional Information */}
+          {/* Additional Information Header */}
           <View style={contactStyles.additionalInfoContainer}>
             <Text
               style={[
@@ -422,10 +418,9 @@ const Contact: React.FC<ContactProps> = ({
                 isRTL && contactStyles.textRTL,
               ]}
             >
-              {' '}
               {isRTL
-                ? 'يمكنك أيضاً التواصل معنا عبر نموذج الاتصال في التطبيق'
-                : 'You can also reach us through the contact form in the app'}
+                ? 'يمكنك أيضاً التواصل معنا مباشرة من خلال إرسال رسالة باستخدام النموذج أدناه'
+                : 'You can also reach us directly by submitting a message using the form below'}
             </Text>
           </View>
 
@@ -444,7 +439,7 @@ const Contact: React.FC<ContactProps> = ({
                 value={name}
                 onChangeText={setName}
                 placeholder={isRTL ? 'الاسم *' : 'Name *'}
-                placeholderTextColor="#999"
+                placeholderTextColor="#94A3B8"
                 editable={!isSubmitting}
                 autoComplete="off"
               />
@@ -457,7 +452,7 @@ const Contact: React.FC<ContactProps> = ({
                 value={email}
                 onChangeText={setEmail}
                 placeholder={isRTL ? 'البريد الإلكتروني *' : 'Email *'}
-                placeholderTextColor="#999"
+                placeholderTextColor="#94A3B8"
                 keyboardType="email-address"
                 autoCapitalize="none"
                 editable={!isSubmitting}
@@ -472,7 +467,7 @@ const Contact: React.FC<ContactProps> = ({
                 value={phone}
                 onChangeText={setPhone}
                 placeholder={isRTL ? 'رقم الهاتف *' : 'Phone Number *'}
-                placeholderTextColor="#999"
+                placeholderTextColor="#94A3B8"
                 keyboardType="phone-pad"
                 editable={!isSubmitting}
                 autoComplete="off"
@@ -486,7 +481,7 @@ const Contact: React.FC<ContactProps> = ({
                 value={subject}
                 onChangeText={setSubject}
                 placeholder={isRTL ? 'الموضوع' : 'Subject'}
-                placeholderTextColor="#999"
+                placeholderTextColor="#94A3B8"
                 editable={!isSubmitting}
                 autoComplete="off"
               />
@@ -503,9 +498,9 @@ const Contact: React.FC<ContactProps> = ({
                 value={message}
                 onChangeText={setMessage}
                 placeholder={isRTL ? 'رسالتك *' : 'Your Message *'}
-                placeholderTextColor="#999"
+                placeholderTextColor="#94A3B8"
                 multiline
-                numberOfLines={6}
+                numberOfLines={5}
                 textAlignVertical="top"
                 maxLength={1000}
                 editable={!isSubmitting}
@@ -527,7 +522,7 @@ const Contact: React.FC<ContactProps> = ({
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
                 <Text style={contactStyles.submitButtonText}>
-                  {isRTL ? 'إرسال' : 'Submit'}
+                  {isRTL ? 'إرسال الرسالة' : 'Send Message'}
                 </Text>
               )}
             </TouchableOpacity>
@@ -539,23 +534,37 @@ const Contact: React.FC<ContactProps> = ({
           <TouchableOpacity
             style={[
               contactStyles.floatingChatButton,
-              { bottom: insets.bottom + 96 },
+              isRTL
+                ? contactStyles.floatingChatButtonRTL
+                : contactStyles.floatingChatButtonLTR,
+              { bottom: insets.bottom + 80 },
             ]}
             onPress={() => {
               setShowChat(true);
               onShowChat?.();
             }}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
           >
-            <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-              <Path
-                d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"
-                stroke="#fff"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </Svg>
+            <View style={contactStyles.chatIconWrapper}>
+              <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M12 2C6.477 2 2 6.03 2 11c0 2.12.83 4.07 2.22 5.57L3 21l4.83-1.42C9.28 20.08 10.6 20.4 12 20.4c5.523 0 10-4.03 10-9.4S17.523 2 12 2z"
+                  fill="rgba(255, 255, 255, 0.15)"
+                  stroke="#FFFFFF"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <Path
+                  d="M8 11.5h.01M12 11.5h.01M16 11.5h.01"
+                  stroke="#FFFFFF"
+                  strokeWidth={2.8}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
+            </View>
+            <View style={contactStyles.onlineStatusBadge} />
           </TouchableOpacity>
         )}
       </View>
