@@ -1,9 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Modal,
   View,
   StyleSheet,
   Animated,
+  Easing,
   PanResponder,
   Dimensions,
   TouchableWithoutFeedback,
@@ -28,41 +29,59 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
   maxHeight = SCREEN_HEIGHT * 0.85,
 }) => {
   const [showModal, setShowModal] = useState(visible);
+  // Only the backdrop's interpolation reads this; the animations read the ref.
+  // Keeping it out of the open/close effect is the whole point — see below.
   const [contentHeight, setContentHeight] = useState(SCREEN_HEIGHT * 0.6);
+  const contentHeightRef = useRef(SCREEN_HEIGHT * 0.6);
 
   // Animated value for vertical translation
   const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
+  // Props read from inside the PanResponder, which is created once and would
+  // otherwise keep calling the very first render's onClose.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  const animateClosed = useCallback(
+    (duration: number, then?: () => void) => {
+      Animated.timing(translateY, {
+        // Always the full screen height, never the measured content: on the
+        // first open that measurement is still a guess, and closing to a value
+        // shorter than the sheet leaves a strip of it parked on screen.
+        toValue: SCREEN_HEIGHT,
+        duration,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }).start(then);
+    },
+    [translateY],
+  );
+
   useEffect(() => {
     if (visible) {
       setShowModal(true);
-      // Spring animation for smooth premium feel on open
-      Animated.spring(translateY, {
+      // Deliberately a timing curve, not a spring. `tension: 65, friction: 11`
+      // is well underdamped (ζ ≈ 0.68): the sheet shot past its resting place
+      // and oscillated back, and over a full screen's travel that overshoot is
+      // tens of pixels — read as a shake at the end of every open. An ease-out
+      // decelerates into place and cannot overshoot.
+      Animated.timing(translateY, {
         toValue: 0,
-        tension: 65,
-        friction: 11,
+        duration: 300,
+        easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }).start();
     } else {
-      // Smooth timing animation on close
-      Animated.timing(translateY, {
-        toValue: contentHeight + 100,
-        duration: 220,
-        useNativeDriver: true,
-      }).start(() => {
-        setShowModal(false);
-      });
+      animateClosed(220, () => setShowModal(false));
     }
-  }, [visible, contentHeight, translateY]);
+    // `contentHeight` must NOT be a dependency. onLayout sets it while the
+    // opening spring is still in flight, and a re-run restarts that spring from
+    // rest — the sheet accelerates, stalls, then accelerates again, which is
+    // the judder this sheet used to have on every open.
+  }, [visible, translateY, animateClosed]);
 
   const handleDismiss = () => {
-    Animated.timing(translateY, {
-      toValue: contentHeight + 100,
-      duration: 200,
-      useNativeDriver: true,
-    }).start(() => {
-      onClose();
-    });
+    animateClosed(200, () => onCloseRef.current());
   };
 
   // PanResponder to handle vertical swipe down on the header handle area
@@ -84,19 +103,21 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
         if (gestureState.dy > 100 || gestureState.vy > 0.4) {
           handleDismiss();
         } else {
-          // Snap back to top with spring
-          Animated.spring(translateY, {
+          // Same reasoning as the open animation: no overshoot on snap-back.
+          Animated.timing(translateY, {
             toValue: 0,
-            tension: 80,
-            friction: 12,
+            duration: 220,
+            easing: Easing.out(Easing.cubic),
             useNativeDriver: true,
           }).start();
         }
       },
       onPanResponderTerminate: () => {
         // Snap back if interrupted
-        Animated.spring(translateY, {
+        Animated.timing(translateY, {
           toValue: 0,
+          duration: 220,
+          easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }).start();
       },
@@ -112,7 +133,10 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
 
   const onLayout = (event: LayoutChangeEvent) => {
     const { height } = event.nativeEvent.layout;
-    if (height > 0) {
+    // onLayout fires again for images finishing, the keyboard, rotation. Only
+    // a real change should re-render, and none of them touch the animation.
+    if (height > 0 && Math.abs(height - contentHeightRef.current) > 1) {
+      contentHeightRef.current = height;
       setContentHeight(height);
     }
   };

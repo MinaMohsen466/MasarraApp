@@ -29,6 +29,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { QRFormModal } from '../components/QRCodeCard/QRFormModal';
 import { GuestListModal } from '../components/MyEvents/GuestListModal';
 import { LogoLoader } from '../components/LogoLoader';
+import { isActiveEventService } from '../utils/bookingPayment';
 
 interface MyEventsProps {
   onBack?: () => void;
@@ -131,9 +132,12 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
         ? 'لا توجد فعاليات مطابقة للفلاتر المحددة.'
         : 'No events match the selected filters.';
     }
+    // Says "paid", not "confirmed": a confirmed-but-unpaid booking is filtered
+    // out here, so promising that confirmed bookings appear sent people looking
+    // for an order that is still waiting on payment in Order History.
     return isRTL
-      ? 'لا توجد فعاليات قادمة. الحجوزات المؤكدة تظهر هنا قبل موعدها.'
-      : 'No upcoming events. Confirmed bookings appear here before their date.';
+      ? 'لا توجد فعاليات قادمة. تظهر هنا الحجوزات بعد إتمام الدفع.'
+      : 'No upcoming events. Bookings appear here once payment is complete.';
   }, [emptyReason, events.length, isRTL]);
 
   // Derive filteredEvents directly during render to prevent state-update lag and visual flashing
@@ -258,16 +262,11 @@ const MyEvents: React.FC<MyEventsProps> = ({ onBack }) => {
 
       allBookings.forEach((booking: any) => {
         (booking.services || []).forEach((s: any) => {
-          // Hide cancelled services
-          if (s.status === 'cancelled') return;
-
-          // Hide services whose event date has already passed
-          const svcDate = s.eventDate || booking.eventDate;
-          if (svcDate) {
-            const eventDay = new Date(svcDate);
-            eventDay.setHours(23, 59, 59, 999); // event counts as "passed" only after its day ends
-            if (eventDay < new Date()) return;
-          }
+          // Cancelled, already-past and unpaid services are all excluded here.
+          // An unpaid service is only a vendor-approved order still inside its
+          // 24h payment window — it becomes an event once it is paid for, and
+          // until then Order History is where it is acted on.
+          if (!isActiveEventService(s, booking)) return;
 
           const serviceId =
             s.service && s.service._id

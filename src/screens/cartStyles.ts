@@ -590,29 +590,53 @@ export const styles = StyleSheet.create({
     marginBottom: 12,
     position: 'relative',
   },
-  swipeDeleteBehind: {
+  // Revealed behind the row by the swipe gesture, split into a delete half on
+  // top and an edit half underneath. Sits on the right in both languages: the
+  // row is dragged left in both, and the panel belongs where the row came from.
+  // Two separate buttons rather than one split slab: a single block reads as a
+  // coloured wall attached to the card, while two rounded tiles carrying the
+  // card's own radius read as controls.
+  swipeActionsBehind: {
+    // Pinned to all four edges of swipeCardWrapper, which the card fills
+    // exactly (it renders with marginBottom overridden to 0, and the 12px gap
+    // to the next row belongs to the wrapper). So the buttons always span the
+    // card's full height and stay centred on it however tall its contents make
+    // it — no fixed height to keep in sync.
     position: 'absolute',
     top: 0,
     bottom: 0,
     right: 0,
     width: 70,
-    backgroundColor: '#FF4B4B',
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    // Keeps the buttons off the card's edge so the gap reads as deliberate.
+    paddingLeft: 8,
     opacity: 0,
   },
-  swipeDeleteBehindRTL: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    width: 70,
+  swipeActionDelete: {
+    flex: 1,
     backgroundColor: '#FF4B4B',
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    opacity: 0,
+    marginBottom: 6,
+  },
+  swipeActionEdit: {
+    flex: 1,
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Sits over the row while its panel is open, so tapping the row closes it
+  // instead of hitting the controls underneath. A full-screen overlay cannot do
+  // this job: to out-rank the ScrollView it would also have to cover the
+  // panel's own buttons.
+  swipeCloseCatcher: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 5,
   },
   infoDropdown: {
     position: 'absolute',

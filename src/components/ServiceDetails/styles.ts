@@ -1,6 +1,9 @@
 import { StyleSheet } from 'react-native';
 import { colors } from '../../constants/colors';
 
+/** How far the info card rides up over the image. */
+export const CARD_OVERLAP = 24;
+
 export const createStyles = (SCREEN_WIDTH: number) => {
   const isTablet = SCREEN_WIDTH >= 600;
   const carouselHeight = isTablet ? 430 : 330;
@@ -210,7 +213,7 @@ export const createStyles = (SCREEN_WIDTH: number) => {
       paddingVertical: 20,
       borderTopLeftRadius: 24,
       borderTopRightRadius: 24,
-      marginTop: -24,
+      marginTop: -CARD_OVERLAP,
     },
     serviceName: {
       fontSize: 22,

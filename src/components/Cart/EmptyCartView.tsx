@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, react-native/no-inline-styles */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -29,6 +29,12 @@ interface EmptyCartViewProps {
   handleUserIconPress: () => void;
   onNavigate?: (route: string) => void;
   onViewDetails?: (serviceId: string) => void;
+  /**
+   * Reports whether the recommended-service modal below is open. Cart swaps
+   * this whole view out as soon as the cart stops being empty, which would tear
+   * the modal down mid-use the instant the user adds an item from inside it.
+   */
+  onServiceModalChange?: (open: boolean) => void;
   user: any;
   imageError: boolean;
   setImageError: (value: boolean) => void;
@@ -43,6 +49,7 @@ export const EmptyCartView: React.FC<EmptyCartViewProps> = ({
   handleUserIconPress,
   onNavigate,
   onViewDetails,
+  onServiceModalChange,
   user,
   imageError,
   setImageError,
@@ -52,6 +59,14 @@ export const EmptyCartView: React.FC<EmptyCartViewProps> = ({
   const [recommendedServices, setRecommendedServices] = useState<Service[]>([]);
   const [loadingServices, setLoadingServices] = useState<boolean>(true);
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
+
+  // Derived from the state rather than reported at each call site, so no path
+  // that closes the modal can forget to tell the parent.
+  const onServiceModalChangeRef = useRef(onServiceModalChange);
+  onServiceModalChangeRef.current = onServiceModalChange;
+  useEffect(() => {
+    onServiceModalChangeRef.current?.(selectedServiceId !== null);
+  }, [selectedServiceId]);
 
   // Calculate card width so exactly 2 full cards + ~30% of 3rd card are visible
   const cardWidth = Math.max(142, Math.floor((screenWidth - 44) / 2.3));

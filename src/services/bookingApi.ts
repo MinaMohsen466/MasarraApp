@@ -87,6 +87,9 @@ export interface Booking {
     transactionId?: string;
     invoiceId?: string | number;
     referenceId?: string;
+    // What the gateway actually captured. On a partially paid booking this is
+    // the only correct "amount charged" — totalPrice is the whole order.
+    paidAmount?: number;
   };
   review?: any;
   cancellationRequest?: {

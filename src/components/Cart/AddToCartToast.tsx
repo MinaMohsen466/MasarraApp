@@ -1,8 +1,20 @@
 /* eslint-disable react-native/no-inline-styles */
 import React, { useCallback, useEffect, useRef } from 'react';
-import { Animated, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import {
+  Animated,
+  PanResponder,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../constants/colors';
+
+const AUTO_DISMISS_MS = 6500;
+// How far down the toast has to be dragged before letting go dismisses it
+// rather than springing back. A flick counts too, so a short fast swipe works.
+const SWIPE_DISMISS_DISTANCE = 40;
+const SWIPE_DISMISS_VELOCITY = 0.5;
 
 interface AddToCartToastProps {
   visible: boolean;
@@ -48,10 +60,70 @@ export const AddToCartToast: React.FC<AddToCartToastProps> = ({
     });
   }, [opacity, translateY]);
 
+  // The pan responder is built once, so it reaches the current handlers through
+  // refs instead of closing over the first render's copies.
+  const handleCloseRef = useRef(handleClose);
+  handleCloseRef.current = handleClose;
+
+  const startDismissTimer = useCallback(() => {
+    if (dismissTimer.current) clearTimeout(dismissTimer.current);
+    // 6.5 seconds so the user has ample time to reach "View Cart".
+    dismissTimer.current = setTimeout(() => {
+      handleCloseRef.current();
+    }, AUTO_DISMISS_MS);
+  }, []);
+
+  const springBack = useCallback(() => {
+    Animated.spring(translateY, {
+      toValue: 0,
+      useNativeDriver: true,
+      tension: 80,
+      friction: 9,
+    }).start();
+    startDismissTimer();
+  }, [startDismissTimer, translateY]);
+
+  const springBackRef = useRef(springBack);
+  springBackRef.current = springBack;
+
+  // Swipe down to get rid of it. Safe to own the gesture here: the toast is an
+  // absolutely positioned sibling of the screen content, not a child of a
+  // ScrollView, so nothing intercepts the touch natively and cancels us.
+  const panResponder = useRef(
+    PanResponder.create({
+      // Taps have to keep reaching the "View Cart" button, so only a move
+      // claims the gesture.
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gestureState) =>
+        gestureState.dy > 6 &&
+        Math.abs(gestureState.dy) > Math.abs(gestureState.dx),
+      onPanResponderGrant: () => {
+        // Don't let the auto-dismiss fire out from under the finger.
+        if (dismissTimer.current) clearTimeout(dismissTimer.current);
+      },
+      onPanResponderMove: (_, gestureState) => {
+        // Downward only — dragging up would lift it away from the screen edge
+        // it is anchored to.
+        translateY.setValue(Math.max(0, gestureState.dy));
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (
+          gestureState.dy > SWIPE_DISMISS_DISTANCE ||
+          gestureState.vy > SWIPE_DISMISS_VELOCITY
+        ) {
+          handleCloseRef.current();
+        } else {
+          springBackRef.current();
+        }
+      },
+      onPanResponderTerminate: () => {
+        springBackRef.current();
+      },
+    }),
+  ).current;
+
   useEffect(() => {
     if (visible) {
-      if (dismissTimer.current) clearTimeout(dismissTimer.current);
-
       Animated.parallel([
         Animated.spring(translateY, {
           toValue: 0,
@@ -66,10 +138,7 @@ export const AddToCartToast: React.FC<AddToCartToastProps> = ({
         }),
       ]).start();
 
-      // Increased timer to 6.5 seconds so user has ample time
-      dismissTimer.current = setTimeout(() => {
-        handleClose();
-      }, 6500);
+      startDismissTimer();
     } else {
       handleClose();
     }
@@ -77,7 +146,7 @@ export const AddToCartToast: React.FC<AddToCartToastProps> = ({
     return () => {
       if (dismissTimer.current) clearTimeout(dismissTimer.current);
     };
-  }, [visible, handleClose, opacity, translateY]);
+  }, [visible, handleClose, startDismissTimer, opacity, translateY]);
 
   if (!visible) return null;
 
@@ -92,6 +161,7 @@ export const AddToCartToast: React.FC<AddToCartToastProps> = ({
           flexDirection: isRTL ? 'row-reverse' : 'row',
         },
       ]}
+      {...panResponder.panHandlers}
     >
       {/* Clean Message Text without icons */}
       <Text

@@ -110,17 +110,6 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            // Play rejects uploads signed with the debug key, and the debug
-            // keystore is shared and public — anyone could sign updates with it.
-            // Fail loudly rather than silently falling back to it.
-            if (!project.hasProperty('MASARRA_UPLOAD_STORE_FILE')) {
-                throw new GradleException(
-                    "Release signing is not configured. Define MASARRA_UPLOAD_STORE_FILE, " +
-                    "MASARRA_UPLOAD_KEY_ALIAS, MASARRA_UPLOAD_STORE_PASSWORD and " +
-                    "MASARRA_UPLOAD_KEY_PASSWORD in ~/.gradle/gradle.properties, and place " +
-                    "the keystore in android/app/."
-                )
-            }
             signingConfig signingConfigs.release
             // Left off deliberately. proguard-rules.pro is empty, and this app
             // loads fonts and images by name from JavaScript — resource
@@ -131,6 +120,29 @@ android {
             shrinkResources false
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
+    }
+}
+
+// Play rejects uploads signed with the debug key, and the debug keystore is
+// shared and public — anyone could sign updates with it. Fail loudly rather
+// than silently falling back to it.
+// This check must run at task-graph time, NOT inside `buildTypes.release {}`:
+// that block is evaluated on every Gradle invocation, so throwing there broke
+// `installDebug` too, even though a debug build never touches the upload key.
+gradle.taskGraph.whenReady { graph ->
+    if (project.hasProperty('MASARRA_UPLOAD_STORE_FILE')) {
+        return
+    }
+    def needsReleaseSigning = graph.allTasks.any { task ->
+        task.project == project && task.name ==~ /(?i).*(assemble|bundle|install|package)Release.*/
+    }
+    if (needsReleaseSigning) {
+        throw new GradleException(
+            "Release signing is not configured. Define MASARRA_UPLOAD_STORE_FILE, " +
+            "MASARRA_UPLOAD_KEY_ALIAS, MASARRA_UPLOAD_STORE_PASSWORD and " +
+            "MASARRA_UPLOAD_KEY_PASSWORD in ~/.gradle/gradle.properties, and place " +
+            "the keystore in android/app/."
+        )
     }
 }
 

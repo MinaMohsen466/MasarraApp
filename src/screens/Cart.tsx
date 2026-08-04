@@ -29,6 +29,7 @@ import {
   CartItem,
   checkCartAvailability,
   createBookingsFromCart,
+  subscribeToCartChanges,
 } from '../services/cart';
 import { getServiceImageUrl } from '../services/servicesApi';
 import { styles } from './cartStyles';
@@ -50,6 +51,12 @@ import {
   calculateSupplierShares,
   Supplier,
 } from '../services/paymentApi';
+
+// Width of the action panel revealed behind a row; the row rests here when
+// open. Must match `swipeActionsBehind.width` in cartStyles.
+const SWIPE_PANEL_WIDTH = 70;
+// Past half the panel, letting go opens the row rather than snapping it shut.
+const SWIPE_OPEN_THRESHOLD = SWIPE_PANEL_WIDTH / 2;
 
 interface Address {
   _id: string;
@@ -130,11 +137,25 @@ const Cart: React.FC<CartProps> = ({
   const [couponError, setCouponError] = useState('');
   const [summaryHeight, setSummaryHeight] = useState(360);
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
+  // Which row is currently swiped open, exposing its delete/edit panel.
+  const [openSwipeItemId, setOpenSwipeItemId] = useState<string | null>(null);
+  // EmptyCartView owns a Modal with ServiceDetails inside it. Adding from there
+  // makes the cart non-empty, which would otherwise unmount EmptyCartView — and
+  // the open modal with it — the moment the user pressed "add to cart".
+  const [recommendedModalOpen, setRecommendedModalOpen] = useState(false);
 
-  const loadCart = useCallback(async () => {
+  // Just the data. Split out from loadCart so the cart-change subscription
+  // below can refresh the list without re-firing the past-booking alert on
+  // every quantity edit or removal.
+  const applyCart = useCallback(async () => {
     const items = await getCart();
     setCartItems(items);
     setLoading(false);
+    return items;
+  }, []);
+
+  const loadCart = useCallback(async () => {
+    const items = await applyCart();
 
     // Check for old/past bookings
     const now = new Date();
@@ -191,7 +212,7 @@ const Cart: React.FC<CartProps> = ({
       setAlertButtons([{ text: t('ok'), style: 'default' }]);
       setAlertVisible(true);
     }
-  }, [isRTL, t]);
+  }, [applyCart, isRTL, t]);
 
   // Use AuthContext as single source of truth for user data
   React.useEffect(() => {
@@ -210,6 +231,20 @@ const Cart: React.FC<CartProps> = ({
       setLoading(false);
     }
   }, [isLoggedIn, loadCart]);
+
+  // Loading on mount alone is not enough. EmptyCartView opens ServiceDetails in
+  // a Modal *over* this screen, so "View Cart" in the add-to-cart toast
+  // navigates to the route we are already on — setCurrentRoute bails out on an
+  // unchanged value, Cart never remounts, and the screen went on rendering
+  // "empty" while the item was already saved. Subscribing means a mutation
+  // reaches us wherever it was made, the same way BottomNavigation keeps its
+  // badge in sync (which is why the badge was right while the list was not).
+  React.useEffect(() => {
+    if (!isLoggedIn) return undefined;
+    return subscribeToCartChanges(() => {
+      applyCart();
+    });
+  }, [isLoggedIn, applyCart]);
 
   // Fetch suppliers for commission calculation when cart items change
   React.useEffect(() => {
@@ -268,7 +303,7 @@ const Cart: React.FC<CartProps> = ({
     }
   };
 
-  // Swipe-to-delete helpers
+  // Swipe-to-reveal helpers
   const getSwipeAnim = useCallback(
     (itemId: string) => {
       if (!swipeAnims[itemId]) {
@@ -279,32 +314,62 @@ const Cart: React.FC<CartProps> = ({
     [swipeAnims],
   );
 
-  const resetSwipe = useCallback(
-    (itemId: string) => {
-      const translateX = getSwipeAnim(itemId);
-      Animated.spring(translateX, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 100,
-        friction: 10,
-      }).start();
-    },
-    [getSwipeAnim],
-  );
+  // Where each row is resting: 0 or -SWIPE_PANEL_WIDTH. A drag continues from
+  // here rather than from 0, so a row that is already open does not jump back
+  // to closed the moment a second gesture starts on it.
+  const swipeOffsets = useRef<{ [key: string]: number }>({}).current;
 
-  const confirmAndDelete = useCallback(
-    (itemId: string, isFromSwipe: boolean = false) => {
-      const translateX = getSwipeAnim(itemId);
+  /**
+   * The single place a row opens or closes. Passing null closes everything.
+   * Only one row may be open at a time — two open rows read as a stuck UI, and
+   * the tap-outside overlay can only belong to one of them.
+   */
+  const setOpenRow = useCallback(
+    (itemId: string | null) => {
+      Object.keys(swipeAnims).forEach(id => {
+        if (id !== itemId && (swipeOffsets[id] ?? 0) !== 0) {
+          swipeOffsets[id] = 0;
+          Animated.spring(swipeAnims[id], {
+            toValue: 0,
+            useNativeDriver: true,
+            tension: 100,
+            friction: 10,
+          }).start();
+        }
+      });
 
-      // Only reveal swipe background if triggered by swipe gesture
-      if (isFromSwipe) {
-        Animated.spring(translateX, {
-          toValue: -80,
+      if (itemId) {
+        swipeOffsets[itemId] = -SWIPE_PANEL_WIDTH;
+        Animated.spring(getSwipeAnim(itemId), {
+          toValue: -SWIPE_PANEL_WIDTH,
           useNativeDriver: true,
           tension: 100,
           friction: 10,
         }).start();
       }
+
+      setOpenSwipeItemId(itemId);
+    },
+    [getSwipeAnim, swipeAnims, swipeOffsets],
+  );
+
+  const setOpenRowRef = useRef(setOpenRow);
+  setOpenRowRef.current = setOpenRow;
+
+  const resetSwipe = useCallback(
+    (itemId: string) => {
+      if ((swipeOffsets[itemId] ?? 0) === 0) return;
+      setOpenRow(null);
+    },
+    [setOpenRow, swipeOffsets],
+  );
+
+  // Reached from the inline trash button and from the swipe panel. Neither
+  // needs the row moved first: the panel already parked it open, and the inline
+  // button deletes from where the row sits.
+  const confirmAndDelete = useCallback(
+    (itemId: string) => {
+      const translateX = getSwipeAnim(itemId);
 
       // Show confirmation dialog
       const buttons = [
@@ -322,7 +387,11 @@ const Cart: React.FC<CartProps> = ({
               await removeFromCart(itemId);
               await loadCart();
               setDeletingItemId(null);
+              setOpenSwipeItemId(current =>
+                current === itemId ? null : current,
+              );
               delete swipeAnims[itemId];
+              delete swipeOffsets[itemId];
               if (panResponders.current[itemId]) {
                 delete panResponders.current[itemId];
               }
@@ -343,52 +412,61 @@ const Cart: React.FC<CartProps> = ({
       setAlertButtons(isRTL ? buttons : buttons.reverse());
       setAlertVisible(true);
     },
-    [isRTL, getSwipeAnim, resetSwipe, t, swipeAnims, loadCart],
+    [isRTL, getSwipeAnim, resetSwipe, t, swipeAnims, swipeOffsets, loadCart],
   );
 
   const isRtlRef = useRef(isRTL);
   isRtlRef.current = isRTL;
 
-  const confirmAndDeleteRef = useRef(confirmAndDelete);
-  confirmAndDeleteRef.current = confirmAndDelete;
-
   const createPanResponder = useCallback(
     (itemId: string) => {
       const translateX = getSwipeAnim(itemId);
-      const REVEAL_THRESHOLD = 50;
+      // The row now rests open instead of firing the delete straight from the
+      // gesture: the panel holds two buttons, so the user has to be able to see
+      // and reach them before anything happens.
+      const restingAt = () => swipeOffsets[itemId] ?? 0;
+      const isHorizontalDrag = (dx: number, dy: number) =>
+        Math.abs(dx) > 10 && Math.abs(dy) < 20;
+      // Last position the finger reached, so an interrupted gesture can settle
+      // from where the row actually is instead of snapping back to where it
+      // started.
+      let travelled = 0;
+      const settle = () => {
+        const next = restingAt() + travelled;
+        travelled = 0;
+        setOpenRowRef.current(next < -SWIPE_OPEN_THRESHOLD ? itemId : null);
+      };
       return PanResponder.create({
         onStartShouldSetPanResponder: () => false,
-        onMoveShouldSetPanResponder: (_, gestureState) => {
-          return (
-            Math.abs(gestureState.dx) > 10 && Math.abs(gestureState.dy) < 20
-          );
-        },
+        // Captured, not just bubbled: the row is covered by touchables (the
+        // image, the title, and the close-catcher once open), and any of them
+        // holding the responder means the drag never reaches this handler —
+        // which is what made an opened row impossible to swipe shut again.
+        // Taps are unaffected; this only fires once a finger has travelled
+        // horizontally.
+        onMoveShouldSetPanResponderCapture: (_, gestureState) =>
+          isHorizontalDrag(gestureState.dx, gestureState.dy),
+        onMoveShouldSetPanResponder: (_, gestureState) =>
+          isHorizontalDrag(gestureState.dx, gestureState.dy),
+        // Once the row has the gesture it keeps it. Granting termination let the
+        // ScrollView reclaim a drag mid-swipe, and the row then settled back to
+        // the side it started from — which is why an open row could not be
+        // swiped shut again.
+        onPanResponderTerminationRequest: () => false,
         onPanResponderMove: (_, gestureState) => {
-          // Always swipe left to delete for both languages
-          if (gestureState.dx < 0) {
-            translateX.setValue(gestureState.dx);
-          } else {
-            translateX.setValue(Math.min(gestureState.dx, 0));
-          }
+          travelled = gestureState.dx;
+          // Always drag left in both languages, and never past the panel.
+          const next = restingAt() + travelled;
+          translateX.setValue(Math.min(0, Math.max(-SWIPE_PANEL_WIDTH, next)));
         },
         onPanResponderRelease: (_, gestureState) => {
-          const absX = Math.abs(gestureState.dx);
-          // If swiped beyond REVEAL_THRESHOLD, trigger delete confirmation with isFromSwipe = true
-          if (absX > REVEAL_THRESHOLD) {
-            confirmAndDeleteRef.current(itemId, true);
-          } else {
-            // Always snap the card back to the 0 position
-            Animated.spring(translateX, {
-              toValue: 0,
-              useNativeDriver: true,
-              tension: 100,
-              friction: 10,
-            }).start();
-          }
+          travelled = gestureState.dx;
+          settle();
         },
+        onPanResponderTerminate: settle,
       });
     },
-    [getSwipeAnim],
+    [getSwipeAnim, swipeOffsets],
   );
 
   const panResponders = useRef<{
@@ -1117,8 +1195,14 @@ const Cart: React.FC<CartProps> = ({
     );
   }
 
-  // If user is logged in, but cart is empty, show empty cart page
-  if (isLoggedIn && !loading && cartItems.length === 0) {
+  // If user is logged in, but cart is empty, show empty cart page. Stay on it
+  // while its service modal is open even once the cart fills up, so the modal
+  // survives long enough for the user to press "View Cart" in the toast.
+  if (
+    isLoggedIn &&
+    !loading &&
+    (cartItems.length === 0 || recommendedModalOpen)
+  ) {
     return (
       <EmptyCartView
         isRTL={isRTL}
@@ -1128,6 +1212,7 @@ const Cart: React.FC<CartProps> = ({
         handleUserIconPress={handleUserIconPress}
         onNavigate={onNavigate}
         onViewDetails={onViewDetails || onSelectService}
+        onServiceModalChange={setRecommendedModalOpen}
         user={user}
         imageError={imageError}
         setImageError={setImageError}
@@ -1140,6 +1225,11 @@ const Cart: React.FC<CartProps> = ({
 
   return (
     <View style={styles.container}>
+      {/* Info dropdowns only. A swiped-open row deliberately does NOT raise this
+          overlay: it outranks the ScrollView (zIndex 90 vs 0), so it would
+          swallow every touch on the open row — including its own delete/edit
+          buttons and the swipe-back gesture. That row closes via the per-row
+          catcher inside the card instead. */}
       {isAnyInfoOpen && (
         <TouchableOpacity
           style={{
@@ -1248,6 +1338,11 @@ const Cart: React.FC<CartProps> = ({
               { paddingBottom: summaryHeight + 16 },
             ]}
             showsVerticalScrollIndicator={false}
+            // Scrolling away from an open row should close it, the way every
+            // native list behaves.
+            onScrollBeginDrag={() => {
+              if (openSwipeItemId !== null) setOpenRow(null);
+            }}
           >
             {cartItems.map(item => {
               const now = new Date();
@@ -1263,10 +1358,17 @@ const Cart: React.FC<CartProps> = ({
               const swipeOpacity = isThisItemDeleting
                 ? 0
                 : translateX.interpolate({
-                    inputRange: [-60, -25, -10, 0],
-                    outputRange: [1, 0.6, 0, 0],
+                    // Past the swipe-reveal window the row is being animated
+                    // off-screen (to -500) for deletion, so the red layer has
+                    // to fade back out on its own. Relying on isThisItemDeleting
+                    // alone left it standing on an otherwise empty screen for a
+                    // few frames whenever the row's removal from the list
+                    // committed after that flag was cleared.
+                    inputRange: [-250, -150, -60, -25, -10, 0],
+                    outputRange: [0, 1, 1, 0.6, 0, 0],
                     extrapolate: 'clamp',
                   });
+              const isThisItemOpen = openSwipeItemId === item._id;
               return (
                 <View
                   key={item._id}
@@ -1275,22 +1377,77 @@ const Cart: React.FC<CartProps> = ({
                     { zIndex: showInfo[item._id] ? 999 : 1 },
                   ]}
                 >
-                  {/* Delete indicator behind the card - revealed only during swipe */}
+                  {/* Action panel behind the row: delete on top, edit below.
+                      Revealed by the swipe and left resting open until the user
+                      picks one or taps away. */}
                   <Animated.View
                     style={[
-                      styles.swipeDeleteBehind,
+                      styles.swipeActionsBehind,
                       { opacity: swipeOpacity },
                     ]}
+                    // Only reachable once the row is actually parked open;
+                    // otherwise a stray tap through a half-faded panel could
+                    // delete an item the user never revealed.
+                    pointerEvents={isThisItemOpen ? 'auto' : 'none'}
                   >
-                    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-                      <Path
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        stroke="#FFFFFF"
-                        strokeWidth={2}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </Svg>
+                    <TouchableOpacity
+                      style={styles.swipeActionDelete}
+                      onPress={() => confirmAndDelete(item._id)}
+                      activeOpacity={0.8}
+                      accessibilityLabel={t('remove')}
+                    >
+                      <Svg
+                        width={20}
+                        height={20}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                      >
+                        <Path
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          stroke="#FFFFFF"
+                          strokeWidth={2}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </Svg>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.swipeActionEdit}
+                      onPress={() => {
+                        setOpenRow(null);
+                        if (item.isPackage) {
+                          onEditPackage &&
+                            onEditPackage(item.serviceId, item._id);
+                        } else {
+                          onEditService &&
+                            onEditService(item.serviceId, item._id);
+                        }
+                      }}
+                      activeOpacity={0.8}
+                      accessibilityLabel={isRTL ? 'تعديل' : 'Edit'}
+                    >
+                      <Svg
+                        width={20}
+                        height={20}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                      >
+                        <Path
+                          d="M12 20h9"
+                          stroke="#FFFFFF"
+                          strokeWidth={2}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <Path
+                          d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4 12.5-12.5z"
+                          stroke="#FFFFFF"
+                          strokeWidth={2}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </Svg>
+                    </TouchableOpacity>
                   </Animated.View>
                   <Animated.View
                     style={[
@@ -2162,6 +2319,18 @@ const Cart: React.FC<CartProps> = ({
                         )}
                       </View>
                     </View>
+
+                    {/* While the panel is open, a tap on the row closes it
+                        rather than reaching the controls beneath — the way a
+                        swiped row behaves natively. Rendered last so it sits
+                        above the card's own content. */}
+                    {isThisItemOpen && (
+                      <TouchableOpacity
+                        style={styles.swipeCloseCatcher}
+                        activeOpacity={1}
+                        onPress={() => setOpenRow(null)}
+                      />
+                    )}
                   </Animated.View>
                 </View>
               );

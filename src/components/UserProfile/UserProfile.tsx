@@ -26,6 +26,7 @@ import { API_URL } from '../../config/api.config';
 import { fetchAddresses } from '../../services/api';
 import { getWishlist } from '../../services/wishlist';
 import { getUserDashboardBookings } from '../../services/bookingApi';
+import { isActiveEventService } from '../../utils/bookingPayment';
 
 interface Address {
   _id: string;
@@ -177,30 +178,22 @@ const UserProfile: React.FC<UserProfileProps> = ({
           if (Array.isArray(bookings)) {
             setOrdersCount(bookings.length);
 
-            // One per upcoming, non-cancelled service — the exact row MyEvents
-            // renders. Counting bookings instead made a two-service booking
-            // read as "1 event" next to a list showing two.
+            // One per upcoming, non-cancelled, paid service — the exact row
+            // MyEvents renders. Counting bookings instead made a two-service
+            // booking read as "1 event" next to a list showing two, and the
+            // rule has to stay shared with MyEvents (isActiveEventService) or
+            // this number drifts from the list it links to.
             const now = new Date();
-            const isUpcoming = (date?: string) => {
-              if (!date) return true;
-              const eventDay = new Date(date);
-              eventDay.setHours(23, 59, 59, 999);
-              return eventDay >= now;
-            };
 
             const activeEvents = bookings.reduce((count, b) => {
               if (b.status === 'cancelled') return count;
-              const services = b.services || [];
-              if (services.length === 0) {
-                return count + (isUpcoming(b.eventDate) ? 1 : 0);
-              }
+              // No special case for an empty services array: MyEvents iterates
+              // services, so such a booking renders no rows and counting it as
+              // one event just put the counter one ahead of the list.
               return (
                 count +
-                services.filter(
-                  s =>
-                    s.status !== 'cancelled' &&
-                    isUpcoming(s.eventDate || b.eventDate),
-                ).length
+                (b.services || []).filter(s => isActiveEventService(s, b, now))
+                  .length
               );
             }, 0);
             setEventsCount(activeEvents);

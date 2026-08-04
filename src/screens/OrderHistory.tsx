@@ -32,6 +32,7 @@ import { QRFormModal } from '../components/QRCodeCard/QRFormModal';
 import { CustomAlert } from '../components/CustomAlert';
 import PaymentWebView from '../components/PaymentWebView';
 import PaymentReceiptModal from '../components/PaymentReceiptModal/PaymentReceiptModal';
+import { isFreeBooking, isPaidOrFreeService } from '../utils/bookingPayment';
 import { CancellationRequestModal } from '../components/OrderHistory/CancellationRequestModal';
 import {
   getQRCodeByBooking,
@@ -307,17 +308,6 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
       .padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  const isFreeBooking = (booking: Booking) => booking.totalPrice === 0;
-
-  const isPaidOrFreeService = (serviceEntry: any, booking: Booking) => {
-    return (
-      serviceEntry.price === 0 ||
-      isFreeBooking(booking) ||
-      serviceEntry.paymentStatus === 'paid' ||
-      booking.paymentStatus === 'paid'
-    );
-  };
-
   const getEventEndTime = (booking: Booking) => {
     if (booking.eventTime?.end) {
       return new Date(booking.eventTime.end);
@@ -357,12 +347,13 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
     return pendingTotalRaw;
   };
 
+  // A receipt lists what was actually paid for. There is deliberately no
+  // fallback to the full services array: falling back made an unpaid booking
+  // render a receipt for every service it contained.
   const getReceiptServices = (booking: Booking) => {
-    const paidServices = (booking.services || []).filter(
-      (s: any) => s.paymentStatus === 'paid',
+    const targetList = (booking.services || []).filter((s: any) =>
+      isPaidOrFreeService(s, booking),
     );
-    const targetList =
-      paidServices.length > 0 ? paidServices : booking.services || [];
 
     return targetList.map((s: any) => ({
       name:
@@ -374,6 +365,33 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
       quantity: s.quantity || 1,
       total: (s.price || 0) * (s.quantity || 1),
     }));
+  };
+
+  // Never hardcode 'success' here: the receipt modal turns this into
+  // "تم الدفع بنجاح / Payment Successful", so a fixed value claims a payment
+  // that may not have happened.
+  const getReceiptStatus = (booking: Booking): 'success' | 'pending' | 'failed' => {
+    if (isFreeBooking(booking)) return 'success';
+    const paymentStatus = booking.paymentStatus as string | undefined;
+    if (paymentStatus === 'paid' || paymentStatus === 'partial') return 'success';
+    if (paymentStatus === 'failed') return 'failed';
+    return 'pending';
+  };
+
+  // What the customer was actually charged. `totalPrice` is only that once the
+  // whole booking is paid — on a partially paid booking it overstates it, so
+  // prefer the gateway's own figure and fall back to the paid line items.
+  const getReceiptAmount = (booking: Booking) => {
+    if (isFreeBooking(booking)) return 0;
+    if (booking.paymentStatus === 'paid') return booking.totalPrice;
+
+    const gatewayPaid = booking.myFatoorahPayment?.paidAmount;
+    if (typeof gatewayPaid === 'number' && gatewayPaid > 0) return gatewayPaid;
+
+    return getReceiptServices(booking).reduce(
+      (sum: number, s: any) => sum + (s.total || 0),
+      0,
+    );
   };
 
   // Cancel booking
@@ -720,12 +738,14 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
     // eslint-disable-next-line @typescript-eslint/no-shadow
     const colors: { [key: string]: string } = {
       confirmed: '#4CAF50',
+      awaiting_payment: '#FF9800',
       pending: '#FF9800',
       cancelled: '#F44336',
       completed: '#2196F3',
     };
     const labels: { [key: string]: { ar: string; en: string } } = {
       confirmed: { ar: 'مؤكد', en: 'Confirmed' },
+      awaiting_payment: { ar: 'بانتظار الدفع', en: 'Awaiting Payment' },
       pending: { ar: 'قيد الانتظار', en: 'Pending' },
       cancelled: { ar: 'ملغي', en: 'Cancelled' },
       completed: { ar: 'مكتمل', en: 'Completed' },
@@ -737,6 +757,21 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
         : labels[statusLower]?.en ||
           status.charAt(0).toUpperCase() + status.slice(1),
     };
+  };
+
+  // The card badge speaks for the whole order, but `status` only answers "did
+  // the vendor accept it". A vendor-confirmed order that has not been paid was
+  // therefore labelled "مؤكد" directly above its own countdown and Pay Now
+  // button, which read as "payment done".
+  const getDisplayStatus = (booking: Booking): string => {
+    if (
+      booking.status === 'confirmed' &&
+      !isFreeBooking(booking) &&
+      getConfirmedPendingServices(booking).length > 0
+    ) {
+      return 'awaiting_payment';
+    }
+    return booking.status;
   };
 
   // Get total price from booking - use totalPrice directly from database
@@ -1056,7 +1091,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
                       ]}
                     >
                       <Text style={styles.statusText}>
-                        {getStatusStyle(booking.status).text}
+                        {getStatusStyle(getDisplayStatus(booking)).text}
                       </Text>
                     </View>
                   </View>
@@ -1609,11 +1644,12 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
                             (s: any) => s.paymentStatus === 'paid',
                           ));
 
-                      const showReceiptButton =
-                        isPaid ||
-                        booking.paymentStatus === 'paid' ||
-                        booking.status === 'confirmed' ||
-                        booking.status === 'completed';
+                      // Payment, not vendor approval, is what produces a
+                      // receipt. `status === 'confirmed'` only means the vendor
+                      // accepted the booking — the customer still has 24h to
+                      // pay — so including it handed out receipts for orders
+                      // that were never paid.
+                      const showReceiptButton = isPaid || isFree;
 
                       const hasQR =
                         (booking.status === 'confirmed' ||
@@ -1926,9 +1962,9 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onBack }) => {
             receiptData={
               selectedReceiptBooking
                 ? {
-                    status: 'success',
+                    status: getReceiptStatus(selectedReceiptBooking),
                     bookingId: selectedReceiptBooking._id,
-                    amount: selectedReceiptBooking.totalPrice,
+                    amount: getReceiptAmount(selectedReceiptBooking),
                     currency: 'KWD',
                     paymentMethod:
                       selectedReceiptBooking.myFatoorahPayment?.paymentMethod,
