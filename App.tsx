@@ -1,52 +1,69 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import { View, StatusBar, BackHandler, PanResponder, Dimensions } from "react-native";
-import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
-import { useSiteSettings } from "./src/hooks/useSiteSettings";
-import { QueryClient, QueryClientProvider, focusManager } from '@tanstack/react-query';
-import { LanguageProvider } from "./src/contexts/LanguageContext";
-import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
-import { SocketProvider } from "./src/contexts/SocketContext";
-import { DateProvider } from "./src/contexts/DateContext";
-import { NotificationProvider, useNotification } from "./src/contexts/NotificationContext";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  View,
+  StatusBar,
+  BackHandler,
+  PanResponder,
+  Dimensions,
+} from 'react-native';
+import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
+import { useSiteSettings } from './src/hooks/useSiteSettings';
+import {
+  QueryClient,
+  QueryClientProvider,
+  focusManager,
+} from '@tanstack/react-query';
+import { LanguageProvider } from './src/contexts/LanguageContext';
+import { AuthProvider, useAuth } from './src/contexts/AuthContext';
+import { SocketProvider } from './src/contexts/SocketContext';
+import { DateProvider } from './src/contexts/DateContext';
+import {
+  NotificationProvider,
+  useNotification,
+} from './src/contexts/NotificationContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import colors from './src/constants/colors';
 import { AppState, AppStateStatus } from 'react-native';
-import { ErrorBoundary } from "./src/components/common/ErrorBoundary";
-import { ScreenTransition } from "./src/components/ScreenTransition";
+import { ErrorBoundary } from './src/components/common/ErrorBoundary';
+import { ScreenTransition } from './src/components/ScreenTransition';
+import type { ProfileSection } from './src/components/UserProfile/UserProfile';
 
 // Set up AppState listener for React Query to refetch on app foreground
-focusManager.setEventListener((handleFocus) => {
-  const subscription = AppState.addEventListener('change', (state: AppStateStatus) => {
-    handleFocus(state === 'active');
-  });
+focusManager.setEventListener(handleFocus => {
+  const subscription = AppState.addEventListener(
+    'change',
+    (state: AppStateStatus) => {
+      handleFocus(state === 'active');
+    },
+  );
   return () => {
     subscription.remove();
   };
 });
 
 // Components
-import Header from "./src/components/header/Header";
-import BottomNavigation from "./src/components/BottomNavigation";
-import Occasions from "./src/components/Occasions";
-import Packages from "./src/components/Packages";
-import ServicesPage from "./src/components/ServicesPage";
-import Vendors from "./src/components/Vendors";
-import ServiceDetails from "./src/components/ServiceDetails";
-import PackageDetails from "./src/components/PackageDetails";
-import Home from "./src/screens/Home";
-import Cart from "./src/screens/Cart";
-import SplashScreen from "./src/components/SplashScreen";
-import About from "./src/components/About";
-import Terms from "./src/components/Terms";
-import Privacy from "./src/components/Privacy";
-import RefundPolicy from "./src/components/RefundPolicy";
-import Addresses from "./src/components/Addresses";
-import Search from "./src/screens/Search";
-import Contact from "./src/screens/Contact";
-import BecomeSeller from "./src/components/BecomeSeller";
-import { Onboarding } from "./src/components/Auth/Onboarding";
-import { SocketNotificationListener } from "./src/components/SocketNotificationListener";
+import Header from './src/components/header/Header';
+import BottomNavigation from './src/components/BottomNavigation';
+import Occasions from './src/components/Occasions';
+import Packages from './src/components/Packages';
+import ServicesPage from './src/components/ServicesPage';
+import Vendors from './src/components/Vendors';
+import ServiceDetails from './src/components/ServiceDetails';
+import PackageDetails from './src/components/PackageDetails';
+import Home from './src/screens/Home';
+import Cart from './src/screens/Cart';
+import SplashScreen from './src/components/SplashScreen';
+import About from './src/components/About';
+import Terms from './src/components/Terms';
+import Privacy from './src/components/Privacy';
+import RefundPolicy from './src/components/RefundPolicy';
+import Addresses from './src/components/Addresses';
+import Search from './src/screens/Search';
+import Contact from './src/screens/Contact';
+import BecomeSeller from './src/components/BecomeSeller';
+import { Onboarding } from './src/components/Auth/Onboarding';
+import { SocketNotificationListener } from './src/components/SocketNotificationListener';
 
 // Helper component with auth
 const AddressesWithAuth: React.FC<{
@@ -79,6 +96,16 @@ const queryClient = new QueryClient({
   },
 });
 
+/**
+ * Routes that mean "open the profile screen already showing this section".
+ * Kept as routes rather than an extra handleNavigation argument so every
+ * existing caller — the drawer, the header, deep links — keeps working
+ * unchanged.
+ */
+const PROFILE_SECTION_ROUTES: Record<string, ProfileSection> = {
+  'profile-edit': 'edit',
+};
+
 function AppContent() {
   const { data: siteSettings } = useSiteSettings();
   const [isBannerDismissed, setIsBannerDismissed] = useState<boolean>(false);
@@ -92,25 +119,59 @@ function AppContent() {
     'forward' | 'back'
   >('forward');
   const [profileNavigationKey, setProfileNavigationKey] = useState<number>(0);
+  // Which section the profile screen should already be showing when it mounts.
+  const [profileInitialSection, setProfileInitialSection] =
+    useState<ProfileSection | null>(null);
   const [showBottomNav, setShowBottomNav] = useState<boolean>(true);
-  const [selectedVendorId, setSelectedVendorId] = useState<string | undefined>(undefined);
-  const [selectedVendorName, setSelectedVendorName] = useState<string | undefined>(undefined);
-  const [selectedServiceId, setSelectedServiceId] = useState<string | undefined>(undefined);
-  const [selectedServiceOrigin, setSelectedServiceOrigin] = useState<'home' | 'services' | 'vendor-services' | 'occasion-services' | 'cart' | undefined>(undefined);
-  const [selectedPackageId, setSelectedPackageId] = useState<string | undefined>(undefined);
-  const [selectedPackageOrigin, setSelectedPackageOrigin] = useState<'packages' | 'vendor-services' | 'cart' | undefined>(undefined);
-  const [selectedOccasionId, setSelectedOccasionId] = useState<string | undefined>(undefined);
-  const [selectedOccasionName, setSelectedOccasionName] = useState<string | undefined>(undefined);
-  const [selectedOccasionOrigin, setSelectedOccasionOrigin] = useState<'home' | 'occasions' | undefined>(undefined);
-  const [selectedSearchDate, setSelectedSearchDate] = useState<Date | undefined>(undefined);
-  const [editCartItemId, setEditCartItemId] = useState<string | undefined>(undefined);
-  const [becomeSellerOrigin, setBecomeSellerOrigin] = useState<string | undefined>(undefined);
+  const [selectedVendorId, setSelectedVendorId] = useState<string | undefined>(
+    undefined,
+  );
+  const [selectedVendorName, setSelectedVendorName] = useState<
+    string | undefined
+  >(undefined);
+  const [selectedServiceId, setSelectedServiceId] = useState<
+    string | undefined
+  >(undefined);
+  const [selectedServiceOrigin, setSelectedServiceOrigin] = useState<
+    | 'home'
+    | 'services'
+    | 'vendor-services'
+    | 'occasion-services'
+    | 'cart'
+    | undefined
+  >(undefined);
+  const [selectedPackageId, setSelectedPackageId] = useState<
+    string | undefined
+  >(undefined);
+  const [selectedPackageOrigin, setSelectedPackageOrigin] = useState<
+    'packages' | 'vendor-services' | 'cart' | undefined
+  >(undefined);
+  const [selectedOccasionId, setSelectedOccasionId] = useState<
+    string | undefined
+  >(undefined);
+  const [selectedOccasionName, setSelectedOccasionName] = useState<
+    string | undefined
+  >(undefined);
+  const [selectedOccasionOrigin, setSelectedOccasionOrigin] = useState<
+    'home' | 'occasions' | undefined
+  >(undefined);
+  const [selectedSearchDate, setSelectedSearchDate] = useState<
+    Date | undefined
+  >(undefined);
+  const [editCartItemId, setEditCartItemId] = useState<string | undefined>(
+    undefined,
+  );
+  const [becomeSellerOrigin, setBecomeSellerOrigin] = useState<
+    string | undefined
+  >(undefined);
 
   // Check if onboarding needs to be shown on mount
   useEffect(() => {
     const checkOnboarding = async () => {
       try {
-        const completed = await AsyncStorage.getItem('has_completed_onboarding');
+        const completed = await AsyncStorage.getItem(
+          'has_completed_onboarding',
+        );
         if (completed !== 'true') {
           setShowOnboarding(true);
         }
@@ -121,7 +182,8 @@ function AppContent() {
     checkOnboarding();
   }, []);
 
-  const { checkBookingsStatusChanges, registerNavigationHandler } = useNotification();
+  const { checkBookingsStatusChanges, registerNavigationHandler } =
+    useNotification();
   const { token, user, isLoading } = useAuth();
   const prevUserRef = useRef(user);
 
@@ -133,27 +195,47 @@ function AppContent() {
     }
     // Check if the user just logged in (transitioned from null to object)
     if (!prevUserRef.current && user) {
-      AsyncStorage.getItem('redirectToRoute').then((route) => {
-        if (route) {
-          AsyncStorage.removeItem('redirectToRoute');
-          setTransitionDirection('forward');
-          setCurrentRoute(route);
-        }
-      }).catch(err => console.error('Failed to get redirect route', err));
+      AsyncStorage.getItem('redirectToRoute')
+        .then(route => {
+          if (route) {
+            AsyncStorage.removeItem('redirectToRoute');
+            setTransitionDirection('forward');
+            setCurrentRoute(route);
+          }
+        })
+        .catch(err => console.error('Failed to get redirect route', err));
     }
     prevUserRef.current = user;
   }, [user]);
 
-  const handleNavigation = useCallback((route: string) => {
-    if (route === 'become-seller') {
-      setBecomeSellerOrigin(currentRoute);
-    }
-    if (route === 'profile') {
-      setProfileNavigationKey(Date.now());
-    }
-    setTransitionDirection('forward');
-    setCurrentRoute(route);
-  }, [currentRoute]);
+  // Stable identity: AppContent re-renders several times while the splash is up
+  // (auth restoring, the site-settings query landing), and an inline arrow here
+  // gives SplashScreen a new callback on each of them.
+  const handleSplashFinish = useCallback(() => setShowSplash(false), []);
+
+  const handleNavigation = useCallback(
+    (route: string) => {
+      if (route === 'become-seller') {
+        setBecomeSellerOrigin(currentRoute);
+      }
+      // Virtual routes for landing directly on a section of the profile screen.
+      // The section has to be decided before the first render: the drawer used to
+      // set an AsyncStorage flag that the profile screen read in an effect, so the
+      // profile page always painted first and the requested section appeared over
+      // it a moment later.
+      const section = PROFILE_SECTION_ROUTES[route];
+      if (section || route === 'profile') {
+        setProfileInitialSection(section ?? null);
+        setProfileNavigationKey(Date.now());
+        setTransitionDirection('forward');
+        setCurrentRoute('profile');
+        return;
+      }
+      setTransitionDirection('forward');
+      setCurrentRoute(route);
+    },
+    [currentRoute],
+  );
 
   // Automatically show bottom navigation when the route changes to prevent stuck hidden state
   useEffect(() => {
@@ -173,7 +255,7 @@ function AppContent() {
 
     checkBookingsStatusChanges(token);
 
-    const subscription = AppState.addEventListener('change', (nextAppState) => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
       if (nextAppState === 'active') {
         checkBookingsStatusChanges(token);
       }
@@ -249,7 +331,13 @@ function AppContent() {
     } else {
       setCurrentRoute('home');
     }
-  }, [currentRoute, selectedServiceOrigin, selectedPackageOrigin, selectedOccasionOrigin, becomeSellerOrigin]);
+  }, [
+    currentRoute,
+    selectedServiceOrigin,
+    selectedPackageOrigin,
+    selectedOccasionOrigin,
+    becomeSellerOrigin,
+  ]);
 
   // Keep references to latest route and back handler for PanResponder to prevent stale state issues
   const currentRouteRef = useRef(currentRoute);
@@ -272,7 +360,7 @@ function AppContent() {
 
     const subscription = BackHandler.addEventListener(
       'hardwareBackPress',
-      handleHardwareBack
+      handleHardwareBack,
     );
 
     return () => {
@@ -298,10 +386,13 @@ function AppContent() {
         const isNearRightEdge = x0 > SCREEN_WIDTH - 40;
 
         // Must be horizontal gesture: moved more than 10px horizontally and horizontal movement is dominant
-        const isHorizontalMove = Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.5;
+        const isHorizontalMove =
+          Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.5;
 
-        return (isNearLeftEdge && dx > 0 && isHorizontalMove) ||
-               (isNearRightEdge && dx < 0 && isHorizontalMove);
+        return (
+          (isNearLeftEdge && dx > 0 && isHorizontalMove) ||
+          (isNearRightEdge && dx < 0 && isHorizontalMove)
+        );
       },
       onPanResponderRelease: (_, gestureState) => {
         const { x0, dx } = gestureState;
@@ -315,7 +406,7 @@ function AppContent() {
         }
       },
       onPanResponderTerminate: () => {},
-    })
+    }),
   ).current;
 
   const handleVendorSelect = (vendorId: string, vendorName: string) => {
@@ -325,21 +416,32 @@ function AppContent() {
     setCurrentRoute('vendor-services');
   };
 
-  const handleServiceSelect = (serviceId: string, origin?: 'home' | 'services' | 'vendor-services' | 'occasion-services') => {
+  const handleServiceSelect = (
+    serviceId: string,
+    origin?: 'home' | 'services' | 'vendor-services' | 'occasion-services',
+  ) => {
     setSelectedServiceId(serviceId);
     setSelectedServiceOrigin(origin);
     setTransitionDirection('forward');
     setCurrentRoute('service-details');
   };
 
-  const handlePackageSelect = (packageId: string, origin?: 'packages' | 'vendor-services') => {
+  const handlePackageSelect = (
+    packageId: string,
+    origin?: 'packages' | 'vendor-services',
+  ) => {
     setSelectedPackageId(packageId);
     setSelectedPackageOrigin(origin);
     setTransitionDirection('forward');
     setCurrentRoute('package-details');
   };
 
-  const handleOccasionSelect = (occasionId: string, occasionName: string, origin?: 'home' | 'occasions', searchDate?: Date) => {
+  const handleOccasionSelect = (
+    occasionId: string,
+    occasionName: string,
+    origin?: 'home' | 'occasions',
+    searchDate?: Date,
+  ) => {
     if (!occasionId) return;
     setSelectedOccasionId(occasionId);
     setSelectedOccasionName(occasionName);
@@ -358,37 +460,70 @@ function AppContent() {
           <Home
             onNavigate={handleNavigation}
             currentRoute={currentRoute}
-            onSelectService={(serviceId) => handleServiceSelect(serviceId, 'home')}
-            onSelectOccasion={(occasion, searchDate) => handleOccasionSelect(occasion._id, occasion.name || occasion.nameAr, 'home', searchDate)}
+            onSelectService={serviceId =>
+              handleServiceSelect(serviceId, 'home')
+            }
+            onSelectOccasion={(occasion, searchDate) =>
+              handleOccasionSelect(
+                occasion._id,
+                occasion.name || occasion.nameAr,
+                'home',
+                searchDate,
+              )
+            }
             isBannerDismissed={isBannerDismissed}
             setIsBannerDismissed={setIsBannerDismissed}
             initialShowSignup={initialShowSignup}
             navigationKey={profileNavigationKey}
+            profileInitialSection={profileInitialSection}
           />
         );
       case 'search':
         return (
           <Search
             onBack={handleBack}
-            onSelectService={(serviceId) => handleServiceSelect(serviceId, 'services')}
-            onSelectOccasion={(occasion) => handleOccasionSelect(occasion._id, occasion.name || occasion.nameAr, 'occasions')}
-            onSelectPackage={(packageId) => handlePackageSelect(packageId, 'packages')}
+            onSelectService={serviceId =>
+              handleServiceSelect(serviceId, 'services')
+            }
+            onSelectOccasion={occasion =>
+              handleOccasionSelect(
+                occasion._id,
+                occasion.name || occasion.nameAr,
+                'occasions',
+              )
+            }
+            onSelectPackage={packageId =>
+              handlePackageSelect(packageId, 'packages')
+            }
           />
         );
       case 'occasions':
       case 'categories':
         return (
           <Occasions
-            onSelectOccasion={(occasion) => handleOccasionSelect(occasion._id, occasion.name || occasion.nameAr, 'occasions')}
+            onSelectOccasion={occasion =>
+              handleOccasionSelect(
+                occasion._id,
+                occasion.name || occasion.nameAr,
+                'occasions',
+              )
+            }
             onBack={handleBack}
           />
         );
       case 'packages':
-        return <Packages onBack={handleBack} onSelectPackage={(pkg) => handlePackageSelect(pkg._id, 'packages')} />;
+        return (
+          <Packages
+            onBack={handleBack}
+            onSelectPackage={pkg => handlePackageSelect(pkg._id, 'packages')}
+          />
+        );
       case 'occasion-services':
         return (
           <ServicesPage
-            onSelectService={(service) => handleServiceSelect(service._id, 'occasion-services')}
+            onSelectService={service =>
+              handleServiceSelect(service._id, 'occasion-services')
+            }
             onBack={handleBack}
             occasionId={selectedOccasionId}
             occasionName={selectedOccasionName}
@@ -398,22 +533,25 @@ function AppContent() {
       case 'services':
         return (
           <ServicesPage
-            onSelectService={(service) => handleServiceSelect(service._id, 'services')}
+            onSelectService={service =>
+              handleServiceSelect(service._id, 'services')
+            }
             onBack={handleBack}
           />
         );
       case 'vendors':
         return (
-          <Vendors
-            onSelectVendor={handleVendorSelect}
-            onBack={handleBack}
-          />
+          <Vendors onSelectVendor={handleVendorSelect} onBack={handleBack} />
         );
       case 'vendor-services':
         return (
           <ServicesPage
-            onSelectService={(service) => handleServiceSelect(service._id, 'vendor-services')}
-            onSelectPackage={(pkg) => handlePackageSelect(pkg._id, 'vendor-services')}
+            onSelectService={service =>
+              handleServiceSelect(service._id, 'vendor-services')
+            }
+            onSelectPackage={pkg =>
+              handlePackageSelect(pkg._id, 'vendor-services')
+            }
             onBack={handleBack}
             vendorId={selectedVendorId}
             vendorName={selectedVendorName}
@@ -484,15 +622,59 @@ function AppContent() {
       case 'become-seller':
         return <BecomeSeller onBack={handleBack} />;
       default:
-        return <Home onNavigate={handleNavigation} currentRoute={currentRoute} onSelectService={() => { }} onSelectOccasion={() => { }} />;
+        return (
+          <Home
+            onNavigate={handleNavigation}
+            currentRoute={currentRoute}
+            onSelectService={() => {}}
+            onSelectOccasion={() => {}}
+          />
+        );
     }
   };
 
-  const routesWithoutHeader = ['home', 'occasions', 'packages', 'categories', 'services', 'vendors', 'vendor-services', 'occasion-services', 'service-details', 'package-details', 'cart', 'about', 'terms', 'privacy', 'refund', 'contact', 'profile', 'addresses', 'search', 'auth', 'become-seller'];
+  const routesWithoutHeader = [
+    'home',
+    'occasions',
+    'packages',
+    'categories',
+    'services',
+    'vendors',
+    'vendor-services',
+    'occasion-services',
+    'service-details',
+    'package-details',
+    'cart',
+    'about',
+    'terms',
+    'privacy',
+    'refund',
+    'contact',
+    'profile',
+    'addresses',
+    'search',
+    'auth',
+    'become-seller',
+  ];
   const shouldShowHeader = !routesWithoutHeader.includes(currentRoute);
 
-  const routesWithoutSafeArea = ['about', 'terms', 'privacy', 'refund', 'contact', 'service-details', 'package-details', 'cart', 'profile', 'search', 'addresses', 'auth', 'become-seller'];
-  const shouldRenderWithoutSafeArea = routesWithoutSafeArea.includes(currentRoute);
+  const routesWithoutSafeArea = [
+    'about',
+    'terms',
+    'privacy',
+    'refund',
+    'contact',
+    'service-details',
+    'package-details',
+    'cart',
+    'profile',
+    'search',
+    'addresses',
+    'auth',
+    'become-seller',
+  ];
+  const shouldRenderWithoutSafeArea =
+    routesWithoutSafeArea.includes(currentRoute);
 
   // The full-bleed layout hides the tab bar on a few more routes than the
   // safe-area one does; kept as data so both live in one shell.
@@ -501,21 +683,29 @@ function AppContent() {
     : ['auth'];
 
   const isBannerVisible = siteSettings?.bannerEnabled && !isBannerDismissed;
-  const isBannerShownOnScreen = isBannerVisible && (currentRoute === 'home' || shouldShowHeader);
+  const isBannerShownOnScreen =
+    isBannerVisible && (currentRoute === 'home' || shouldShowHeader);
   const dynamicBgColor = isBannerShownOnScreen
-    ? "#00a19c"
-    : ['services', 'occasion-services', 'vendor-services', 'packages', 'vendors', 'occasions'].includes(currentRoute)
-      ? colors.background
-      : colors.backgroundHome;
+    ? '#00a19c'
+    : [
+        'services',
+        'occasion-services',
+        'vendor-services',
+        'packages',
+        'vendors',
+        'occasions',
+      ].includes(currentRoute)
+    ? colors.background
+    : colors.backgroundHome;
 
   return (
     <SocketProvider>
       <SocketNotificationListener setCurrentRoute={handleNavigation} />
       {showSplash ? (
-        <SplashScreen onFinish={() => setShowSplash(false)} />
+        <SplashScreen onFinish={handleSplashFinish} />
       ) : showOnboarding ? (
         <Onboarding
-          onFinish={async (targetRoute) => {
+          onFinish={async targetRoute => {
             try {
               await AsyncStorage.setItem('has_completed_onboarding', 'true');
             } catch (err) {
@@ -550,12 +740,20 @@ function AppContent() {
           edges={shouldRenderWithoutSafeArea ? [] : undefined}
         >
           {!shouldRenderWithoutSafeArea && (
-            <StatusBar backgroundColor="#00a19c" barStyle="light-content" translucent={false} />
+            <StatusBar
+              backgroundColor="#00a19c"
+              barStyle="light-content"
+              translucent={false}
+            />
           )}
           {shouldShowHeader && <Header onNavigate={handleNavigation} />}
           {/* Keyed so it is matched across renders by identity rather than by
               position — the conditional siblings above it come and go. */}
-          <View key="screen-layer" style={{ flex: 1 }} {...panResponder.panHandlers}>
+          <View
+            key="screen-layer"
+            style={{ flex: 1 }}
+            {...panResponder.panHandlers}
+          >
             <ScreenTransition
               routeKey={currentRoute}
               direction={transitionDirection}

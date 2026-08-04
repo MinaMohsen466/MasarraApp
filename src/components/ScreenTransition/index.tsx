@@ -32,7 +32,9 @@ const ANIMATED_ROUTES = [
   'package-details',
   'vendor-services',
   'occasion-services',
-  'addresses',
+  // 'addresses' is deliberately absent: its map WebView is expensive enough to
+  // mount that the slide never ran cleanly, and the stutter read as the whole
+  // app being slow. It swaps instantly instead.
   'become-seller',
 ];
 

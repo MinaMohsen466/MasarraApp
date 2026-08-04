@@ -1,10 +1,16 @@
+import { LEAFLET_CSS, LEAFLET_JS } from './leafletAssets';
+
+// Leaflet is inlined rather than linked from unpkg: fetching 144KB of library
+// before the first tile could even be requested is what made the address screen
+// slow to open, and it made the map fail outright with no connection. Map tiles
+// still come from the network — they have to.
 export const MAP_VIEW_HTML = `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>${LEAFLET_CSS}</style>
   <style>
     body, html, #map {
       margin: 0;
@@ -184,7 +190,7 @@ export const MAP_VIEW_HTML = `
     </svg>
   </button>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>${LEAFLET_JS}</script>
   <script>
     var map = L.map('map', {
       zoomControl: false,

@@ -699,6 +699,14 @@ export const styles = StyleSheet.create({
     width: '100%',
     position: 'relative',
   },
+  mapPlaceholder: {
+    flex: 1,
+    // Close to the map tiles' own land colour, so the swap to the real map is
+    // not a flash from white.
+    backgroundColor: '#E8ECE9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   flex1: {
     flex: 1,
   },

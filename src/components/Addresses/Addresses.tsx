@@ -13,6 +13,7 @@ import {
   TouchableWithoutFeedback,
   StatusBar,
   PermissionsAndroid,
+  InteractionManager,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { styles } from './styles';
@@ -70,6 +71,23 @@ const Addresses: React.FC<{
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const topMapRef = React.useRef<WebView>(null);
+  /**
+   * The map is held back until the entrance animation has finished.
+   *
+   * `addresses` is in ScreenTransition's ANIMATED_ROUTES, so this screen slides
+   * in over 280ms — and mounting the map meant instantiating a native WebView,
+   * parsing the map document and starting its network fetches (Leaflet alone is
+   * 144KB from unpkg) on the same main thread that is running the slide. The
+   * animation stalled, which is what read as the whole app being slow.
+   * PaymentWebView holds its WebView back for the same reason.
+   */
+  const [mapMounted, setMapMounted] = useState(false);
+  useEffect(() => {
+    const handle = InteractionManager.runAfterInteractions(() =>
+      setMapMounted(true),
+    );
+    return () => handle.cancel();
+  }, []);
   // When true, the next LOCATION_SELECTED from the map is ignored
   // (used when opening the edit form to prevent GPS auto-locate from
   // overwriting pre-filled form fields like houseNumber).
@@ -539,23 +557,31 @@ const Addresses: React.FC<{
 
       {/* Top Map Section (38% of screen height) */}
       <View style={styles.mapContainer}>
-        <WebView<{}>
-          ref={topMapRef}
-          originWhitelist={['*']}
-          source={{
-            html: MAP_VIEW_HTML.replace(
-              '__RTL_CLASS__',
-              isRTL ? 'rtl' : 'ltr',
-            ).replace(
-              '__SEARCH_PLACEHOLDER__',
-              isRTL ? 'البحث عن موقع...' : 'Search for location...',
-            ),
-          }}
-          style={styles.flex1}
-          onMessage={handleMapMessage}
-          geolocationEnabled={true}
-          domStorageEnabled={true}
-        />
+        {mapMounted ? (
+          <WebView<{}>
+            ref={topMapRef}
+            originWhitelist={['*']}
+            source={{
+              html: MAP_VIEW_HTML.replace(
+                '__RTL_CLASS__',
+                isRTL ? 'rtl' : 'ltr',
+              ).replace(
+                '__SEARCH_PLACEHOLDER__',
+                isRTL ? 'البحث عن موقع...' : 'Search for location...',
+              ),
+            }}
+            style={styles.flex1}
+            onMessage={handleMapMessage}
+            geolocationEnabled={true}
+            domStorageEnabled={true}
+          />
+        ) : (
+          // Occupies the map's box for the one frame or two before it mounts,
+          // so the screen slides in complete rather than with a hole in it.
+          <View style={styles.mapPlaceholder}>
+            <LogoLoader />
+          </View>
+        )}
         {/* Floating Back Button */}
         {onBack && (
           <TouchableOpacity

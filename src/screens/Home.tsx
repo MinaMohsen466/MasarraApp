@@ -24,6 +24,7 @@ import SearchSection from '../components/SearchSection';
 import Services from '../components/Services';
 import Auth from '../components/Auth';
 import UserProfile from '../components/UserProfile';
+import type { ProfileSection } from '../components/UserProfile/UserProfile';
 import { useAuth } from '../contexts/AuthContext';
 import { styles } from './styles';
 import Header from '../components/header/Header';
@@ -37,6 +38,7 @@ interface HomeProps {
   setIsBannerDismissed?: (val: boolean) => void;
   initialShowSignup?: boolean;
   navigationKey?: number;
+  profileInitialSection?: ProfileSection | null;
 }
 
 const Home: React.FC<HomeProps> = ({
@@ -48,6 +50,7 @@ const Home: React.FC<HomeProps> = ({
   setIsBannerDismissed,
   initialShowSignup,
   navigationKey,
+  profileInitialSection,
 }) => {
   const { isRTL, t } = useLanguage();
   const { user } = useAuth();
@@ -194,6 +197,7 @@ const Home: React.FC<HomeProps> = ({
           onSelectService && onSelectService(serviceId)
         }
         navigationKey={navigationKey}
+        initialSection={profileInitialSection}
       />
     );
   }

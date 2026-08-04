@@ -13,7 +13,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Rect, Circle } from 'react-native-svg';
 import { createStyles } from './styles';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { colors } from '../../constants/colors';
@@ -163,12 +162,16 @@ const getMenuItemIcon = (id: string, color: string, size: number) => {
           />
         </Svg>
       );
-    case 'settings':
+    // Circled person, deliberately different from the plain person used by
+    // 'account' — the two entries sit together and would otherwise be
+    // indistinguishable at a glance.
+    case 'profile':
       return (
         <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-          <Circle cx="12" cy="12" r="3" stroke={color} strokeWidth={2} />
+          <Circle cx="12" cy="12" r="10" stroke={color} strokeWidth={2} />
+          <Circle cx="12" cy="10" r="3" stroke={color} strokeWidth={2} />
           <Path
-            d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"
+            d="M6.2 18.8a6.5 6.5 0 0111.6 0"
             stroke={color}
             strokeWidth={2}
             strokeLinecap="round"
@@ -286,7 +289,7 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
     { id: 'occasions', titleKey: 'occasions', route: 'Occasions' },
     { id: 'packages', titleKey: 'packages', route: 'Packages' },
     { id: 'account', titleKey: 'myAccount', route: 'Account' },
-    { id: 'settings', titleKey: 'settings', route: 'Settings' },
+    { id: 'profile', titleKey: 'profile', route: 'profile' },
     { id: 'contact', titleKey: 'contact', route: 'contact' },
     { id: 'about', titleKey: 'aboutUs', route: 'About' },
     { id: 'policies', titleKey: 'policiesTerms', route: 'Policies' },
@@ -330,27 +333,14 @@ const Drawer: React.FC<DrawerProps> = ({ isVisible, onClose, onNavigate }) => {
       return;
     }
 
-    // Handle My Account - navigate to Edit Profile
+    // Handle My Account - open the profile screen already on Edit Profile.
+    // The route carries the destination, so the screen paints Edit Profile
+    // straight away. It used to write an AsyncStorage flag that the profile
+    // screen picked up in an effect, which both raced the navigation (the
+    // write was never awaited) and always showed the profile page first.
     if (id === 'account') {
-      if (isLoggedIn) {
-        // Set a short-lived flag so the Profile screen opens EditProfile automatically
-        try {
-          AsyncStorage.setItem('openEditProfile', '1');
-        } catch {
-          // Error handling
-        }
-      }
       if (onNavigate) {
-        onNavigate('profile', t(titleKey));
-      }
-      onClose();
-      return;
-    }
-
-    // Handle Settings - navigate to Profile
-    if (id === 'settings') {
-      if (onNavigate) {
-        onNavigate('profile', t(titleKey));
+        onNavigate(isLoggedIn ? 'profile-edit' : 'profile', t(titleKey));
       }
       onClose();
       return;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   ScrollView,
   StatusBar,
   Modal,
+  Animated,
+  Easing,
 } from 'react-native';
 import Svg, { Path, Circle, Rect, Line, Polyline } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -35,6 +37,56 @@ interface Address {
   isDefault?: boolean;
 }
 
+/** A sub-screen the profile can be asked to open with, instead of its own menu. */
+export type ProfileSection = 'edit';
+
+/**
+ * Stands in for a counter until its first load finishes. The tiles all start at
+ * 0, so without this the card states "0 Orders" as fact for as long as the
+ * request takes and then snaps to the real figure — a wrong number shown
+ * confidently, which is what made the card feel unfinished.
+ */
+const StatSkeleton: React.FC = () => {
+  const pulse = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, {
+          toValue: 1,
+          duration: 750,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulse, {
+          toValue: 0,
+          duration: 750,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulse]);
+
+  // Breathes rather than blinks: a narrow opacity range plus an eased curve, so
+  // three of these side by side stay quiet instead of flashing for attention.
+  const opacity = pulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.5, 1],
+  });
+
+  // The wrapper holds the full line box; the bar inside is deliberately much
+  // shorter than that box. Filling the whole height (the first attempt) read as
+  // a broken grey tile rather than a number on its way.
+  return (
+    <View style={styles.statSkeletonWrap}>
+      <Animated.View style={[styles.statSkeleton, { opacity }]} />
+    </View>
+  );
+};
+
 interface UserProfileProps {
   onBack?: () => void;
   onShowAuth?: () => void;
@@ -45,6 +97,12 @@ interface UserProfileProps {
   userEmail?: string;
   profilePicture?: string;
   navigationKey?: number;
+  /**
+   * Section to render immediately instead of the profile menu. Applied in the
+   * useState initialiser, not an effect, so the caller's target is what paints
+   * first — an effect would show the menu for a frame and then cover it.
+   */
+  initialSection?: ProfileSection | null;
 }
 
 const UserProfile: React.FC<UserProfileProps> = ({
@@ -57,11 +115,14 @@ const UserProfile: React.FC<UserProfileProps> = ({
   userEmail: _userEmail,
   profilePicture,
   navigationKey,
+  initialSection = null,
 }) => {
   const { isRTL } = useLanguage();
   const { user, logout, token } = useAuth();
   const insets = useSafeAreaInsets();
-  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(
+    initialSection === 'edit',
+  );
   const [showWishlist, setShowWishlist] = useState(false);
   const [showOrderHistory, setShowOrderHistory] = useState(false);
   const [showMyEvents, setShowMyEvents] = useState(false);
@@ -70,6 +131,11 @@ const UserProfile: React.FC<UserProfileProps> = ({
   const [wishlistCount, setWishlistCount] = useState(0);
   const [ordersCount, setOrdersCount] = useState(0);
   const [eventsCount, setEventsCount] = useState(0);
+  // Only the *first* load shows skeletons. The effect below also re-runs on
+  // every return from the wishlist/orders/events screens, and flashing the
+  // placeholders again each time would be worse than the problem they fix —
+  // those refreshes update the figures silently.
+  const [statsLoaded, setStatsLoaded] = useState(false);
 
   const [showNotifications, setShowNotifications] = useState(false);
   const {
@@ -89,22 +155,22 @@ const UserProfile: React.FC<UserProfileProps> = ({
     await markAllAsRead();
   };
 
-  // Check for edit profile flag when component mounts
+  // The drawer can ask for a section while this screen is already open. The
+  // route does not change then, so nothing remounts and the useState
+  // initialiser above never re-runs — navigationKey is the only thing that
+  // moves. Skipped on the first render, where the initialiser already ran.
+  const initialSectionApplied = useRef(false);
   useEffect(() => {
-    // Check if drawer requested opening edit profile
-    const checkOpenEdit = async () => {
-      try {
-        const flag = await AsyncStorage.getItem('openEditProfile');
-        if (flag === '1') {
-          // remove flag and open edit
-          await AsyncStorage.removeItem('openEditProfile');
-          setShowEditProfile(true);
-        }
-      } catch {
-        // Error checking flag
-      }
-    };
+    if (!initialSectionApplied.current) {
+      initialSectionApplied.current = true;
+      return;
+    }
+    if (initialSection === 'edit') {
+      setShowEditProfile(true);
+    }
+  }, [navigationKey, initialSection]);
 
+  useEffect(() => {
     // Check if cart requested opening order history
     const checkOpenOrderHistory = async () => {
       try {
@@ -133,7 +199,6 @@ const UserProfile: React.FC<UserProfileProps> = ({
       }
     };
 
-    checkOpenEdit();
     checkOpenOrderHistory();
     checkOpenMyEvents();
   }, [navigationKey]);
@@ -203,6 +268,10 @@ const UserProfile: React.FC<UserProfileProps> = ({
           console.error('[Profile] Failed to load booking stats:', error);
         }
       }
+
+      // Reveal the figures whatever happened — a failed request must not leave
+      // the tiles pulsing forever.
+      setStatsLoaded(true);
     };
     loadUserStats();
   }, [token, navigationKey, showWishlist, showOrderHistory, showMyEvents]);
@@ -303,15 +372,15 @@ const UserProfile: React.FC<UserProfileProps> = ({
         />
         <View style={styles.primaryFlexContainer}>
           <View
-            style={{ height: insets.top, backgroundColor: colors.backgroundCard }}
+            style={{
+              height: insets.top,
+              backgroundColor: colors.backgroundCard,
+            }}
           />
           <View style={styles.fullPageContainer}>
             {/* Clean Header Bar */}
             <View
-              style={[
-                styles.cleanHeaderBar,
-                isRTL && styles.cleanHeaderBarRTL,
-              ]}
+              style={[styles.cleanHeaderBar, isRTL && styles.cleanHeaderBarRTL]}
             >
               {onBack ? (
                 <TouchableOpacity
@@ -326,7 +395,9 @@ const UserProfile: React.FC<UserProfileProps> = ({
                   />
                 </TouchableOpacity>
               ) : (
-                <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
+                <Text
+                  style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}
+                >
                   {isRTL ? 'الملف الشخصي' : 'Profile'}
                 </Text>
               )}
@@ -397,14 +468,13 @@ const UserProfile: React.FC<UserProfileProps> = ({
         translucent={false}
       />
       <View style={styles.primaryFlexContainer}>
-        <View style={{ height: insets.top, backgroundColor: colors.backgroundCard }} />
+        <View
+          style={{ height: insets.top, backgroundColor: colors.backgroundCard }}
+        />
         <View style={styles.fullPageContainer}>
           {/* Top Clean Navigation Header Bar */}
           <View
-            style={[
-              styles.cleanHeaderBar,
-              isRTL && styles.cleanHeaderBarRTL,
-            ]}
+            style={[styles.cleanHeaderBar, isRTL && styles.cleanHeaderBarRTL]}
           >
             {onBack ? (
               <TouchableOpacity
@@ -419,24 +489,19 @@ const UserProfile: React.FC<UserProfileProps> = ({
                 />
               </TouchableOpacity>
             ) : (
-              <Text style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
+              <Text
+                style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}
+              >
                 {isRTL ? 'الملف الشخصي' : 'Profile'}
               </Text>
             )}
 
             <TouchableOpacity
-              style={[
-                styles.headerBackButtonCircle,
-                styles.positionRelative,
-              ]}
+              style={[styles.headerBackButtonCircle, styles.positionRelative]}
               onPress={handleOpenNotifications}
               activeOpacity={0.8}
             >
-              <Icon
-                name="notifications-outline"
-                size={20}
-                color="#0F172A"
-              />
+              <Icon name="notifications-outline" size={20} color="#0F172A" />
               {unreadCount > 0 && <View style={styles.notificationBadge} />}
             </TouchableOpacity>
           </View>
@@ -458,14 +523,18 @@ const UserProfile: React.FC<UserProfileProps> = ({
                         <Image
                           source={{
                             uri:
-                              getImageUri(user.profilePicture || profilePicture) ||
-                              undefined,
+                              getImageUri(
+                                user.profilePicture || profilePicture,
+                              ) || undefined,
                           }}
                           style={styles.profileImage}
                           resizeMode="cover"
                           onError={e => {
                             // eslint-disable-next-line no-console
-                            console.log('Image load error:', e.nativeEvent.error);
+                            console.log(
+                              'Image load error:',
+                              e.nativeEvent.error,
+                            );
                           }}
                         />
                       ) : (
@@ -545,12 +614,13 @@ const UserProfile: React.FC<UserProfileProps> = ({
                     onPress={handleOrderHistory}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.statNumber}>{ordersCount}</Text>
+                    {statsLoaded ? (
+                      <Text style={styles.statNumber}>{ordersCount}</Text>
+                    ) : (
+                      <StatSkeleton />
+                    )}
                     <Text
-                      style={[
-                        styles.statLabel,
-                        isRTL && styles.statLabelRTL,
-                      ]}
+                      style={[styles.statLabel, isRTL && styles.statLabelRTL]}
                     >
                       {isRTL ? 'الطلبات' : 'Orders'}
                     </Text>
@@ -561,12 +631,13 @@ const UserProfile: React.FC<UserProfileProps> = ({
                     onPress={handleMyEvents}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.statNumber}>{eventsCount}</Text>
+                    {statsLoaded ? (
+                      <Text style={styles.statNumber}>{eventsCount}</Text>
+                    ) : (
+                      <StatSkeleton />
+                    )}
                     <Text
-                      style={[
-                        styles.statLabel,
-                        isRTL && styles.statLabelRTL,
-                      ]}
+                      style={[styles.statLabel, isRTL && styles.statLabelRTL]}
                     >
                       {isRTL ? 'الفعاليات' : 'Events'}
                     </Text>
@@ -577,12 +648,13 @@ const UserProfile: React.FC<UserProfileProps> = ({
                     onPress={handleWishlist}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.statNumber}>{wishlistCount}</Text>
+                    {statsLoaded ? (
+                      <Text style={styles.statNumber}>{wishlistCount}</Text>
+                    ) : (
+                      <StatSkeleton />
+                    )}
                     <Text
-                      style={[
-                        styles.statLabel,
-                        isRTL && styles.statLabelRTL,
-                      ]}
+                      style={[styles.statLabel, isRTL && styles.statLabelRTL]}
                     >
                       {isRTL ? 'المفضلة' : 'Wishlist'}
                     </Text>
@@ -787,7 +859,14 @@ const UserProfile: React.FC<UserProfileProps> = ({
                         strokeLinecap="round"
                         strokeLinejoin="round"
                       >
-                        <Rect x={3} y={4} width={18} height={18} rx={2} ry={2} />
+                        <Rect
+                          x={3}
+                          y={4}
+                          width={18}
+                          height={18}
+                          rx={2}
+                          ry={2}
+                        />
                         <Line x1={16} y1={2} x2={16} y2={6} />
                         <Line x1={8} y1={2} x2={8} y2={6} />
                         <Line x1={3} y1={10} x2={21} y2={10} />

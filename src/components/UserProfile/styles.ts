@@ -260,9 +260,29 @@ export const styles = StyleSheet.create({
   },
   statNumber: {
     fontSize: 17,
+    // Pinned rather than left to the font, so statSkeleton below can occupy the
+    // exact same box and the tile does not resize when the figure arrives.
+    lineHeight: 21,
     fontWeight: '700',
     color: '#0F172A',
     marginBottom: 2,
+  },
+  // Occupies statNumber's exact line box so nothing shifts when the figure
+  // lands; the visible bar is centred inside it.
+  statSkeletonWrap: {
+    height: 21,
+    marginBottom: 2,
+    justifyContent: 'center',
+  },
+  statSkeleton: {
+    // Roughly the width of a two-digit figure at this size, and thin enough to
+    // read as text loading rather than as an empty box.
+    width: 22,
+    height: 9,
+    borderRadius: 4.5,
+    // A tint of the tile's own border colour, not a mid grey — it should sit
+    // inside the card quietly.
+    backgroundColor: '#E2E8F0',
   },
   statLabel: {
     fontSize: 11.5,
@@ -499,7 +519,6 @@ export const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
   },
-
 });
 
 export const notifStyles = StyleSheet.create({

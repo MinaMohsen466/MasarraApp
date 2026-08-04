@@ -1,5 +1,5 @@
 /* eslint-disable no-console, @typescript-eslint/no-explicit-any */
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -8,7 +8,6 @@ import {
   Modal,
   Platform,
   Dimensions,
-  LayoutAnimation,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,14 +19,23 @@ import { API_URL } from '../config/api.config';
 import { resolveGatewayOrigin } from '../services/paymentApi';
 import { LogoLoader } from './LogoLoader';
 
-// The gateway posts a new height for every step of its own mount — the iframe,
-// then the Apple Pay / G Pay buttons, then font swaps. Each report restarts this
-// clock, so the sheet is revealed only once nothing has moved for this long. At
-// 500ms it was committing to an intermediate size and lifting the cover there,
-// which is why the sheet settled small and then grew again in front of the user.
-const HEIGHT_SETTLE_BEFORE_REVEAL_MS = 900;
-// After the form is up, this only debounces a real page change (3-D Secure).
-const HEIGHT_SETTLE_AFTER_REVEAL_MS = 500;
+/**
+ * The sheet is a fixed share of the screen. It used to size itself to heights
+ * the gateway page posted, and that never worked: the gateway reports a new
+ * height for each step of its own mount (iframe, then Apple Pay / G Pay, then
+ * font swaps), so any rule for picking "the" height is a guess about timing.
+ * Three attempts failed in three different ways — committing early and then
+ * growing visibly, and finally locking onto an intermediate size so the card
+ * fields were cut off entirely.
+ *
+ * A fixed height cannot do either. The ratio is set just past what the card
+ * form needs, so there is no large dead area under "Pay Now"; a taller gateway
+ * page (the 3-D Secure step) scrolls inside the sheet instead of resizing it.
+ */
+const SHEET_HEIGHT_RATIO = 0.65;
+// Grace after the document loads, so the gateway's last mount steps happen
+// behind the cover.
+const REVEAL_DELAY_MS = 450;
 
 interface PaymentWebViewProps {
   visible: boolean;
@@ -63,56 +71,16 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
   const [verifyingPayment, setVerifyingPayment] = useState(false);
   const webViewRef = useRef<WebView>(null);
   const verifyingRef = useRef(false);
-  // Reported by the payment page once the gateway has mounted.
-  const [contentHeight, setContentHeight] = useState<number | null>(null);
-  const heightSettleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // The height the sheet has locked onto. Null until the first commit.
-  const committedHeightRef = useRef<number | null>(null);
-
-  // Cleared once the gateway has finished mounting and settled on a size.
-  const [gatewayReady, setGatewayReady] = useState(false);
   // The WebView is held back until the sheet has finished sliding in. Creating
   // it and starting the gateway load are heavy main-thread work, and doing that
   // during the entrance animation is what made this sheet stutter on its way up.
   const [sheetShown, setSheetShown] = useState(false);
-
-  /**
-   * The gateway iframe mounts at ~150px and grows in steps as it loads. Acting
-   * on each reported height made the sheet open large, collapse, then expand
-   * again. Commit only once the value has held still, and keep the loading
-   * cover up until then so the growing is never on screen.
-   */
-  const settleHeight = useCallback((height: number) => {
-    const committed = committedHeightRef.current;
-    // Once the form is on screen, ignore the gateway's constant small reflows;
-    // only a jump big enough to be a genuinely different page (a 3-D Secure
-    // step) is allowed to move the sheet.
-    if (committed !== null && Math.abs(height - committed) < 150) {
-      return;
-    }
-    if (heightSettleTimer.current) clearTimeout(heightSettleTimer.current);
-    heightSettleTimer.current = setTimeout(
-      () => {
-        // Animated even for the first commit: the sheet is still at its
-        // fallback height, and this is the moment the cover lifts — so the
-        // resize and the form appearing read as one deliberate transition
-        // rather than a jump.
-        LayoutAnimation.configureNext(
-          LayoutAnimation.create(
-            220,
-            LayoutAnimation.Types.easeInEaseOut,
-            LayoutAnimation.Properties.scaleY,
-          ),
-        );
-        committedHeightRef.current = height;
-        setContentHeight(height);
-        setGatewayReady(true);
-      },
-      committed === null
-        ? HEIGHT_SETTLE_BEFORE_REVEAL_MS
-        : HEIGHT_SETTLE_AFTER_REVEAL_MS,
-    );
-  }, []);
+  // Lifted a moment after the document loads, so the gateway's last mount steps
+  // land behind it. Unlike the sheet's size this only affects what is visible —
+  // getting it slightly wrong shows a form finishing its own layout, which is
+  // ordinary, rather than moving the sheet.
+  const [revealed, setRevealed] = useState(false);
+  const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!visible) {
@@ -120,23 +88,13 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
       // otherwise the second open would mount the WebView during the slide
       // again and only the first payment would animate smoothly.
       setSheetShown(false);
-      return undefined;
+      setRevealed(false);
     }
-    // The component stays mounted between attempts, so a reopened sheet would
-    // otherwise start at the previous session's size with the cover already
-    // lifted.
-    setGatewayReady(false);
-    setContentHeight(null);
-    committedHeightRef.current = null;
-    // Safety net: if the gateway never reports a size, reveal anyway rather
-    // than leaving the user staring at a spinner over a working page.
-    const reveal = setTimeout(() => setGatewayReady(true), 8000);
-    return () => clearTimeout(reveal);
   }, [visible]);
 
   useEffect(
     () => () => {
-      if (heightSettleTimer.current) clearTimeout(heightSettleTimer.current);
+      if (revealTimer.current) clearTimeout(revealTimer.current);
     },
     [],
   );
@@ -288,18 +246,12 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
 
   if (!visible) return null;
 
-  // Header + a little breathing room, capped so a tall gateway page still
-  // leaves the cart visible behind the sheet. Falls back to the original fixed
-  // share of the screen until the page reports its size.
-  const screenHeight = Dimensions.get('window').height;
-  const sheetHeightStyle = contentHeight
-    ? {
-        height: Math.min(
-          contentHeight + 64 + insets.bottom,
-          screenHeight * 0.9,
-        ),
-      }
-    : styles.sheetFallbackHeight;
+  // Fixed for the whole session — see SHEET_HEIGHT_RATIO. Enough for the card
+  // form and a 3-D Secure step without ever moving, and still short enough to
+  // leave the cart visible behind it.
+  const sheetHeightStyle = {
+    height: Dimensions.get('window').height * SHEET_HEIGHT_RATIO,
+  };
 
   return (
     <Modal
@@ -352,8 +304,7 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
                   onPress={() => {
                     setError(false);
                     setLoading(true);
-                    setGatewayReady(false);
-                    setContentHeight(null);
+                    setRevealed(false);
                     webViewRef.current?.reload();
                   }}
                 >
@@ -385,8 +336,23 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
                         : { uri: paymentUrl }
                     }
                     style={styles.webView}
-                    onLoadStart={() => setLoading(true)}
-                    onLoadEnd={() => setLoading(false)}
+                    onLoadStart={() => {
+                      if (revealTimer.current) {
+                        clearTimeout(revealTimer.current);
+                      }
+                      setRevealed(false);
+                      setLoading(true);
+                    }}
+                    onLoadEnd={() => {
+                      setLoading(false);
+                      if (revealTimer.current) {
+                        clearTimeout(revealTimer.current);
+                      }
+                      revealTimer.current = setTimeout(
+                        () => setRevealed(true),
+                        REVEAL_DELAY_MS,
+                      );
+                    }}
                     onNavigationStateChange={handleNavigationStateChange}
                     onError={handleError}
                     onHttpError={handleHttpError}
@@ -425,11 +391,9 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
                           }
                         } else if (message.type === 'PAYMENT_ERROR') {
                           onPaymentError(message.message || 'Payment failed');
-                        } else if (message.type === 'CONTENT_HEIGHT') {
-                          // Lets the sheet shrink to the gateway's actual height
-                          // rather than always occupying a fixed slice of screen.
-                          settleHeight(message.height);
                         }
+                        // CONTENT_HEIGHT is deliberately ignored: the sheet no
+                        // longer sizes itself to the gateway page.
                       } catch {
                         // The raw payload is not logged: anything the gateway page
                         // posts that fails to parse may still contain payer data.
@@ -473,10 +437,7 @@ const PaymentWebView: React.FC<PaymentWebViewProps> = ({
                 )}
                 {/* Stays outside the gate so the sheet is never empty while it
                     slides in — the loader covers the wait for the WebView. */}
-                {(!sheetShown ||
-                  loading ||
-                  !gatewayReady ||
-                  verifyingPayment) && (
+                {(!sheetShown || loading || !revealed || verifyingPayment) && (
                   <View style={styles.loadingOverlay}>
                     <LogoLoader />
                     <Text style={[styles.loadingText, isRTL && styles.rtlText]}>
@@ -514,12 +475,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
     justifyContent: 'flex-end',
-  },
-  sheetFallbackHeight: {
-    // Close to what the gateway settles at, so the first paint is roughly the
-    // final size. Opening at 80% made the sheet visibly collapse once the real
-    // height arrived.
-    height: '62%',
   },
   modalContent: {
     backgroundColor: colors.textWhite,
