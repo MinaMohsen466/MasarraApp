@@ -14,7 +14,7 @@ import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useVendors } from '../../hooks/useVendors';
 import { Vendor } from '../../services/vendorsApi';
-import { API_BASE_URL } from '../../config/api.config';
+import { API_BASE_URL, toThumbUrl } from '../../config/api.config';
 import { LogoLoader } from '../LogoLoader';
 
 interface VendorsProps {
@@ -29,14 +29,19 @@ const Vendors: React.FC<VendorsProps> = ({ onSelectVendor, onBack }) => {
   const { data: vendors, isLoading, error } = useVendors();
 
   const [imageErrors, setImageErrors] = React.useState<Set<string>>(new Set());
+  // Ids whose thumbnail is missing; they retry at full size before the card
+  // gives up and shows the letter avatar.
+  const [noThumb, setNoThumb] = React.useState<Set<string>>(new Set());
 
   const renderVendorCard = ({ item }: { item: Vendor }) => {
     const vendorImage = item.vendorProfile?.profilePicture || item.image;
-    const imageUrl = vendorImage
+    const fullUrl = vendorImage
       ? vendorImage.startsWith('http')
         ? vendorImage
         : `${API_BASE_URL}${vendorImage}`
       : null;
+    const usingFull = noThumb.has(item._id);
+    const imageUrl = fullUrl && !usingFull ? toThumbUrl(fullUrl) : fullUrl;
 
     const hasError = imageUrl && imageErrors.has(item._id);
 
@@ -53,7 +58,13 @@ const Vendors: React.FC<VendorsProps> = ({ onSelectVendor, onBack }) => {
               style={styles.vendorImage}
               resizeMode="cover"
               onError={() => {
-                setImageErrors(prev => new Set(prev).add(item._id));
+                // A missing thumbnail is not a missing picture — retry the
+                // full-size URL once before falling back to the letter avatar.
+                if (!usingFull) {
+                  setNoThumb(prev => new Set(prev).add(item._id));
+                } else {
+                  setImageErrors(prev => new Set(prev).add(item._id));
+                }
               }}
             />
           ) : (

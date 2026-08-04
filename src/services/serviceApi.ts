@@ -5,7 +5,10 @@ import {
   timeSlotsCache,
   TIME_SLOTS_CACHE_TTL,
 } from './apiUtils';
-import { getImageUrl as getImageUrlFromConfig } from '../config/api.config';
+import {
+  getImageUrl as getImageUrlFromConfig,
+  getThumbUrl as getThumbUrlFromConfig,
+} from '../config/api.config';
 
 export interface SiteSettings {
   _id: string;
@@ -84,6 +87,7 @@ export const fetchOccasions = async (): Promise<Occasion[]> => {
  * Get full URL for an image path
  */
 export const getImageUrl = getImageUrlFromConfig;
+export const getThumbUrl = getThumbUrlFromConfig;
 
 /**
  * Fetch single service details

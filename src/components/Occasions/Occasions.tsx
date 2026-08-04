@@ -14,7 +14,7 @@ import { colors } from '../../constants/colors';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useOccasions } from '../../hooks/useOccasions';
 import { Occasion } from '../../services/api';
-import { getImageUrl } from '../../services/api';
+import { getImageUrl, getThumbUrl } from '../../services/api';
 import { LogoLoader } from '../LogoLoader';
 
 interface OccasionsProps {
@@ -37,6 +37,10 @@ const Occasions: React.FC<OccasionsProps> = ({ onSelectOccasion, onBack }) => {
   const numColumns = getNumColumns();
   const styles = createStyles(screenWidth, numColumns);
 
+  // Anything whose thumbnail is missing (uploaded before the server started
+  // writing them, or not covered by the backfill) falls back to the full image.
+  const [noThumb, setNoThumb] = React.useState<Set<string>>(new Set());
+
   const renderOccasionCard = ({ item }: { item: Occasion }) => {
     const displayName = isRTL ? item.nameAr : item.name;
 
@@ -57,9 +61,18 @@ const Occasions: React.FC<OccasionsProps> = ({ onSelectOccasion, onBack }) => {
               />
             ) : (
               <Image
-                source={{ uri: getImageUrl(item.image) }}
+                source={{
+                  uri: noThumb.has(item._id)
+                    ? getImageUrl(item.image)
+                    : getThumbUrl(item.image),
+                }}
                 style={styles.occasionImage}
                 resizeMode="cover"
+                onError={() =>
+                  setNoThumb(prev =>
+                    prev.has(item._id) ? prev : new Set(prev).add(item._id),
+                  )
+                }
               />
             )
           ) : (

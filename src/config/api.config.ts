@@ -116,3 +116,32 @@ export const getImageUrl = (
 
   return url;
 };
+
+/**
+ * Rewrites an image URL to the ~500px thumbnail stored beside it (written by
+ * uploadBuffer in server/utils/s3.js, and by scripts/backfillThumbnails.js for
+ * anything uploaded before that existed).
+ *
+ * Worth it because the full variants are sized for detail views, not cards: a
+ * vendor profile picture measured 317KB / ~1.5s on production for a tile drawn
+ * at ~90px.
+ *
+ * Any image whose thumbnail is still missing answers 403, so every caller needs
+ * an onError fallback to the full URL — that fallback costs an extra round trip,
+ * which is why the backfill script should be run before shipping this.
+ */
+export const toThumbUrl = (url: string): string => {
+  if (!url) return url;
+  // Split the query string off first: getImageUrl can append ?updated=… for
+  // profile pictures, and matching the extension against the whole string
+  // would then never hit.
+  const queryIndex = url.indexOf('?');
+  const base = queryIndex === -1 ? url : url.substring(0, queryIndex);
+  const params = queryIndex === -1 ? '' : url.substring(queryIndex);
+  if (!base.endsWith('.webp')) return url;
+  return `${base.replace(/\.webp$/, '-thumb.webp')}${params}`;
+};
+
+/** Convenience wrapper: resolve a stored path straight to its thumbnail. */
+export const getThumbUrl = (imagePath: string): string =>
+  toThumbUrl(getImageUrl(imagePath));
